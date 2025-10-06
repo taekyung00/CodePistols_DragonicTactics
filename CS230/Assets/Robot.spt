@@ -1,0 +1,9 @@
+Assets/Robot.png
+HotSpot 31 20
+FrameSize 63 127
+NumFrames 5
+RectCollision -23 -20 20 60
+Anim Assets/None.anm
+Anim Assets/RobotBroken.anm
+Anim Assets/RobotWalking.anm
+Anim Assets/RobotAngry.anm
