@@ -8,7 +8,8 @@ Author:     Taekyung Ho
 Created:    May 20, 2025
 */
 #pragma once
-enum class GameObjectTypes {
+enum class GameObjectTypes
+{
     Cat,
     Robot,
     Asteroid,
@@ -20,5 +21,6 @@ enum class GameObjectTypes {
     Score,
     Laser,
     Particle,
+    Character,
     Count,
 };
