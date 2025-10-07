@@ -7,6 +7,12 @@
     <Filter Include="Game">
       <UniqueIdentifier>{72dc1c99-9e78-4ee7-833c-556a34d291e8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Game\Singletons">
+      <UniqueIdentifier>{c22f6f9f-d38e-46e7-ab33-c9711105d80d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Game\Types">
+      <UniqueIdentifier>{daa31a79-ff8c-4bcc-bf19-b7096cf709dd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -117,6 +123,12 @@
     </ClCompile>
     <ClCompile Include="Engine\Particle.cpp">
       <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Singletons\EventBus.cpp">
+      <Filter>Game\Singletons</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Test.cpp">
+      <Filter>Game</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -251,6 +263,30 @@
     </ClInclude>
     <ClInclude Include="Game\Particles.h">
       <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Singletons\EventBus.h">
+      <Filter>Game\Singletons</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Test.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Types\CombatEvents.h">
+      <Filter>Game\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Types\MovementEvents.h">
+      <Filter>Game\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Types\SpellEvents.h">
+      <Filter>Game\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Types\StatusEffectEvents.h">
+      <Filter>Game\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Types\TurnEvents.h">
+      <Filter>Game\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Types\UIEvents.h">
+      <Filter>Game\Types</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

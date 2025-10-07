@@ -194,7 +194,9 @@ xcopy /d /y Assets\* "$(OutputPath)Assets"
     <ClCompile Include="Game\Score.cpp" />
     <ClCompile Include="Game\ScreenWrap.cpp" />
     <ClCompile Include="Game\Ship.cpp" />
+    <ClCompile Include="Game\Singletons\EventBus.cpp" />
     <ClCompile Include="Game\Splash.cpp" />
+    <ClCompile Include="Game\Test.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -240,8 +242,16 @@ xcopy /d /y Assets\* "$(OutputPath)Assets"
     <ClInclude Include="Game\Score.h" />
     <ClInclude Include="Game\ScreenWrap.h" />
     <ClInclude Include="Game\Ship.h" />
+    <ClInclude Include="Game\Singletons\EventBus.h" />
     <ClInclude Include="Game\Splash.h" />
     <ClInclude Include="Game\States.h" />
+    <ClInclude Include="Game\Test.h" />
+    <ClInclude Include="Game\Types\CombatEvents.h" />
+    <ClInclude Include="Game\Types\MovementEvents.h" />
+    <ClInclude Include="Game\Types\SpellEvents.h" />
+    <ClInclude Include="Game\Types\StatusEffectEvents.h" />
+    <ClInclude Include="Game\Types\TurnEvents.h" />
+    <ClInclude Include="Game\Types\UIEvents.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
