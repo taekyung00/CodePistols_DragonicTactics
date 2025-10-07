@@ -931,3 +931,4 @@ EventBus is the **communication backbone** of Dragonic Tactics:
 - [singletons.md](singletons.md) - Other singleton services
 - [game-state-components.md](game-state-components.md) - Systems that use EventBus
 - [debug/tools.md](../debug/tools.md) - EventBus debugging tools
+- [Week 1 Implementation](../Detailed%20Implementations/weeks/week1.md#week-1-developer-c---eventbus-singleton) - Practical implementation guide and testing

@@ -35,16 +35,19 @@ private:
     CS230::Texture* title_texture;
     CS230::Texture* side_scroller_texture;
     CS230::Texture* space_shooter_texture;
+    CS230::Texture* test_texture;
     CS230::Texture* exit_texture;
 
     unsigned int side_scroller_color ;
     unsigned int space_shooter_color ;
+    unsigned int test_color ;
     unsigned int exit_color ;
 
     enum class Option
     {
         side_scroller,
         space_shooter,
+        test,
         exit
     };
     Option current_option;
