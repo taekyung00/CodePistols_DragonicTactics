@@ -10,7 +10,16 @@ Created:    May 20, 2025
 #pragma once
 enum class GameObjectTypes
 {
+    Cat,
+    Robot,
+    Asteroid,
+    Crates,
+    Meteor,
+    Ship,
+    Floor,
+    Portal,
     Score,
+    Laser,
     Particle,
     Character,
     Count,
