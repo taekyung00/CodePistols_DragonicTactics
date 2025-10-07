@@ -7,6 +7,9 @@
     <Filter Include="Game">
       <UniqueIdentifier>{72dc1c99-9e78-4ee7-833c-556a34d291e8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Game\Singletons">
+      <UniqueIdentifier>{7033afdc-f441-47a2-83da-8cb31d5be3f3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -117,6 +120,9 @@
     </ClCompile>
     <ClCompile Include="Engine\Particle.cpp">
       <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Singletons\DiceManager.cpp">
+      <Filter>Game\Singletons</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -251,6 +257,9 @@
     </ClInclude>
     <ClInclude Include="Game\Particles.h">
       <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Singletons\DiceManager.h">
+      <Filter>Game\Singletons</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
