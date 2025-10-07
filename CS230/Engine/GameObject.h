@@ -51,6 +51,18 @@ namespace CS230 {
         void SetPosition(Math::vec2 new_position);
         const bool& Destroyed() const { return destroy; }
         void Destroy() { destroy = true; }
+
+        class State {
+        public:
+            virtual void Enter(GameObject* object) = 0;
+            virtual void Update(GameObject* object, double dt) = 0;
+            virtual void CheckExit(GameObject* object) = 0;
+            virtual std::string GetName() = 0;
+        };
+
+
+        void change_state(State* new_state);
+
     protected:
         
         void UpdatePosition(Math::vec2 delta);
@@ -64,17 +76,8 @@ namespace CS230 {
         
         
 
-        class State {
-        public:
-            virtual void Enter(GameObject* object) = 0;
-            virtual void Update(GameObject* object, double dt) = 0;
-            virtual void CheckExit(GameObject* object) = 0;
-            virtual std::string GetName() = 0;
-        };
-
 
         State* current_state;
-        void change_state(State* new_state);
 
         bool matrix_outdated;
 
