@@ -246,12 +246,8 @@ xcopy /d /y Assets\* "$(OutputPath)Assets"
     <ClInclude Include="Game\Splash.h" />
     <ClInclude Include="Game\States.h" />
     <ClInclude Include="Game\Test.h" />
-    <ClInclude Include="Game\Types\CombatEvents.h" />
-    <ClInclude Include="Game\Types\MovementEvents.h" />
-    <ClInclude Include="Game\Types\SpellEvents.h" />
-    <ClInclude Include="Game\Types\StatusEffectEvents.h" />
-    <ClInclude Include="Game\Types\TurnEvents.h" />
-    <ClInclude Include="Game\Types\UIEvents.h" />
+    <ClInclude Include="Game\Test\Week1TestMocks.h" />
+    <ClInclude Include="Game\Types\Events.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
