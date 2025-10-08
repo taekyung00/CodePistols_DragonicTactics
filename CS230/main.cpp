@@ -11,8 +11,6 @@ Created:    March 4, 2025
 #include <iostream>
 
 #include "Engine/Engine.h"
-#include "Game/Mode1.h"
-#include "Game/Mode2.h"
 #include "Game/Test.h"
 #include "Game/Splash.h"
 #include "Game/MainMenu.h"
@@ -29,10 +27,6 @@ int main() {
         engine.GetGameStateManager().AddGameState(splash);
         MainMenu mainmenu;
         engine.GetGameStateManager().AddGameState(mainmenu);
-        Mode1 mode1;
-        engine.GetGameStateManager().AddGameState(mode1);
-        Mode2 mode2;
-        engine.GetGameStateManager().AddGameState(mode2);
         Test test;
         engine.GetGameStateManager().AddGameState(test);
         

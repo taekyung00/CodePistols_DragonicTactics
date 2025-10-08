@@ -45,42 +45,70 @@ private:
 };
 
 // Test assertion macros (lightweight)
-#define ASSERT_TRUE(condition) \
-    if (!(condition)) { \
-        std::cout << " ASSERT_TRUE failed: " << #condition << std::endl; \
-        return false; \
+inline bool ASSERT_TRUE(bool condition) {
+    if (!(condition)) { 
+        std::cout << " ASSERT_TRUE failed " << std::endl;
+        return false; 
     }
+    else {
+        std::cout << " ASSERT_TRUE successed! " <<std::endl;
+        return true;
+    }
+    
+}
 
-#define ASSERT_FALSE(condition) \
-    if ((condition)) { \
-        std::cout << " ASSERT_FALSE failed: " << #condition << std::endl; \
-        return false; \
-    }
 
-#define ASSERT_EQ(actual, expected) \
-    if ((actual) != (expected)) { \
-        std::cout << " ASSERT_EQ failed: " << #actual << " = " << (actual) \
-                  << ", expected " << (expected) << std::endl; \
-        return false; \
+inline bool ASSERT_FALSE(bool condition) {
+    if ((condition)) {
+        std::cout << " ASSERT_FALSE failed"<< std::endl;
+        return false;
     }
-
-#define ASSERT_NE(actual, expected) \
-    if ((actual) == (expected)) { \
-        std::cout << " ASSERT_NE failed: " << #actual << " = " << (actual) \
-                  << ", expected NOT " << (expected) << std::endl; \
-        return false; \
+    else {
+        std::cout << " ASSERT_FALSE successed! " <<std::endl;
+        return true;
     }
-
-#define ASSERT_GE(actual, minimum) \
-    if ((actual) < (minimum)) { \
-        std::cout << "ASSERT_GE failed: " << #actual << " = " << (actual) \
-                  << ", expected >= " << (minimum) << std::endl; \
-        return false; \
+}
+template <typename T>
+inline bool ASSERT_EQ(T actual, T expected) {
+    if ((actual) != (expected)) {
+        std::cout << " ASSERT_EQ failed"<< std::endl;
+        return false;
     }
-
-#define ASSERT_LE(actual, maximum) \
-    if ((actual) > (maximum)) { \
-        std::cout << "ASSERT_LE failed: " << #actual << " = " << (actual) \
-                  << ", expected <= " << (maximum) << std::endl; \
-        return false; \
+    else {
+        std::cout << " ASSERT_EQ successed! "  << std::endl;
+        return true;
     }
+}
+template <typename T>
+inline bool ASSERT_NE(T actual, T expected) {
+    if ((actual) == (expected)) {
+        std::cout << " ASSERT_NE failed: " << std::endl;
+        return false;
+    }
+    else {
+        std::cout << " ASSERT_NE successed! " << std::endl;
+        return true;
+    }
+}
+template <typename T>
+inline bool ASSERT_GE(T actual, T minimum) {
+    if ((actual) < (minimum)) {
+        std::cout << "ASSERT_GE failed: " << std::endl;
+        return false;
+    }
+    else {
+        std::cout << " ASSERT_GE successed! " << std::endl;
+        return true;
+    }
+}
+template <typename T>
+inline bool ASSERT_LE(T actual, T maximum) {
+    if ((actual) > (maximum)) {
+        std::cout << "ASSERT_LE failed: " << std::endl;
+		return false;
+    }
+	else {
+        std::cout << " ASSERT_LE successed! "  << std::endl;
+        return true;
+    }
+}
