@@ -54,7 +54,7 @@ public:
         return Instance().fonts[index];
     }
 
-    static EventBus& GetEventBus() {
+	static EventBus& GetEventBus() {
         return Instance().eventbus;
     }
 

@@ -46,7 +46,7 @@ void Engine::Update() {
 
     if (dt >(1 / TargetFPS)) {
         logger.LogVerbose("Engine Update");
-        last_tick = now;
+		last_tick = now;
 
         frame_count++;
 

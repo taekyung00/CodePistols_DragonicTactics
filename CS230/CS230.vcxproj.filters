@@ -13,6 +13,9 @@
     <Filter Include="Game\Types">
       <UniqueIdentifier>{daa31a79-ff8c-4bcc-bf19-b7096cf709dd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Game\Test">
+      <UniqueIdentifier>{5b3dc12e-a8eb-44cc-9fd7-ee935d8b481d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -270,23 +273,11 @@
     <ClInclude Include="Game\Test.h">
       <Filter>Game</Filter>
     </ClInclude>
-    <ClInclude Include="Game\Types\CombatEvents.h">
+    <ClInclude Include="Game\Types\Events.h">
       <Filter>Game\Types</Filter>
     </ClInclude>
-    <ClInclude Include="Game\Types\MovementEvents.h">
-      <Filter>Game\Types</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Types\SpellEvents.h">
-      <Filter>Game\Types</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Types\StatusEffectEvents.h">
-      <Filter>Game\Types</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Types\TurnEvents.h">
-      <Filter>Game\Types</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Types\UIEvents.h">
-      <Filter>Game\Types</Filter>
+    <ClInclude Include="Game\Test\Week1TestMocks.h">
+      <Filter>Game\Test</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

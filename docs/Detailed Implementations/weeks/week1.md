@@ -189,11 +189,13 @@ private:
 #### **Testing Phases**
 
 **Phase 1 (Days 1-4): Individual Testing**
+
 - Each developer tests their system with mocks **independently**
 - No waiting for other developers to finish
 - Immediate feedback and iteration
 
 **Phase 2 (Day 5): Integration Testing**
+
 - Replace mocks with real implementations
 - Test full system integration
 - Fix any interface mismatches
@@ -827,10 +829,10 @@ CS230/Game/Systems/GridSystem.cpp
 **Test Suite 2: Character Placement & Occupancy**
 
 - [ ] **Test_PlaceCharacter_SingleCharacter()**
-
+  
   ```cpp
   #include "../Test/Week1TestMocks.h"  // Include mock classes
-
+  
   GridSystem grid;
   MockCharacter character("TestChar");
   
@@ -1066,32 +1068,32 @@ CS230/Game/Events/Events.h
 **Implementation Tasks**:
 
 - [ ] **EventBus singleton class**
-
+  
   ```cpp
   class EventBus {
   public:
       static EventBus& Instance();
-
+  
       template<typename T>
       void Subscribe(std::function<void(const T&)> callback);
-
+  
       template<typename T>
       void Publish(const T& event);
-
+  
       void Clear();  // Clear all subscriptions
       void SetLogging(bool enabled);  // Enable/disable event logging
       bool IsLoggingEnabled() const;
-
+  
   private:
       std::map<std::type_index, std::vector<std::function<void(const void*)>>> subscribers;
       bool loggingEnabled = false;
-
+  
       void LogEvent(const std::string& eventType, const void* eventData);
   };
   ```
 
 - [ ] **Define all event types** (in Events.h):
-
+  
   ```cpp
   struct CharacterDamagedEvent {
       Character* target;
@@ -1100,7 +1102,7 @@ CS230/Game/Events/Events.h
       Character* attacker;
       bool wasCritical;
   };
-
+  
   struct CharacterHealedEvent {
       Character* target;
       int healAmount;
@@ -1108,23 +1110,23 @@ CS230/Game/Events/Events.h
       int maxHP;
       Character* healer;
   };
-
+  
   struct CharacterDeathEvent {
       Character* character;
       Character* killer;
   };
-
+  
   struct TurnStartedEvent {
       Character* character;
       int turnNumber;
       int actionPoints;
   };
-
+  
   struct TurnEndedEvent {
       Character* character;
       int actionsUsed;
   };
-
+  
   struct SpellCastEvent {
       Character* caster;
       std::string spellName;
@@ -1132,20 +1134,20 @@ CS230/Game/Events/Events.h
       Math::ivec2 targetGrid;
       int spellSlotUsed;
   };
-
+  
   struct CharacterMovedEvent {
       Character* character;
       Math::ivec2 fromGrid;
       Math::ivec2 toGrid;
       int actionPointsSpent;
   };
-
+  
   struct AttackMissedEvent {
       Character* attacker;
       Character* target;
       std::string reason;
   };
-
+  
   // Define 10+ event types total
   ```
 
@@ -1167,28 +1169,28 @@ EventBus::Instance().Publish(event);
 **Test Suite 1: Basic Pub/Sub Functionality**
 
 - [ ] **Test_Subscribe_Publish_SingleSubscriber()**
-
+  
   ```cpp
   #include "../Test/Week1TestMocks.h"  // Include mock classes
-
+  
   EventBus::Instance().Clear();  // Start fresh
-
+  
   // Setup: Subscribe to CharacterDamagedEvent
   bool callbackInvoked = false;
   int receivedDamage = 0;
   MockCharacter* receivedTarget = nullptr;
-
+  
   EventBus::Instance().Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
       callbackInvoked = true;
       receivedDamage = e.damageAmount;
       receivedTarget = static_cast<MockCharacter*>(e.target);
   });
-
+  
   // Action: Publish event with MockCharacter
   MockCharacter character("TestDragon");
   CharacterDamagedEvent event{&character, 30, 70, nullptr, false};
   EventBus::Instance().Publish(event);
-
+  
   // Assertions
   ASSERT_TRUE(callbackInvoked);
   ASSERT_EQ(receivedDamage, 30);
@@ -1208,15 +1210,15 @@ EventBus::Instance().Publish(event);
   EventBus::Instance().Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
       callback1Count++;
   });
-
+  
   EventBus::Instance().Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
       callback2Count++;
   });
-
+  
   EventBus::Instance().Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
       callback3Count++;
   });
-
+  
   // Action: Publish event
   MockCharacter character("TestChar");
   EventBus::Instance().Publish(CharacterDamagedEvent{&character, 10, 90, nullptr, false});
@@ -1240,15 +1242,15 @@ EventBus::Instance().Publish(event);
   EventBus::Instance().Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
       damageCalled = true;
   });
-
+  
   EventBus::Instance().Subscribe<CharacterDeathEvent>([&](const CharacterDeathEvent& e) {
       deathCalled = true;
   });
-
+  
   EventBus::Instance().Subscribe<SpellCastEvent>([&](const SpellCastEvent& e) {
       spellCalled = true;
   });
-
+  
   // Publish all 3 events
   MockCharacter character("TestChar");
   EventBus::Instance().Publish(CharacterDamagedEvent{&character, 10, 90, nullptr, false});
@@ -1271,15 +1273,15 @@ EventBus::Instance().Publish(event);
   // Setup: Complex event with all fields
   MockCharacter victim("Victim"), attacker("Attacker");
   CharacterDamagedEvent receivedEvent;
-
+  
   EventBus::Instance().Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
       receivedEvent = e;  // Copy event
   });
-
+  
   // Publish
   CharacterDamagedEvent originalEvent{&victim, 42, 58, &attacker, true};
   EventBus::Instance().Publish(originalEvent);
-
+  
   // Verify all fields transferred correctly
   ASSERT_EQ(receivedEvent.target, &victim);
   ASSERT_EQ(receivedEvent.damageAmount, 42);
@@ -1298,7 +1300,7 @@ EventBus::Instance().Publish(event);
   EventBus::Instance().Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
       damages.push_back(e.damageAmount);
   });
-
+  
   // Publish multiple events
   MockCharacter character("TestChar");
   EventBus::Instance().Publish(CharacterDamagedEvent{&character, 10, 90, nullptr, false});
@@ -1326,14 +1328,14 @@ EventBus::Instance().Publish(event);
   EventBus::Instance().Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
       damageCount++;
   });
-
+  
   EventBus::Instance().Subscribe<CharacterDeathEvent>([&](const CharacterDeathEvent& e) {
       deathCount++;
   });
-
+  
   // Clear all subscriptions
   EventBus::Instance().Clear();
-
+  
   // Publish events (should NOT trigger callbacks)
   MockCharacter character("TestChar");
   EventBus::Instance().Publish(CharacterDamagedEvent{&character, 10, 90, nullptr, false});
@@ -1371,7 +1373,7 @@ EventBus::Instance().Publish(event);
           callbackCounts[i]++;
       });
   }
-
+  
   // Publish event
   MockCharacter character("TestChar");
   EventBus::Instance().Publish(CharacterDamagedEvent{&character, 10, 90, nullptr, false});
@@ -1392,7 +1394,7 @@ EventBus::Instance().Publish(event);
   EventBus::Instance().Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
       count++;
   });
-
+  
   // Publish 1000 events
   MockCharacter character("TestChar");
   for (int i = 0; i < 1000; ++i) {
@@ -2673,20 +2675,20 @@ console.RegisterCommand("damage",
 **Integration Tests** (Friday Week 1 - Replace Mocks with Real Classes):
 
 - [ ] Test_CharacterOnGrid()
-
+  
   - Setup: Create **real Character** (not MockCharacter), place on GridSystem at (4,4)
   - Expected: GridSystem->IsOccupied({4,4}) == true
   - **Note**: This tests the actual Character↔GridSystem interface
 
 - [ ] Test_EventBusWithRealCharacter()
-
+  
   - Setup: Subscribe to DamageTakenEvent
   - Action: **Real Character**->TakeDamage(30)
   - Expected: EventBus publishes event automatically, subscriber receives it
   - **Note**: This tests Character publishing events to EventBus
 
 - [ ] Test_DiceManagerInConsole()
-
+  
   - Setup: **Real DebugConsole** with **real Engine::GetLogger()**
   - Action: Execute "roll 3d6" command
   - Expected: DiceManager called, result logged to Logger.txt

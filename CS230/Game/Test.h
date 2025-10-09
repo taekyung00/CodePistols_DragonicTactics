@@ -21,4 +21,6 @@ public:
     std::string GetName() override {
         return "Test";
     }
+private:
+    void test_subscribe_publish_singleSubscriber();
 };

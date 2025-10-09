@@ -13,6 +13,8 @@
 
 class EventBus {
 public:
+    EventBus() = default;
+    ~EventBus() = default;
 
     // Subscribe to event type T with callback function
     template<typename T>
@@ -48,8 +50,7 @@ public:
     void SetLogging(bool enabled) { loggingEnabled = enabled; }
 
 private:
-    EventBus() = default;
-    ~EventBus() = default;
+    
     EventBus(const EventBus&) = delete;
     EventBus& operator=(const EventBus&) = delete;
 
