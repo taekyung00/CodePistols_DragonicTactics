@@ -4,7 +4,7 @@
 #include "Test.h"
 #include "States.h"
 
-class Claracter;
+class Character;
 Test::Test()
 {
 }
