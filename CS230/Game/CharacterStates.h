@@ -11,7 +11,6 @@ Created:    Oct 08, 2025
 #include "../Engine/GameObject.h" 
 #include <string>
 
-
 class State_Idle : public CS230::GameObject::State {
 public:
     void Enter(CS230::GameObject* object) override;
