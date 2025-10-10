@@ -4,7 +4,7 @@
 
 **Strategy**: All 5 developers work together on critical path - similar workload, frequent playtests
 
-**Last Updated**: 2025-10-06
+**Last Updated**: 2025-10-10
 
 **Architecture Alignment**: This plan follows the **pure GameObject inheritance pattern** (NO interfaces) as documented in [systems/interfaces.md](systems/interfaces.md). All characters inherit directly from `Character : public CS230::GameObject`.
 
@@ -49,6 +49,7 @@
 
 ## Table of Contents
 
+- [Detailed Week-by-Week Guides](#detailed-week-by-week-implementation-guides)
 - [Development Philosophy](#development-philosophy)
 - [Developer Skill Profiles](#developer-skill-profiles-flexible---not-domain-locked)
 - [26-Week Development Organized by Playtests](#26-week-development-organized-by-playtests)
@@ -61,6 +62,44 @@
 - [Integration Strategy](#integration-strategy-post-week-5)
 - [Milestone Tracking](#milestone-tracking-week-1-5-foundation)
 - [Playtesting Schedule](#6-mandatory-playtesting-milestones-weeks-5-10-15-20-24-26)
+
+---
+
+## Detailed Week-by-Week Implementation Guides
+
+**This document provides strategic overview**. For tactical implementation details with code examples and test cases, see:
+
+### **📋 Playtest 1 Implementation (Weeks 1-5)**
+
+**Location**: [Detailed Implementations/weeks/](Detailed%20Implementations/weeks/)
+
+**Total Content**: 3,921 lines of detailed implementation guidance
+
+| Week       | Focus                           | File                                                  | Key Deliverables                                           |
+| ---------- | ------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------- |
+| **Week 1** | Foundation (5 Systems Parallel) | [week1.md](Detailed%20Implementations/weeks/week1.md) | Character, GridSystem, EventBus, DiceManager, DebugConsole |
+| **Week 2** | Dragon + Grid Integration       | [week2.md](Detailed%20Implementations/weeks/week2.md) | Dragon class, A* pathfinding, TurnManager                  |
+| **Week 3** | Combat + Spells Begin           | [week3.md](Detailed%20Implementations/weeks/week3.md) | Fireball spell, CombatSystem, SpellSystem, Fighter        |
+| **Week 4** | More Spells + Turn System       | [week4.md](Detailed%20Implementations/weeks/week4.md) | CreateWall + LavaPool, Initiative, DataRegistry            |
+| **Week 5** | Polish + PLAYTEST 1 🧪          | [week5.md](Detailed%20Implementations/weeks/week5.md) | Balance tuning, BattleState, **First Playtest**           |
+
+**Each week file includes:**
+- Day-by-day task breakdowns for all 5 developers
+- Complete code examples with mock testing strategy
+- File structure and naming conventions
+- Rigorous test suites with edge cases
+- Friday integration tests
+- Deliverable verification checklists
+
+**When to use these guides:**
+- You are actively implementing Weeks 1-5
+- You need specific code examples and test cases
+- You want to understand daily task breakdowns
+- You're doing code reviews (test requirements included)
+
+**Relationship to this document:**
+- **implementation-plan.md** (this file): "WHAT" and "WHEN" - Strategic 26-week overview
+- **weeks/*.md** files: "HOW" - Tactical day-by-day implementation with code
 
 ---
 
@@ -159,6 +198,14 @@
 **Goal**: Dragon playable with core combat mechanics
 
 **Target**: PLAYTEST 1 - Dragon vs Fighter Battle
+
+> **📋 For detailed implementation guide, see [Detailed Implementations/weeks/week1.md](Detailed%20Implementations/weeks/week1.md)**
+>
+> The detailed guide includes:
+> - Day-by-day task breakdowns for all 5 developers
+> - Complete code examples with mock testing strategy
+> - File structure, naming conventions, and integration tests
+> - Playtest 1 execution procedures
 
 ### Why Week 5 for First Playtest?
 

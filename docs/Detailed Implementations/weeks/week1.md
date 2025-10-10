@@ -1164,11 +1164,238 @@ CharacterDamagedEvent event{victim, 30, 70, attacker, false};
 EventBus::Instance().Publish(event);
 ```
 
+---
+
+#### 🏗️ EventBus Design Philosophy
+
+**IMPORTANT DESIGN DECISION**: Understanding Why Type-Based Subscription is Correct
+
+**Question**: "Should EventBus distinguish individual subscribers, or only event types?"
+
+**Answer**: **EventBus uses type-based subscription (`std::type_index(typeid(T))`) - This is CORRECT by design.**
+
+##### Why Type-Based Subscription Works
+
+**Current Design:**
+
+```cpp
+// EventBus internally uses:
+std::map<std::type_index, std::vector<CallbackWrapper>> subscribers;
+
+// Multiple systems subscribe to the SAME event type
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([](const CharacterDamagedEvent& e) {
+    // System A: Update UI
+});
+
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([](const CharacterDamagedEvent& e) {
+    // System B: Log damage
+});
+
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([](const CharacterDamagedEvent& e) {
+    // System C: Update AI memory
+});
+
+// When event published, ALL subscribers receive it (broadcast semantics)
+EventBus::Instance().Publish(CharacterDamagedEvent{dragon, 15, 125, fighter, true});
+```
+
+**Key Insight**: Events are **broadcast announcements**, not **direct messages**.
+
+##### Event Data Contains Context for Filtering
+
+Notice that event structs include `target`, `attacker`, `character` fields:
+
+```cpp
+struct CharacterDamagedEvent {
+    Character* target;      // WHO was damaged (filtering info)
+    int damageAmount;
+    int remainingHP;
+    Character* attacker;    // WHO dealt damage (context)
+    bool wasCritical;
+};
+```
+
+**Subscribers filter by checking event data:**
+
+```cpp
+// BattleManager subscribes to ALL death events
+EventBus::Instance().Subscribe<CharacterDeathEvent>([this](const CharacterDeathEvent& e) {
+    if (e.character->Type() == GameObjectTypes::Dragon) {
+        EndBattle(false);  // Dragon died - game over
+    }
+});
+
+// StatusInfoOverlay subscribes to ALL damage events
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& e) {
+    UpdateHPBar(e.target);  // Update UI for damaged character
+});
+
+// Dragon's component filters by target
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& e) {
+    if (e.target == this->owner) {  // Filter: is this event for MY character?
+        PlayDamageAnimation();
+    }
+});
+```
+
+##### Why Multiple Systems Need the Same Event
+
+**Example**: When Dragon casts Fireball:
+
+```cpp
+EventBus::Instance().Publish(SpellCastEvent{&dragon, "Fireball", 1, {7,7}, 1});
+```
+
+**Six different systems react to this ONE event:**
+
+1. ✅ **EffectManager** → Spawn fireball projectile animation
+2. ✅ **Logger** → Record: "Dragon cast Fireball at (7,7)"
+3. ✅ **AIMemory (all AI characters)** → Update: "Dragon used offensive spell"
+4. ✅ **AIDirector** → Update threat: Dragon is aggressive
+5. ✅ **DebugUIOverlay** → Display spell cast in event log
+6. ✅ **SaveManager** → Track spell usage stats
+
+**If EventBus distinguished subscribers, you'd need:**
+
+```cpp
+// ❌ WRONG - This defeats the purpose of EventBus!
+Publish(SpellCastEvent, target=EffectManager);
+Publish(SpellCastEvent, target=Logger);
+Publish(SpellCastEvent, target=AIMemory);
+// ... (6 separate publishes - tight coupling!)
+```
+
+##### Real-World Example: Fighter Attacks Dragon
+
+```cpp
+// CombatSystem publishes ONE event
+EventBus::Instance().Publish(CharacterDamagedEvent{
+    .target = dragon,
+    .damageAmount = 15,
+    .remainingHP = 125,
+    .attacker = fighter,
+    .wasCritical = true
+});
+
+// All subscribers react (each checks event data):
+
+// 1. StatusInfoOverlay: Update Dragon's HP bar
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& e) {
+    UpdateHPBar(e.target);  // Dragon's HP bar updates
+});
+
+// 2. BattleManager: Check victory conditions
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& e) {
+    if (e.remainingHP <= 0) {
+        CheckVictoryConditions();
+    }
+});
+
+// 3. AIDirector: Update threat assessment
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& e) {
+    UpdateThreat(e.attacker, +10);  // Fighter is dangerous
+});
+
+// 4. EffectManager: Show damage particle effect
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& e) {
+    SpawnDamageNumber(e.target->GetPosition(), e.damageAmount);
+    if (e.wasCritical) {
+        SpawnCriticalFlash(e.target->GetPosition());
+    }
+});
+
+// 5. Logger: Record event
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& e) {
+    LogEvent(e.attacker->TypeName() + " dealt " +
+             std::to_string(e.damageAmount) + " damage to " +
+             e.target->TypeName());
+});
+```
+
+**All 5 systems react to ONE event publish** → Perfect decoupling!
+
+##### Performance Analysis
+
+**Question**: "Won't ALL subscribers get called even if event isn't for them?"
+
+**Answer**: Yes, but this is **intentional and efficient** for turn-based tactical RPG.
+
+**Scenario**: Dragon takes damage
+
+```cpp
+EventBus::Instance().Publish(CharacterDamagedEvent{dragon, 10, 130, fighter, false});
+```
+
+**Cost per subscriber**: ~5-10 instructions to check `if (e.target == this)`
+**Total subscribers**: ~8-10 systems
+**Total cost**: ~80 instructions ≈ **0.0001ms on modern CPU**
+
+**For turn-based RPG with ~5 characters:**
+
+- Events published: ~10-50 times per turn
+- Total event overhead: **<0.01ms per turn** (negligible)
+
+**Benefit**: Complete decoupling of all systems ✅
+
+##### Why NOT Per-Subscriber Identification
+
+**Anti-Pattern**: Trying to send message to specific subscriber
+
+```cpp
+// ❌ BAD: Publisher must know subscriber IDs (tight coupling)
+EventBus::Instance().PublishTo(CharacterDamagedEvent{...}, targetSubscriber=dragon);
+```
+
+**Problems:**
+
+- ❌ Publisher must know subscribers exist (breaks encapsulation)
+- ❌ Cannot broadcast to multiple systems
+- ❌ Tight coupling defeats loose coupling principle
+- ❌ Wrong abstraction (this is a message queue, not event bus)
+
+**Correct Solution**: Use event data for filtering
+
+```cpp
+// ✅ GOOD: Broadcast event, subscribers filter by target
+EventBus::Instance().Publish(CharacterDamagedEvent{
+    .target = dragon,  // Dragon checks this
+    .damageAmount = 10
+});
+
+// Dragon's subscription filters by target:
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& e) {
+    if (e.target == this) {  // Filter: is this event for ME?
+        UpdateHPBar();
+    }
+});
+```
+
+##### Summary: EventBus Design Principles
+
+**✅ CORRECT Design (Type-Based Subscription):**
+
+1. **Event = Broadcast Announcement** (not direct message)
+2. **Event data contains context** (`target`, `attacker`, etc.) for filtering
+3. **Multiple systems react to same event** (loose coupling)
+4. **Performance is negligible** for turn-based RPG (<0.01ms per turn)
+5. **Aligns with architecture principles** (see [docs/architecture.md](../../architecture.md))
+
+**❌ INCORRECT Design (Per-Subscriber Channels):**
+
+1. Tight coupling (publisher knows subscribers)
+2. Cannot broadcast to multiple systems
+3. Complex API requiring subscriber IDs
+4. Wrong abstraction (message queue vs. event bus)
+
+**Key Takeaway**: EventBus uses `typeid(T)` to distinguish event **types**, not subscribers. Subscribers filter events by checking event data fields (`.target`, `.attacker`, `.character`). This provides perfect loose coupling while maintaining efficiency.
+
+---
+
 **Rigorous Testing** (using MockCharacter for independence):
 
 **Test Suite 1: Basic Pub/Sub Functionality**
 
-- [ ] **Test_Subscribe_Publish_SingleSubscriber()**
+- [x] **Test_Subscribe_Publish_SingleSubscriber()**
   
   ```cpp
   #include "../Test/Week1TestMocks.h"  // Include mock classes
@@ -1197,7 +1424,7 @@ EventBus::Instance().Publish(event);
   ASSERT_EQ(receivedTarget, &character);
   ```
 
-- [ ] **Test_MultipleSubscribers_SameEvent()**
+- [x] **Test_MultipleSubscribers_SameEvent()**
   
   ```cpp
   EventBus::Instance().Clear();
@@ -1229,7 +1456,7 @@ EventBus::Instance().Publish(event);
   ASSERT_EQ(callback3Count, 1);
   ```
 
-- [ ] **Test_MultipleDifferentEvents()**
+- [x] **Test_MultipleDifferentEvents()**
   
   ```cpp
   EventBus::Instance().Clear();
@@ -1265,7 +1492,7 @@ EventBus::Instance().Publish(event);
 
 **Test Suite 2: Event Data Integrity**
 
-- [ ] **Test_EventData_CompleteTransfer()**
+- [x] **Test_EventData_CompleteTransfer()**
   
   ```cpp
   EventBus::Instance().Clear();
@@ -1290,7 +1517,7 @@ EventBus::Instance().Publish(event);
   ASSERT_TRUE(receivedEvent.wasCritical);
   ```
 
-- [ ] **Test_EventData_MultiplePublishes()**
+- [x] **Test_EventData_MultiplePublishes()**
   
   ```cpp
   EventBus::Instance().Clear();
