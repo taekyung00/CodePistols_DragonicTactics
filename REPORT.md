@@ -42,3 +42,8 @@ GridPosition.h , .cpp
 생성자에서 좌표를 받아 저장해서 데이터를 다룸
 간단한 Getter, Setter를 가지고 있음
 TODO : 업데이트 함수 만들기
+
+StatsComponent.h, cpp
+이건 캐릭터의 전투에 관한 컴포넌트임
+데미지를 받는 함수, 힐을 받는 함수, 생존 판정, 현재 체력 getter, 최대 체력 getter, 남은 체력의 퍼센테이지를 반환하고
+다른 스탯 Getter도 만듦
