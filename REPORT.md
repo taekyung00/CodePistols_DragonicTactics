@@ -28,3 +28,12 @@ CharacterStates.cpp에 각 상태의 실제 로직이 구현될 틀을 마련하
 
 2025-10-09 
 태경이 코드 다시 받아서 머지, 캐릭터 업데이트
+
+2025-10-10
+Character.h
+캐릭터의 스탯을 관리하는 class StatsComponent를 만들고 전방선언
+그렇기 때문에 기존 멤버 변수인 m_stats는 삭제
+IsAlive와 GetStats 같이 m_stats를 반환하는 함수는 껍데기만 선언해서 cpp파일에서 구현
+GetStatsComponent 함수 생성
+이니셜라이즈 컴포넌트에 시작좌표를 받아서 생성하는걸로 만듦
+
