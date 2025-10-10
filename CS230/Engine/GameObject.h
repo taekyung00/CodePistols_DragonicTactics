@@ -48,6 +48,11 @@ namespace CS230 {
             return componentmanager.GetComponent<T>();
         }
 
+        template<typename T>
+        T* GetGOComponent() const { 
+            return componentmanager.GetComponent<T>();
+        }
+
         void SetPosition(Math::vec2 new_position);
         const bool& Destroyed() const { return destroy; }
         void Destroy() { destroy = true; }
