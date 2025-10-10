@@ -1067,7 +1067,7 @@ CS230/Game/Events/Events.h
 
 **Implementation Tasks**:
 
-- [ ] **EventBus singleton class**
+- [x] **EventBus singleton class**
   
   ```cpp
   class EventBus {
@@ -1092,7 +1092,7 @@ CS230/Game/Events/Events.h
   };
   ```
 
-- [ ] **Define all event types** (in Events.h):
+- [x] **Define all event types** (in Events.h):
   
   ```cpp
   struct CharacterDamagedEvent {
