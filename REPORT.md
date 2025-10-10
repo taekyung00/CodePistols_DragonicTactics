@@ -47,3 +47,8 @@ StatsComponent.h, cpp
 이건 캐릭터의 전투에 관한 컴포넌트임
 데미지를 받는 함수, 힐을 받는 함수, 생존 판정, 현재 체력 getter, 최대 체력 getter, 남은 체력의 퍼센테이지를 반환하고
 다른 스탯 Getter도 만듦
+
+CharacterTypes.h
+캐릭터 스탯 구조체를 그냥 따로 빼서 관리하기로 함
+attack_dice나 defend_dice를 string으로 만들었는데
+이렇게 하는게 나중에 txt나 json 파일로 만들어 파싱하기 좋다고 함
