@@ -53,5 +53,15 @@ CharacterTypes.h
 attack_dice나 defend_dice를 string으로 만들었는데
 이렇게 하는게 나중에 txt나 json 파일로 만들어 파싱하기 좋다고 함
 
+
 Engine\GameObject.h
 GetGOComponent의 const 버전을 만듦
+
+Character.cpp
+생성자를 만들고 컴포넌트 초기화 함수를 만듦
+업데이트, 드로우기타 껍데기 함수도 만듦
+컴포넌트들을 더 만들면 업데이트
+
+앞으로 할 일
+더 많은 컴포넌트 만들기
+-> 자원관리 -> 액션시스템 -> 상태이상 -> AI 보조 컴포넌트 순서로 만들 예정
