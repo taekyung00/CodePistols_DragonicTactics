@@ -27,7 +27,7 @@ class DamageCalculator;
 class TargetingSystem;
 class AIMemory;
 class GridFootprint;
-class Action; // '액션' 시스템을 위한 전방 선언
+class Action;
 class StatsComponent;
 
 class Character : public CS230::GameObject {
@@ -71,11 +71,11 @@ protected:
     // --- 컴포넌트 편의 함수들 (Getters) ---
     // 파생 클래스에서 자신의 컴포넌트에 쉽게 접근하기 위해 사용합니다.
     GridPosition* GetGridPosition() const;
+    StatsComponent* GetStatsComponent() const;
     ActionPoints* GetActionPointsComponent() const;
     SpellSlots* GetSpellSlots() const;
-    StatsComponent* GetStatsComponent() const;
-    StatusEffects* GetStatusEffects() const;
-    GridFootprint* GetGridFootprint() const;
+    //StatusEffects* GetStatusEffects() const;
+    //GridFootprint* GetGridFootprint() const;
 
     // --- AI 및 이동 관련 함수 (Protected) ---
     void InitializeComponents(Math::ivec2 start_coordinates);
