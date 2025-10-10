@@ -19,3 +19,14 @@ enum class CharacterTypes
     Wizard,
     Count,
 };
+
+struct CharacterStats {
+    int max_hp = 10;
+    int current_hp = 10;
+    int base_attack = 1;
+    std::string attack_dice = "1d6";
+    int base_defend = 1;
+    std::string defend_dice = "1d4";
+    int speed = 5;
+    int attack_range = 1;
+};
