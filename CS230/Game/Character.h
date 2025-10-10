@@ -18,7 +18,7 @@ Updated:    Oct 09, 2025
 #include "GameTypes.h"  
 
 
-// --- 전방 선언 (Forward Declarations) ---
+// --- 컴포넌트 전방 선언 (Forward Declarations) ---
 class GridPosition;
 class ActionPoints;
 class SpellSlots;
