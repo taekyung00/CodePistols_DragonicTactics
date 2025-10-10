@@ -37,3 +37,8 @@ IsAlive와 GetStats 같이 m_stats를 반환하는 함수는 껍데기만 선언
 GetStatsComponent 함수 생성
 이니셜라이즈 컴포넌트에 시작좌표를 받아서 생성하는걸로 만듦
 
+GridPosition.h , .cpp
+이건 캐릭터의 좌표를 다루는 컴포넌트임
+생성자에서 좌표를 받아 저장해서 데이터를 다룸
+간단한 Getter, Setter를 가지고 있음
+TODO : 업데이트 함수 만들기
