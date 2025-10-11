@@ -179,12 +179,14 @@ xcopy /d /y Assets\* "$(OutputPath)Assets"
     <ClCompile Include="Engine\Timer.cpp" />
     <ClCompile Include="Engine\Vec2.cpp" />
     <ClCompile Include="Engine\Window.cpp" />
+    <ClCompile Include="Game\ActionPoints.cpp" />
     <ClCompile Include="Game\Character.cpp" />
     <ClCompile Include="Game\CharacterStates.cpp" />
     <ClCompile Include="Game\GridPosition.cpp" />
     <ClCompile Include="Game\MainMenu.cpp" />
     <ClCompile Include="Game\Score.cpp" />
     <ClCompile Include="Game\Singletons\EventBus.cpp" />
+    <ClCompile Include="Game\SpellSlots.cpp" />
     <ClCompile Include="Game\Splash.cpp" />
     <ClCompile Include="Game\StatsComponent.cpp" />
     <ClCompile Include="Game\Test.cpp" />
@@ -214,6 +216,7 @@ xcopy /d /y Assets\* "$(OutputPath)Assets"
     <ClInclude Include="Engine\Timer.h" />
     <ClInclude Include="Engine\Vec2.h" />
     <ClInclude Include="Engine\Window.h" />
+    <ClInclude Include="Game\ActionPoints.h" />
     <ClInclude Include="Game\Character.h" />
     <ClInclude Include="Game\CharacterStates.h" />
     <ClInclude Include="Game\CharacterTypes.h" />
@@ -225,6 +228,7 @@ xcopy /d /y Assets\* "$(OutputPath)Assets"
     <ClInclude Include="Game\Particles.h" />
     <ClInclude Include="Game\Score.h" />
     <ClInclude Include="Game\Singletons\EventBus.h" />
+    <ClInclude Include="Game\SpellSlots.h" />
     <ClInclude Include="Game\Splash.h" />
     <ClInclude Include="Game\States.h" />
     <ClInclude Include="Game\StatsComponent.h" />
