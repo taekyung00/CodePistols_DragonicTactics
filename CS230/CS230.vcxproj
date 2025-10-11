@@ -179,11 +179,14 @@ xcopy /d /y Assets\* "$(OutputPath)Assets"
     <ClCompile Include="Engine\Timer.cpp" />
     <ClCompile Include="Engine\Vec2.cpp" />
     <ClCompile Include="Engine\Window.cpp" />
+    <ClCompile Include="Game\Character.cpp" />
     <ClCompile Include="Game\CharacterStates.cpp" />
+    <ClCompile Include="Game\GridPosition.cpp" />
     <ClCompile Include="Game\MainMenu.cpp" />
     <ClCompile Include="Game\Score.cpp" />
     <ClCompile Include="Game\Singletons\EventBus.cpp" />
     <ClCompile Include="Game\Splash.cpp" />
+    <ClCompile Include="Game\StatsComponent.cpp" />
     <ClCompile Include="Game\Test.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -224,6 +227,7 @@ xcopy /d /y Assets\* "$(OutputPath)Assets"
     <ClInclude Include="Game\Singletons\EventBus.h" />
     <ClInclude Include="Game\Splash.h" />
     <ClInclude Include="Game\States.h" />
+    <ClInclude Include="Game\StatsComponent.h" />
     <ClInclude Include="Game\Test.h" />
     <ClInclude Include="Game\Test\Week1TestMocks.h" />
     <ClInclude Include="Game\Types\Events.h" />
