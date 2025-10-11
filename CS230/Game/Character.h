@@ -49,7 +49,7 @@ public:
     // 캐릭터가 수행할 수 있는 주요 행동들입니다.
     virtual void PerformAttack(Character* target);
     virtual void PerformAction(Action* action, Character* target, Math::ivec2 tile_position);
-    virtual void TakeDamage(int damage, Character* attacker) = 0;
+    virtual void TakeDamage(int damage, Character* attacker);
     virtual void ReceiveHeal(int amount);
 
     // --- 이동 관련 함수 ---
@@ -66,7 +66,7 @@ public:
     bool HasSpellSlot(int level) const; // 해당 레벨의 주문 슬롯이 남아있는지 확인합니다.
 
 protected:
-    Character(CharacterTypes charType, Math::ivec2 start_coordinates);
+    Character(CharacterTypes charType, Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level);
 
     // --- 컴포넌트 편의 함수들 (Getters) ---
     // 파생 클래스에서 자신의 컴포넌트에 쉽게 접근하기 위해 사용합니다.
@@ -78,7 +78,7 @@ protected:
     //GridFootprint* GetGridFootprint() const;
 
     // --- AI 및 이동 관련 함수 (Protected) ---
-    void InitializeComponents(Math::ivec2 start_coordinates);
+    void InitializeComponents(Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level);
     virtual void DecideAction() = 0; // AI의 두뇌. 이번 턴에 무엇을 할지 결정합니다.
     void UpdateMovement(double dt); // 경로를 따라 한 칸씩 부드럽게 이동하는 과정을 업데이트합니다.
 

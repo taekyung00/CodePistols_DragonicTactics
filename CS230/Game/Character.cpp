@@ -11,20 +11,21 @@ Updated:    Oct 10, 2025
 
 #include "Character.h"
 #include"../Engine/GameObject.h"
-#include "StatsComponent.h" // StatsComponent를 사용하기 위해 include합니다.
-#include "GridPosition.h"// GridPosition를 사용하기 위해 include합니다.
-
+#include "StatsComponent.h" 
+#include "GridPosition.h"
+#include "ActionPoints.h"
+#include "SpellSlots.h"
 // Character 생성자: 초기화 리스트를 사용하여 멤버 변수들을 초기화합니다.
-Character::Character(CharacterTypes charType, Math::ivec2 start_coordinates)
+Character::Character(CharacterTypes charType, Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level)
     : CS230::GameObject(Math::vec2{ 0, 0 }), // TODO: 그리드 좌표를 실제 월드 좌표로 변환하는 로직 필요
     m_character_type(charType)
 {
     // 생성자에서 컴포넌트 초기화 함수를 호출합니다.
-    InitializeComponents(start_coordinates);
+    InitializeComponents(start_coordinates, max_action_points, max_slots_per_level);
 }
 
 // 컴포넌트들을 생성하고 GameObject에 추가하는 함수입니다.
-void Character::InitializeComponents(Math::ivec2 start_coordinates) {
+void Character::InitializeComponents(Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level) {
     // TODO: 각 캐릭터 타입(Dragon, Fighter 등)에 맞는 CharacterStats를 GDD에서 가져와야 합니다.
     // 우선 임시 스탯으로 StatsComponent를 생성합니다.
     CharacterStats initial_stats; // 임시 데이터
@@ -32,6 +33,8 @@ void Character::InitializeComponents(Math::ivec2 start_coordinates) {
     // StatsComponent를 생성하고 이 GameObject에 추가합니다.
     AddGOComponent(new StatsComponent(initial_stats));
     AddGOComponent(new GridPosition(start_coordinates));
+    AddGOComponent(new ActionPoints(max_action_points));
+    AddGOComponent(new SpellSlots(max_slots_per_level));
     // 다른 컴포넌트들도 여기서 추가합니다.
 
     // AddGOComponent(new ActionPoints(...));
@@ -90,13 +93,6 @@ void Character::TakeDamage(int damage, Character* attacker) {
     }
 }
 
-void Character::ReceiveHeal(int amount) {
-    // 치유 처리 로직을 StatsComponent에 위임합니다.
-    if (GetStatsComponent() != nullptr) {
-        GetStatsComponent()->Heal(amount);
-    }
-}
-
 
 // --- 이동 관련 함수 구현 ---
 
@@ -135,14 +131,12 @@ int Character::GetMovementRange() const {
 
 int Character::GetActionPoints() const {
     const ActionPoints* ap = GetActionPointsComponent();
-    // return (ap != nullptr) ? ap->GetCurrentPoints() : 0; // ActionPoints 컴포넌트 구현 후
-    return 0; // 임시
+    return (ap != nullptr) ? ap->GetCurrentPoints() : 0; // ActionPoints 컴포넌트 구현 후
 }
 
 bool Character::HasSpellSlot(int level) const {
     const SpellSlots* ss = GetSpellSlots();
-    // return (ss != nullptr) ? ss->HasSlot(level) : false; // SpellSlots 컴포넌트 구현 후
-    return false; // 임시
+    return (ss != nullptr) ? ss->HasSlot(level) : false; // SpellSlots 컴포넌트 구현 후
 }
 
 
