@@ -49,6 +49,20 @@ void Test::Update([[maybe_unused]] double dt) {
         LogFighterStatus();
     }
 
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::A)) {
+        Engine::GetLogger().LogEvent("--- Player presses 'A': Consuming 1 Action Point ---");
+        ActionPoints* ap = fighter->GetActionPointsComponent();
+        if (ap != nullptr) {
+            if (ap->Consume(1)) {
+                Engine::GetLogger().LogDebug("Action Point consumed successfully.");
+            }
+            else {
+                Engine::GetLogger().LogDebug("Not enough Action Points to consume.");
+            }
+        }
+        LogFighterStatus();
+    }
+
     if (Engine::GetInput().KeyJustReleased(CS230::Input::Keys::Escape)) {
 
         Engine::GetGameStateManager().SetNextGameState(static_cast<int>(States::MainMenu));
