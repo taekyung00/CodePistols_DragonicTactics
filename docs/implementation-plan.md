@@ -79,11 +79,12 @@
 | ---------- | ------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------- |
 | **Week 1** | Foundation (5 Systems Parallel) | [week1.md](Detailed%20Implementations/weeks/week1.md) | Character, GridSystem, EventBus, DiceManager, DebugConsole |
 | **Week 2** | Dragon + Grid Integration       | [week2.md](Detailed%20Implementations/weeks/week2.md) | Dragon class, A* pathfinding, TurnManager                  |
-| **Week 3** | Combat + Spells Begin           | [week3.md](Detailed%20Implementations/weeks/week3.md) | Fireball spell, CombatSystem, SpellSystem, Fighter        |
+| **Week 3** | Combat + Spells Begin           | [week3.md](Detailed%20Implementations/weeks/week3.md) | Fireball spell, CombatSystem, SpellSystem, Fighter         |
 | **Week 4** | More Spells + Turn System       | [week4.md](Detailed%20Implementations/weeks/week4.md) | CreateWall + LavaPool, Initiative, DataRegistry            |
-| **Week 5** | Polish + PLAYTEST 1 🧪          | [week5.md](Detailed%20Implementations/weeks/week5.md) | Balance tuning, BattleState, **First Playtest**           |
+| **Week 5** | Polish + PLAYTEST 1 🧪          | [week5.md](Detailed%20Implementations/weeks/week5.md) | Balance tuning, BattleState, **First Playtest**            |
 
 **Each week file includes:**
+
 - Day-by-day task breakdowns for all 5 developers
 - Complete code examples with mock testing strategy
 - File structure and naming conventions
@@ -92,12 +93,14 @@
 - Deliverable verification checklists
 
 **When to use these guides:**
+
 - You are actively implementing Weeks 1-5
 - You need specific code examples and test cases
 - You want to understand daily task breakdowns
 - You're doing code reviews (test requirements included)
 
 **Relationship to this document:**
+
 - **implementation-plan.md** (this file): "WHAT" and "WHEN" - Strategic 26-week overview
 - **weeks/*.md** files: "HOW" - Tactical day-by-day implementation with code
 
@@ -200,8 +203,9 @@
 **Target**: PLAYTEST 1 - Dragon vs Fighter Battle
 
 > **📋 For detailed implementation guide, see [Detailed Implementations/weeks/week1.md](Detailed%20Implementations/weeks/week1.md)**
->
+> 
 > The detailed guide includes:
+> 
 > - Day-by-day task breakdowns for all 5 developers
 > - Complete code examples with mock testing strategy
 > - File structure, naming conventions, and integration tests

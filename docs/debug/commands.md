@@ -122,6 +122,7 @@ void InitializeDebugCommands() {
 **Context**: Week 1 builds 5 foundation systems in parallel (implementation-plan.md:250-260). Debug commands must test each system immediately.
 
 **Systems Built Week 1**:
+
 - Character base class (Dev A)
 - GridSystem foundation (Dev B)
 - EventBus singleton (Dev C)
@@ -129,6 +130,7 @@ void InitializeDebugCommands() {
 - DebugConsole framework (Dev E)
 
 **Commands Needed**:
+
 1. `help` - List all available commands
 2. `clear` - Clear console output
 3. `roll` - Test DiceManager
@@ -176,6 +178,7 @@ DebugConsole::Instance().RegisterCommand("help",
 ```
 
 **Week 1 Integration Test**:
+
 ```
 > help
 Expected: List all Week 1 commands (help, clear, roll, setseed)
@@ -253,6 +256,7 @@ DebugConsole::Instance().RegisterCommand("roll",
 ```
 
 **Week 1 Integration Test** (implementation-plan.md:789-796):
+
 ```
 > roll 3d6
 Expected: "Rolled 3d6 = 12"
@@ -300,6 +304,7 @@ DebugConsole::Instance().RegisterCommand("setseed",
 ```
 
 **Week 1 Integration Test** (implementation-plan.md:792-796):
+
 ```
 > setseed 42
 > roll 3d6
@@ -317,6 +322,7 @@ Expected: Same result (15 [6, 5, 4]) - proves RNG is reproducible
 **Context**: Week 2-3 adds Dragon, GridSystem, and basic combat (implementation-plan.md:265-298).
 
 **Systems Built Week 2-3**:
+
 - Dragon class (Week 2)
 - GridSystem pathfinding (Week 2)
 - CombatSystem basics (Week 3)
@@ -324,6 +330,7 @@ Expected: Same result (15 [6, 5, 4]) - proves RNG is reproducible
 - Fighter enemy class (Week 3)
 
 **Commands Needed**:
+
 1. `spawn` - Create characters on grid (Week 2)
 2. `teleport` - Move characters instantly (Week 2)
 3. `damage` - Test combat damage (Week 3)
@@ -339,12 +346,14 @@ Expected: Same result (15 [6, 5, 4]) - proves RNG is reproducible
 **Context**: Week 4-5 completes foundation for PLAYTEST 1 (implementation-plan.md:302-342).
 
 **Systems Built Week 4-5**:
+
 - TurnManager with initiative (Week 4)
 - DataRegistry with hot-reload (Week 4)
 - BattleState integration (Week 5)
 - God Mode basics (Week 5)
 
 **Commands Needed**:
+
 1. `reload` - Hot reload JSON data (Week 4 - CRITICAL)
 2. `endturn` - Force end turn (Week 4)
 3. `nextturn` - Skip N turns (Week 4)

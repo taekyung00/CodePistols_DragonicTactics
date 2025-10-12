@@ -258,6 +258,7 @@ private:
 **Purpose**: Display recent dice rolls for combat debugging and RNG verification
 
 **Features**:
+
 - Show last 10 dice rolls with notation, result, and individual die values
 - Color-coded results (green = high roll, red = low roll)
 - Roll statistics (min, max, average)
@@ -290,6 +291,7 @@ private:
 **Purpose**: Break down damage calculations step-by-step
 
 **Features**:
+
 - Show complete damage formula for selected attacker/target
 - Display all modifiers (attack bonus, defense, status effects)
 - Show min/max damage range
@@ -316,6 +318,7 @@ private:
 **Purpose**: Monitor EventBus activity for debugging event-driven systems
 
 **Features**:
+
 - Real-time event stream (last 20 events)
 - Filter events by type
 - Show subscriber counts
@@ -352,6 +355,7 @@ private:
 We use a **separate Windows console window** that runs alongside the game window for debug commands. This provides a real, native console experience without needing to implement in-game text rendering.
 
 **Architecture**:
+
 ```
 ┌─────────────────┐    ┌─────────────────┐
 │  Game Window    │    │ Console Window  │
@@ -364,6 +368,7 @@ We use a **separate Windows console window** that runs alongside the game window
 ```
 
 **Key Features**:
+
 - Two separate windows (game graphics + debug console)
 - Real Windows console using `AllocConsole()` API
 - Non-blocking input using `_kbhit()` (game keeps running while you type)
@@ -373,6 +378,7 @@ We use a **separate Windows console window** that runs alongside the game window
 - Command history and help system
 
 **Implementation**: See [SEPARATE_CONSOLE_WINDOW_GUIDE.md](./SEPARATE_CONSOLE_WINDOW_GUIDE.md) for complete implementation details including:
+
 - Complete source code for `DebugConsole` class
 - CMake configuration for Debug/Release builds
 - Non-blocking input implementation
@@ -771,6 +777,7 @@ Debug tools should be implemented **alongside** gameplay features, not after. Ea
 ### Week 1: Foundation Systems + Core Debug Infrastructure
 
 **Gameplay Systems Built** (implementation-plan.md:250-260):
+
 - Character base class (Dev A)
 - GridSystem foundation (Dev B)
 - EventBus singleton (Dev C)
@@ -780,22 +787,26 @@ Debug tools should be implemented **alongside** gameplay features, not after. Ea
 **Debug Tools to Implement**:
 
 - [ ] **DebugManager Singleton** - Master control for all debug features
+  
   - `SetDebugMode(bool)`, `ToggleGridOverlay()`, `ExecuteCommand()`
   - Integration: All debug tools register with DebugManager
 
 - [ ] **DebugConsole** - Basic console with command registration
+  
   - Tilde (~) key opens/closes console
   - Command registration system
   - Color-coded output (Green = success, Red = error, White = info)
   - **Week 1 Commands**: `help`, `clear`, `listcommands`
 
 - [ ] **EventBusTracer** - Monitor EventBus activity
+  
   - Subscribe to ALL events published by EventBus (Dev C's system)
   - Log last 20 events with timestamps
   - **Command**: Ctrl+E to toggle event tracer overlay
   - **Critical**: Needed to verify EventBus pub/sub works in Week 1
 
 - [ ] **DiceManager Test Commands** (Week 1)
+  
   - `roll <notation>` - Test DiceManager's RollDiceFromString()
   - `setseed <number>` - Set RNG seed for reproducible tests
   - Example: `roll 3d6` should output result and individual die values
@@ -803,6 +814,7 @@ Debug tools should be implemented **alongside** gameplay features, not after. Ea
 **Why Week 1?** Debug tools enable testing of all 5 foundation systems immediately. Without them, devs can't verify EventBus, DiceManager, or Character systems work.
 
 **Integration Test Support** (implementation-plan.md "End of Week 1"):
+
 ```
 # Test EventBus (Dev C's system)
 > Roll dice to trigger events
@@ -824,6 +836,7 @@ Expected: Same result both times (reproducible RNG)
 ### Week 2: Dragon + Grid Integration
 
 **Gameplay Systems Built** (implementation-plan.md:265-279):
+
 - Dragon class (Dev A)
 - GridSystem pathfinding with A* (Dev B)
 - TurnManager basics (Dev C)
@@ -832,6 +845,7 @@ Expected: Same result both times (reproducible RNG)
 **Debug Tools to Implement**:
 
 - [ ] **GridDebugRenderer (F1)** - Visualize 8x8 battlefield
+  
   - Draw grid lines (light gray)
   - Show tile coordinates (0,0 to 7,7)
   - Highlight occupied vs empty tiles
@@ -839,16 +853,19 @@ Expected: Same result both times (reproducible RNG)
   - **Command**: `debug grid on/off`
 
 - [ ] **Character Spawn Command** (Week 2)
+  
   - `spawn <type> <x> <y>` - Create characters at grid position
   - Example: `spawn dragon 4 4`
   - Integration: Uses CharacterFactory (Dev D starts this Week 3-4, but spawn command needs it)
 
 - [ ] **Teleport Command** (Week 2)
+  
   - `teleport <characterName> <x> <y>` - Move character instantly
   - Example: `teleport dragon 5 5`
   - Critical for testing pathfinding without manual clicking
 
 **Integration Test Support** (implementation-plan.md:274-279):
+
 ```
 # Test Dragon spawning and movement
 > spawn dragon 4 4
@@ -870,6 +887,7 @@ Expected: TurnManager advances to next turn
 ### Week 3: Combat + Spells Begin
 
 **Gameplay Systems Built** (implementation-plan.md:283-298):
+
 - Dragon Fireball spell (Dev A)
 - CombatSystem basics (Dev B)
 - SpellSystem foundation (Dev C)
@@ -879,21 +897,25 @@ Expected: TurnManager advances to next turn
 **Debug Tools to Implement**:
 
 - [ ] **Combat Debug Commands**
+  
   - `damage <characterName> <amount>` - Deal damage for testing
   - `heal <characterName> <amount/full>` - Heal character
   - `kill <characterName>` - Instantly kill character
   - Example: `damage fighter 30` → Fighter HP: 90 → 60
 
 - [ ] **Spell Casting Command** (Week 3)
+  
   - `castspell <caster> <spell> <level> <targetX> <targetY>`
   - Example: `castspell dragon fireball 1 6 4`
   - **Critical**: Needed to test SpellSystem without UI
 
 - [ ] **CombatFormulaInspector (F12)** - Basic version
+  
   - Show dice rolls and damage calculation breakdown
   - Verify DiceManager integration with combat
 
 **Integration Test Support** (implementation-plan.md:292-298):
+
 ```
 # Test Combat System
 > spawn dragon 3 7
@@ -915,6 +937,7 @@ Press F12 to see CombatFormulaInspector showing formula breakdown
 ### Week 4: More Spells + Turn System
 
 **Gameplay Systems Built** (implementation-plan.md:302-317):
+
 - Dragon CreateWall + LavaPool (Dev A)
 - TurnManager initiative system (Dev B)
 - Fighter basic AI - manual control (Dev C)
@@ -924,6 +947,7 @@ Press F12 to see CombatFormulaInspector showing formula breakdown
 **Debug Tools to Implement**:
 
 - [ ] **Hot Reload System** (Week 4 - CRITICAL)
+  
   - **HotReloadManager** - File watching and JSON reload
   - Monitor `Assets/Data/` directory for changes
   - `reload <datatype>` command (characters, spells, maps, ai, all)
@@ -931,6 +955,7 @@ Press F12 to see CombatFormulaInspector showing formula breakdown
   - **Integration with DataRegistry** (Dev D's system)
 
 - [ ] **Hot Reload Workflow** (NEW - Missing from original doc):
+  
   ```
   1. Game running with Dragon HP = 140
   2. Open Assets/Data/characters.json
@@ -945,15 +970,18 @@ Press F12 to see CombatFormulaInspector showing formula breakdown
   ```
 
 - [ ] **Turn Management Commands** (Week 4)
+  
   - `endturn` - Force end current character's turn
   - `nextturn <count>` - Skip forward N turns
   - `showturnorder` - Display initiative queue
 
 - [ ] **DiceHistoryPanel (F9)** - Last 10 dice rolls
+  
   - Show dice notation, result, individual die values
   - Color-coded (green = high, red = low, yellow = average)
 
 **Integration Test Support** (implementation-plan.md:312-317):
+
 ```
 # Test Turn System
 > showturnorder
@@ -984,6 +1012,7 @@ Expected: DiceHistoryPanel shows last 2 rolls with results
 ### Week 5: Polish + PLAYTEST 1 Preparation
 
 **Gameplay Systems Built** (implementation-plan.md:320-342):
+
 - Dragon spell polish (Dev A)
 - Combat system complete (Dev B)
 - Fighter manual control polish (Dev C)
@@ -993,11 +1022,13 @@ Expected: DiceHistoryPanel shows last 2 rolls with results
 **Debug Tools to Implement**:
 
 - [ ] **God Mode Basic Features** (Week 5)
+  
   - `god on/off` - Toggle invincibility, infinite resources
   - Ctrl+G keyboard shortcut
   - **Purpose**: Skip tedious combat for testing late-game scenarios
 
 - [ ] **Full Debug UI Overlay** (Week 5)
+  
   - Status panel (top-right) showing current turn, character stats
   - HP bars above characters
   - Console toggle (~ key)
@@ -1049,6 +1080,7 @@ Expected: Dragon takes no damage (invincible)
 ### Week 6: Dragon Spells Expansion
 
 **Gameplay Systems Built** (implementation-plan.md:370-385):
+
 - Dragon spells 4-6: DragonRoar, TailSwipe, DragonWrath (Dev A)
 - StatusEffectManager GSComponent foundation (Dev B)
 - AIDirector singleton basics (Dev C)
@@ -1058,6 +1090,7 @@ Expected: Dragon takes no damage (invincible)
 **Debug Tools to Implement**:
 
 - [ ] **CombatFormulaInspector (F12)** - Damage calculation debugging
+  
   - Show dice roll breakdown (3d6 = [4, 5, 3] = 12)
   - Display all modifiers (+5 attack, -3 defense, +2 blessing, etc.)
   - Show final damage calculation formula
@@ -1065,11 +1098,13 @@ Expected: Dragon takes no damage (invincible)
   - **Purpose**: Verify complex damage formulas with multiple modifiers
 
 - [ ] **Status Effect Tracking Commands** (Week 6)
+  
   - Track Fear, Burn, Stun, Curse effects
   - Console should log when status effects applied/removed
   - EventBusTracer (Ctrl+E) shows StatusEffectAppliedEvent
 
 **Integration Test Support** (implementation-plan.md:380-385):
+
 ```
 # Test DragonRoar spell (applies Fear)
 > spawn dragon 3 7
@@ -1093,6 +1128,7 @@ Expected: Shows "FINAL DAMAGE: 14"
 ### Week 7: Advanced Dragon Spells + Status Effects
 
 **Gameplay Systems Built** (implementation-plan.md:388-404):
+
 - Dragon spells 7-9: MeteorStrike, HeatAbsorb, HeatRelease (Dev A)
 - StatusEffectManager integration with stat modification (Dev B)
 - AIDirector threat calculation (Dev C)
@@ -1102,6 +1138,7 @@ Expected: Shows "FINAL DAMAGE: 14"
 **Debug Tools to Implement**:
 
 - [ ] **StatusInfoOverlay (F7)** - Real-time character stats display
+  
   - HP bars above all characters (green/yellow/red)
   - Action points bar (blue bar below HP)
   - Spell slots remaining (small icons)
@@ -1110,11 +1147,13 @@ Expected: Shows "FINAL DAMAGE: 14"
   - **Keyboard**: F7 to toggle
 
 - [ ] **Status Effect Commands** (Week 7)
+  
   - `clearstatus <characterName>` - Remove all status effects
   - `applystatus <characterName> <effectType> <duration>`
   - Example: `applystatus fighter fear 3` (Fear for 3 turns)
 
 **Integration Test Support** (implementation-plan.md:399-404):
+
 ```
 # Test all 9 Dragon spells functional
 > spawn dragon 3 7
@@ -1147,6 +1186,7 @@ Expected: StatusInfoOverlay updates Dragon HP bar (green → yellow)
 ### Week 8: Fighter Character + AI Foundation
 
 **Gameplay Systems Built** (implementation-plan.md:407-422):
+
 - Fighter character class (Dev A)
 - Fighter combat abilities: Melee, Shield Bash, Taunt (Dev B)
 - AISystem GSComponent foundation (Dev C)
@@ -1156,17 +1196,20 @@ Expected: StatusInfoOverlay updates Dragon HP bar (green → yellow)
 **Debug Tools to Implement**:
 
 - [ ] **AIDebugVisualizer (F4)** - Basic AI path visualization
+  
   - Show AI character's current target (red X marker)
   - Draw pathfinding route (yellow dotted line)
   - Display AI state text above character ("Attacking", "Moving", etc.)
   - **Keyboard**: F4 to toggle
 
 - [ ] **AI Control Commands** (Week 8)
+  
   - `disableai <characterName>` - Stop AI from acting
   - `enableai <characterName>` - Re-enable AI
   - `showaitarget <characterName>` - Print AI's current target
 
 **Integration Test Support** (implementation-plan.md:417-422):
+
 ```
 # Test Fighter spawns via CharacterFactory
 > spawn fighter 6 4
@@ -1187,6 +1230,7 @@ Expected: Yellow dotted line shows path Fighter will take
 ### Week 9: Fighter AI + DataRegistry Hot Reload
 
 **Gameplay Systems Built** (implementation-plan.md:425-440):
+
 - Fighter AI behavior - manual mode (Dev A)
 - GridSystem LOS (line of sight) (Dev B)
 - AISystem basic decision tree (Dev C)
@@ -1196,6 +1240,7 @@ Expected: Yellow dotted line shows path Fighter will take
 **Debug Tools to Implement**:
 
 - [ ] **HotReloadManager Polish** (Week 9)
+  
   - File watcher for all JSON files in `Assets/Data/`
   - Auto-reload when files change (configurable)
   - Validation before reload (don't crash on invalid JSON)
@@ -1203,11 +1248,13 @@ Expected: Yellow dotted line shows path Fighter will take
   - **Command**: `reload <datatype>` or auto-reload on file save
 
 - [ ] **AI Decision Logging** (Week 9)
+  
   - EventBusTracer shows AIDecisionEvent
   - Console logs: "Fighter decided to move toward Dragon (threat=10)"
   - F4 overlay shows threat values above enemies
 
 **Integration Test Support** (implementation-plan.md:435-440):
+
 ```
 # Test Fighter AI makes basic decisions
 > spawn dragon 3 7
@@ -1237,6 +1284,7 @@ Expected: Fighter HP = 100 (not 90)
 ### Week 10: Polish + PLAYTEST 2
 
 **Gameplay Systems Built** (implementation-plan.md:443-451):
+
 - Dragon spell balance tuning (Dev A)
 - Combat system polish (Dev B)
 - Fighter AI polish (Dev C)
@@ -1301,6 +1349,7 @@ Expected: All debug overlays functional
 ### Week 11: Cleric Character + Healing System
 
 **Gameplay Systems Built** (implementation-plan.md:491-506):
+
 - Cleric character class (Dev A)
 - Healing spell system: Healing Word, Cure Wounds, Mass Healing (Dev B)
 - AISystem ally awareness (Dev C)
@@ -1310,17 +1359,20 @@ Expected: All debug overlays functional
 **Debug Tools to Implement**:
 
 - [ ] **Spell Slot Inspector** (Week 11)
+  
   - `spellslots <characterName>` - View/modify spell slots
   - Example: `spellslots dragon` shows Level 1: 3/3, Level 2: 3/3, Level 3: 2/2
   - `refillslots <characterName>` - Restore all spell slots
   - `givespell <characterName> <level>` - Add spell slots
 
 - [ ] **Healing Verification** (Week 11)
+  
   - Console logs healing events
   - F12 (CombatFormulaInspector) shows healing calculations
   - StatusInfoOverlay (F7) updates HP bars immediately
 
 **Integration Test Support** (implementation-plan.md:501-506):
+
 ```
 # Test Cleric spawns and has healing spells
 > spawn cleric 4 0
@@ -1353,6 +1405,7 @@ Expected: "Level 1: 3/3" (all slots restored)
 ### Week 12: Wizard Character + Offensive Magic
 
 **Gameplay Systems Built** (implementation-plan.md:509-524):
+
 - Wizard character class (Dev A)
 - Wizard offensive spells: Magic Missile, Fireball, Lightning Bolt (Dev B)
 - AISystem threat assessment (Dev C)
@@ -1362,17 +1415,20 @@ Expected: "Level 1: 3/3" (all slots restored)
 **Debug Tools to Implement**:
 
 - [ ] **TargetingSystem Debugger** (Week 12)
+  
   - `showtargets <characterName>` - List all valid targets for spells
   - F11 (CollisionDebugRenderer) shows spell AOE circles
   - F1 (GridDebugRenderer) shows spell range overlay
 
 - [ ] **DiceHistoryPanel (F9) Enhancement** (Week 12)
+  
   - Show last 20 dice rolls (increased from 10)
   - Filter by damage type (fire, cold, lightning)
   - Statistics panel (min, max, average)
   - Color-coded: Green (high roll), Yellow (average), Red (low roll)
 
 **Integration Test Support** (implementation-plan.md:519-524):
+
 ```
 # Test Wizard spawns with offensive spells
 > spawn wizard 1 0
@@ -1404,6 +1460,7 @@ Expected: Fireball damage rolls visible with "8d6" notation
 ### Week 13: Rogue Character + Mobility
 
 **Gameplay Systems Built** (implementation-plan.md:527-542):
+
 - Rogue character class (Dev A)
 - Rogue mobility abilities: Dash, Disengage, Hide (Dev B)
 - AIMemory GOComponent (Dev C)
@@ -1413,17 +1470,20 @@ Expected: Fireball damage rolls visible with "8d6" notation
 **Debug Tools to Implement**:
 
 - [ ] **Movement Range Visualization** (Week 13)
+  
   - F1 (GridDebugRenderer) shows character-specific movement ranges
   - Rogue with Dash: Blue overlay shows 8 tiles (double movement)
   - Normal movement: 4 tiles for Rogue
   - **Purpose**: Verify mobility abilities work correctly
 
 - [ ] **AI Memory Inspector** (Week 13)
+  
   - `showaimemory <characterName>` - Display AI's tactical memory
   - Example: "Rogue remembers: Dragon last seen at (3,7), threat=10"
   - EventBusTracer shows AIMemoryUpdatedEvent
 
 **Integration Test Support** (implementation-plan.md:537-542):
+
 ```
 # Test Rogue spawns with mobility
 > spawn rogue 5 0
@@ -1456,6 +1516,7 @@ Expected: No opportunity attack triggered
 ### Week 14: All Characters Integration
 
 **Gameplay Systems Built** (implementation-plan.md:545-560):
+
 - Character balance tuning (Dev A)
 - GridPosition GOComponent (Dev B)
 - ActionPoints GOComponent (Dev C)
@@ -1465,17 +1526,20 @@ Expected: No opportunity attack triggered
 **Debug Tools to Implement**:
 
 - [ ] **Multi-Character Testing Commands** (Week 14)
+  
   - `spawnall` - Spawn all 5 characters in starting positions
   - `listcharacters` - List all spawned characters with stats
   - `resetbattle` - Clear all characters and restart
 
 - [ ] **Action Points Debugger** (Week 14)
+  
   - `showap <characterName>` - Display current/max action points
   - `giveap <characterName> <amount>` - Add action points
   - `setap <characterName> <amount>` - Set action points to specific value
   - StatusInfoOverlay (F7) shows AP bars for all characters
 
 **Integration Test Support** (implementation-plan.md:555-560):
+
 ```
 # Test spawn all 5 characters
 > spawnall
@@ -1516,6 +1580,7 @@ Expected: Shows 6 total characters (original 5 + new Fighter)
 ### Week 15: Basic AI for All + PLAYTEST 3
 
 **Gameplay Systems Built** (implementation-plan.md:563-572):
+
 - Cleric AI (healing priority) (Dev A)
 - Wizard AI (kiting behavior) (Dev B)
 - Rogue AI (flanking logic) (Dev C)
@@ -1525,6 +1590,7 @@ Expected: Shows 6 total characters (original 5 + new Fighter)
 **Debug Tools to Implement**:
 
 - [ ] **AI Behavior Inspector** (Week 15)
+  
   - `showai behavior <characterName>` - Display AI decision weights
   - F4 (AIDebugVisualizer) shows all 4 AI characters' paths simultaneously
   - Threat values displayed above all enemies
@@ -1596,6 +1662,7 @@ Expected: All overlays functional with 5 characters
 ### Week 16: AI Team Coordination
 
 **Gameplay Systems Built** (implementation-plan.md:612-627):
+
 - Fighter AI advanced (protect allies) (Dev A)
 - CombatSystem knockback/push mechanics (Dev B)
 - AIDirector team tactics coordination (Dev C)
@@ -1605,17 +1672,20 @@ Expected: All overlays functional with 5 characters
 **Debug Tools to Implement**:
 
 - [ ] **Threat Value Display** (Week 16)
+  
   - F4 (AIDebugVisualizer) shows threat numbers above all enemies
   - Color-coded: Red (high threat), Yellow (medium), Green (low)
   - `showthreat <characterName>` - Display threat calculation breakdown
   - Example: "Dragon threat to Fighter: 10 (HP=140, Damage=high, Range=far)"
 
 - [ ] **Team Coordination Visualizer** (Week 16)
+  
   - F4 shows AI coordination lines (dotted lines between allies)
   - Console logs: "Fighter positioning between Dragon and Cleric (protect behavior)"
   - EventBusTracer shows AICoordinationEvent
 
 **Integration Test Support** (implementation-plan.md:622-627):
+
 ```
 # Test Fighter protects Cleric from Dragon
 > spawnall
@@ -1646,6 +1716,7 @@ Expected: AICoordinationEvent:
 ### Week 17: Advanced AI Behaviors
 
 **Gameplay Systems Built** (implementation-plan.md:630-645):
+
 - Cleric AI (buff priority) (Dev A)
 - Wizard AI (mana management) (Dev B)
 - Rogue AI (stealth mechanics) (Dev C)
@@ -1655,17 +1726,20 @@ Expected: AICoordinationEvent:
 **Debug Tools to Implement**:
 
 - [ ] **AI Behavior Tree Visualizer** (Week 17)
+  
   - `showbehaviortree <characterName>` - Display AI decision tree
   - Example: Shows Cleric decision tree: "Check ally HP → Cast buff → Heal lowest"
   - F4 shows decision nodes with checkmarks (executed) and X marks (skipped)
 
 - [ ] **EventBusTracer Filtering** (Week 17)
+  
   - Ctrl+E opens event tracer with filter dropdown
   - Filter by event type: "Show only AIDecisionEvent"
   - Filter by character: "Show only Dragon events"
   - Export event log to file: `exportevents <filename>`
 
 **Integration Test Support** (implementation-plan.md:640-645):
+
 ```
 # Test Cleric AI buff priority
 > spawnall
@@ -1702,6 +1776,7 @@ Expected: "Exported 247 events to playtest3_events.txt"
 ### Week 18: Status Effect Expansion
 
 **Gameplay Systems Built** (implementation-plan.md:648-663):
+
 - StatusEffects GOComponent complete (Dev A)
 - Status effect interactions (Dev B)
 - AISystem status awareness (Dev C)
@@ -1711,17 +1786,20 @@ Expected: "Exported 247 events to playtest3_events.txt"
 **Debug Tools to Implement**:
 
 - [ ] **Status Effect Badge System** (Week 18)
+  
   - F7 (StatusInfoOverlay) shows effect icons above HP bars
   - Icons: Fear (purple F), Burn (red B), Blessing (gold +), Poison (green P), Curse (black C)
   - Tooltip on hover: "Fear: -2 attack, 2 turns remaining"
   - Multiple effects stack visually (up to 5 icons)
 
 - [ ] **Status Effect Commands** (Week 18)
+  
   - `applystatus <char> <effect> <duration> <intensity>`
   - Example: `applystatus fighter poison 3 2` (Poison for 3 turns, 2 dmg/turn)
   - `liststatus <characterName>` - List all active effects with details
 
 **Integration Test Support** (implementation-plan.md:658-663):
+
 ```
 # Test multiple status effects simultaneously
 > spawn fighter 6 4
@@ -1755,6 +1833,7 @@ Expected: Console log: "Fighter avoided hazard at (4,2)"
 ### Week 19: Spell System Polish
 
 **Gameplay Systems Built** (implementation-plan.md:666-681):
+
 - Spell upcasting system (Dev A)
 - Spell area of effect (AOE) (Dev B)
 - Spell validation (Dev C)
@@ -1764,17 +1843,20 @@ Expected: Console log: "Fighter avoided hazard at (4,2)"
 **Debug Tools to Implement**:
 
 - [ ] **Spell Range Visualizer** (Week 19)
+  
   - F1 (GridDebugRenderer) shows spell range overlay
   - Orange overlay: Attack range
   - Red overlay: Out of range tiles
   - Blue overlay: AOE tiles (when spell selected)
 
 - [ ] **Spell Validation Debugger** (Week 19)
+  
   - `validatespell <caster> <spell> <level> <targetX> <targetY>`
   - Shows all validation checks: Range ✓, LOS ✓, AP ✓, Spell Slots ✓
   - If fails, shows reason: "FAILED: Out of range (distance=6, max=5)"
 
 **Integration Test Support** (implementation-plan.md:676-681):
+
 ```
 # Test spell upcasting
 > spawn dragon 3 7
@@ -1815,6 +1897,7 @@ Expected: All checks ✓, RESULT: Can cast
 ### Week 20: Full Battle Integration + PLAYTEST 4
 
 **Gameplay Systems Built** (implementation-plan.md:684-692):
+
 - Character ability polish (all 20+ abilities) (Dev A)
 - Combat system complete (all damage types, resistances) (Dev B)
 - AISystem advanced tactics (focus fire, protect healers, kiting) (Dev C)
@@ -1824,6 +1907,7 @@ Expected: All checks ✓, RESULT: Can cast
 **Debug Tools to Implement**:
 
 - [ ] **Battle State Inspector** (Week 20)
+  
   - `showbattlestate` - Display complete battle state
   - Shows: Turn number, active character, all character stats, battle duration
   - `savebattlestate <filename>` - Save current state to JSON for bug reproduction
@@ -1900,6 +1984,7 @@ Expected: All overlays functional, no performance degradation
 ### Week 21-24: Visual Polish & Production Quality (PLAYTEST 5)
 
 **Gameplay Systems Built** (implementation-plan.md:714-810):
+
 - Character animations (Week 21)
 - Spell visual effects (Week 21)
 - Campaign & save system (Week 22)
@@ -1913,6 +1998,7 @@ Expected: All overlays functional, no performance degradation
 ### Week 21: Visual Effects Foundation
 
 **Gameplay Systems Built** (implementation-plan.md:732-748):
+
 - Character animations (idle, attack, cast, hurt, death) (Dev A)
 - Spell visual effects (explosions, beams, sparkles) (Dev B)
 - EffectManager particle system (Dev C)
@@ -1922,17 +2008,20 @@ Expected: All overlays functional, no performance degradation
 **Debug Tools to Implement**:
 
 - [ ] **Animation Debugger** (Week 21)
+  
   - `showanim <characterName>` - Display current animation state
   - `playanim <characterName> <animName>` - Force play animation
   - F10 toggle: Show animation frame numbers
   - Example: `playanim dragon attack` forces attack animation
 
 - [ ] **Effect Spawner** (Week 21)
+  
   - `spawneffect <effectName> <x> <y>` - Spawn visual effect
   - Example: `spawneffect explosion 6 4`
   - Purpose: Test particle effects without triggering spells
 
 **Integration Test Support** (implementation-plan.md:743-748):
+
 ```
 # Test character animations
 > spawn dragon 3 7
@@ -1972,6 +2061,7 @@ Expected: HP bar smoothly animates from 90 → 50 (not instant)
 ### Week 22: Campaign & Save System
 
 **Gameplay Systems Built** (implementation-plan.md:750-766):
+
 - Campaign progression (3 battle scenarios) (Dev A)
 - BattleManager victory conditions (Dev B)
 - SaveManager save/load system (Dev C)
@@ -1981,6 +2071,7 @@ Expected: HP bar smoothly animates from 90 → 50 (not instant)
 **Debug Tools to Implement**:
 
 - [ ] **Save System Debugger** (Week 22)
+  
   - `save <slotname>` - Save current game state
   - `load <slotname>` - Load saved game state
   - `listsaves` - List all save files with timestamps
@@ -1988,11 +2079,13 @@ Expected: HP bar smoothly animates from 90 → 50 (not instant)
   - `deletesave <slotname>` - Delete save file
 
 - [ ] **Campaign Progression Inspector** (Week 22)
+  
   - `showcampaign` - Display campaign progress
   - Shows: Battles completed, score, unlocks, stats
   - `setcampaignprogress <battleNumber>` - Jump to specific battle
 
 **Integration Test Support** (implementation-plan.md:761-766):
+
 ```
 # Test save/load system
 > spawnall
@@ -2041,6 +2134,7 @@ Expected: Battle 3 unlocked for testing
 ### Week 23: Visual Polish
 
 **Gameplay Systems Built** (implementation-plan.md:768-783):
+
 - Character sprite polish (high-quality art) (Dev A)
 - Spell effect polish (smooth animations) (Dev B)
 - UI visual design (polished menus, buttons) (Dev C)
@@ -2050,17 +2144,20 @@ Expected: Battle 3 unlocked for testing
 **Debug Tools to Implement**:
 
 - [ ] **Camera Effects Debugger** (Week 23)
+  
   - `shakecamera <intensity> <duration>` - Test screen shake
   - `zoomcamera <level>` - Test camera zoom (0.5 = far, 2.0 = close)
   - `focuscamera <characterName>` - Center camera on character
   - `resetcamera` - Reset to default view
 
 - [ ] **UI Inspector** (Week 23)
+  
   - Shift+F1: Toggle UI bounding boxes (shows layout)
   - `showui` - List all active UI elements
   - `hideui <elementName>` - Temporarily hide UI element
 
 **Integration Test Support** (implementation-plan.md:778-783):
+
 ```
 # Test camera effects
 > spawn dragon 3 7
@@ -2103,6 +2200,7 @@ Expected: No placeholder art visible, all final sprites loaded
 ### Week 24: Performance Optimization + PLAYTEST 5
 
 **Gameplay Systems Built** (implementation-plan.md:786-804):
+
 - Character optimization (Dev A)
 - GridSystem optimization (Dev B)
 - AI performance tuning (Dev C)
@@ -2112,18 +2210,21 @@ Expected: No placeholder art visible, all final sprites loaded
 **Debug Tools to Implement**:
 
 - [ ] **Performance Profiler** (Week 24)
+  
   - Shift+F12: Toggle performance overlay
   - Shows: FPS, Frame time (ms), Update time, Draw time
   - Memory usage: Heap, GameObject count, Event count
   - `profile <duration>` - Profile for N seconds, show report
 
 - [ ] **Performance Commands** (Week 24)
+  
   - `showfps` - Display FPS counter
   - `showmemory` - Display memory usage
   - `profileframe` - Profile single frame, show breakdown
   - `clearprofile` - Reset profiling data
 
 **Integration Test Support** (implementation-plan.md:799-804):
+
 ```
 # Test performance monitoring
 > Shift+F12 (Performance Overlay)
@@ -2221,6 +2322,7 @@ Expected: All campaign data preserved
 ### Week 25-26: Final Polish & Release (PLAYTEST 6)
 
 **Gameplay Systems Built** (implementation-plan.md:815-871):
+
 - Final bug fixes (Week 25)
 - Balance tuning (Week 25)
 - AI polish (Week 25)
@@ -2234,6 +2336,7 @@ Expected: All campaign data preserved
 ### Week 25: Final Integration
 
 **Gameplay Systems Built** (implementation-plan.md:834-849):
+
 - Character final balance (Dev A)
 - Combat final polish (Dev B)
 - AI final tuning (Dev C)
@@ -2243,17 +2346,20 @@ Expected: All campaign data preserved
 **Debug Tools to Implement**:
 
 - [ ] **Balance Tuning Tools** (Week 25)
+  
   - `comparecharacters <char1> <char2>` - Side-by-side stat comparison
   - `testbalance <iterations>` - Simulate N battles, show win rate
   - `adjustdifficulty <level>` - Test difficulty scaling (easy/normal/hard)
 
 - [ ] **Data Validation** (Week 25)
+  
   - `validatedata` - Check all JSON files for errors
   - `validatecharacters` - Check character stat consistency
   - `validatespells` - Check spell balance
   - Reports issues: "Warning: Wizard HP too low (55 < recommended 60)"
 
 **Integration Test Support** (implementation-plan.md:844-849):
+
 ```
 # Test character balance comparison
 > comparecharacters dragon fighter
@@ -2307,6 +2413,7 @@ Expected:
 ### Week 26: Final Polish + PLAYTEST 6 (FINAL RELEASE)
 
 **Gameplay Systems Built** (implementation-plan.md:852-871):
+
 - Bug fixes from all playtests (Dev A-C)
 - Balance final tuning (Dev A-C)
 - Data final polish (Dev D)
@@ -2315,11 +2422,13 @@ Expected:
 **Debug Tools to Implement**:
 
 - [ ] **Release Build Tools** (Week 26)
+  
   - `buildreleasemode` - Create final executable (debug tools disabled)
   - `packageassets` - Package all assets for distribution
   - `generatereleasenotes` - Create changelog from git commits
 
 - [ ] **Final Testing Commands** (Week 26)
+  
   - `runtestsfull` - Execute full test suite (all integration tests)
   - `checkcompleteness` - Verify all features implemented
   - `finalcheck` - Pre-release validation checklist
@@ -2408,6 +2517,7 @@ Expected: Changelog generated from commits
 ## Summary: Complete Debug Tools Timeline (Weeks 1-26)
 
 ### Week 1-5: Foundation + PLAYTEST 1
+
 - Week 1: DebugConsole, EventBusTracer, DiceManager commands
 - Week 2: GridDebugRenderer (F1), spawn/teleport commands
 - Week 3: CombatFormulaInspector (F12), castspell command
@@ -2415,6 +2525,7 @@ Expected: Changelog generated from commits
 - Week 5: God Mode, Playtest 1 Debug Checklist
 
 ### Week 6-10: Spell Expansion + PLAYTEST 2
+
 - Week 6: CombatFormulaInspector polish, status effect tracking
 - Week 7: StatusInfoOverlay (F7), clearstatus/applystatus commands
 - Week 8: AIDebugVisualizer (F4) basics, AI control commands
@@ -2422,6 +2533,7 @@ Expected: Changelog generated from commits
 - Week 10: Playtest 2 Debug Checklist, performance monitoring
 
 ### Week 11-15: All Characters + PLAYTEST 3
+
 - Week 11: Spell slot inspector, healing verification
 - Week 12: TargetingSystem debugger, DiceHistoryPanel enhancement
 - Week 13: Movement range visualization, AI memory inspector
@@ -2429,6 +2541,7 @@ Expected: Changelog generated from commits
 - Week 15: AI behavior inspector, Playtest 3 Debug Checklist
 
 ### Week 16-20: Advanced AI + PLAYTEST 4
+
 - Week 16: Threat value display, team coordination visualizer
 - Week 17: Behavior tree visualizer, EventBusTracer filtering
 - Week 18: Status effect badges, multi-effect support
@@ -2436,12 +2549,14 @@ Expected: Changelog generated from commits
 - Week 20: Battle state inspector, Playtest 4 Debug Checklist
 
 ### Week 21-24: Visual Polish + PLAYTEST 5
+
 - Week 21: Animation debugger, effect spawner
 - Week 22: Save system debugger, campaign progression inspector
 - Week 23: Camera effects debugger, UI inspector
 - Week 24: Performance profiler, Playtest 5 Debug Checklist
 
 ### Week 25-26: Final Polish + PLAYTEST 6 (RELEASE)
+
 - Week 25: Balance tuning tools, data validation
 - Week 26: Release build tools, final testing, PLAYTEST 6
 
