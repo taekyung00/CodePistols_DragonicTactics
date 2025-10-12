@@ -83,3 +83,28 @@ take damage의 =0을 제거함
 생성자에서 다른 컴포넌트들을 추가함
 
 *실제로 개발하면서 모두에게 필요한 컴포넌트인가? dragon만? 아니면 나머지가 필요한건가?하는 고민 필요할듯*
+
+2025-10-12
+CharacterTypes.h
+스트링 헤더 추가
+
+ComponentManager.h
+얘도 const 함수 추가
+
+StatsComponent.cpp
+캐릭터 타입스 헤더 추가
+
+Fighter.h, cpp
+파이터 클래스 생성
+
+Update CS230 필터
+
+기타 미구현 함수의 파라미터에 [[maybe_unused]] 사용
+
+Test.h, cpp
+void test_subscribe_publish_singleSub를 주석처리하고
+LogFighterStatus를 만듦
+테스트에 파이터도 추가
+스탯만 확인하기 위해서 로거로 만듦
+D for damage, H for heal, T for next turn, A for action
+체력이 0 되면 is alive가 false가 됨
