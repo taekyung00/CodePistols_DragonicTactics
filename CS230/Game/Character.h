@@ -21,7 +21,7 @@ Updated:    Oct 09, 2025
 // --- 컴포넌트 전방 선언 (Forward Declarations) ---
 class GridPosition;
 class ActionPoints;
-class SpellSlots;
+class SpellSlots;//개발완료
 class StatusEffects;
 class DamageCalculator;
 class TargetingSystem;

@@ -16,7 +16,7 @@ class SpellSlots : public CS230::Component {
 public:
     // 생성자: 레벨별 최대 슬롯 개수를 map 형태로 받아서 초기화합니다.
     // 예: {{1, 4}, {2, 3}} -> 1레벨 4개, 2레벨 3개
-    SpellSlots(const std::map<int, int>& max_slots_per_level);
+    SpellSlots(const std::map<int, int>& max_slots_per_level); //map을 쓸거면 <Level,int>로 level enum class를 만드는것도 좋아보임(Key로 이용)
 
     // 주문 슬롯을 소모합니다. 성공하면 true, 슬롯이 부족하면 false를 반환합니다.
     bool Consume(int level);

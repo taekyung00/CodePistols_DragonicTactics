@@ -53,7 +53,6 @@ CharacterTypes.h
 attack_dice나 defend_dice를 string으로 만들었는데
 이렇게 하는게 나중에 txt나 json 파일로 만들어 파싱하기 좋다고 함
 
-
 Engine\GameObject.h
 GetGOComponent의 const 버전을 만듦
 

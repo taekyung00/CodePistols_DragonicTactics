@@ -17,7 +17,7 @@ enum class CharacterTypes
     Rogue,
     Cleric,
     Wizard,
-    Count,
+    Count
 };
 
 struct CharacterStats {

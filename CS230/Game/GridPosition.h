@@ -10,7 +10,7 @@ public:
 
 	const Math::ivec2& Get() const;
 
-	void Update([[maybe_unused]]double dt) override {};
+	void Update([[maybe_unused]]double dt) override {};//굳이 안해도됨 안필요하면
 
 private:
 	Math::ivec2 coordinates;
