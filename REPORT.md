@@ -81,3 +81,5 @@ SpellSlots.h, cpp
 Character.h, cpp
 take damage의 =0을 제거함
 생성자에서 다른 컴포넌트들을 추가함
+
+*실제로 개발하면서 모두에게 필요한 컴포넌트인가? dragon만? 아니면 나머지가 필요한건가?하는 고민 필요할듯*
