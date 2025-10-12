@@ -240,5 +240,8 @@
     <ClInclude Include="Game\SpellSlots.h">
       <Filter>Game</Filter>
     </ClInclude>
+    <ClInclude Include="Game\Fighter.h">
+      <Filter>Game</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
