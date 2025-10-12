@@ -182,6 +182,7 @@ xcopy /d /y Assets\* "$(OutputPath)Assets"
     <ClCompile Include="Game\ActionPoints.cpp" />
     <ClCompile Include="Game\Character.cpp" />
     <ClCompile Include="Game\CharacterStates.cpp" />
+    <ClCompile Include="Game\Fighter.cpp" />
     <ClCompile Include="Game\GridPosition.cpp" />
     <ClCompile Include="Game\MainMenu.cpp" />
     <ClCompile Include="Game\Score.cpp" />

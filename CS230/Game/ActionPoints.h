@@ -18,7 +18,7 @@ public:
 	int GetCurrentPoints() const;
 	int GetMaxPoints() const;
 	bool HasEnough(int amount) const;
-	void Update(double dt) override{}
+	void Update([[maybe_unused]] double dt) override{}
 private:
 	int max_points;
 	int current_points;

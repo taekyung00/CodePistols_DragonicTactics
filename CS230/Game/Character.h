@@ -65,9 +65,6 @@ public:
     int GetActionPoints() const; // 현재 남은 행동 횟수를 반환합니다.
     bool HasSpellSlot(int level) const; // 해당 레벨의 주문 슬롯이 남아있는지 확인합니다.
 
-protected:
-    Character(CharacterTypes charType, Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level);
-
     // --- 컴포넌트 편의 함수들 (Getters) ---
     // 파생 클래스에서 자신의 컴포넌트에 쉽게 접근하기 위해 사용합니다.
     GridPosition* GetGridPosition() const;
@@ -76,6 +73,9 @@ protected:
     SpellSlots* GetSpellSlots() const;
     //StatusEffects* GetStatusEffects() const;
     //GridFootprint* GetGridFootprint() const;
+protected:
+    Character(CharacterTypes charType, Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level);
+
 
     // --- AI 및 이동 관련 함수 (Protected) ---
     void InitializeComponents(Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level);

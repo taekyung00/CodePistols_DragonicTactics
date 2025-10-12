@@ -58,7 +58,7 @@ void Character::Draw(Math::TransformationMatrix camera_matrix) {
 // --- 핵심 행동 함수 구현 ---
 
 
-void Character::PerformAttack(Character* target) {
+void Character::PerformAttack([[maybe_unused]] Character* target) {
     // TODO: 기본 공격 로직 구현
     // 1. GetStatsComponent()로 내 공격력 정보를 가져옵니다.
     // 2. DamageCalculator를 이용해 최종 피해량을 계산합니다.
@@ -66,7 +66,7 @@ void Character::PerformAttack(Character* target) {
     // 4. GetActionPointsComponent()->Consume(1) 같은 코드로 행동력을 소모합니다.
 }
 
-void Character::PerformAction(Action* action, Character* target, Math::ivec2 tile_position) {
+void Character::PerformAction([[maybe_unused]] Action* action, [[maybe_unused]] Character* target, [[maybe_unused]] Math::ivec2 tile_position) {
     // TODO: 스킬/주문 사용 로직 구현
     // 1. action->CanExecute()로 사용 가능한지 확인합니다.
     // 2. action->Execute()를 호출하여 스킬 효과를 적용합니다.
@@ -81,7 +81,7 @@ void Character::ReceiveHeal(int amount) {
     // TODO: 치유 시각 효과(파티클) 등을 여기서 재생할 수 있습니다.
 }
 
-void Character::TakeDamage(int damage, Character* attacker) {
+void Character::TakeDamage(int damage, [[maybe_unused]] Character* attacker) {
     // 피해 처리 로직을 StatsComponent에 위임합니다.
     if (GetStatsComponent() != nullptr) {
         GetStatsComponent()->TakeDamage(damage);
@@ -96,14 +96,14 @@ void Character::TakeDamage(int damage, Character* attacker) {
 
 // --- 이동 관련 함수 구현 ---
 
-void Character::SetPathTo(Math::ivec2 destination) {
+void Character::SetPathTo([[maybe_unused]] Math::ivec2 destination) {
     // TODO: A* 같은 경로 탐색 알고리즘을 호출해야 합니다.
     // 1. Grid, 현재 위치(GetGridPosition), 목적지(destination)를 경로 탐색 함수에 넘겨줍니다.
     // 2. 반환된 경로(타일 목록)를 m_current_path에 저장합니다.
     // 3. m_is_moving = true; 로 상태를 변경합니다.
 }
 
-void Character::UpdateMovement(double dt) {
+void Character::UpdateMovement([[maybe_unused]]double dt) {
     // TODO: 부드러운 이동 애니메이션 로직 구현
     // 1. m_current_path가 비어있으면 m_is_moving = false; 하고 종료합니다.
     // 2. 다음 타일 목적지를 향해 현재 GameObject의 월드 좌표(position)를 dt만큼 이동시킵니다.

@@ -10,6 +10,9 @@ Created:    Oct 8, 2025
 
 #pragma once
 #include "../Engine/GameState.h"
+
+class Fighter;
+
 class Test : public CS230::GameState {
 public:
     Test();
@@ -22,5 +25,7 @@ public:
         return "Test";
     }
 private:
-    void test_subscribe_publish_singleSubscriber();
+    Fighter* fighter;
+    void LogFighterStatus();
+    //void test_subscribe_publish_singleSubscriber();
 };

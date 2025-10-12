@@ -28,7 +28,7 @@ public:
     void Recover(int max_level_to_recover);
 
     // 이 컴포넌트는 스스로 업데이트할 로직이 없으므로 Update 함수는 비워둡니다.
-    void Update(double dt) override {}
+    void Update([[maybe_unused]] double dt) override {}
 
 private:
     // Key: 주문 레벨, Value: 최대 슬롯 개수
