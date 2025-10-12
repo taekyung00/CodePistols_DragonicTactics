@@ -9,6 +9,7 @@ Created:    Oct 10, 2025
 */
 
 #include "StatsComponent.h"
+#include "CharacterTypes.h"
 #include <algorithm>
 
 StatsComponent::StatsComponent(const CharacterStats& initial_stats)
