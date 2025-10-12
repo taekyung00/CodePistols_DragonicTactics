@@ -7,7 +7,7 @@ Project:    GAM200
 Author:     Seungju Song
 Created:    Oct 7, 2025
 */
-
+#include <string>
 #pragma once
 enum class CharacterTypes
 {
