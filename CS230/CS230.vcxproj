@@ -183,6 +183,8 @@ xcopy /d /y Assets\* "$(OutputPath)Assets"
     <ClCompile Include="Game\Background.cpp" />
     <ClCompile Include="Game\Cat.cpp" />
     <ClCompile Include="Game\Crates.cpp" />
+    <ClCompile Include="Game\Debug\DebugConsole.cpp" />
+    <ClCompile Include="Game\Debug\DebugManager.cpp" />
     <ClCompile Include="Game\Floor.cpp" />
     <ClCompile Include="Game\Laser.cpp" />
     <ClCompile Include="Game\MainMenu.cpp" />
@@ -225,6 +227,8 @@ xcopy /d /y Assets\* "$(OutputPath)Assets"
     <ClInclude Include="Game\Background.h" />
     <ClInclude Include="Game\Cat.h" />
     <ClInclude Include="Game\Crates.h" />
+    <ClInclude Include="Game\Debug\DebugConsole.h" />
+    <ClInclude Include="Game\Debug\DebugManager.h" />
     <ClInclude Include="Game\Floor.h" />
     <ClInclude Include="Game\Fonts.h" />
     <ClInclude Include="Game\GameObjectTypes.h" />

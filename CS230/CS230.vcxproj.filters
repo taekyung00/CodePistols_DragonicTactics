@@ -7,6 +7,9 @@
     <Filter Include="Game">
       <UniqueIdentifier>{72dc1c99-9e78-4ee7-833c-556a34d291e8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Debug">
+      <UniqueIdentifier>{4fc727a5-a7a6-4d6a-b4ad-d30412b4fc62}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -117,6 +120,12 @@
     </ClCompile>
     <ClCompile Include="Engine\Particle.cpp">
       <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Debug\DebugConsole.cpp">
+      <Filter>Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Debug\DebugManager.cpp">
+      <Filter>Debug</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -251,6 +260,12 @@
     </ClInclude>
     <ClInclude Include="Game\Particles.h">
       <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Debug\DebugConsole.h">
+      <Filter>Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Debug\DebugManager.h">
+      <Filter>Debug</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

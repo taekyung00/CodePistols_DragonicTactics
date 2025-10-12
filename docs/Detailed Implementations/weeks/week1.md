@@ -1899,7 +1899,7 @@ CS230/Game/Debug/DebugConsole.cpp
   class DebugConsole : public CS230::Component {
   public:
       void Update(double dt) override;
-      void Draw(Math::TransformationMatrix camera_matrix) override;
+      void Draw(Math::TransformationMatrix camera_matrix);
   
       void ToggleConsole();  // Tilde (~) key
       bool IsOpen() const;
