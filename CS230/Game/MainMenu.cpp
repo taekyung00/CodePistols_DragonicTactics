@@ -10,6 +10,7 @@ Created:    May 6, 2025
 
 #include "MainMenu.h"
 #include "States.h"
+#include "../Game/Singletons/DiceManager.h"
 
 MainMenu::MainMenu() : 
 	current_option(Option::side_scroller),
@@ -66,6 +67,12 @@ void MainMenu::Update([[maybe_unused]] double dt)
 			Engine::GetGameStateManager().ClearNextGameState();
 			break;
 		}
+	}
+
+	if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::E)) {
+		DiceManager& dice = DiceManager::Instance();
+		dice.SetSeed(42);
+		dice.RollDiceFromString("3d6+2");
 	}
 }
 

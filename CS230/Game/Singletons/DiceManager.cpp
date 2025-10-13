@@ -49,6 +49,7 @@ int DiceManager::RollDiceFromString(const std::string& notation) {
     size_t dD = NdS.find_first_of("dD");    //d또는 D의 위치 찾기.
     if (dD == std::string::npos) {
         lastRolls.clear();
+        LogRoll(notation, 0);
         return 0;
     }
 
@@ -86,12 +87,27 @@ int DiceManager::RollDiceFromString(const std::string& notation) {
     catch (...) {
         //만약 입력에 오류가 났을 경우.
         lastRolls.clear();
+        LogRoll(notation, 0);
         return 0;
     }
 
     int total = RollDice(count, sides) + mod;
+    LogRoll(notation, total);
     return total;
 }
 
 void DiceManager::LogRoll(const std::string& notation, int total) const {
+    std::string log = "[Dice] " + notation + " => " + std::to_string(total);
+
+    if (!lastRolls.empty()) {
+        log += " [";
+        for (size_t i = 0; i < lastRolls.size(); i++) {
+            log += std::to_string(lastRolls[i]);
+            if (i + 1 < lastRolls.size())
+                log += ", ";
+        }
+        log += "]";
+    }
+
+    Engine::GetLogger().LogDebug(log);
 }

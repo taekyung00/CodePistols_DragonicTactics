@@ -1,6 +1,7 @@
 #pragma once
 #include <random>
 #include <string>
+#include "..\..\Engine\Engine.h"
 #include <vector>
 
 class DiceManager {
