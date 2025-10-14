@@ -25,6 +25,9 @@
     <Filter Include="Game\Characters\States">
       <UniqueIdentifier>{b57d4aa8-d91d-4e20-8b66-4ac88d739fb0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Game\Characters\Actions">
+      <UniqueIdentifier>{5a0c88bd-16a6-438c-aa9a-dd2da41dff66}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -124,7 +127,13 @@
     <ClCompile Include="Game\Fighter.cpp">
       <Filter>Game</Filter>
     </ClCompile>
-    <ClCompile Include="Action.cpp">
+    <ClCompile Include="Game\Action.cpp">
+      <Filter>Game\Characters\Actions</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\ActionAttack.cpp">
+      <Filter>Game\Characters\Actions</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Dragon.cpp">
       <Filter>Game</Filter>
     </ClCompile>
   </ItemGroup>
@@ -258,7 +267,13 @@
     <ClInclude Include="Game\CharacterTypes.h">
       <Filter>Game\Types</Filter>
     </ClInclude>
-    <ClInclude Include="Action.h">
+    <ClInclude Include="Game\Action.h">
+      <Filter>Game\Characters\Actions</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\ActionAttack.h">
+      <Filter>Game\Characters\Actions</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Dragon.h">
       <Filter>Game</Filter>
     </ClInclude>
   </ItemGroup>
