@@ -122,3 +122,24 @@ Execute(): CanExecute()가 true를 반환했을 때만 호출. 실제 피해를 
 
 CS230\CS230.vcxproj
 이제 게임폴더에 있는 항목이 엔진 폴더에 있는 항목을 가져올때 디렉토리를 추가 안해도 됨
+
+2025-10-14
+ActionAttack.h / ActionAttack.cpp (신규 생성)
+Action_Attack 클래스 구현
+모든 행동의 기반이 되는 Action 클래스를 상속받아, 첫 번째 구체적인 행동인 '기본 공격'(ActionAttack)을 구현.
+CanExecute: 행동력(ActionPoints)이 충분한지 확인하는 기본 검증 로직을 추가. (사거리 검사는 TODO로 남김)
+Execute: 공격 대상의 TakeDamage 함수를 호출하는 핵심 로직을 구현.
+
+Dragon.h / Dragon.cpp (신규 생성)
+Fighter와 비슷함
+
+Character.cpp (수정)
+PerformAttack 공통 함수 구현
+Character.cpp에 모든 캐릭터가 사용할 공통 PerformAttack 함수를 구현.
+이 함수는 행동력을 1 소모하고, 테스트를 위해 임시로 고정 피해량 10을 주도록 설정.
+
+Fighter.cpp (수정)
+Fighter의 생성자에서 Action_Attack을 자신의 스킬 목록(m_action_list)에 추가하도록 구현
+
+Test.cpp (수정)
+Test.cpp에 Dragon을 배치하고, Fighter의 AI가 Dragon을 찾아 공격하도록 테스트 환경을 개선.
