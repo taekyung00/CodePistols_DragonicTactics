@@ -124,6 +124,9 @@
     <ClCompile Include="Game\Fighter.cpp">
       <Filter>Game</Filter>
     </ClCompile>
+    <ClCompile Include="Action.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Logger.h">
@@ -254,6 +257,9 @@
     </ClInclude>
     <ClInclude Include="Game\CharacterTypes.h">
       <Filter>Game\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Action.h">
+      <Filter>Game</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
