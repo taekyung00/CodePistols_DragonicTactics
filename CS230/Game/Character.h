@@ -16,6 +16,7 @@ Updated:    Oct 09, 2025
 #include "../Engine/Input.h"
 #include "CharacterTypes.h"
 #include "GameTypes.h"  
+#include "Action.h"
 
 
 // --- 컴포넌트 전방 선언 (Forward Declarations) ---

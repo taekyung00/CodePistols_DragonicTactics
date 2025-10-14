@@ -58,12 +58,30 @@ void Character::Draw(Math::TransformationMatrix camera_matrix) {
 // --- 핵심 행동 함수 구현 ---
 
 
-void Character::PerformAttack([[maybe_unused]] Character* target) {
-    // TODO: 기본 공격 로직 구현
-    // 1. GetStatsComponent()로 내 공격력 정보를 가져옵니다.
-    // 2. DamageCalculator를 이용해 최종 피해량을 계산합니다.
-    // 3. target->TakeDamage()를 호출합니다.
-    // 4. GetActionPointsComponent()->Consume(1) 같은 코드로 행동력을 소모합니다.
+void Character::PerformAttack(Character* target) {
+    if (target == nullptr || !target->IsAlive()) {
+        Engine::GetLogger().LogDebug(TypeName() + " has no valid target to attack.");
+        return;
+    }
+
+    // 행동력을 먼저 확인하고 소모합니다.
+    ActionPoints* ap = GetActionPointsComponent();
+    if (ap == nullptr || ap->Consume(1) == false) {
+        Engine::GetLogger().LogDebug(TypeName() + " tried to attack, but has no Action Points.");
+        return;
+    }
+
+    // --- 데미지 계산 부분을 단순화합니다. ---
+    int total_damage = 10; // 고정 피해량 10
+
+    Engine::GetLogger().LogEvent(
+        TypeName() + " attacks " + target->TypeName() +
+        " for " + std::to_string(total_damage) + " damage."
+    );
+    // ------------------------------------
+
+    // target->TakeDamage()를 호출하여 피해를 적용합니다.
+    target->TakeDamage(total_damage, this);
 }
 
 void Character::PerformAction([[maybe_unused]] Action* action, [[maybe_unused]] Character* target, [[maybe_unused]] Math::ivec2 tile_position) {
