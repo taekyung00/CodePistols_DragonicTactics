@@ -10,6 +10,10 @@ Created:    Oct 8, 2025
 
 #pragma once
 #include "../Engine/GameState.h"
+
+class Dragon;
+class Fighter;
+
 class Test : public CS230::GameState {
 public:
     Test();
@@ -27,4 +31,9 @@ private:
     void test_multiple_different_events();
     void test_EventData_CompleteTransfer();
     void test_EventData_MultiplePublishes();
+    Fighter* fighter;
+    Dragon* dragon;
+    void LogFighterStatus();
+    void LogDragonStatus();
+    //void test_subscribe_publish_singleSubscriber();
 };

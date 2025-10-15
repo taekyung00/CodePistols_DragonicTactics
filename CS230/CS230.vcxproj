@@ -123,6 +123,7 @@ xcopy /d /y Assets\* "$(OutputPath)Assets"
       <LanguageStandard>stdcpp17</LanguageStandard>
       <TreatWarningAsError>true</TreatWarningAsError>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AdditionalIncludeDirectories>$(SolutionDir)CS230\Engine;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -179,10 +180,20 @@ xcopy /d /y Assets\* "$(OutputPath)Assets"
     <ClCompile Include="Engine\Timer.cpp" />
     <ClCompile Include="Engine\Vec2.cpp" />
     <ClCompile Include="Engine\Window.cpp" />
+    <ClCompile Include="Game\Action.cpp" />
+    <ClCompile Include="Game\ActionAttack.cpp" />
+    <ClCompile Include="Game\ActionPoints.cpp" />
+    <ClCompile Include="Game\Character.cpp" />
+    <ClCompile Include="Game\CharacterStates.cpp" />
+    <ClCompile Include="Game\Dragon.cpp" />
+    <ClCompile Include="Game\Fighter.cpp" />
+    <ClCompile Include="Game\GridPosition.cpp" />
     <ClCompile Include="Game\MainMenu.cpp" />
     <ClCompile Include="Game\Score.cpp" />
     <ClCompile Include="Game\Singletons\EventBus.cpp" />
+    <ClCompile Include="Game\SpellSlots.cpp" />
     <ClCompile Include="Game\Splash.cpp" />
+    <ClCompile Include="Game\StatsComponent.cpp" />
     <ClCompile Include="Game\Test.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -210,14 +221,26 @@ xcopy /d /y Assets\* "$(OutputPath)Assets"
     <ClInclude Include="Engine\Timer.h" />
     <ClInclude Include="Engine\Vec2.h" />
     <ClInclude Include="Engine\Window.h" />
+    <ClInclude Include="Game\Action.h" />
+    <ClInclude Include="Game\ActionAttack.h" />
+    <ClInclude Include="Game\ActionPoints.h" />
+    <ClInclude Include="Game\Character.h" />
+    <ClInclude Include="Game\CharacterStates.h" />
+    <ClInclude Include="Game\CharacterTypes.h" />
+    <ClInclude Include="Game\Dragon.h" />
+    <ClInclude Include="Game\Fighter.h" />
     <ClInclude Include="Game\Fonts.h" />
     <ClInclude Include="Game\GameObjectTypes.h" />
+    <ClInclude Include="Game\GameTypes.h" />
+    <ClInclude Include="Game\GridPosition.h" />
     <ClInclude Include="Game\MainMenu.h" />
     <ClInclude Include="Game\Particles.h" />
     <ClInclude Include="Game\Score.h" />
     <ClInclude Include="Game\Singletons\EventBus.h" />
+    <ClInclude Include="Game\SpellSlots.h" />
     <ClInclude Include="Game\Splash.h" />
     <ClInclude Include="Game\States.h" />
+    <ClInclude Include="Game\StatsComponent.h" />
     <ClInclude Include="Game\Test.h" />
     <ClInclude Include="Game\Test\Week1TestMocks.h" />
     <ClInclude Include="Game\Types\Events.h" />

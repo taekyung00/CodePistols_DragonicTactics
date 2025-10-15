@@ -34,6 +34,16 @@ namespace CS230 {
             return nullptr;
         }
         template<typename T>
+        T* GetComponent() const {
+            for (Component* component : components) {
+                T* ptr = dynamic_cast<T*>(component);
+                if (ptr != nullptr) {
+                    return ptr;
+                }
+            }
+            return nullptr;
+        }
+        template<typename T>
         void RemoveComponent() {
             auto it = std::find_if(
                 components.begin(), components.end(), [](Component* element) {

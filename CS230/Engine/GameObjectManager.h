@@ -26,6 +26,8 @@ namespace CS230 {
         void DrawAll(Math::TransformationMatrix camera_matrix);
 
         void CollisionTest();
+
+        const std::list<GameObject*>& GetAll() const { return objects; }
     private:
         std::list<GameObject*> objects;
     };

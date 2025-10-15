@@ -16,6 +16,18 @@
     <Filter Include="Game\Test">
       <UniqueIdentifier>{5b3dc12e-a8eb-44cc-9fd7-ee935d8b481d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Game\Characters">
+      <UniqueIdentifier>{a23be5e2-c9bb-49d7-94a1-13a0fe7587a2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Game\Characters\Component">
+      <UniqueIdentifier>{6f3fcb5d-bb9d-483d-980f-403f9fdb65c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Game\Characters\States">
+      <UniqueIdentifier>{b57d4aa8-d91d-4e20-8b66-4ac88d739fb0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Game\Characters\Actions">
+      <UniqueIdentifier>{5a0c88bd-16a6-438c-aa9a-dd2da41dff66}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -34,12 +46,6 @@
     <ClCompile Include="Game\Splash.cpp">
       <Filter>Game</Filter>
     </ClCompile>
-    <ClCompile Include="Game\Mode1.cpp">
-      <Filter>Game</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\Mode2.cpp">
-      <Filter>Game</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\Input.cpp">
       <Filter>Engine</Filter>
     </ClCompile>
@@ -52,20 +58,8 @@
     <ClCompile Include="Engine\Sprite.cpp">
       <Filter>Engine</Filter>
     </ClCompile>
-    <ClCompile Include="Game\Cat.cpp">
-      <Filter>Game</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\Ship.cpp">
-      <Filter>Game</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\Asteroid.cpp">
-      <Filter>Game</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\Camera.cpp">
       <Filter>Engine</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\Background.cpp">
-      <Filter>Game</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Matrix.cpp">
       <Filter>Engine</Filter>
@@ -75,15 +69,6 @@
     </ClCompile>
     <ClCompile Include="Engine\GameObjectManager.cpp">
       <Filter>Engine</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\Crates.cpp">
-      <Filter>Game</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\Meteor.cpp">
-      <Filter>Game</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\Robot.cpp">
-      <Filter>Game</Filter>
     </ClCompile>
     <ClCompile Include="Engine\TextureManager.cpp">
       <Filter>Engine</Filter>
@@ -95,9 +80,6 @@
       <Filter>Engine</Filter>
     </ClCompile>
     <ClCompile Include="Game\MainMenu.cpp">
-      <Filter>Game</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\ScreenWrap.cpp">
       <Filter>Game</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Collision.cpp">
@@ -112,16 +94,7 @@
     <ClCompile Include="Engine\Timer.cpp">
       <Filter>Engine</Filter>
     </ClCompile>
-    <ClCompile Include="Game\Floor.cpp">
-      <Filter>Game</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\Portal.cpp">
-      <Filter>Game</Filter>
-    </ClCompile>
     <ClCompile Include="Game\Score.cpp">
-      <Filter>Game</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\Laser.cpp">
       <Filter>Game</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Particle.cpp">
@@ -131,6 +104,36 @@
       <Filter>Game\Singletons</Filter>
     </ClCompile>
     <ClCompile Include="Game\Test.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\SpellSlots.cpp">
+      <Filter>Game\Characters\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\GridPosition.cpp">
+      <Filter>Game\Characters\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\ActionPoints.cpp">
+      <Filter>Game\Characters\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\StatsComponent.cpp">
+      <Filter>Game\Characters\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\CharacterStates.cpp">
+      <Filter>Game\Characters\States</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Character.cpp">
+      <Filter>Game\Characters</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Fighter.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Action.cpp">
+      <Filter>Game\Characters\Actions</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\ActionAttack.cpp">
+      <Filter>Game\Characters\Actions</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Dragon.cpp">
       <Filter>Game</Filter>
     </ClCompile>
   </ItemGroup>
@@ -156,12 +159,6 @@
     <ClInclude Include="Game\Splash.h">
       <Filter>Game</Filter>
     </ClInclude>
-    <ClInclude Include="Game\Mode1.h">
-      <Filter>Game</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Mode2.h">
-      <Filter>Game</Filter>
-    </ClInclude>
     <ClInclude Include="Engine\Input.h">
       <Filter>Engine</Filter>
     </ClInclude>
@@ -174,23 +171,11 @@
     <ClInclude Include="Engine\Sprite.h">
       <Filter>Engine</Filter>
     </ClInclude>
-    <ClInclude Include="Game\Cat.h">
-      <Filter>Game</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Ship.h">
-      <Filter>Game</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Asteroid.h">
-      <Filter>Game</Filter>
-    </ClInclude>
     <ClInclude Include="Engine\Rect.h">
       <Filter>Engine</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Camera.h">
       <Filter>Engine</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Background.h">
-      <Filter>Game</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Matrix.h">
       <Filter>Engine</Filter>
@@ -203,15 +188,6 @@
     </ClInclude>
     <ClInclude Include="Engine\GameObjectManager.h">
       <Filter>Engine</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Crates.h">
-      <Filter>Game</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Meteor.h">
-      <Filter>Game</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Robot.h">
-      <Filter>Game</Filter>
     </ClInclude>
     <ClInclude Include="Engine\TextureManager.h">
       <Filter>Engine</Filter>
@@ -231,12 +207,6 @@
     <ClInclude Include="Engine\ComponentManager.h">
       <Filter>Engine</Filter>
     </ClInclude>
-    <ClInclude Include="Game\ScreenWrap.h">
-      <Filter>Game</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Gravity.h">
-      <Filter>Game</Filter>
-    </ClInclude>
     <ClInclude Include="Engine\Timer.h">
       <Filter>Engine</Filter>
     </ClInclude>
@@ -246,19 +216,7 @@
     <ClInclude Include="Engine\ShowCollision.h">
       <Filter>Engine</Filter>
     </ClInclude>
-    <ClInclude Include="Game\GameObjectTypes.h">
-      <Filter>Game</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Floor.h">
-      <Filter>Game</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Portal.h">
-      <Filter>Game</Filter>
-    </ClInclude>
     <ClInclude Include="Game\Score.h">
-      <Filter>Game</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Laser.h">
       <Filter>Game</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Particle.h">
@@ -278,6 +236,45 @@
     </ClInclude>
     <ClInclude Include="Game\Test\Week1TestMocks.h">
       <Filter>Game\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Fighter.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\SpellSlots.h">
+      <Filter>Game\Characters\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\GridPosition.h">
+      <Filter>Game\Characters\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\ActionPoints.h">
+      <Filter>Game\Characters\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\StatsComponent.h">
+      <Filter>Game\Characters\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\CharacterStates.h">
+      <Filter>Game\Characters\States</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Character.h">
+      <Filter>Game\Characters</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\GameObjectTypes.h">
+      <Filter>Game\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\GameTypes.h">
+      <Filter>Game\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\CharacterTypes.h">
+      <Filter>Game\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Action.h">
+      <Filter>Game\Characters\Actions</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\ActionAttack.h">
+      <Filter>Game\Characters\Actions</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Dragon.h">
+      <Filter>Game</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
