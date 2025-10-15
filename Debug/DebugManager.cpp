@@ -46,7 +46,19 @@ void DebugManager::ToggleGodMode(){
     Engine::GetLogger().LogEvent(god_mode ? "GodMode ON" : "GodMode OFF");
 }
 
-bool DebugManager::IsGridOverlayEnabled() const { return debug_mode && grid_overlay; }
-bool DebugManager::IsCollisionBoxesEnabled() const { return debug_mode && collision_boxes; }
-bool DebugManager::IsStatusInfoEnabled() const { return debug_mode && status_info; }
-bool DebugManager::IsGodModeEnabled() const { return debug_mode && god_mode; }
+bool DebugManager::IsGridOverlayEnabled() const 
+{
+    return debug_mode && grid_overlay;
+}
+bool DebugManager::IsCollisionBoxesEnabled() const 
+{
+    return debug_mode && collision_boxes;
+}
+bool DebugManager::IsStatusInfoEnabled() const
+{
+    return debug_mode && status_info;
+}
+bool DebugManager::IsGodModeEnabled() const 
+{
+    return debug_mode && god_mode;
+}

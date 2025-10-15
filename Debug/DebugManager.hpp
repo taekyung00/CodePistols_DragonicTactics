@@ -29,8 +29,8 @@ public:
     // void SetInfiniteSpellSlots(Character* character, bool enabled);
 
     // Console commands
-    void ExecuteCommand(const std::string& command);
-    void RegisterCommand(const std::string& name, std::function<void(std::vector<std::string>)> handler);
+    // void ExecuteCommand(const std::string& command);
+    // void RegisterCommand(const std::string& name, std::function<void(std::vector<std::string>)> handler);
 
     // Hot reload
     // void ReloadAllData();
