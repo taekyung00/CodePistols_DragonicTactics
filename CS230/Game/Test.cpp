@@ -10,6 +10,7 @@
 #include "StatsComponent.h"
 #include "ActionPoints.h"
 #include "SpellSlots.h"
+#include "../Game/Singletons/DiceManager.h"
 
 Test::Test() : fighter(nullptr), dragon(nullptr)
 {
@@ -28,12 +29,18 @@ void Test::Load() {
 }
 
 void Test::Update([[maybe_unused]] double dt) {
-    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::E)) {
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::F)) {
         test_subscribe_publish_singleSubscriber();
         test_multiple_subscribers_sameEvent();
         test_multiple_different_events();
         test_EventData_CompleteTransfer();
         test_EventData_MultiplePublishes();
+    }
+
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::E)) {
+        DiceManager& dice = DiceManager::Instance();
+        dice.SetSeed(42);
+        dice.RollDiceFromString("4d8+2");
     }
     
 
