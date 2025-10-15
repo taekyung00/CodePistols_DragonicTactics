@@ -69,6 +69,18 @@ void Test::Update([[maybe_unused]] double dt) {
         LogFighterStatus();
     }
 
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::S)) {//junyoung
+        GridSystem grid;
+
+        // Should NOT crash, should log error instead
+        grid.SetTileType(Math::vec2{ -1, 0 }, GridSystem::TileType::Wall);    // Invalid
+        grid.SetTileType(Math::vec2{ 8, 8 }, GridSystem::TileType::Wall);     // Invalid
+        grid.SetTileType(Math::vec2{ 100, 100 }, GridSystem::TileType::Wall); // Invalid
+
+        // Verify valid tiles unaffected
+        ASSERT_EQ(grid.GetTileType(Math::vec2{ 0, 0 }), GridSystem::TileType::Empty);
+    }
+
     if (Engine::GetInput().KeyJustReleased(CS230::Input::Keys::Escape)) {
         Engine::GetGameStateManager().SetNextGameState(static_cast<int>(States::MainMenu));
     }

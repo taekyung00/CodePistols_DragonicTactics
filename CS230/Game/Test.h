@@ -10,6 +10,7 @@ Created:    Oct 8, 2025
 
 #pragma once
 #include "../Engine/GameState.h"
+#include "../Game/System/GridSystem.h"
 
 class Dragon;
 class Fighter;
