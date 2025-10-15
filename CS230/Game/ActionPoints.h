@@ -14,7 +14,7 @@ class ActionPoints : public CS230::Component {
 public:
 	ActionPoints(int max_points);
 	void Refresh();
-	bool Consume(int amount = 1); //인자는 사용되는 행동력을 의미
+	bool Consume(int amount = 1);
 	int GetCurrentPoints() const;
 	int GetMaxPoints() const;
 	bool HasEnough(int amount) const;
@@ -23,5 +23,3 @@ private:
 	int max_points;
 	int current_points;
 };
-
-//Action Points를 캐릭터 스탯에 넣지않고

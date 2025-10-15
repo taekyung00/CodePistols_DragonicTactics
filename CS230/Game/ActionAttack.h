@@ -13,11 +13,11 @@ Created:    Oct 15, 2025
 
 class ActionAttack : public Action {
 public:
-    // Action의 순수 가상 함수들을 모두 구현(override)합니다.
+
     std::string GetName() const override { return "Basic Attack"; }
 
     int GetActionPointCost() const override { return 1; }
-    int GetSpellSlotCost() const override { return 0; } // 기본 공격은 주문 슬롯을 사용하지 않음
+    int GetSpellSlotCost() const override { return 0; }
     int GetSpellLevel() const override { return 0; }
 
     bool CanExecute(Character* performer, CS230::GameState* context) const override;
