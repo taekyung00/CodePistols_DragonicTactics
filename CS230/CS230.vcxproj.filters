@@ -136,6 +136,10 @@
     <ClCompile Include="Game\Dragon.cpp">
       <Filter>Game</Filter>
     </ClCompile>
+    <ClCompile Include="Game\System\GridSystem.cpp" />
+    <ClCompile Include="Game\Singletons\DiceManager.cpp">
+      <Filter>Game\Singletons</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Logger.h">
@@ -275,6 +279,10 @@
     </ClInclude>
     <ClInclude Include="Game\Dragon.h">
       <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\System\GridSystem.h" />
+    <ClInclude Include="Game\Singletons\DiceManager.h">
+      <Filter>Game\Singletons</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
