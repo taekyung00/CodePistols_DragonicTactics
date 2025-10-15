@@ -33,6 +33,7 @@ We're creating a **separate console window** that runs alongside your game windo
 ```
 
 **Benefits**:
+
 - Two separate windows you can position anywhere
 - Real Windows console (no need to code text rendering!)
 - Game keeps running while you type commands
@@ -69,6 +70,7 @@ freopen_s(&fp, "CONOUT$", "w", stderr);  // errors → console
 ```
 
 **What this does**:
+
 - `CONOUT$`: Special Windows name for "console output"
 - `CONIN$`: Special Windows name for "console input"
 - `freopen_s`: Redirects C++ streams to the console window
@@ -478,6 +480,7 @@ endif()
 ### Building with CMake
 
 #### Visual Studio:
+
 ```bash
 # Generate Visual Studio solution
 mkdir build
@@ -490,6 +493,7 @@ cmake .. -G "Visual Studio 17 2022" -A Win32
 ```
 
 #### VSCode:
+
 ```bash
 # Install CMake Tools extension in VSCode
 # Open Command Palette (Ctrl+Shift+P)
@@ -607,11 +611,13 @@ std::cin.get();
 ## Platform Notes
 
 ### Windows
+
 - Uses `AllocConsole()` API
 - Uses `_kbhit()` for non-blocking input
 - Console colors supported via `SetConsoleTextAttribute()`
 
 ### Linux/Mac (Future)
+
 - Would use terminal emulator or ncurses library
 - Different non-blocking input method (termios)
 - Currently not implemented (Windows-only)
@@ -619,6 +625,7 @@ std::cin.get();
 ### Why Windows-Only?
 
 `AllocConsole()` is a Windows-specific API. For cross-platform support, you'd need:
+
 - Linux: Fork a terminal emulator or use ncurses
 - Mac: Similar to Linux approach
 
@@ -629,6 +636,7 @@ For now, we use `#ifdef _WIN32` to keep code Windows-specific. Future versions c
 ## Summary
 
 You now have:
+
 - ✅ Separate console window for debug commands
 - ✅ Non-blocking input (game keeps running!)
 - ✅ CMake build system support
@@ -636,12 +644,14 @@ You now have:
 - ✅ Extensible command system
 
 **Key Files Created**:
+
 1. `CS230/Engine/DebugConsole.h` - Console interface
 2. `CS230/Engine/DebugConsole.cpp` - Console implementation
 3. Updated `CS230/Engine/Engine.cpp` - Initialize console
 4. Updated `CMakeLists.txt` - Build configuration
 
 **Next Steps**:
+
 1. Build project in Debug mode
 2. Run game - console window appears!
 3. Type `help` to see commands
