@@ -72,7 +72,7 @@ void MainMenu::Update([[maybe_unused]] double dt)
 	if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::E)) {
 		DiceManager& dice = DiceManager::Instance();
 		dice.SetSeed(42);
-		dice.RollDiceFromString("3d6+2");
+		dice.RollDiceFromString("4d8+2");
 	}
 }
 
