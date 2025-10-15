@@ -136,6 +136,12 @@
     <ClCompile Include="Game\Dragon.cpp">
       <Filter>Game</Filter>
     </ClCompile>
+    <ClCompile Include="Game\Singletons\DiceManager.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\System\GridSystem.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Logger.h">
@@ -274,6 +280,12 @@
       <Filter>Game\Characters\Actions</Filter>
     </ClInclude>
     <ClInclude Include="Game\Dragon.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Singletons\DiceManager.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\System\GridSystem.h">
       <Filter>Game</Filter>
     </ClInclude>
   </ItemGroup>

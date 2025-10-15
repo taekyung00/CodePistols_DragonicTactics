@@ -1,5 +1,4 @@
 #include "../Engine/Engine.h"
-#include "../Game/Test/Week1TestMocks.h"
 #include "../Game/Types/Events.h"
 #include "Test.h"
 #include "States.h"
@@ -11,6 +10,7 @@
 #include "ActionPoints.h"
 #include "SpellSlots.h"
 #include "../Game/Singletons/DiceManager.h"
+#include "System/GridSystem.h"
 
 Test::Test() : fighter(nullptr), dragon(nullptr)
 {
@@ -18,74 +18,159 @@ Test::Test() : fighter(nullptr), dragon(nullptr)
 
 void Test::Load() {
     AddGSComponent(new CS230::GameObjectManager());
-    fighter = new Fighter({ 5, 5 });
-    GetGSComponent<CS230::GameObjectManager>()->Add(fighter);
-    dragon = new Dragon({ 6, 5 });
-    GetGSComponent<CS230::GameObjectManager>()->Add(dragon);
-    Engine::GetLogger().LogEvent("========== Combat Testbed Initialized ==========");
-    Engine::GetLogger().LogEvent("'T' -> Fighter's Turn | 'Y' -> Dragon's Turn | 'D' -> Damage Dragon | 'H' -> Heal Fighter");
-    LogFighterStatus();
-    LogDragonStatus();
+
+    AddGSComponent(new GridSystem());
+    CS230::GameObjectManager* go_manager = GetGSComponent<CS230::GameObjectManager>();
+
+    GridSystem* grid_system = GetGSComponent<GridSystem>();
+
+    const std::vector<std::string> map_data = {
+    "wwwwwwww",
+    "weefeeew",
+    "weeeeeew",
+    "weeeeeew",
+    "weeeeeew",
+    "weeeeeew",
+    "weedeeew",
+    "wwwwwwww"
+    };
+
+
+
+    for (int y = 0; y < map_data.size(); ++y) {
+        // string의 x 인덱스(0)는 맵의 좌측을 의미합니다.
+        for (int x = 0; x < map_data[y].length(); ++x) {
+            char tile_char = map_data[y][x];
+
+            // 화면 좌표계는 보통 위쪽이 y값이 크므로, 맵 데이터의 y축을 뒤집어줍니다.
+            // (0, 0)을 좌하단으로 삼는 좌표계를 사용하기 위함입니다.
+            Math::ivec2 current_pos = { x, static_cast<int>(map_data.size()) - 1 - y };
+
+            switch (tile_char) {
+            case 'w':
+                grid_system->SetTileType(current_pos, GridSystem::TileType::Wall);
+                break;
+            case 'e':
+                grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
+                break;
+            case 'f': // 파이터
+                grid_system->SetTileType(current_pos, GridSystem::TileType::Empty); // 캐릭터가 서 있는 바닥은 '빈 공간'입니다.
+                fighter = new Fighter(current_pos);
+                go_manager->Add(fighter);
+                grid_system->AddCharacter(fighter, current_pos);
+                break;
+            case 'd': // 드래곤
+                grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
+                dragon = new Dragon(current_pos);
+                go_manager->Add(dragon);
+                grid_system->AddCharacter(dragon, current_pos);
+                break;
+            }
+        }
+    }
+
+    //Engine::GetLogger().LogEvent("========== Combat Testbed Initialized ==========");
+    //Engine::GetLogger().LogEvent("'T' -> Fighter's Turn | 'Y' -> Dragon's Turn | 'D' -> Damage Dragon | 'H' -> Heal Fighter");
+    //LogFighterStatus();
+    //LogDragonStatus();
 }
 
 void Test::Update([[maybe_unused]] double dt) {
-    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::F)) {
-        test_subscribe_publish_singleSubscriber();
-        test_multiple_subscribers_sameEvent();
-        test_multiple_different_events();
-        test_EventData_CompleteTransfer();
-        test_EventData_MultiplePublishes();
-    }
+    //if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::F)) {
+    //    test_subscribe_publish_singleSubscriber();
+    //    test_multiple_subscribers_sameEvent();
+    //    test_multiple_different_events();
+    //    test_EventData_CompleteTransfer();
+    //    test_EventData_MultiplePublishes();
+    //}
 
-    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::E)) {
-        DiceManager& dice = DiceManager::Instance();
-        dice.SetSeed(42);
-        dice.RollDiceFromString("4d8+2");
-    }
-    
+    //if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::E)) {
+    //    DiceManager& dice = DiceManager::Instance();
+    //    dice.SetSeed(42);
+    //    dice.RollDiceFromString("4d8+2");
+    //}
+    //
 
-    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::T)) {
-        Engine::GetLogger().LogEvent("--- Player presses 'T': Starting Fighter's Turn ---");
-        fighter->OnTurnStart();
-        LogFighterStatus();
-        LogDragonStatus();
-    }
+    //if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::T)) {
+    //    Engine::GetLogger().LogEvent("--- Player presses 'T': Starting Fighter's Turn ---");
+    //    fighter->OnTurnStart();
+    //    LogFighterStatus();
+    //    LogDragonStatus();
+    //}
 
-    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Y)) {
-        Engine::GetLogger().LogEvent("--- Player presses 'Y': Starting Dragon's Turn ---");
-        dragon->OnTurnStart();
-        LogFighterStatus();
-        LogDragonStatus();
-    }
+    //if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Y)) {
+    //    Engine::GetLogger().LogEvent("--- Player presses 'Y': Starting Dragon's Turn ---");
+    //    dragon->OnTurnStart();
+    //    LogFighterStatus();
+    //    LogDragonStatus();
+    //}
 
-    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::D)) {
-        Engine::GetLogger().LogEvent("--- Player presses 'D': Testing PerformAttack ---");
-        if (fighter->GetActionPoints() > 0) {
-            fighter->PerformAttack(dragon);
+    //if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::D)) {
+    //    Engine::GetLogger().LogEvent("--- Player presses 'D': Testing PerformAttack ---");
+    //    if (fighter->GetActionPoints() > 0) {
+    //        fighter->PerformAttack(dragon);
+    //    }
+    //    else {
+    //        Engine::GetLogger().LogDebug("Fighter has no Action Points to attack!");
+    //    }
+    //    LogFighterStatus();
+    //    LogDragonStatus();
+    //}
+
+    //if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::H)) {
+    //    Engine::GetLogger().LogEvent("--- Player presses 'H': Applying 10 Heal to Fighter ---");
+    //    fighter->ReceiveHeal(10);
+    //    LogFighterStatus();
+    //}
+
+    if (dragon != nullptr && dragon->IsAlive()) { // 드래곤이 존재하고 살아있을 때만 조작 가능
+
+        Math::ivec2 current_pos = dragon->GetGridPosition()->Get();
+        Math::ivec2 target_pos = current_pos;
+        bool move_requested = false;
+
+        if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Up)) {
+            target_pos.y--;
+            move_requested = true;
         }
-        else {
-            Engine::GetLogger().LogDebug("Fighter has no Action Points to attack!");
+        else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Down)) {
+            target_pos.y++;
+            move_requested = true;
         }
-        LogFighterStatus();
-        LogDragonStatus();
-    }
+        else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Left)) {
+            target_pos.x--;
+            move_requested = true;
+        }
+        else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Right)) {
+            target_pos.x++;
+            move_requested = true;
+        }
 
-    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::H)) {
-        Engine::GetLogger().LogEvent("--- Player presses 'H': Applying 10 Heal to Fighter ---");
-        fighter->ReceiveHeal(10);
-        LogFighterStatus();
-    }
+        if (move_requested) {
+            GridSystem* grid = GetGSComponent<GridSystem>();
+            // IsWalkable은 해당 타일이 비어있고(Empty), 다른 캐릭터도 없는지(Not Occupied) 모두 확인합니다.
+            if (grid != nullptr && grid->IsWalkable(target_pos)) {
 
-    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::S)) {//junyoung
-        GridSystem grid;
+                // 1. GridSystem에 위치 변경을 알립니다.
+                grid->MoveCharacter(current_pos, target_pos);
 
-        // Should NOT crash, should log error instead
-        grid.SetTileType(Math::vec2{ -1, 0 }, GridSystem::TileType::Wall);    // Invalid
-        grid.SetTileType(Math::vec2{ 8, 8 }, GridSystem::TileType::Wall);     // Invalid
-        grid.SetTileType(Math::vec2{ 100, 100 }, GridSystem::TileType::Wall); // Invalid
+                // 2. 드래곤 자신의 GridPosition 컴포넌트 값을 업데이트합니다.
+                dragon->GetGridPosition()->Set(target_pos);
 
-        // Verify valid tiles unaffected
-        ASSERT_EQ(grid.GetTileType(Math::vec2{ 0, 0 }), GridSystem::TileType::Empty);
+                // 3. 드래곤의 실제 월드 좌표(시각적 위치)를 업데이트합니다.
+                //    (아직 부드러운 이동 애니메이션이 없으므로, 즉시 위치를 변경합니다)
+                dragon->SetPosition({
+                    static_cast<double>(target_pos.x * GridSystem::TILE_SIZE),
+                    static_cast<double>(target_pos.y * GridSystem::TILE_SIZE)
+                    });
+
+                Engine::GetLogger().LogEvent("Dragon moved to (" + std::to_string(target_pos.x) + ", " + std::to_string(target_pos.y) + ")");
+                LogDragonStatus(); // 이동 후 상태 로깅
+            }
+            else {
+                Engine::GetLogger().LogEvent("Dragon cannot move there! (Wall or Occupied)");
+            }
+        }
     }
 
     if (Engine::GetInput().KeyJustReleased(CS230::Input::Keys::Escape)) {
@@ -97,6 +182,10 @@ void Test::Update([[maybe_unused]] double dt) {
 
 void Test::Draw() {
     Engine::GetWindow().Clear(0x1a1a1aff);
+    GridSystem* grid_system = GetGSComponent<GridSystem>();
+    if (grid_system != nullptr) {
+        grid_system->Draw();
+    }
 }
 
 void Test::LogFighterStatus() {

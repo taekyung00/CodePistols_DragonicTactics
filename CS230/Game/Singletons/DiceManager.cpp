@@ -44,9 +44,9 @@ int DiceManager::RollDice(int count, int sides) {
 
 int DiceManager::RollDiceFromString(const std::string& notation) {
     std::string NdS = notation;
-    NdS.erase(std::remove_if(NdS.begin(), NdS.end(), ::isspace), NdS.end());    //°ø¹éÁ¦°Å
+    NdS.erase(std::remove_if(NdS.begin(), NdS.end(), ::isspace), NdS.end());    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     
-    size_t dD = NdS.find_first_of("dD");    //d¶Ç´Â DÀÇ À§Ä¡ Ã£±â.
+    size_t dD = NdS.find_first_of("dD");    //dï¿½Ç´ï¿½ Dï¿½ï¿½ ï¿½ï¿½Ä¡ Ã£ï¿½ï¿½.
     if (dD == std::string::npos) {
         lastRolls.clear();
         LogRoll(notation, 0);
@@ -58,22 +58,22 @@ int DiceManager::RollDiceFromString(const std::string& notation) {
     int mod = 0;
     
     try {
-        count = std::stoi(NdS.substr(0, dD));   // stoi= string -> int·Î º¯È¯½ÃÅ°±â. ÁÖ»çÀ§ °¹¼ö. NdS¿¡¼­ NºÎºÐ°ú dÀÌÈÄ µÚ¿¡ºÎºÐ ºÐ¸®.
+        count = std::stoi(NdS.substr(0, dD));   // stoi= string -> intï¿½ï¿½ ï¿½ï¿½È¯ï¿½ï¿½Å°ï¿½ï¿½. ï¿½Ö»ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½. NdSï¿½ï¿½ï¿½ï¿½ Nï¿½ÎºÐ°ï¿½ dï¿½ï¿½ï¿½ï¿½ ï¿½Ú¿ï¿½ï¿½Îºï¿½ ï¿½Ð¸ï¿½.
         if (count <= 0) {
             throw;
         }
 
-        //NdSµÚ¿¡ ¿À´Â ºÎÈ£°¡ ¹ºÁö Ã£±â.
+        //NdSï¿½Ú¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È£ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã£ï¿½ï¿½.
         size_t sign = NdS.find('+', dD + 1);
         if (sign == std::string::npos)
             sign = NdS.find('-', dD + 1);
 
         if (sign == std::string::npos) {
-            //µû·Î ºÎÈ£ ¾ø´Â °æ¿ì. ex) 3d6
+            //ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È£ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½. ex) 3d6
             sides = std::stoi(NdS.substr(dD + 1));
         }
         else {
-            //ºÎÈ£ ÀÖ´Â °æ¿ì 3d6 + 2
+            //ï¿½ï¿½È£ ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ 3d6 + 2
             sides = std::stoi(NdS.substr(dD + 1, sign - (dD + 1)));
             mod = std::stoi(NdS.substr(sign));
         }
@@ -85,7 +85,7 @@ int DiceManager::RollDiceFromString(const std::string& notation) {
     }
 
     catch (...) {
-        //¸¸¾à ÀÔ·Â¿¡ ¿À·ù°¡ ³µÀ» °æ¿ì.
+        //ï¿½ï¿½ï¿½ï¿½ ï¿½Ô·Â¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½.
         lastRolls.clear();
         LogRoll(notation, 0);
         return 0;

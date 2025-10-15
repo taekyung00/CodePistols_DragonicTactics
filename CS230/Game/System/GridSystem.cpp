@@ -1,81 +1,122 @@
 #include "GridSystem.h"
 #include <cassert>
+#include "../Character.h"
+#include "../Engine/Engine.h"
 
 GridSystem::GridSystem() {
     // Initialize all tiles to Empty
-    for (int x = 0; x < GRID_WIDTH; ++x) {
-        for (int y = 0; y < GRID_HEIGHT; ++y) {
-            tiles[x][y] = TileType::Empty;
+    for (int y = 0; y < MAP_HEIGHT; ++y) {
+        for (int x = 0; x < MAP_WIDTH; ++x) {
+            tile_grid[y][x] = TileType::Empty;
+            character_grid[y][x] = nullptr;
         }
     }
 }
 
-bool GridSystem::IsValidTile(Math::vec2 tile) const
-{
-    int x = static_cast<int>(tile.x);
-    int y = static_cast<int>(tile.y);
-    return x >= 0 && x < GRID_WIDTH && y >= 0 && y < GRID_HEIGHT;
+bool GridSystem::IsValidTile(Math::ivec2 pos) const {
+    return pos.x >= 0 && pos.x < MAP_WIDTH && pos.y >= 0 && pos.y < MAP_HEIGHT;
 }
 
-bool GridSystem::IsWalkable(Math::vec2 tile) const
-{
-    if (!IsValidTile(tile)) return false;
-    else if (IsOccupied(tile)) return false; 
-    TileType type = GetTileType(tile);
-    return type == TileType::Empty || type == TileType::Difficult || type == TileType::Lava;
-}
-
-bool GridSystem::IsOccupied(Math::vec2 tile) const
-{
-    return occupiedTiles.find(tile) != occupiedTiles.end();
-}
-
-GridSystem::TileType GridSystem::GetTileType(Math::vec2 tile) const
-{
-    if (!IsValidTile(tile))
-    {
-        std::cerr << "GetTileType: invalid tile position (" << tile.x << ", " << tile.y << ")\n";
-        return TileType::Invalid;  // ¹«½ÃÇÏ°Å³ª ¿¹¿ÜÃ³¸® ¶Ç´Â ·Î±×¸¸ ³²±â°í ÇÔ¼ö Á¾·á
+void GridSystem::SetTileType(Math::ivec2 pos, TileType type) {
+    if (!IsValidTile(pos)) {
+        Engine::GetLogger().LogError("SetTileType: Invalid tile position.");
+        return;
     }
-    return tiles[static_cast<int>(tile.x)][static_cast<int>(tile.y)];
+    tile_grid[pos.y][pos.x] = type;
 }
 
-void GridSystem::SetTileType(Math::vec2 tile, TileType type)
-{
-    if (!IsValidTile(tile))
-    {
-        std::cerr << "SetTileType: invalid tile position (" << tile.x << ", " << tile.y << ")\n";
-        return;  // ¹«½ÃÇÏ°Å³ª ¿¹¿ÜÃ³¸® ¶Ç´Â ·Î±×¸¸ ³²±â°í ÇÔ¼ö Á¾·á
+GridSystem::TileType GridSystem::GetTileType(Math::ivec2 pos) const {
+    if (!IsValidTile(pos)) {
+        return TileType::Invalid;
     }
-    tiles[static_cast<int>(tile.x)][static_cast<int>(tile.y)] = type;
+    return tile_grid[pos.y][pos.x];
 }
 
-void GridSystem::PlaceCharacter(MockCharacter* character, Math::vec2 pos)
-{
-    /*assert(IsValidTile(pos) && "PlaceCharacter: invalid tile");
-    assert(!IsOccupied(pos) && "PlaceCharacter: tile already occupied");*/
-    if (!IsValidTile(pos))
-    {
-        std::cerr << "PlaceCharacter: invalid tile" << "\n";
-        return;  // ¹«½ÃÇÏ°Å³ª ¿¹¿ÜÃ³¸® ¶Ç´Â ·Î±×¸¸ ³²±â°í ÇÔ¼ö Á¾·á
+bool GridSystem::IsOccupied(Math::ivec2 pos) const {
+    if (!IsValidTile(pos)) {
+        return true; // ë§µ ë°–ì€ í•­ìƒ ì ìœ ëœ ê²ƒìœ¼ë¡œ ê°„ì£¼í•˜ì—¬ ì´ë™ ë¶ˆê°€ ì²˜ë¦¬
     }
-    if (IsOccupied(pos))
-    {
-        std::cerr << "PlaceCharacter: tile already occupied" << "\n";
-        return;  // ¹«½ÃÇÏ°Å³ª ¿¹¿ÜÃ³¸® ¶Ç´Â ·Î±×¸¸ ³²±â°í ÇÔ¼ö Á¾·á
+    return character_grid[pos.y][pos.x] != nullptr;
+}
+
+
+void GridSystem::Draw() const {
+
+    for (int y = 0; y < MAP_HEIGHT; ++y) {
+        for (int x = 0; x < MAP_WIDTH; ++x) {
+
+            int screen_x = x * TILE_SIZE;
+            int screen_y = y * TILE_SIZE;
+
+            switch (tile_grid[y][x]) {
+            case TileType::Wall:
+                DrawRectangle(screen_x, screen_y, TILE_SIZE, TILE_SIZE, BROWN);
+                break;
+            case TileType::Empty:
+                break;
+            default:
+                break;
+            }
+            Character* character = character_grid[y][x];
+            if (character != nullptr) {
+                Color char_color = WHITE; // ê¸°ë³¸ ìƒ‰ìƒ
+                switch (character->GetCharacterType()) {
+                case CharacterTypes::Fighter:
+                    char_color = BLUE; // íŒŒì´í„°(f)ëŠ” íŒŒë€ìƒ‰
+                    break;
+                case CharacterTypes::Dragon:
+                    char_color = RED; // ë“œë˜ê³¤(d)ì€ ë¹¨ê°„ìƒ‰
+                    break;
+                default:
+                    break;
+                }
+                DrawRectangle(screen_x, screen_y, TILE_SIZE, TILE_SIZE, char_color);
+            }
+
+            DrawRectangleLines(screen_x, screen_y, TILE_SIZE, TILE_SIZE, DARKGRAY);
+        }
     }
-
-    occupiedTiles[pos] = character;
 }
 
-void GridSystem::RemoveCharacter(Math::vec2 pos)
-{
-    occupiedTiles.erase(pos);  
+bool GridSystem::IsWalkable(Math::ivec2 pos) const {
+    // íƒ€ì¼ì´ ë¹„ì–´ìˆê³ (Empty), ìºë¦­í„°ë„ ì—†ì–´ì•¼(Not Occupied) ê±¸ì„ ìˆ˜ ìˆìŒ
+    return GetTileType(pos) == TileType::Empty && !IsOccupied(pos);
 }
-MockCharacter* GridSystem::GetCharacterAt(Math::vec2 pos) const
-{
-    auto it = occupiedTiles.find(pos);
-    if (it != occupiedTiles.end())
-        return it->second;
-    return nullptr;
+
+void GridSystem::AddCharacter(Character* character, Math::ivec2 pos) {
+    if (!IsValidTile(pos)) {
+        Engine::GetLogger().LogError("AddCharacter: Invalid tile position.");
+        return;
+    }
+    if (IsOccupied(pos)) {
+        Engine::GetLogger().LogError("AddCharacter: Tile is already occupied.");
+        return;
+    }
+    character_grid[pos.y][pos.x] = character;
+}
+
+void GridSystem::RemoveCharacter(Math::ivec2 pos) {
+    if (!IsValidTile(pos)) return;
+    character_grid[pos.y][pos.x] = nullptr;
+}
+
+Character* GridSystem::GetCharacterAt(Math::ivec2 pos) const {
+    if (!IsValidTile(pos)) {
+        return nullptr;
+    }
+    return character_grid[pos.y][pos.x];
+}
+
+void GridSystem::MoveCharacter(Math::ivec2 old_pos, Math::ivec2 new_pos) {
+    if (!IsValidTile(old_pos) || !IsValidTile(new_pos)) {
+        Engine::GetLogger().LogError("MoveCharacter: Invalid tile position.");
+        return;
+    }
+    // ê¸°ì¡´ ìœ„ì¹˜ì˜ ìºë¦­í„°ë¥¼ ìƒˆë¡œìš´ ìœ„ì¹˜ë¡œ ì˜®ê¸°ê³ , ê¸°ì¡´ ìœ„ì¹˜ëŠ” ë¹„ì›ë‹ˆë‹¤.
+    character_grid[new_pos.y][new_pos.x] = character_grid[old_pos.y][old_pos.x];
+    character_grid[old_pos.y][old_pos.x] = nullptr;
+}
+
+void GridSystem::Update([[maybe_unused]]double dt) {
+    // GridSystemì´ ë§¤ í”„ë ˆì„ë§ˆë‹¤ ì²˜ë¦¬í•  ë¡œì§ì´ ìˆë‹¤ë©´ ì—¬ê¸°ì— ì‘ì„±
 }
