@@ -9,6 +9,7 @@
 **Week 1 Status**: Foundation complete (EventBus, DiceManager, GridSystem, Character base class)
 
 **Related Documentation**:
+
 - [Week 1](week1.md) for foundation systems
 - [docs/implementation-plan.md](../../implementation-plan.md) for complete 26-week timeline
 
@@ -19,6 +20,7 @@
 Week 2 builds on the Week 1 foundation to create the first playable characters (Dragon and Fighter) with grid movement and basic combat.
 
 **Critical Success Criteria:**
+
 - ✅ **Dragon class**: Extends Character, basic movement, HP=250, 3d8 attack
 - ✅ **Fighter class**: Extends Character, HP=90, 2d6 attack
 - ✅ **GridSystem pathfinding**: A* algorithm, GetReachableTiles(), movement validation
@@ -26,12 +28,14 @@ Week 2 builds on the Week 1 foundation to create the first playable characters (
 - ✅ **CombatSystem foundation**: ApplyDamage(), dice-based damage calculation, death handling
 
 **Integration Goal (Friday Week 2)**:
+
 - Dragon and Fighter spawn on grid
 - Dragon moves using A* pathfinding
 - Basic combat damage calculation works
 - Turn order initializes and progresses properly
 
 **Meeting Schedule:**
+
 - **Daily Standups**: 10 min each morning (9:00 AM)
 - **Friday Integration Meeting**: 45 min (2:00 PM - demos + Week 3 planning)
 
@@ -72,6 +76,7 @@ Week 2 builds on the Week 1 foundation to create the first playable characters (
 **Foundation**: Character base class from Week 1 provides HP, AP, state machine, and basic methods
 
 **Files to Create**:
+
 ```
 CS230/Game/Characters/Dragon.h
 CS230/Game/Characters/Dragon.cpp
@@ -476,26 +481,31 @@ bool Test_Dragon_Die() {
 ### Daily Breakdown (Developer A)
 
 **Monday (Day 1)**: Dragon class structure + initialization
+
 - Morning: Create Dragon.h/cpp, implement constructor
 - Afternoon: Implement InitializeDragonStats(), test initialization
 - **Deliverable**: Dragon spawns with correct stats (HP=250, speed=3)
 
 **Tuesday (Day 2)**: Movement methods
+
 - Morning: Implement MoveTo(), GetReachableTiles()
 - Afternoon: Test movement validation (out of bounds, occupied, too far)
 - **Deliverable**: Dragon can validate moves
 
 **Wednesday (Day 3)**: GridSystem integration
+
 - Morning: Integrate with GridSystem pathfinding (Developer B coordination)
 - Afternoon: Test actual movement on grid
 - **Deliverable**: Dragon moves on grid consuming correct AP
 
 **Thursday (Day 4)**: Combat integration
+
 - Morning: Integrate TakeDamage() with EventBus
 - Afternoon: Test combat scenarios, death handling
 - **Deliverable**: Dragon takes damage, publishes events
 
 **Friday (Day 5)**: Integration testing + polish
+
 - Morning: Integration tests with Fighter (Developer D)
 - Afternoon: Bug fixes, Friday demo prep
 - **Deliverable**: Dragon vs Fighter demo ready
@@ -509,6 +519,7 @@ bool Test_Dragon_Die() {
 **Foundation**: GridSystem from Week 1 has 8x8 grid, IsValidTile(), IsWalkable(), IsOccupied()
 
 **Files to Modify**:
+
 ```
 CS230/Game/System/GridSystem.h (add pathfinding methods)
 CS230/Game/System/GridSystem.cpp (implement A*)
@@ -1025,26 +1036,31 @@ bool Test_Pathfinding_UnwalkableGoal() {
 ### Daily Breakdown (Developer B)
 
 **Monday (Day 1)**: A* data structures + basic algorithm
+
 - Morning: Add Node struct, pathfinding method signatures
 - Afternoon: Implement FindPath() basic A* logic
 - **Deliverable**: A* finds straight-line paths
 
 **Tuesday (Day 2)**: Complete A* with obstacle avoidance
+
 - Morning: Add neighbor checking, walkable validation
 - Afternoon: Test paths around obstacles
 - **Deliverable**: A* navigates around walls
 
 **Wednesday (Day 3)**: Helper methods + optimization
+
 - Morning: Implement GetPathLength(), GetReachableTiles()
 - Afternoon: Optimize A* (node pooling, early exit)
 - **Deliverable**: All pathfinding methods working
 
 **Thursday (Day 4)**: Edge case testing
+
 - Morning: Test invalid positions, no path scenarios
 - Afternoon: Test performance (large grids, complex paths)
 - **Deliverable**: Robust pathfinding with error handling
 
 **Friday (Day 5)**: Integration with Dragon/Fighter movement
+
 - Morning: Test Dragon movement using A* (Developer A coordination)
 - Afternoon: Bug fixes, Friday demo prep
 - **Deliverable**: Characters move using A* pathfinding
@@ -1058,6 +1074,7 @@ bool Test_Pathfinding_UnwalkableGoal() {
 **Foundation**: EventBus from Week 1 for turn events
 
 **Files to Create**:
+
 ```
 CS230/Game/System/TurnManager.h
 CS230/Game/System/TurnManager.cpp
@@ -1560,26 +1577,31 @@ bool Test_TurnManager_GetCharacterTurnIndex() {
 ### Daily Breakdown (Developer C)
 
 **Monday (Day 1)**: TurnManager class structure
+
 - Morning: Create TurnManager.h/cpp, singleton setup
 - Afternoon: Implement InitializeTurnOrder(), basic data members
 - **Deliverable**: TurnManager can store character list
 
 **Tuesday (Day 2)**: Turn progression logic
+
 - Morning: Implement StartCombat(), StartNextTurn()
 - Afternoon: Implement EndCurrentTurn(), round tracking
 - **Deliverable**: Turn order cycles through characters
 
 **Wednesday (Day 3)**: Action point refresh + event integration
+
 - Morning: Add AP refresh on turn start
 - Afternoon: Integrate TurnStartedEvent, TurnEndedEvent with EventBus
 - **Deliverable**: Characters refresh AP each turn, events published
 
 **Thursday (Day 4)**: Dead character handling
+
 - Morning: Implement skip dead characters logic
 - Afternoon: Test all-dead scenario, combat end conditions
 - **Deliverable**: Turn system handles character death gracefully
 
 **Friday (Day 5)**: Integration testing
+
 - Morning: Test with Dragon/Fighter combat (Developer A/D coordination)
 - Afternoon: Bug fixes, Friday demo prep
 - **Deliverable**: Full turn-based combat loop working
@@ -1593,6 +1615,7 @@ bool Test_TurnManager_GetCharacterTurnIndex() {
 **Foundation**: Character base class from Week 1
 
 **Files to Create**:
+
 ```
 CS230/Game/Characters/Fighter.h
 CS230/Game/Characters/Fighter.cpp
@@ -1948,26 +1971,31 @@ bool Test_Fighter_Movement_TooFar() {
 ### Daily Breakdown (Developer D)
 
 **Monday (Day 1)**: Fighter class structure + initialization
+
 - Morning: Create Fighter.h/cpp, implement constructor
 - Afternoon: Implement InitializeFighterStats(), test initialization
 - **Deliverable**: Fighter spawns with correct stats (HP=90, speed=2)
 
 **Tuesday (Day 2)**: Combat methods
+
 - Morning: Implement BasicAttack() method
 - Afternoon: Test attack validation (range, AP, dead targets)
 - **Deliverable**: Fighter can attack adjacent targets
 
 **Wednesday (Day 3)**: Movement integration
+
 - Morning: Add MoveTo() method (similar to Dragon)
 - Afternoon: Test Fighter movement on grid
 - **Deliverable**: Fighter moves on grid with speed=2
 
 **Thursday (Day 4)**: Combat integration with DiceManager
+
 - Morning: Integrate attack damage with DiceManager (2d6+3)
 - Afternoon: Test damage output, EventBus integration
 - **Deliverable**: Fighter attacks deal correct dice-based damage
 
 **Friday (Day 5)**: Integration testing with Dragon
+
 - Morning: Test Dragon vs Fighter combat (Developer A coordination)
 - Afternoon: Bug fixes, Friday demo prep
 - **Deliverable**: Dragon vs Fighter combat working
@@ -1981,6 +2009,7 @@ bool Test_Fighter_Movement_TooFar() {
 **Foundation**: DiceManager from Week 1, Character from Week 1
 
 **Files to Create**:
+
 ```
 CS230/Game/System/CombatSystem.h
 CS230/Game/System/CombatSystem.cpp
@@ -2421,26 +2450,31 @@ bool Test_CombatSystem_GetDistance() {
 ### Daily Breakdown (Developer E)
 
 **Monday (Day 1)**: CombatSystem class structure
+
 - Morning: Create CombatSystem.h/cpp, singleton setup
 - Afternoon: Implement CalculateDamage() with DiceManager integration
 - **Deliverable**: Damage calculation working with dice rolls
 
 **Tuesday (Day 2)**: Apply damage + death handling
+
 - Morning: Implement ApplyDamage(), integrate with Character.TakeDamage()
 - Afternoon: Test fatal damage, death events
 - **Deliverable**: Damage application with death handling
 
 **Wednesday (Day 3)**: Attack execution
+
 - Morning: Implement ExecuteAttack() (range check, AP check, damage)
 - Afternoon: Test complete attack flow
 - **Deliverable**: Full attack execution working
 
 **Thursday (Day 4)**: Range checking + helpers
+
 - Morning: Implement IsInRange(), GetDistance()
 - Afternoon: Test edge cases (null characters, negative damage)
 - **Deliverable**: Robust combat system with validation
 
 **Friday (Day 5)**: Integration testing
+
 - Morning: Test with Dragon vs Fighter combat (all developers)
 - Afternoon: Bug fixes, Friday demo prep
 - **Deliverable**: Complete combat system ready for demo
@@ -2622,6 +2656,7 @@ All Week 2 systems working!
 ### Deliverable Checklist
 
 **Developer A: Dragon Class**
+
 - [x] Dragon.h/cpp created
 - [x] Dragon spawns with HP=250, speed=3, AP=5
 - [x] Dragon can move using GridSystem
@@ -2630,6 +2665,7 @@ All Week 2 systems working!
 - [x] All tests passing (15+ tests)
 
 **Developer B: GridSystem Pathfinding**
+
 - [x] A* algorithm implemented
 - [x] FindPath() works around obstacles
 - [x] GetPathLength() returns correct distances
@@ -2638,6 +2674,7 @@ All Week 2 systems working!
 - [x] All tests passing (20+ tests)
 
 **Developer C: TurnManager**
+
 - [x] TurnManager.h/cpp created
 - [x] InitializeTurnOrder() works
 - [x] Turn progression cycles correctly
@@ -2647,6 +2684,7 @@ All Week 2 systems working!
 - [x] All tests passing (15+ tests)
 
 **Developer D: Fighter Class**
+
 - [x] Fighter.h/cpp created
 - [x] Fighter spawns with HP=90, speed=2, AP=4
 - [x] Fighter can move using GridSystem
@@ -2655,6 +2693,7 @@ All Week 2 systems working!
 - [x] All tests passing (15+ tests)
 
 **Developer E: CombatSystem**
+
 - [x] CombatSystem.h/cpp created
 - [x] CalculateDamage() uses DiceManager
 - [x] ApplyDamage() works with death handling
