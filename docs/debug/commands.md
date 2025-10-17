@@ -2,15 +2,19 @@
 
 This document provides complete implementation examples for debug console commands used throughout Dragonic Tactics development.
 
+**Reference**: Command implementation timeline aligns with [implementation-plan.md](../implementation-plan.md) Weeks 1-26.
+
 ---
 
 ## Table of Contents
 
 1. [Command Registration System](#command-registration-system)
-2. [Phase 1 Commands (Weeks 1-6)](#phase-1-commands-weeks-1-6)
-3. [Phase 2 Commands (Weeks 7-12)](#phase-2-commands-weeks-7-12)
-4. [Phase 3 Commands (Weeks 13-20)](#phase-3-commands-weeks-13-20)
-5. [God Mode Integration](#god-mode-integration)
+2. [Week 1 Commands - Foundation Testing](#week-1-commands---foundation-testing)
+3. [Week 2-3 Commands - Character & Combat](#week-2-3-commands---character--combat)
+4. [Week 4-5 Commands - Turn System & Hot Reload](#week-4-5-commands---turn-system--hot-reload)
+5. [Week 6-10 Commands - Spell Expansion](#week-6-10-commands---spell-expansion)
+6. [Week 11-20 Commands - AI & Advanced Features](#week-11-20-commands---ai--advanced-features)
+7. [God Mode Integration](#god-mode-integration)
 
 ---
 
@@ -113,11 +117,258 @@ void InitializeDebugCommands() {
 
 ---
 
-## Phase 1 Commands (Weeks 1-6)
+## Week 1 Commands - Foundation Testing
 
-### 1. reload - Hot Reload JSON Data
+**Context**: Week 1 builds 5 foundation systems in parallel (implementation-plan.md:250-260). Debug commands must test each system immediately.
+
+**Systems Built Week 1**:
+
+- Character base class (Dev A)
+- GridSystem foundation (Dev B)
+- EventBus singleton (Dev C)
+- DiceManager singleton (Dev D)
+- DebugConsole framework (Dev E)
+
+**Commands Needed**:
+
+1. `help` - List all available commands
+2. `clear` - Clear console output
+3. `roll` - Test DiceManager
+4. `setseed` - Set RNG seed for reproducible testing
+
+---
+
+### 1. help - Show Available Commands
+
+**Purpose**: List all registered commands or show help for specific command
+
+**When to Implement**: Week 1 (alongside DebugConsole framework)
+
+**Implementation**:
+
+```cpp
+// Register in Week 1 during DebugConsole initialization
+DebugConsole::Instance().RegisterCommand("help",
+    [](std::vector<std::string> args) {
+        if (args.empty()) {
+            // List all commands
+            DebugConsole::Instance().AddOutput("=== Available Commands ===", ConsoleColor::Yellow);
+
+            auto& commands = DebugConsole::Instance().GetAllCommands();
+            for (const auto& [name, handler] : commands) {
+                DebugConsole::Instance().AddOutput("  " + name, ConsoleColor::White);
+            }
+
+            DebugConsole::Instance().AddOutput("\nType 'help <command>' for details", ConsoleColor::Green);
+        } else {
+            // Show help for specific command
+            std::string cmdName = args[0];
+            std::string helpText = DebugConsole::Instance().GetHelpText(cmdName);
+
+            if (!helpText.empty()) {
+                DebugConsole::Instance().AddOutput("=== " + cmdName + " ===", ConsoleColor::Yellow);
+                DebugConsole::Instance().AddOutput(helpText, ConsoleColor::White);
+            } else {
+                DebugConsole::Instance().AddOutput("Unknown command: " + cmdName, ConsoleColor::Red);
+            }
+        }
+    },
+    "help [command] - Show available commands or help for specific command"
+);
+```
+
+**Week 1 Integration Test**:
+
+```
+> help
+Expected: List all Week 1 commands (help, clear, roll, setseed)
+
+> help roll
+Expected: Show "roll <notation> - Test dice rolling (e.g., roll 3d6)"
+```
+
+---
+
+### 2. clear - Clear Console Output
+
+**Purpose**: Clear console output buffer
+
+**When to Implement**: Week 1 (basic console feature)
+
+**Implementation**:
+
+```cpp
+DebugConsole::Instance().RegisterCommand("clear",
+    [](std::vector<std::string> args) {
+        DebugConsole::Instance().ClearOutputBuffer();
+        DebugConsole::Instance().AddOutput("Console cleared", ConsoleColor::Green);
+    },
+    "clear - Clear console output"
+);
+```
+
+---
+
+### 3. roll - Test Dice Rolling
+
+**Purpose**: Test DiceManager's RollDiceFromString() function
+
+**When to Implement**: Week 1 (tests Dev D's DiceManager system)
+
+**Critical For**: Verifying dice system works before combat integration (Week 3)
+
+**Implementation**:
+
+```cpp
+// Register in Week 1 after DiceManager implementation
+DebugConsole::Instance().RegisterCommand("roll",
+    [](std::vector<std::string> args) {
+        if (args.empty()) {
+            DebugConsole::Instance().AddOutput("Usage: roll <dice notation>", ConsoleColor::Red);
+            DebugConsole::Instance().AddOutput("Examples: roll 3d6, roll 2d8+5, roll 1d20-2", ConsoleColor::Yellow);
+            return;
+        }
+
+        std::string diceNotation = args[0];
+
+        // Call DiceManager (Dev D's system)
+        int result = DiceManager::Instance().RollDiceFromString(diceNotation);
+
+        DebugConsole::Instance().AddOutput(
+            "Rolled " + diceNotation + " = " + std::to_string(result),
+            ConsoleColor::Green
+        );
+
+        // Show individual die results (helps verify distribution)
+        auto lastRolls = DiceManager::Instance().GetLastRolls();
+        if (!lastRolls.empty()) {
+            std::string breakdown = "Individual rolls: [";
+            for (size_t i = 0; i < lastRolls.size(); ++i) {
+                breakdown += std::to_string(lastRolls[i]);
+                if (i < lastRolls.size() - 1) breakdown += ", ";
+            }
+            breakdown += "]";
+            DebugConsole::Instance().AddOutput(breakdown, ConsoleColor::Yellow);
+        }
+    },
+    "roll <notation> - Test dice rolling (e.g., roll 3d6, roll 2d8+5)"
+);
+```
+
+**Week 1 Integration Test** (implementation-plan.md:789-796):
+
+```
+> roll 3d6
+Expected: "Rolled 3d6 = 12"
+Expected: "Individual rolls: [4, 5, 3]"
+
+> roll 2d8+5
+Expected: Result between 7-21, shows [die1, die2] + modifier
+
+> roll 1d20
+Expected: Result between 1-20
+```
+
+---
+
+### 4. setseed - Set RNG Seed
+
+**Purpose**: Set DiceManager's RNG seed for reproducible testing
+
+**When to Implement**: Week 1 (critical for deterministic tests)
+
+**Why Critical**: Needed to reproduce bugs with specific dice rolls
+
+**Implementation**:
+
+```cpp
+// Register in Week 1 after DiceManager implementation
+DebugConsole::Instance().RegisterCommand("setseed",
+    [](std::vector<std::string> args) {
+        if (args.empty()) {
+            DebugConsole::Instance().AddOutput("Usage: setseed <number>", ConsoleColor::Red);
+            DebugConsole::Instance().AddOutput("Use same seed for reproducible RNG", ConsoleColor::Yellow);
+            return;
+        }
+
+        int seed = std::stoi(args[0]);
+        DiceManager::Instance().SetSeed(seed);
+
+        DebugConsole::Instance().AddOutput(
+            "Set RNG seed to " + std::to_string(seed) + " (results now reproducible)",
+            ConsoleColor::Green
+        );
+    },
+    "setseed <number> - Set dice RNG seed for reproducible testing"
+);
+```
+
+**Week 1 Integration Test** (implementation-plan.md:792-796):
+
+```
+> setseed 42
+> roll 3d6
+Result: 15 [6, 5, 4]
+
+> setseed 42
+> roll 3d6
+Expected: Same result (15 [6, 5, 4]) - proves RNG is reproducible
+```
+
+---
+
+## Week 2-3 Commands - Character & Combat
+
+**Context**: Week 2-3 adds Dragon, GridSystem, and basic combat (implementation-plan.md:265-298).
+
+**Systems Built Week 2-3**:
+
+- Dragon class (Week 2)
+- GridSystem pathfinding (Week 2)
+- CombatSystem basics (Week 3)
+- SpellSystem foundation (Week 3)
+- Fighter enemy class (Week 3)
+
+**Commands Needed**:
+
+1. `spawn` - Create characters on grid (Week 2)
+2. `teleport` - Move characters instantly (Week 2)
+3. `damage` - Test combat damage (Week 3)
+4. `heal` - Test healing (Week 3)
+5. `kill` - Remove character (Week 3)
+6. `castspell` - Test spell casting (Week 3)
+7. `debug grid` - Toggle grid overlay (Week 2)
+
+---
+
+## Week 4-5 Commands - Turn System & Hot Reload
+
+**Context**: Week 4-5 completes foundation for PLAYTEST 1 (implementation-plan.md:302-342).
+
+**Systems Built Week 4-5**:
+
+- TurnManager with initiative (Week 4)
+- DataRegistry with hot-reload (Week 4)
+- BattleState integration (Week 5)
+- God Mode basics (Week 5)
+
+**Commands Needed**:
+
+1. `reload` - Hot reload JSON data (Week 4 - CRITICAL)
+2. `endturn` - Force end turn (Week 4)
+3. `nextturn` - Skip N turns (Week 4)
+4. `showturnorder` - Display initiative queue (Week 4)
+5. `god` - Toggle god mode (Week 5)
+
+---
+
+### reload - Hot Reload JSON Data
 
 **Purpose**: Reload data files without restarting the game
+
+**When to Implement**: Week 4 (alongside DataRegistry - Dev D's system)
+
+**Critical For**: Week 4 integration test (implementation-plan.md:945-950) - MUST verify hot reload works
 
 ```cpp
 // Register in Week 1 after DataRegistry implementation

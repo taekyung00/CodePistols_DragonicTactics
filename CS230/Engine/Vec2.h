@@ -34,8 +34,14 @@ namespace Math {
         vec2 operator*(double scale);
         vec2 operator*(double scale) const;
         vec2& operator*=(double scale);
+        bool operator<(const vec2& other) const {
+            return (x < other.x) || (x == other.x && y < other.y);
+        }
 
-        
+        bool operator==(const vec2& other) const {
+            return x == other.x && y == other.y;
+        }
+
 
         vec2 operator/(double divisor);
         vec2 operator/(double divisor)const;
@@ -48,7 +54,7 @@ namespace Math {
     //vec2 operator-(const vec2& v1, const vec2& v2);
     vec2 operator*(double scale, const vec2& v);
 
-    
+
 
     struct ivec2 {
         int x{ 0 };
@@ -92,4 +98,3 @@ namespace Math {
     vec2 operator*(double scale, const ivec2& v);
 
 }
-

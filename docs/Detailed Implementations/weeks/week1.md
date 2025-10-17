@@ -89,6 +89,204 @@ Playtest 1 delivers the **first playable milestone** (Dragon vs Fighter battle) 
 
 **End of Week 1**: All 5 core systems **fully implemented and functional**
 
+### **🔧 Independent Testing Strategy (CRITICAL FOR WEEK 1)**
+
+**Problem**: Circular dependencies prevent independent testing - EventBus needs Character, GridSystem needs Character, DebugConsole needs Logger, etc.
+
+**Solution**: Use **Mock Classes** for independent testing, then replace with real implementations for integration testing.
+
+#### **Shared Test Infrastructure**
+
+Create this file **FIRST** (before any developer starts testing):
+
+```cpp
+// File: CS230/Game/Test/Week1TestMocks.h
+#pragma once
+#include "../Engine/Vec2.h"
+#include <string>
+#include <vector>
+#include <iostream>
+
+// Mock Character for EventBus and GridSystem testing
+class MockCharacter {
+public:
+    MockCharacter(const std::string& name = "MockChar")
+        : name(name), hp(100), maxHP(100), gridPos{0, 0} {}
+
+    // EventBus interface
+    std::string TypeName() const { return name; }
+    int GetCurrentHP() const { return hp; }
+    int GetMaxHP() const { return maxHP; }
+    void SetHP(int newHP) { hp = newHP; }
+
+    // GridSystem interface
+    Math::vec2 GetGridPosition() const { return gridPos; }
+    void SetGridPosition(Math::vec2 pos) { gridPos = pos; }
+
+private:
+    std::string name;
+    int hp, maxHP;
+    Math::vec2 gridPos;
+};
+
+// Mock Logger for DebugConsole testing
+class MockLogger {
+public:
+    void LogEvent(const std::string& msg) { events.push_back(msg); }
+    void LogError(const std::string& msg) { errors.push_back(msg); }
+    void LogDebug(const std::string& msg) { debug.push_back(msg); }
+
+    std::vector<std::string> GetEvents() const { return events; }
+    std::vector<std::string> GetErrors() const { return errors; }
+    void Clear() { events.clear(); errors.clear(); debug.clear(); }
+
+private:
+    std::vector<std::string> events, errors, debug;
+};
+
+// Test assertion macros (lightweight)
+#define ASSERT_TRUE(condition) \
+    if (!(condition)) { \
+        std::cout << "❌ ASSERT_TRUE failed: " << #condition << std::endl; \
+        return false; \
+    }
+
+#define ASSERT_FALSE(condition) \
+    if ((condition)) { \
+        std::cout << "❌ ASSERT_FALSE failed: " << #condition << std::endl; \
+        return false; \
+    }
+
+#define ASSERT_EQ(actual, expected) \
+    if ((actual) != (expected)) { \
+        std::cout << "❌ ASSERT_EQ failed: " << #actual << " = " << (actual) \
+                  << ", expected " << (expected) << std::endl; \
+        return false; \
+    }
+
+#define ASSERT_NE(actual, expected) \
+    if ((actual) == (expected)) { \
+        std::cout << "❌ ASSERT_NE failed: " << #actual << " = " << (actual) \
+                  << ", expected NOT " << (expected) << std::endl; \
+        return false; \
+    }
+
+#define ASSERT_GE(actual, minimum) \
+    if ((actual) < (minimum)) { \
+        std::cout << "❌ ASSERT_GE failed: " << #actual << " = " << (actual) \
+                  << ", expected >= " << (minimum) << std::endl; \
+        return false; \
+    }
+
+#define ASSERT_LE(actual, maximum) \
+    if ((actual) > (maximum)) { \
+        std::cout << "❌ ASSERT_LE failed: " << #actual << " = " << (actual) \
+                  << ", expected <= " << (maximum) << std::endl; \
+        return false; \
+    }
+```
+
+#### **Testing Phases**
+
+**Phase 1 (Days 1-4): Individual Testing**
+
+- Each developer tests their system with mocks **independently**
+- No waiting for other developers to finish
+- Immediate feedback and iteration
+
+**Phase 2 (Day 5): Integration Testing**
+
+- Replace mocks with real implementations
+- Test full system integration
+- Fix any interface mismatches
+
+#### **Developer-Specific Mock Usage**
+
+**Developer A (Character)**: ✅ **No dependencies** - test directly as written
+
+**Developer B (GridSystem)**: Use `MockCharacter` instead of real Character class
+
+```cpp
+// Example test with MockCharacter
+bool Test_GridSystem_Independent() {
+    GridSystem grid;
+    MockCharacter character("TestChar");
+
+    grid.PlaceCharacter(&character, {4, 4});
+    ASSERT_TRUE(grid.IsOccupied({4, 4}));
+    ASSERT_EQ(grid.GetCharacterAt({4, 4}), &character);
+    return true;
+}
+```
+
+**Developer C (EventBus)**: Use `MockCharacter` for event testing
+
+```cpp
+// Example EventBus test with MockCharacter
+bool Test_EventBus_Independent() {
+    EventBus::Instance().Clear();
+
+    MockCharacter victim("Dragon");
+    MockCharacter attacker("Fighter");
+
+    bool received = false;
+    int receivedDamage = 0;
+
+    EventBus::Instance().Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
+        received = true;
+        receivedDamage = e.damageAmount;
+    });
+
+    CharacterDamagedEvent event{&victim, 42, 58, &attacker, true};
+    EventBus::Instance().Publish(event);
+
+    ASSERT_TRUE(received);
+    ASSERT_EQ(receivedDamage, 42);
+    return true;
+}
+```
+
+**Developer D (DiceManager)**: ✅ **No dependencies** - test directly as written
+
+**Developer E (DebugConsole)**: Use `MockLogger` for testing
+
+```cpp
+// Example DebugConsole test with MockLogger
+bool Test_DebugConsole_Independent() {
+    DebugConsole console;
+    MockLogger logger;
+
+    console.RegisterCommand("test",
+        [&logger](std::vector<std::string> args) {
+            logger.LogEvent("Test command executed");
+        },
+        "Test command");
+
+    console.ExecuteCommand("test");
+
+    auto events = logger.GetEvents();
+    ASSERT_EQ(events.size(), 1);
+    ASSERT_EQ(events[0], "Test command executed");
+    return true;
+}
+```
+
+#### **Benefits of This Approach**
+
+1. **🚀 No Blocking**: Each developer can test immediately without waiting
+2. **⚡ Faster Iteration**: Test your system as you build it
+3. **🔍 Clear Interfaces**: Mocks define exactly what each system expects
+4. **🛠️ Easier Debugging**: Isolate problems to specific systems
+5. **📋 Better Planning**: Integration testing reveals interface mismatches early
+
+#### **Week 1 Testing Schedule**
+
+- **Monday-Thursday**: Individual testing with mocks
+- **Friday Morning**: Replace mocks with real implementations
+- **Friday Afternoon**: Integration testing and fixes
+
+**IMPORTANT**: Every developer should have their system working with mocks before Friday!
+
 ---
 
 ### Week 1: Developer A - Character Base Class
@@ -542,7 +740,7 @@ CS230/Game/Systems/GridSystem.cpp
 
 **Note**: Pathfinding (A*) and line-of-sight added in Week 2
 
-**Rigorous Testing**:
+**Rigorous Testing** (using MockCharacter for character placement tests):
 
 **Test Suite 1: Tile Validation**
 
@@ -633,8 +831,10 @@ CS230/Game/Systems/GridSystem.cpp
 - [ ] **Test_PlaceCharacter_SingleCharacter()**
   
   ```cpp
+  #include "../Test/Week1TestMocks.h"  // Include mock classes
+  
   GridSystem grid;
-  TestCharacter character;
+  MockCharacter character("TestChar");
   
   // Place character
   grid.PlaceCharacter(&character, {4, 4});
@@ -653,7 +853,7 @@ CS230/Game/Systems/GridSystem.cpp
   
   ```cpp
   GridSystem grid;
-  TestCharacter char1, char2, char3;
+  MockCharacter char1("Char1"), char2("Char2"), char3("Char3");
   
   grid.PlaceCharacter(&char1, {0, 0});
   grid.PlaceCharacter(&char2, {7, 7});
@@ -672,7 +872,7 @@ CS230/Game/Systems/GridSystem.cpp
   
   ```cpp
   GridSystem grid;
-  TestCharacter char1, char2;
+  MockCharacter char1("Char1"), char2("Char2");
   
   // Place char1
   grid.PlaceCharacter(&char1, {4, 4});
@@ -687,7 +887,7 @@ CS230/Game/Systems/GridSystem.cpp
   
   ```cpp
   GridSystem grid;
-  TestCharacter character;
+  MockCharacter character("TestChar");
   
   // Place then remove
   grid.PlaceCharacter(&character, {4, 4});
@@ -860,12 +1060,14 @@ if (grid.GetTileType({5, 5}) == TileType::Difficult) {
 ```
 CS230/Game/Singletons/EventBus.h
 CS230/Game/Singletons/EventBus.cpp
-CS230/Game/Types/Events.h
+CS230/Game/Events/Events.h
 ```
+
+**Note**: For Week 1, we start with a single `Events.h` file containing all event types. As the project grows, we can split this into domain-specific files (`CombatEvents.h`, `TurnEvents.h`, etc.) as detailed in [EventBus System Documentation](../../systems/eventbus.md).
 
 **Implementation Tasks**:
 
-- [ ] **EventBus singleton class**
+- [x] **EventBus singleton class**
   
   ```cpp
   class EventBus {
@@ -879,46 +1081,71 @@ CS230/Game/Types/Events.h
       void Publish(const T& event);
   
       void Clear();  // Clear all subscriptions
+      void SetLogging(bool enabled);  // Enable/disable event logging
+      bool IsLoggingEnabled() const;
   
   private:
       std::map<std::type_index, std::vector<std::function<void(const void*)>>> subscribers;
+      bool loggingEnabled = false;
+  
+      void LogEvent(const std::string& eventType, const void* eventData);
   };
   ```
 
-- [ ] **Define all event types** (in Events.h):
+- [x] **Define all event types** (in Events.h):
   
   ```cpp
-  struct DamageTakenEvent {
-      Character* victim;
-      int damage;
+  struct CharacterDamagedEvent {
+      Character* target;
+      int damageAmount;
+      int remainingHP;
       Character* attacker;
+      bool wasCritical;
   };
   
-  struct CharacterDiedEvent {
-      Character* deadCharacter;
+  struct CharacterHealedEvent {
+      Character* target;
+      int healAmount;
+      int currentHP;
+      int maxHP;
+      Character* healer;
+  };
+  
+  struct CharacterDeathEvent {
+      Character* character;
       Character* killer;
   };
   
   struct TurnStartedEvent {
-      Character* activeCharacter;
+      Character* character;
       int turnNumber;
+      int actionPoints;
   };
   
   struct TurnEndedEvent {
-      Character* finishedCharacter;
+      Character* character;
+      int actionsUsed;
   };
   
   struct SpellCastEvent {
       Character* caster;
       std::string spellName;
-      int level;
-      Math::vec2 targetTile;
+      int spellLevel;
+      Math::ivec2 targetGrid;
+      int spellSlotUsed;
   };
   
-  struct MovementEvent {
+  struct CharacterMovedEvent {
       Character* character;
-      Math::vec2 fromTile;
-      Math::vec2 toTile;
+      Math::ivec2 fromGrid;
+      Math::ivec2 toGrid;
+      int actionPointsSpent;
+  };
+  
+  struct AttackMissedEvent {
+      Character* attacker;
+      Character* target;
+      std::string reason;
   };
   
   // Define 10+ event types total
@@ -928,47 +1155,276 @@ CS230/Game/Types/Events.h
 
 ```cpp
 // Subscribe to events
-EventBus::Instance().Subscribe<DamageTakenEvent>([](const DamageTakenEvent& e) {
-    Engine::GetLogger().LogEvent("Character took " + std::to_string(e.damage) + " damage");
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([](const CharacterDamagedEvent& e) {
+    Engine::GetLogger().LogEvent("Character took " + std::to_string(e.damageAmount) + " damage");
 });
 
 // Publish events
-DamageTakenEvent event{victim, 30, attacker};
+CharacterDamagedEvent event{victim, 30, 70, attacker, false};
 EventBus::Instance().Publish(event);
 ```
 
-**Rigorous Testing**:
+---
+
+#### 🏗️ EventBus Design Philosophy
+
+**IMPORTANT DESIGN DECISION**: Understanding Why Type-Based Subscription is Correct
+
+**Question**: "Should EventBus distinguish individual subscribers, or only event types?"
+
+**Answer**: **EventBus uses type-based subscription (`std::type_index(typeid(T))`) - This is CORRECT by design.**
+
+##### Why Type-Based Subscription Works
+
+**Current Design:**
+
+```cpp
+// EventBus internally uses:
+std::map<std::type_index, std::vector<CallbackWrapper>> subscribers;
+
+// Multiple systems subscribe to the SAME event type
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([](const CharacterDamagedEvent& e) {
+    // System A: Update UI
+});
+
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([](const CharacterDamagedEvent& e) {
+    // System B: Log damage
+});
+
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([](const CharacterDamagedEvent& e) {
+    // System C: Update AI memory
+});
+
+// When event published, ALL subscribers receive it (broadcast semantics)
+EventBus::Instance().Publish(CharacterDamagedEvent{dragon, 15, 125, fighter, true});
+```
+
+**Key Insight**: Events are **broadcast announcements**, not **direct messages**.
+
+##### Event Data Contains Context for Filtering
+
+Notice that event structs include `target`, `attacker`, `character` fields:
+
+```cpp
+struct CharacterDamagedEvent {
+    Character* target;      // WHO was damaged (filtering info)
+    int damageAmount;
+    int remainingHP;
+    Character* attacker;    // WHO dealt damage (context)
+    bool wasCritical;
+};
+```
+
+**Subscribers filter by checking event data:**
+
+```cpp
+// BattleManager subscribes to ALL death events
+EventBus::Instance().Subscribe<CharacterDeathEvent>([this](const CharacterDeathEvent& e) {
+    if (e.character->Type() == GameObjectTypes::Dragon) {
+        EndBattle(false);  // Dragon died - game over
+    }
+});
+
+// StatusInfoOverlay subscribes to ALL damage events
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& e) {
+    UpdateHPBar(e.target);  // Update UI for damaged character
+});
+
+// Dragon's component filters by target
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& e) {
+    if (e.target == this->owner) {  // Filter: is this event for MY character?
+        PlayDamageAnimation();
+    }
+});
+```
+
+##### Why Multiple Systems Need the Same Event
+
+**Example**: When Dragon casts Fireball:
+
+```cpp
+EventBus::Instance().Publish(SpellCastEvent{&dragon, "Fireball", 1, {7,7}, 1});
+```
+
+**Six different systems react to this ONE event:**
+
+1. ✅ **EffectManager** → Spawn fireball projectile animation
+2. ✅ **Logger** → Record: "Dragon cast Fireball at (7,7)"
+3. ✅ **AIMemory (all AI characters)** → Update: "Dragon used offensive spell"
+4. ✅ **AIDirector** → Update threat: Dragon is aggressive
+5. ✅ **DebugUIOverlay** → Display spell cast in event log
+6. ✅ **SaveManager** → Track spell usage stats
+
+**If EventBus distinguished subscribers, you'd need:**
+
+```cpp
+// ❌ WRONG - This defeats the purpose of EventBus!
+Publish(SpellCastEvent, target=EffectManager);
+Publish(SpellCastEvent, target=Logger);
+Publish(SpellCastEvent, target=AIMemory);
+// ... (6 separate publishes - tight coupling!)
+```
+
+##### Real-World Example: Fighter Attacks Dragon
+
+```cpp
+// CombatSystem publishes ONE event
+EventBus::Instance().Publish(CharacterDamagedEvent{
+    .target = dragon,
+    .damageAmount = 15,
+    .remainingHP = 125,
+    .attacker = fighter,
+    .wasCritical = true
+});
+
+// All subscribers react (each checks event data):
+
+// 1. StatusInfoOverlay: Update Dragon's HP bar
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& e) {
+    UpdateHPBar(e.target);  // Dragon's HP bar updates
+});
+
+// 2. BattleManager: Check victory conditions
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& e) {
+    if (e.remainingHP <= 0) {
+        CheckVictoryConditions();
+    }
+});
+
+// 3. AIDirector: Update threat assessment
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& e) {
+    UpdateThreat(e.attacker, +10);  // Fighter is dangerous
+});
+
+// 4. EffectManager: Show damage particle effect
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& e) {
+    SpawnDamageNumber(e.target->GetPosition(), e.damageAmount);
+    if (e.wasCritical) {
+        SpawnCriticalFlash(e.target->GetPosition());
+    }
+});
+
+// 5. Logger: Record event
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& e) {
+    LogEvent(e.attacker->TypeName() + " dealt " +
+             std::to_string(e.damageAmount) + " damage to " +
+             e.target->TypeName());
+});
+```
+
+**All 5 systems react to ONE event publish** → Perfect decoupling!
+
+##### Performance Analysis
+
+**Question**: "Won't ALL subscribers get called even if event isn't for them?"
+
+**Answer**: Yes, but this is **intentional and efficient** for turn-based tactical RPG.
+
+**Scenario**: Dragon takes damage
+
+```cpp
+EventBus::Instance().Publish(CharacterDamagedEvent{dragon, 10, 130, fighter, false});
+```
+
+**Cost per subscriber**: ~5-10 instructions to check `if (e.target == this)`
+**Total subscribers**: ~8-10 systems
+**Total cost**: ~80 instructions ≈ **0.0001ms on modern CPU**
+
+**For turn-based RPG with ~5 characters:**
+
+- Events published: ~10-50 times per turn
+- Total event overhead: **<0.01ms per turn** (negligible)
+
+**Benefit**: Complete decoupling of all systems ✅
+
+##### Why NOT Per-Subscriber Identification
+
+**Anti-Pattern**: Trying to send message to specific subscriber
+
+```cpp
+// ❌ BAD: Publisher must know subscriber IDs (tight coupling)
+EventBus::Instance().PublishTo(CharacterDamagedEvent{...}, targetSubscriber=dragon);
+```
+
+**Problems:**
+
+- ❌ Publisher must know subscribers exist (breaks encapsulation)
+- ❌ Cannot broadcast to multiple systems
+- ❌ Tight coupling defeats loose coupling principle
+- ❌ Wrong abstraction (this is a message queue, not event bus)
+
+**Correct Solution**: Use event data for filtering
+
+```cpp
+// ✅ GOOD: Broadcast event, subscribers filter by target
+EventBus::Instance().Publish(CharacterDamagedEvent{
+    .target = dragon,  // Dragon checks this
+    .damageAmount = 10
+});
+
+// Dragon's subscription filters by target:
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& e) {
+    if (e.target == this) {  // Filter: is this event for ME?
+        UpdateHPBar();
+    }
+});
+```
+
+##### Summary: EventBus Design Principles
+
+**✅ CORRECT Design (Type-Based Subscription):**
+
+1. **Event = Broadcast Announcement** (not direct message)
+2. **Event data contains context** (`target`, `attacker`, etc.) for filtering
+3. **Multiple systems react to same event** (loose coupling)
+4. **Performance is negligible** for turn-based RPG (<0.01ms per turn)
+5. **Aligns with architecture principles** (see [docs/architecture.md](../../architecture.md))
+
+**❌ INCORRECT Design (Per-Subscriber Channels):**
+
+1. Tight coupling (publisher knows subscribers)
+2. Cannot broadcast to multiple systems
+3. Complex API requiring subscriber IDs
+4. Wrong abstraction (message queue vs. event bus)
+
+**Key Takeaway**: EventBus uses `typeid(T)` to distinguish event **types**, not subscribers. Subscribers filter events by checking event data fields (`.target`, `.attacker`, `.character`). This provides perfect loose coupling while maintaining efficiency.
+
+---
+
+**Rigorous Testing** (using MockCharacter for independence):
 
 **Test Suite 1: Basic Pub/Sub Functionality**
 
-- [ ] **Test_Subscribe_Publish_SingleSubscriber()**
+- [x] **Test_Subscribe_Publish_SingleSubscriber()**
   
   ```cpp
+  #include "../Test/Week1TestMocks.h"  // Include mock classes
+  
   EventBus::Instance().Clear();  // Start fresh
   
-  // Setup: Subscribe to DamageTakenEvent
+  // Setup: Subscribe to CharacterDamagedEvent
   bool callbackInvoked = false;
   int receivedDamage = 0;
-  Character* receivedVictim = nullptr;
+  MockCharacter* receivedTarget = nullptr;
   
-  EventBus::Instance().Subscribe<DamageTakenEvent>([&](const DamageTakenEvent& e) {
+  EventBus::Instance().Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
       callbackInvoked = true;
-      receivedDamage = e.damage;
-      receivedVictim = e.victim;
+      receivedDamage = e.damageAmount;
+      receivedTarget = static_cast<MockCharacter*>(e.target);
   });
   
-  // Action: Publish event
-  TestCharacter character;
-  DamageTakenEvent event{&character, 30, nullptr};
+  // Action: Publish event with MockCharacter
+  MockCharacter character("TestDragon");
+  CharacterDamagedEvent event{&character, 30, 70, nullptr, false};
   EventBus::Instance().Publish(event);
   
   // Assertions
   ASSERT_TRUE(callbackInvoked);
   ASSERT_EQ(receivedDamage, 30);
-  ASSERT_EQ(receivedVictim, &character);
+  ASSERT_EQ(receivedTarget, &character);
   ```
 
-- [ ] **Test_MultipleSubscribers_SameEvent()**
+- [x] **Test_MultipleSubscribers_SameEvent()**
   
   ```cpp
   EventBus::Instance().Clear();
@@ -978,21 +1434,21 @@ EventBus::Instance().Publish(event);
   int callback2Count = 0;
   int callback3Count = 0;
   
-  EventBus::Instance().Subscribe<DamageTakenEvent>([&](const DamageTakenEvent& e) {
+  EventBus::Instance().Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
       callback1Count++;
   });
   
-  EventBus::Instance().Subscribe<DamageTakenEvent>([&](const DamageTakenEvent& e) {
+  EventBus::Instance().Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
       callback2Count++;
   });
   
-  EventBus::Instance().Subscribe<DamageTakenEvent>([&](const DamageTakenEvent& e) {
+  EventBus::Instance().Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
       callback3Count++;
   });
   
   // Action: Publish event
-  TestCharacter character;
-  EventBus::Instance().Publish(DamageTakenEvent{&character, 10, nullptr});
+  MockCharacter character("TestChar");
+  EventBus::Instance().Publish(CharacterDamagedEvent{&character, 10, 90, nullptr, false});
   
   // All 3 callbacks should be invoked
   ASSERT_EQ(callback1Count, 1);
@@ -1000,7 +1456,7 @@ EventBus::Instance().Publish(event);
   ASSERT_EQ(callback3Count, 1);
   ```
 
-- [ ] **Test_MultipleDifferentEvents()**
+- [x] **Test_MultipleDifferentEvents()**
   
   ```cpp
   EventBus::Instance().Clear();
@@ -1010,11 +1466,11 @@ EventBus::Instance().Publish(event);
   bool deathCalled = false;
   bool spellCalled = false;
   
-  EventBus::Instance().Subscribe<DamageTakenEvent>([&](const DamageTakenEvent& e) {
+  EventBus::Instance().Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
       damageCalled = true;
   });
   
-  EventBus::Instance().Subscribe<CharacterDiedEvent>([&](const CharacterDiedEvent& e) {
+  EventBus::Instance().Subscribe<CharacterDeathEvent>([&](const CharacterDeathEvent& e) {
       deathCalled = true;
   });
   
@@ -1023,10 +1479,10 @@ EventBus::Instance().Publish(event);
   });
   
   // Publish all 3 events
-  TestCharacter character;
-  EventBus::Instance().Publish(DamageTakenEvent{&character, 10, nullptr});
-  EventBus::Instance().Publish(CharacterDiedEvent{&character, nullptr});
-  EventBus::Instance().Publish(SpellCastEvent{&character, "Fireball", 1, {0,0}});
+  MockCharacter character("TestChar");
+  EventBus::Instance().Publish(CharacterDamagedEvent{&character, 10, 90, nullptr, false});
+  EventBus::Instance().Publish(CharacterDeathEvent{&character, nullptr});
+  EventBus::Instance().Publish(SpellCastEvent{&character, "Fireball", 1, {0,0}, 1});
   
   // All 3 should be called
   ASSERT_TRUE(damageCalled);
@@ -1036,45 +1492,47 @@ EventBus::Instance().Publish(event);
 
 **Test Suite 2: Event Data Integrity**
 
-- [ ] **Test_EventData_CompleteTransfer()**
+- [x] **Test_EventData_CompleteTransfer()**
   
   ```cpp
   EventBus::Instance().Clear();
   
   // Setup: Complex event with all fields
-  TestCharacter victim, attacker;
-  DamageTakenEvent receivedEvent;
+  MockCharacter victim("Victim"), attacker("Attacker");
+  CharacterDamagedEvent receivedEvent;
   
-  EventBus::Instance().Subscribe<DamageTakenEvent>([&](const DamageTakenEvent& e) {
+  EventBus::Instance().Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
       receivedEvent = e;  // Copy event
   });
   
   // Publish
-  DamageTakenEvent originalEvent{&victim, 42, &attacker};
+  CharacterDamagedEvent originalEvent{&victim, 42, 58, &attacker, true};
   EventBus::Instance().Publish(originalEvent);
   
   // Verify all fields transferred correctly
-  ASSERT_EQ(receivedEvent.victim, &victim);
-  ASSERT_EQ(receivedEvent.damage, 42);
+  ASSERT_EQ(receivedEvent.target, &victim);
+  ASSERT_EQ(receivedEvent.damageAmount, 42);
+  ASSERT_EQ(receivedEvent.remainingHP, 58);
   ASSERT_EQ(receivedEvent.attacker, &attacker);
+  ASSERT_TRUE(receivedEvent.wasCritical);
   ```
 
-- [ ] **Test_EventData_MultiplePublishes()**
+- [x] **Test_EventData_MultiplePublishes()**
   
   ```cpp
   EventBus::Instance().Clear();
   
   // Setup
   std::vector<int> damages;
-  EventBus::Instance().Subscribe<DamageTakenEvent>([&](const DamageTakenEvent& e) {
-      damages.push_back(e.damage);
+  EventBus::Instance().Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
+      damages.push_back(e.damageAmount);
   });
   
   // Publish multiple events
-  TestCharacter character;
-  EventBus::Instance().Publish(DamageTakenEvent{&character, 10, nullptr});
-  EventBus::Instance().Publish(DamageTakenEvent{&character, 20, nullptr});
-  EventBus::Instance().Publish(DamageTakenEvent{&character, 30, nullptr});
+  MockCharacter character("TestChar");
+  EventBus::Instance().Publish(CharacterDamagedEvent{&character, 10, 90, nullptr, false});
+  EventBus::Instance().Publish(CharacterDamagedEvent{&character, 20, 70, nullptr, false});
+  EventBus::Instance().Publish(CharacterDamagedEvent{&character, 30, 40, nullptr, true});
   
   // Verify all received in order
   ASSERT_EQ(damages.size(), 3);
@@ -1094,11 +1552,11 @@ EventBus::Instance().Publish(event);
   int damageCount = 0;
   int deathCount = 0;
   
-  EventBus::Instance().Subscribe<DamageTakenEvent>([&](const DamageTakenEvent& e) {
+  EventBus::Instance().Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
       damageCount++;
   });
   
-  EventBus::Instance().Subscribe<CharacterDiedEvent>([&](const CharacterDiedEvent& e) {
+  EventBus::Instance().Subscribe<CharacterDeathEvent>([&](const CharacterDeathEvent& e) {
       deathCount++;
   });
   
@@ -1106,9 +1564,9 @@ EventBus::Instance().Publish(event);
   EventBus::Instance().Clear();
   
   // Publish events (should NOT trigger callbacks)
-  TestCharacter character;
-  EventBus::Instance().Publish(DamageTakenEvent{&character, 10, nullptr});
-  EventBus::Instance().Publish(CharacterDiedEvent{&character, nullptr});
+  MockCharacter character("TestChar");
+  EventBus::Instance().Publish(CharacterDamagedEvent{&character, 10, 90, nullptr, false});
+  EventBus::Instance().Publish(CharacterDeathEvent{&character, nullptr});
   
   // Callbacks should NOT be invoked
   ASSERT_EQ(damageCount, 0);
@@ -1121,8 +1579,8 @@ EventBus::Instance().Publish(event);
   EventBus::Instance().Clear();
   
   // Publish event with NO subscribers (should not crash)
-  TestCharacter character;
-  EventBus::Instance().Publish(DamageTakenEvent{&character, 10, nullptr});
+  MockCharacter character("TestChar");
+  EventBus::Instance().Publish(CharacterDamagedEvent{&character, 10, 90, nullptr, false});
   
   // If we get here, test passed (no crash)
   ASSERT_TRUE(true);
@@ -1138,14 +1596,14 @@ EventBus::Instance().Publish(event);
   // Subscribe 100 callbacks
   std::vector<int> callbackCounts(100, 0);
   for (int i = 0; i < 100; ++i) {
-      EventBus::Instance().Subscribe<DamageTakenEvent>([&, i](const DamageTakenEvent& e) {
+      EventBus::Instance().Subscribe<CharacterDamagedEvent>([&, i](const CharacterDamagedEvent& e) {
           callbackCounts[i]++;
       });
   }
   
   // Publish event
-  TestCharacter character;
-  EventBus::Instance().Publish(DamageTakenEvent{&character, 10, nullptr});
+  MockCharacter character("TestChar");
+  EventBus::Instance().Publish(CharacterDamagedEvent{&character, 10, 90, nullptr, false});
   
   // All 100 should be invoked
   for (int i = 0; i < 100; ++i) {
@@ -1160,14 +1618,14 @@ EventBus::Instance().Publish(event);
   
   // Setup: Subscribe
   int count = 0;
-  EventBus::Instance().Subscribe<DamageTakenEvent>([&](const DamageTakenEvent& e) {
+  EventBus::Instance().Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
       count++;
   });
   
   // Publish 1000 events
-  TestCharacter character;
+  MockCharacter character("TestChar");
   for (int i = 0; i < 1000; ++i) {
-      EventBus::Instance().Publish(DamageTakenEvent{&character, i, nullptr});
+      EventBus::Instance().Publish(CharacterDamagedEvent{&character, i, 100-i, nullptr, false});
   }
   
   // All 1000 should be received
@@ -1180,8 +1638,8 @@ EventBus::Instance().Publish(event);
 
 ```cpp
 // Subscribe to damage events for logging
-EventBus::Instance().Subscribe<DamageTakenEvent>([](const DamageTakenEvent& e) {
-    std::string msg = e.victim->TypeName() + " took " + std::to_string(e.damage) + " damage";
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([](const CharacterDamagedEvent& e) {
+    std::string msg = e.target->TypeName() + " took " + std::to_string(e.damageAmount) + " damage";
     Engine::GetLogger().LogEvent(msg);
 });
 
@@ -1199,8 +1657,8 @@ fighter.TakeDamage(20);
 
 ```cpp
 // Subscribe to character death
-EventBus::Instance().Subscribe<CharacterDiedEvent>([](const CharacterDiedEvent& e) {
-    std::cout << "💀 " << e.deadCharacter->TypeName() << " has been slain!" << std::endl;
+EventBus::Instance().Subscribe<CharacterDeathEvent>([](const CharacterDeathEvent& e) {
+    std::cout << "💀 " << e.character->TypeName() << " has been slain!" << std::endl;
 
     if (e.killer != nullptr) {
         std::cout << "   Killer: " << e.killer->TypeName() << std::endl;
@@ -1225,13 +1683,13 @@ fighter.TakeDamage(100);  // Dies
 // Subscribe to turn events to update UI
 EventBus::Instance().Subscribe<TurnStartedEvent>([](const TurnStartedEvent& e) {
     std::cout << "\n=== Turn " << e.turnNumber << " ===" << std::endl;
-    std::cout << "Active Character: " << e.activeCharacter->TypeName() << std::endl;
-    std::cout << "HP: " << e.activeCharacter->GetCurrentHP() << "/" << e.activeCharacter->GetMaxHP() << std::endl;
-    std::cout << "AP: " << e.activeCharacter->GetActionPoints() << std::endl;
+    std::cout << "Active Character: " << e.character->TypeName() << std::endl;
+    std::cout << "HP: " << e.character->GetCurrentHP() << "/" << e.character->GetMaxHP() << std::endl;
+    std::cout << "AP: " << e.actionPoints << std::endl;
 });
 
 EventBus::Instance().Subscribe<TurnEndedEvent>([](const TurnEndedEvent& e) {
-    std::cout << e.finishedCharacter->TypeName() << " ended their turn." << std::endl;
+    std::cout << e.character->TypeName() << " ended their turn." << std::endl;
 });
 
 // When TurnManager runs, UI updates automatically!
@@ -1247,9 +1705,9 @@ EventBus::Instance().Subscribe<SpellCastEvent>([](const SpellCastEvent& e) {
 
     // Trigger VFX based on spell name
     if (e.spellName == "Fireball") {
-        std::cout << "   🔥 FIREBALL VFX at (" << e.targetTile.x << ", " << e.targetTile.y << ")" << std::endl;
+        std::cout << "   🔥 FIREBALL VFX at (" << e.targetGrid.x << ", " << e.targetGrid.y << ")" << std::endl;
     } else if (e.spellName == "LavaPool") {
-        std::cout << "   🌋 LAVA VFX at (" << e.targetTile.x << ", " << e.targetTile.y << ")" << std::endl;
+        std::cout << "   🌋 LAVA VFX at (" << e.targetGrid.x << ", " << e.targetGrid.y << ")" << std::endl;
     }
 });
 
@@ -1268,11 +1726,11 @@ dragon.Spell_Fireball(1, {5, 5});
 class StatsTracker {
 public:
     void Init() {
-        EventBus::Instance().Subscribe<DamageTakenEvent>([this](const DamageTakenEvent& e) {
-            totalDamageDealt += e.damage;
+        EventBus::Instance().Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& e) {
+            totalDamageDealt += e.damageAmount;
         });
 
-        EventBus::Instance().Subscribe<CharacterDiedEvent>([this](const CharacterDiedEvent& e) {
+        EventBus::Instance().Subscribe<CharacterDeathEvent>([this](const CharacterDeathEvent& e) {
             enemiesKilled++;
         });
 
@@ -1312,12 +1770,12 @@ tracker.PrintStats();
 
 ```cpp
 // Subscribe to ALL events for debugging
-EventBus::Instance().Subscribe<DamageTakenEvent>([](const DamageTakenEvent& e) {
-    Engine::GetLogger().LogDebug("[EVENT] DamageTaken: " + std::to_string(e.damage));
+EventBus::Instance().Subscribe<CharacterDamagedEvent>([](const CharacterDamagedEvent& e) {
+    Engine::GetLogger().LogDebug("[EVENT] CharacterDamaged: " + std::to_string(e.damageAmount));
 });
 
-EventBus::Instance().Subscribe<CharacterDiedEvent>([](const CharacterDiedEvent& e) {
-    Engine::GetLogger().LogDebug("[EVENT] CharacterDied: " + e.deadCharacter->TypeName());
+EventBus::Instance().Subscribe<CharacterDeathEvent>([](const CharacterDeathEvent& e) {
+    Engine::GetLogger().LogDebug("[EVENT] CharacterDeath: " + e.character->TypeName());
 });
 
 EventBus::Instance().Subscribe<TurnStartedEvent>([](const TurnStartedEvent& e) {
@@ -1328,6 +1786,8 @@ EventBus::Instance().Subscribe<TurnStartedEvent>([](const TurnStartedEvent& e) {
 ```
 
 **Dependencies**: None (uses C++ STL: `<typeindex>`, `<functional>`, `<map>`)
+
+**Related Documentation**: See [EventBus System Documentation](../../systems/eventbus.md) for complete usage patterns, advanced examples, and architectural best practices.
 
 ---
 
@@ -1899,7 +2359,7 @@ CS230/Game/Debug/DebugConsole.cpp
   class DebugConsole : public CS230::Component {
   public:
       void Update(double dt) override;
-      void Draw(Math::TransformationMatrix camera_matrix);
+      void Draw(Math::TransformationMatrix camera_matrix) override;
   
       void ToggleConsole();  // Tilde (~) key
       bool IsOpen() const;
@@ -2439,32 +2899,37 @@ console.RegisterCommand("damage",
   - Execute "help" command
   - Expected: Console opens, help command displays
 
-**Integration Tests** (Friday Week 1):
+**Integration Tests** (Friday Week 1 - Replace Mocks with Real Classes):
 
 - [ ] Test_CharacterOnGrid()
   
-  - Setup: Create Character, place on GridSystem at (4,4)
+  - Setup: Create **real Character** (not MockCharacter), place on GridSystem at (4,4)
   - Expected: GridSystem->IsOccupied({4,4}) == true
+  - **Note**: This tests the actual Character↔GridSystem interface
 
-- [ ] Test_EventBusWithCharacter()
+- [ ] Test_EventBusWithRealCharacter()
   
   - Setup: Subscribe to DamageTakenEvent
-  - Action: Character->TakeDamage(30)
-  - Expected: Event published and received
+  - Action: **Real Character**->TakeDamage(30)
+  - Expected: EventBus publishes event automatically, subscriber receives it
+  - **Note**: This tests Character publishing events to EventBus
 
 - [ ] Test_DiceManagerInConsole()
   
-  - Setup: DebugConsole open
+  - Setup: **Real DebugConsole** with **real Engine::GetLogger()**
   - Action: Execute "roll 3d6" command
-  - Expected: DiceManager called, result displayed in console
+  - Expected: DiceManager called, result logged to Logger.txt
+  - **Note**: This tests DebugConsole↔DiceManager↔Logger integration
 
 **Acceptance Criteria (Week 1)**:
 
 - [ ] All 5 systems compile successfully
-- [ ] All 5 systems tested individually
-- [ ] At least 3 integration tests pass
+- [ ] All 5 systems tested individually **with mocks** (Days 1-4)
+- [ ] All 5 systems tested individually **with real classes** (Friday)
+- [ ] At least 3 integration tests pass (Friday)
 - [ ] All code committed to repository
 - [ ] No developer blocked for Week 2
+- [ ] **Week1TestMocks.h** created and used by all developers
 
 **Week 1 Exit Interview** (5-minute check with each developer):
 

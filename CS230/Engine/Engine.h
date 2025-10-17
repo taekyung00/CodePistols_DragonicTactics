@@ -19,6 +19,7 @@ Created:    March 11, 2025
 #include "Input.h"
 #include "TextureManager.h"
 #include "Font.h"
+#include "../Game/Singletons/EventBus.h"
 
 //don't use CS230 namespace to get access to engine globally..????even if use namespace, ....
 
@@ -53,6 +54,10 @@ public:
         return Instance().fonts[index];
     }
 
+	static EventBus& GetEventBus() {
+        return Instance().eventbus;
+    }
+
     void AddFont(const std::filesystem::path& file_name);
 
     void Start(std::string window_title);
@@ -78,6 +83,7 @@ private:
     CS230::GameStateManager gamestatemanager;
     CS230::Input input;
     CS230::TextureManager texturemanager;
+    EventBus eventbus;
 
     std::vector<CS230::Font> fonts;
 };
