@@ -17,7 +17,8 @@ Updated:    Oct 10, 2025
 #include "SpellSlots.h"
 Character::Character(CharacterTypes charType, Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level)
     : CS230::GameObject(Math::vec2{ 0, 0 }),
-    m_character_type(charType)
+    m_character_type(charType),
+    m_facing_direction(Direction::South)
 {
     InitializeComponents(start_coordinates, max_action_points, max_slots_per_level);
 }
@@ -51,6 +52,7 @@ void Character::PerformAttack(Character* target) {
         return;
     }
 
+    UpdateFacingDirection(target->GetGridPosition()->Get());
     ActionPoints* ap = GetActionPointsComponent();
     if (ap == nullptr || ap->Consume(1) == false) {
         Engine::GetLogger().LogDebug(TypeName() + " tried to attack, but has no Action Points.");
@@ -90,6 +92,13 @@ void Character::SetPathTo([[maybe_unused]] Math::ivec2 destination) {
 }
 
 void Character::UpdateMovement([[maybe_unused]]double dt) {
+    //if (is_arrived_at_tile) {
+    //    // ...
+    //    if (!m_current_path.empty()) {
+    //        // [수정] 다음 경로를 향해 방향을 바꿉니다.
+    //        UpdateFacingDirection(m_current_path.front());
+    //    }
+    //}
 }
 
 
@@ -132,4 +141,38 @@ ActionPoints* Character::GetActionPointsComponent() const {
 
 SpellSlots* Character::GetSpellSlots() const {
     return GetGOComponent<SpellSlots>();
+}
+
+Direction Character::GetFacingDirection() const {
+    return m_facing_direction;
+}
+
+void Character::SetFacingDirection(Direction new_direction) {
+    m_facing_direction = new_direction;
+}
+
+void Character::UpdateFacingDirection(Math::ivec2 target_pos) {
+    GridPosition* my_pos = GetGridPosition();
+    if (my_pos == nullptr) return;
+
+    Math::ivec2 dir_vec = target_pos - my_pos->Get();
+
+    // x축 이동이 더 큰 경우 동/서 방향
+    if (abs(dir_vec.x) > abs(dir_vec.y)) {
+        if (dir_vec.x > 0) {
+            SetFacingDirection(Direction::East);
+        }
+        else {
+            SetFacingDirection(Direction::West);
+        }
+    }
+    // y축 이동이 더 크거나 같은 경우 남/북 방향
+    else {
+        if (dir_vec.y > 0) {
+            SetFacingDirection(Direction::North);
+        }
+        else {
+            SetFacingDirection(Direction::South);
+        }
+    }
 }
