@@ -56,6 +56,8 @@ public:
     int GetActionPoints() const;
     bool HasSpellSlot(int level) const;
 
+    CharacterTypes GetCharacterType() const { return m_character_type; }
+    Direction GetFacingDirection() const;
     GridPosition* GetGridPosition() const;
     StatsComponent* GetStatsComponent() const;
     ActionPoints* GetActionPointsComponent() const;
@@ -65,12 +67,16 @@ public:
 protected:
     Character(CharacterTypes charType, Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level);
 
+    // --- AI 및 이동 관련 함수 (Protected) ---
+    void SetFacingDirection(Direction new_direction); //  [추가] 캐릭터의 방향을 변경합니다.
+    void UpdateFacingDirection(Math::ivec2 target_pos); // [추가] 목표 지점을 향해 방향을 자동으로 업데이트합니다.
 
     void InitializeComponents(Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level);
     virtual void DecideAction() = 0;
     void UpdateMovement(double dt);
 
     CharacterTypes m_character_type;
+    Direction m_facing_direction;
 
     GameObject* m_turn_target = nullptr;
     TurnGoal m_turn_goal = TurnGoal::None;
