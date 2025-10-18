@@ -35,7 +35,7 @@ GridSystem::TileType GridSystem::GetTileType(Math::vec2 tile) const
     if (!IsValidTile(tile))
     {
         std::cerr << "GetTileType: invalid tile position (" << tile.x << ", " << tile.y << ")\n";
-        return TileType::Invalid;  // ¹«½ÃÇÏ°Å³ª ¿¹¿ÜÃ³¸® ¶Ç´Â ·Î±×¸¸ ³²±â°í ÇÔ¼ö Á¾·á
+        return TileType::Invalid;  // ï¿½ï¿½ï¿½ï¿½ï¿½Ï°Å³ï¿½ ï¿½ï¿½ï¿½ï¿½Ã³ï¿½ï¿½ ï¿½Ç´ï¿½ ï¿½Î±×¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½ ï¿½ï¿½ï¿½ï¿½
     }
     return tiles[static_cast<int>(tile.x)][static_cast<int>(tile.y)];
 }
@@ -45,7 +45,7 @@ void GridSystem::SetTileType(Math::vec2 tile, TileType type)
     if (!IsValidTile(tile))
     {
         std::cerr << "SetTileType: invalid tile position (" << tile.x << ", " << tile.y << ")\n";
-        return;  // ¹«½ÃÇÏ°Å³ª ¿¹¿ÜÃ³¸® ¶Ç´Â ·Î±×¸¸ ³²±â°í ÇÔ¼ö Á¾·á
+        return;  // ï¿½ï¿½ï¿½ï¿½ï¿½Ï°Å³ï¿½ ï¿½ï¿½ï¿½ï¿½Ã³ï¿½ï¿½ ï¿½Ç´ï¿½ ï¿½Î±×¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½ ï¿½ï¿½ï¿½ï¿½
     }
     tiles[static_cast<int>(tile.x)][static_cast<int>(tile.y)] = type;
 }
@@ -57,12 +57,12 @@ void GridSystem::PlaceCharacter(MockCharacter* character, Math::vec2 pos)
     if (!IsValidTile(pos))
     {
         std::cerr << "PlaceCharacter: invalid tile" << "\n";
-        return;  // ¹«½ÃÇÏ°Å³ª ¿¹¿ÜÃ³¸® ¶Ç´Â ·Î±×¸¸ ³²±â°í ÇÔ¼ö Á¾·á
+        return;  // ï¿½ï¿½ï¿½ï¿½ï¿½Ï°Å³ï¿½ ï¿½ï¿½ï¿½ï¿½Ã³ï¿½ï¿½ ï¿½Ç´ï¿½ ï¿½Î±×¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½ ï¿½ï¿½ï¿½ï¿½
     }
     if (IsOccupied(pos))
     {
         std::cerr << "PlaceCharacter: tile already occupied" << "\n";
-        return;  // ¹«½ÃÇÏ°Å³ª ¿¹¿ÜÃ³¸® ¶Ç´Â ·Î±×¸¸ ³²±â°í ÇÔ¼ö Á¾·á
+        return;  // ï¿½ï¿½ï¿½ï¿½ï¿½Ï°Å³ï¿½ ï¿½ï¿½ï¿½ï¿½Ã³ï¿½ï¿½ ï¿½Ç´ï¿½ ï¿½Î±×¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½ ï¿½ï¿½ï¿½ï¿½
     }
 
     occupiedTiles[pos] = character;

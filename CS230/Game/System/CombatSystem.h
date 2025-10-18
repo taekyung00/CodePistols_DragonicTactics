@@ -1,6 +1,6 @@
 // File: CS230/Game/System/CombatSystem.h
 #pragma once
-#include "../Characters/Character.h"
+#include "../Character.h"
 #include <string>
 
 enum class DamageType {

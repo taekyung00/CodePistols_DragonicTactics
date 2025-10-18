@@ -29,7 +29,10 @@
       <UniqueIdentifier>{5a0c88bd-16a6-438c-aa9a-dd2da41dff66}</UniqueIdentifier>
     </Filter>
     <Filter Include="Game\System">
-      <UniqueIdentifier>{4ebe9ba7-03b0-42ad-81e5-e4f44898d4d2}</UniqueIdentifier>
+      <UniqueIdentifier>{64d20c82-d527-4bbb-b40c-4328f51d0d1a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Game\Debug">
+      <UniqueIdentifier>{623097f3-bd20-4c59-bf6f-b3b83f84d282}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -145,6 +148,12 @@
     </ClCompile>
     <ClCompile Include="Game\System\CombatSystem.cpp">
       <Filter>Game\System</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Debug\DebugConsole.cpp">
+      <Filter>Game\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Debug\DebugManager.cpp">
+      <Filter>Game\Debug</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -292,6 +301,12 @@
     </ClInclude>
     <ClInclude Include="Game\System\CombatSystem.h">
       <Filter>Game\System</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Debug\DebugConsole.hpp">
+      <Filter>Game\Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Debug\DebugManager.hpp">
+      <Filter>Game\Debug</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

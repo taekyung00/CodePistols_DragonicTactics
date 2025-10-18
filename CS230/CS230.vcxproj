@@ -185,6 +185,8 @@ xcopy /d /y Assets\* "$(OutputPath)Assets"
     <ClCompile Include="Game\ActionPoints.cpp" />
     <ClCompile Include="Game\Character.cpp" />
     <ClCompile Include="Game\CharacterStates.cpp" />
+    <ClCompile Include="Game\Debug\DebugConsole.cpp" />
+    <ClCompile Include="Game\Debug\DebugManager.cpp" />
     <ClCompile Include="Game\Dragon.cpp" />
     <ClCompile Include="Game\Fighter.cpp" />
     <ClCompile Include="Game\GridPosition.cpp" />
@@ -230,6 +232,8 @@ xcopy /d /y Assets\* "$(OutputPath)Assets"
     <ClInclude Include="Game\Character.h" />
     <ClInclude Include="Game\CharacterStates.h" />
     <ClInclude Include="Game\CharacterTypes.h" />
+    <ClInclude Include="Game\Debug\DebugConsole.hpp" />
+    <ClInclude Include="Game\Debug\DebugManager.hpp" />
     <ClInclude Include="Game\Dragon.h" />
     <ClInclude Include="Game\Fighter.h" />
     <ClInclude Include="Game\Fonts.h" />
