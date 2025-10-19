@@ -196,6 +196,7 @@ xcopy /d /y Assets\* "$(OutputPath)Assets"
     <ClCompile Include="Game\Singletons\EventBus.cpp" />
     <ClCompile Include="Game\SpellSlots.cpp" />
     <ClCompile Include="Game\Splash.cpp" />
+    <ClCompile Include="Game\State\BattleState.cpp" />
     <ClCompile Include="Game\StatsComponent.cpp" />
     <ClCompile Include="Game\System\CombatSystem.cpp" />
     <ClCompile Include="Game\System\GridSystem.cpp" />
@@ -248,6 +249,7 @@ xcopy /d /y Assets\* "$(OutputPath)Assets"
     <ClInclude Include="Game\SpellSlots.h" />
     <ClInclude Include="Game\Splash.h" />
     <ClInclude Include="Game\States.h" />
+    <ClInclude Include="Game\State\BattleState.h" />
     <ClInclude Include="Game\StatsComponent.h" />
     <ClInclude Include="Game\System\CombatSystem.h" />
     <ClInclude Include="Game\System\GridSystem.h" />

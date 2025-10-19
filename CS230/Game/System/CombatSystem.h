@@ -1,4 +1,3 @@
-// File: CS230/Game/System/CombatSystem.h
 #pragma once
 #include "../Character.h"
 #include <string>

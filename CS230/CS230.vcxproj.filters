@@ -34,6 +34,9 @@
     <Filter Include="Game\Debug">
       <UniqueIdentifier>{623097f3-bd20-4c59-bf6f-b3b83f84d282}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Game\State">
+      <UniqueIdentifier>{d410915a-f7a3-4e2a-8b0f-ddf744ea4502}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -154,6 +157,9 @@
     </ClCompile>
     <ClCompile Include="Game\Debug\DebugManager.cpp">
       <Filter>Game\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\State\BattleState.cpp">
+      <Filter>Game\State</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -307,6 +313,9 @@
     </ClInclude>
     <ClInclude Include="Game\Debug\DebugManager.hpp">
       <Filter>Game\Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\State\BattleState.h">
+      <Filter>Game\State</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
