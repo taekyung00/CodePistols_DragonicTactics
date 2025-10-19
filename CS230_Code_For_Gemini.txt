@@ -1,0 +1,5497 @@
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\main.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  main.cpp
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    March 4, 2025
+*/
+
+#include <iostream>
+
+#include "Engine/Engine.h"
+#include "Game/Test.h"
+#include "Game/Splash.h"
+#include "Game/MainMenu.h"
+
+int main() {
+    try {
+        Engine& engine = Engine::Instance();
+        engine.Start("Assignment 12 - taekyung.ho@digipen.edu");
+
+        engine.AddFont("Assets/Font_Simple.png");
+        engine.AddFont("Assets/Font_Outlined.png");
+
+        Splash splash;
+        engine.GetGameStateManager().AddGameState(splash);
+        MainMenu mainmenu;
+        engine.GetGameStateManager().AddGameState(mainmenu);
+        Test test;
+        engine.GetGameStateManager().AddGameState(test);
+        
+
+
+        while (engine.HasGameEnded() == false) {
+            engine.Update();
+        }
+
+        engine.Stop();
+
+        return 0;
+    }
+    catch (std::exception& e) {
+        std::cerr << e.what() << "\n";
+        return -1;
+    }
+
+}
+
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Animation.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Animation.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    April 16, 2025
+*/
+
+#pragma once
+#include <vector>
+#include <filesystem>
+#include "Engine.h"
+
+namespace CS230 {
+    class Animation {
+    public:
+        Animation();
+        Animation(const std::filesystem::path& animation_file);
+        ~Animation();
+
+        void Update(double dt);
+        int CurrentFrame();
+        void Reset();
+        bool Ended();
+    private:
+        enum class CommandType {
+            PlayFrame,
+            Loop,
+            End,
+        };
+        class Command {
+        public:
+            virtual ~Command() {}
+            virtual CommandType Type() = 0;
+        };
+
+
+        class End : public Command {
+        public:
+            virtual CommandType Type() override { return CommandType::End; }
+        private:
+        };
+
+
+        class Loop : public Command {
+        public:
+            Loop(int loop_index);
+            virtual CommandType Type() override { return CommandType::Loop; }
+            int LoopIndex();
+        private:
+            int loop_index;
+        };
+
+        class PlayFrame : public Command {
+        public:
+            PlayFrame(int frame, double duration);
+            virtual CommandType Type() override { return CommandType::PlayFrame; }
+            void Update(double dt);
+            bool Ended();
+            void ResetTime();
+            int Frame();
+        private:
+            int frame;
+            double target_time;
+            double timer;
+        };
+
+        int current_command;
+        std::vector<Command*> commands;
+        bool ended;
+        PlayFrame* current_frame;
+    };
+}
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Camera.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Camera.h
+Project:    CS230 Engine
+Author:     Jonathan Holmes
+Created:    March 8, 2023
+*/
+
+#pragma once
+
+#include "Vec2.h"
+#include "Rect.h"
+#include "Matrix.h"
+#include "Component.h"
+
+namespace CS230 {
+    class Camera : public Component{
+    public:
+        Camera(Math::rect player_zone);
+        void SetPosition(Math::vec2 new_position);
+        const Math::vec2& GetPosition() const;
+        void SetLimit(Math::irect new_limit);
+        void Update(const Math::vec2& player_position);
+        Math::TransformationMatrix GetMatrix();
+    private:
+        Math::irect limit;
+        Math::vec2 position;
+        Math::rect player_zone;
+    };
+}
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Collision.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Collision.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    May 18, 2025
+*/
+#pragma once
+#include "Component.h"
+#include "Rect.h"
+#include "GameObject.h"
+#include "Matrix.h"
+
+namespace Math {
+    class TransformationMatrix;
+}
+
+namespace CS230 {
+    class GameObject;
+
+    class Collision : public Component {
+    public:
+        enum class CollisionShape {
+            Rect,
+            Circle
+        };
+        virtual CollisionShape Shape() = 0;
+        virtual void Draw(Math::TransformationMatrix display_matrix) = 0;
+        virtual bool IsCollidingWith(GameObject* other_object) = 0;
+        virtual bool IsCollidingWith(Math::vec2 point) = 0;
+    };
+
+    class RectCollision : public Collision {
+    public:
+        RectCollision(Math::irect boundary, GameObject* object);
+        CollisionShape Shape() override {
+            return CollisionShape::Rect;
+        }
+        void Draw(Math::TransformationMatrix display_matrix);
+        Math::rect WorldBoundary();
+        bool IsCollidingWith(GameObject* other_object) override;
+        bool IsCollidingWith(Math::vec2 point) override;
+    private:
+        GameObject* object;
+        Math::irect boundary;
+    };
+
+    class CircleCollision : public Collision {
+    public:
+        CircleCollision(double radius, GameObject* object);
+        CollisionShape Shape() override {
+            return CollisionShape::Circle;
+        }
+
+        void Draw(Math::TransformationMatrix display_matrix);
+        double GetRadius();
+        bool IsCollidingWith(GameObject* other_object) override;
+        bool IsCollidingWith(Math::vec2 point) override;
+    private:
+        GameObject* object;
+        double radius;
+    };
+
+}
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Component.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Component.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    May 17, 2025
+*/
+#pragma once
+
+namespace CS230 {
+    class Component {
+    public:
+        virtual ~Component() {};
+        virtual void Update([[maybe_unused]] double dt) {};
+    };
+}
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\ComponentManager.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  ComponentManager.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    May 17, 2025
+*/
+#pragma once
+#include <vector>
+
+#include "Component.h"
+namespace CS230 {
+    class ComponentManager {
+    public:
+        ~ComponentManager() { Clear(); }
+        void UpdateAll(double dt) {
+            for (Component* component : components) {
+                component->Update(dt);
+            }
+        }
+        void AddComponent(Component* component) {
+            components.push_back(component);
+        }
+        template<typename T>
+        T* GetComponent() {
+            for (Component* component : components) {
+                T* ptr = dynamic_cast<T*>(component);
+                if (ptr != nullptr) {
+                    return ptr;
+                }
+            }
+            return nullptr;
+        }
+        template<typename T>
+        T* GetComponent() const {
+            for (Component* component : components) {
+                T* ptr = dynamic_cast<T*>(component);
+                if (ptr != nullptr) {
+                    return ptr;
+                }
+            }
+            return nullptr;
+        }
+        template<typename T>
+        void RemoveComponent() {
+            auto it = std::find_if(
+                components.begin(), components.end(), [](Component* element) {
+                    return (dynamic_cast<T*>(element) != nullptr);
+                }
+            );
+            delete* it;
+            components.erase(it);
+        }
+        void Clear() {
+            for (Component* component : components) {
+                delete component;
+            }
+            components.clear();
+        }
+    private:
+        std::vector<Component*> components;
+    };
+}
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Engine.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Engine.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    March 11, 2025
+*/
+
+#pragma once
+
+#include <chrono>
+#include <string>
+
+#include "Logger.h"
+#include "Window.h"
+#include "GameStateManager.h"
+#include "Input.h"
+#include "TextureManager.h"
+#include "Font.h"
+#include "../Game/Singletons/EventBus.h"
+
+//don't use CS230 namespace to get access to engine globally..????even if use namespace, ....
+
+class Engine {
+public:
+    static Engine& Instance() {
+        static Engine instance;
+        return instance; //why we have to keep track of "instance" ???
+    }
+
+    static CS230::Logger& GetLogger() {
+        return Instance().logger; //why Instance.logger, not just logger?
+    }
+
+    static CS230::Window& GetWindow() {
+        return Instance().window;
+    }
+
+    static CS230::GameStateManager& GetGameStateManager() {
+        return Instance().gamestatemanager;
+    }
+
+    static CS230::Input& GetInput() {
+        return Instance().input;
+    }
+
+    static CS230::TextureManager& GetTextureManager(){
+        return Instance().texturemanager;
+    }
+
+    static CS230::Font& GetFont(int index) {
+        return Instance().fonts[index];
+    }
+
+	static EventBus& GetEventBus() {
+        return Instance().eventbus;
+    }
+
+    void AddFont(const std::filesystem::path& file_name);
+
+    void Start(std::string window_title);
+    void Stop();
+    void Update();
+
+    bool HasGameEnded();
+
+private:
+    Engine();
+
+    std::chrono::system_clock::time_point last_tick;
+    std::chrono::system_clock::time_point last_test;
+
+    int frame_count = 0;
+
+    static constexpr double TargetFPS = 30.0;
+    static constexpr int FPSDuration = 5;
+    static constexpr int FPSTargetFrames = static_cast<int>(FPSDuration * TargetFPS);
+
+    CS230::Logger logger;
+    CS230::Window window;
+    CS230::GameStateManager gamestatemanager;
+    CS230::Input input;
+    CS230::TextureManager texturemanager;
+    EventBus eventbus;
+
+    std::vector<CS230::Font> fonts;
+};
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Font.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Font.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    May 1, 2025
+*/
+
+#pragma once
+#include "Rect.h"
+#include "Texture.h"
+#include "Vec2.h"
+#include <filesystem>
+#include <string>
+
+namespace CS230 {
+    class Font {
+    public:
+        Font(const std::filesystem::path& file_name);
+        Texture* PrintToTexture(const std::string& text, unsigned int color = 0xFFFFFFFF);
+
+    private:
+        void FindCharRects();
+        Math::irect& GetCharRect(char c);
+        Math::ivec2  MeasureText(std::string text);
+        void DrawChar(Math::TransformationMatrix& matrix, char c, unsigned int color = 0xFFFFFFFF);
+        unsigned int GetPixel(Math::ivec2 texel);
+
+        Image original_image;
+        Texture texture;
+        static constexpr int num_chars = 'z' - ' ' + 1;
+        Math::irect char_rects[num_chars];
+    };
+}
+
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\GameObject.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  GameObject.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    April 25, 2025
+*/
+
+#pragma once
+#include "Sprite.h"
+#include "ComponentManager.h"
+#include "ShowCollision.h"
+#include "../Game/GameObjectTypes.h"
+
+namespace Math { class TransformationMatrix; }
+
+
+namespace CS230 {
+    class Component;
+
+    class GameObject {
+    public:
+        friend class Sprite;
+        GameObject(Math::vec2 position);
+        GameObject(Math::vec2 position, double rotation, Math::vec2 scale);
+        virtual ~GameObject() {}
+
+        virtual GameObjectTypes Type() = 0;
+        virtual std::string TypeName() = 0;
+        bool IsCollidingWith(GameObject* other_object);
+        bool IsCollidingWith(Math::vec2 point);
+        virtual bool CanCollideWith(GameObjectTypes other_object_type);
+        virtual void ResolveCollision([[maybe_unused]]GameObject* other_object) {};
+
+        virtual void Update(double dt);
+        virtual void Draw(Math::TransformationMatrix camera_matrix);
+
+        const Math::TransformationMatrix& GetMatrix();
+        const Math::vec2& GetPosition() const;
+        const Math::vec2& GetVelocity() const;
+        const Math::vec2& GetScale() const;
+        double GetRotation() const;
+
+        template<typename T>
+        T* GetGOComponent() {
+            return componentmanager.GetComponent<T>();
+        }
+
+        template<typename T>
+        T* GetGOComponent() const { 
+            return componentmanager.GetComponent<T>();
+        }
+
+        void SetPosition(Math::vec2 new_position);
+        const bool& Destroyed() const { return destroy; }
+        void Destroy() { destroy = true; }
+
+        class State {
+        public:
+            virtual void Enter(GameObject* object) = 0;
+            virtual void Update(GameObject* object, double dt) = 0;
+            virtual void CheckExit(GameObject* object) = 0;
+            virtual std::string GetName() = 0;
+        };
+
+
+        void change_state(State* new_state);
+
+    protected:
+        
+        void UpdatePosition(Math::vec2 delta);
+        void SetVelocity(Math::vec2 new_velocity);
+        void UpdateVelocity(Math::vec2 delta);
+        void SetScale(Math::vec2 new_scale);
+        void UpdateScale(Math::vec2 delta);
+        void SetRotation(double new_rotation);
+        void UpdateRotation(double delta);
+
+        
+        
+
+
+        State* current_state;
+
+        bool matrix_outdated;
+
+        void AddGOComponent(Component* component) {
+            componentmanager.AddComponent(component);
+        }
+        template<typename T>
+        void RemoveGOComponent() {
+            componentmanager.RemoveComponent<T>();
+        }
+        void ClearGOComponents() {
+            componentmanager.Clear();
+        }
+        void UpdateGOComponents(double dt) {
+            componentmanager.UpdateAll(dt);
+        }
+
+
+    private:
+        bool destroy;
+        class State_None : public State {
+        public:
+            void Enter(GameObject*) override {}
+            void Update(GameObject*, double) override {}
+            void CheckExit(GameObject*) override {}
+            std::string GetName() { return ""; }
+        };
+        State_None state_none;
+
+        Math::TransformationMatrix object_matrix;
+
+        double rotation;
+        Math::vec2 scale;
+        Math::vec2 position;
+        Math::vec2 velocity;
+
+        ComponentManager componentmanager;
+    };
+}
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\GameObjectManager.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  GameObjectManager.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    April 25, 2025
+*/
+
+#pragma once
+#include <list>
+#include "GameObject.h"
+#include "Matrix.h"
+#include "Component.h"
+
+namespace Math { class TransformationMatrix; }
+
+namespace CS230 {
+    class GameObjectManager : public CS230::Component{
+    public:
+        void Add(GameObject* object);
+        void Unload();
+
+        void UpdateAll(double dt);
+        void DrawAll(Math::TransformationMatrix camera_matrix);
+
+        void CollisionTest();
+
+        const std::list<GameObject*>& GetAll() const { return objects; }
+    private:
+        std::list<GameObject*> objects;
+    };
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\GameState.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  GameState.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    March 11, 2025
+*/
+#pragma once
+#include <string>
+
+#include "ComponentManager.h"
+
+namespace CS230 {
+    class Component;
+    class GameState {
+    public:
+        virtual void Load() = 0;
+        virtual void Update(double) = 0;
+        virtual void Unload() = 0;
+        virtual std::string GetName() = 0;
+        virtual void Draw() = 0;
+
+        template<typename T>
+        T* GetGSComponent() {
+            return componentmanager.GetComponent<T>();
+        }
+    protected:
+        void AddGSComponent(Component* component) {
+            componentmanager.AddComponent(component);
+        }
+        void UpdateGSComponents(double dt) {
+            componentmanager.UpdateAll(dt);
+        }
+        template<typename T>
+        void RemoveGSComponent() {
+            componentmanager.RemoveComponent<T>();
+        }
+        void ClearGSComponents() {
+            componentmanager.Clear();
+        }
+
+    private:
+        ComponentManager componentmanager;
+    };
+}
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\GameStateManager.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  GameStateManager.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    March 11, 2025
+*/
+#pragma once
+#include "GameState.h"
+#include <vector>
+
+namespace CS230 {
+    class GameStateManager {
+    public:
+        GameStateManager();
+
+        void Update(double);
+        void AddGameState(GameState& gamestate);
+        void SetNextGameState(int index);
+        void ClearNextGameState();
+        void ReloadState();
+        bool HasGameEnded();
+
+        template<typename T>
+        T* GetGSComponent() { return current_gamestate->GetGSComponent<T>(); }
+
+    private:
+        enum class Status {
+            STARTING,
+            LOADING,
+            UPDATING,
+            UNLOADING,
+            STOPPING,
+            EXIT
+        };
+
+        Status status;
+        std::vector<GameState*> gamestates;
+        GameState* current_gamestate;
+        GameState* next_gamestate;
+    };
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Input.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Input.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    March 17, 2025
+*/
+
+#pragma once
+#include <vector>
+
+namespace CS230 {
+    class Input {
+    public:
+        enum class Keys {
+            A, B, C, D, E, F, G, H, I, J, K, L, M,
+            N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+            Space, Enter, Left, Up, Right, Down, One, Two,Escape,Tab,
+            Count //count has to be end!!!
+            
+        };
+        Input();
+        void Update();
+        void SetKeyDown(Keys key, bool value);
+        bool KeyDown(Keys key);
+        bool KeyJustPressed(Keys key);
+        bool KeyJustReleased(Keys key);
+
+    private:
+        std::vector<bool> keys_down;
+		std::vector<bool> previous_keys_down;
+
+    };
+}
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Logger.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Logger.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    March 4, 2025
+*/
+
+#pragma once
+#include <string>
+#include <fstream>
+#include <raylib.h>
+#include <chrono>
+
+
+namespace CS230 {
+    class Logger {
+    public:
+        enum class Severity {
+            Verbose,  //Minor messages
+            Debug,    //Only used while actively debugging
+            Event,    //General event, like key press or state change
+            Error     //Errors, such as file load errors
+        };
+        Logger(Severity severity, bool use_console, std::chrono::system_clock::time_point start_time);
+        ~Logger();
+        void LogError(std::string text) {
+            log(Severity::Error, text);
+        }
+        void LogEvent(std::string text) {
+            log(Severity::Event, text);
+        }
+        void LogDebug(std::string text) {
+            log(Severity::Debug, text);
+        }
+        void LogVerbose(std::string text) {
+            log(Severity::Verbose, text);
+        }
+    private:
+        Severity min_level;
+        std::ofstream out_stream;
+        std::chrono::system_clock::time_point start_time;
+        void log(Severity severity, std::string message);
+        double seconds_since_start();
+    };
+
+
+
+
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Matrix.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Matrix.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    April 1, 2025
+*/
+
+#pragma once
+#include "Vec2.h"
+
+#include <cmath>
+
+namespace Math {
+    class TransformationMatrix {
+    public:
+        TransformationMatrix();
+
+        const double* operator[](int index) const { return matrix[index]; }
+        TransformationMatrix operator * (TransformationMatrix m) const;
+        TransformationMatrix& operator *= (TransformationMatrix m);
+
+        TransformationMatrix operator * (double scale) const;
+        TransformationMatrix& operator *= (double scale);
+        vec2 operator * (vec2 v) const;
+
+        
+        void Reset();
+    protected:
+        double matrix[3][3];
+    };
+
+
+    class TranslationMatrix : public TransformationMatrix {
+    public:
+        TranslationMatrix(ivec2 translate);
+        TranslationMatrix(vec2 translate);
+    };
+
+    class ScaleMatrix : public TransformationMatrix {
+    public:
+        ScaleMatrix(double scale);
+        ScaleMatrix(vec2 scale);
+    };
+
+
+    class RotationMatrix : public TransformationMatrix {
+    public:
+        RotationMatrix(double theta);
+    };
+
+
+}
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Particle.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Particle.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    June 6, 2025
+*/
+#pragma once
+#include "GameObject.h"
+#include "GameObjectManager.h"
+#include "../Game/GameObjectTypes.h"
+namespace CS230 {
+    class Particle : public GameObject {
+    public:
+        Particle(const std::filesystem::path& sprite_file);
+        void Start(Math::vec2 _position, Math::vec2 _velocity, double max_life);
+        void Update(double dt) override;
+        void Draw(Math::TransformationMatrix camera_matrix) override;
+        bool Alive() {
+            return  life > 0;
+        }
+        GameObjectTypes Type() override { return GameObjectTypes::Particle; }
+    private:
+        double life;
+    };
+
+    template<typename T>
+    class ParticleManager : public Component {
+    public:
+        ParticleManager();
+        ~ParticleManager();
+        void Emit(int count, Math::vec2 emitter_position, Math::vec2 emitter_velocity, Math::vec2 direction, double spread);
+    private:
+        std::vector<T*> particles;
+        int index;
+    };
+
+    template<typename T>
+    inline ParticleManager<T>::ParticleManager() : 
+        index(0)
+    {
+        for (int i = 0; i < T::MaxCount; ++i) {
+            T* new_particle = new  T();
+            Engine::GetGameStateManager().GetGSComponent<CS230::GameObjectManager>()->Add(new_particle);
+            particles.push_back(new_particle);
+        }
+    }
+
+    template<typename T>
+    inline ParticleManager<T>::~ParticleManager()
+    {
+        for (T* particle : particles) {
+            particle->Destroy();
+        }
+        particles.clear();
+    }
+
+    template<typename T>
+    inline void ParticleManager<T>::Emit(int count, Math::vec2 emitter_position, Math::vec2 emitter_velocity, Math::vec2 direction, double spread)
+    {
+        for (int i = 0; i <  count; ++i) {
+            if (particles[i]->Alive()) {
+                Engine::GetLogger().LogEvent("Particle overwritten");
+            }
+            double angle_variation = 0.0;
+            if (spread != 0) {
+                angle_variation = ((rand() % static_cast<int>(spread * 1024)) / 1024.0f) - spread / 2;
+            }
+            Math::vec2 random_magnitude = direction * (((rand() % 1024) / 2048.0f) + 0.5f);
+            Math::vec2 particle_velocity = Math::RotationMatrix(angle_variation) * random_magnitude + emitter_velocity;
+            particles[index]->Start(emitter_position, particle_velocity, T::MaxLife);
+
+            ++index;
+            if (index >= static_cast<int>(particles.size())) {
+                index = 0;
+            }
+        }
+    }
+
+}
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Rect.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Rect.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    March 27, 2025
+*/
+#pragma once
+#include <cmath>
+#include <utility>
+#include "Vec2.h"
+
+namespace Math {
+    struct [[nodiscard]] rect {
+        Math::vec2 point_1{ 0.0, 0.0 };
+        Math::vec2 point_2{ 0.0, 0.0 };
+
+        Math::vec2 Size() const noexcept {
+            return {
+                Right()-Left(),
+                Top()-Bottom()
+            };
+        }
+
+        double Left() const noexcept;
+        double Right() const noexcept;
+        double Top() const noexcept;
+        double Bottom() const noexcept;
+    };
+    struct [[nodiscard]] irect {
+        Math::ivec2 point_1{ 0, 0 };
+        Math::ivec2 point_2{ 0, 0 };
+
+        Math::ivec2 Size() const noexcept {
+            return {
+                Right() - Left(),
+                Top() - Bottom()
+            };
+        }
+
+        int Left() const noexcept;
+        int Right() const noexcept;
+        int Top() const noexcept;
+        int Bottom() const noexcept;
+    };
+}
+
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\ShowCollision.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  ShowCollision.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    May 17, 2025
+*/
+#pragma once
+#include "Component.h"
+#include "Engine.h"
+namespace CS230 {
+    class ShowCollision : public CS230::Component {
+    public:
+        ShowCollision();
+        void Update(double dt) override;
+        bool Enabled();
+    private:
+        bool enabled;
+    };
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Sprite.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Sprite.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    March 19, 2025
+*/
+
+#pragma once
+#include <string>
+#include "Vec2.h"
+#include "Texture.h"
+#include "Matrix.h"
+#include "Engine.h"
+#include "Animation.h"
+#include "Component.h"
+#include "Collision.h"
+
+
+namespace CS230 {
+    class GameObject;
+    class Sprite : public Component {
+    public:
+        Sprite(const std::filesystem::path& sprite_file,GameObject* given_object);
+        ~Sprite();
+
+        Sprite(const Sprite&) = delete;
+        Sprite& operator=(const Sprite&) = delete;
+
+        Sprite(Sprite&& temporary) noexcept;
+        Sprite& operator=(Sprite&& temporary) noexcept;
+        void Update(double dt) override;
+        void Load(const std::filesystem::path& sprite_file, GameObject* _given_object);
+        void Draw(Math::TransformationMatrix display_matrix);
+        Math::ivec2 GetHotSpot(int index);
+        Math::ivec2 GetFrameSize();
+
+        void PlayAnimation(int animation);
+        bool AnimationEnded();
+
+        const int& CurrentAnimation() const { return current_animation; }
+    private:
+        Math::ivec2 GetFrameTexel(int index) const;
+        Texture* texture;
+        std::vector<Math::ivec2> hotspots;
+
+        int current_animation;
+        Math::ivec2 frame_size;
+        std::vector<Math::ivec2> frame_texels;
+        std::vector<Animation*> animations;
+
+        GameObject* given_object;
+    };
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Texture.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Texture.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    March 19, 2025
+*/
+
+#pragma once
+#include "Matrix.h"
+#include "Vec2.h"
+#include <filesystem>
+#include <raylib.h>
+
+namespace CS230 {
+    class Font;//because raylib also has font
+
+    class Texture {
+    public:
+        friend class TextureManager;
+        friend class Font;
+
+        void Draw(Math::TransformationMatrix display_matrix, unsigned int color = 0xFFFFFFFF);
+        void Draw(
+            Math::TransformationMatrix display_matrix,
+            Math::ivec2 texel_position,
+            Math::ivec2 frame_size,
+            unsigned int color = 0xFFFFFFFF
+        );
+        Math::ivec2 GetSize() const;
+        ~Texture();
+
+        Texture(const Texture&) = delete;
+        Texture& operator=(const Texture&) = delete;
+
+        Texture(Texture&& temporary) noexcept;
+        Texture& operator=(Texture&& temporary) noexcept;
+
+    private:
+        Texture(Texture2D given_texture);
+        Texture(const std::filesystem::path& file_name);
+
+        Texture2D texture = {};
+    };
+}
+
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\TextureManager.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  TextureManager.h
+Project:    CS230 Engine
+Author:     Taekuyng Ho
+Created:    April 29, 2025
+*/
+
+#pragma once
+#include <filesystem>
+#include <map>
+
+namespace CS230 {
+    class Texture;
+
+    class TextureManager {
+    public:
+        Texture* Load(const std::filesystem::path& file_name);
+        void Unload();
+
+        void StartRenderTextureMode(int width, int height);
+        Texture* EndRenderTextureMode();
+
+    private:
+        std::map<std::filesystem::path, Texture*> textures;
+        std::vector<Texture*> rendered_textures;
+    };
+}
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Timer.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Timer.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    May 17, 2025
+*/
+#pragma once
+
+#include "Component.h"
+namespace CS230 {
+	class Timer : public Component {
+	public:
+		Timer(double timer_max);
+		void Set(double time_remaining);
+		void Update(double dt)override;
+		void Reset();
+		bool TickTock();
+		const double Remaining() const { return timer; }
+		const int RemainingInt() const { return static_cast<int>(timer); }
+		
+	private:
+		double timer;
+		double timer_max;
+		bool pendulum;
+	};
+} 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Vec2.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Vec2.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    March 18, 2025
+*/
+
+#pragma once
+#include <limits>
+#include <cmath>
+
+namespace Math {
+    struct vec2 {
+        double x{ 0.0 };
+        double y{ 0.0 };
+
+        vec2() = default;
+        vec2(double x, double y) : x(x), y(y) {}
+
+        bool operator==(const vec2& v);
+        bool operator!=(const vec2& v);
+
+        vec2 operator+(const vec2& v);
+        vec2 operator+(const vec2& v)const;
+        vec2& operator+=(const vec2& v);
+
+        vec2 operator-(const vec2& v);
+        vec2 operator-(const vec2& v)const;
+        vec2& operator-=(const vec2& v);
+
+        vec2 operator*(double scale);
+        vec2 operator*(double scale) const;
+        vec2& operator*=(double scale);
+        bool operator<(const vec2& other) const {
+            return (x < other.x) || (x == other.x && y < other.y);
+        }
+
+        bool operator==(const vec2& other) const {
+            return x == other.x && y == other.y;
+        }
+
+
+        vec2 operator/(double divisor);
+        vec2 operator/(double divisor)const;
+        vec2& operator/=(double divisor);
+        vec2 operator-();
+        vec2 operator-() const;
+        vec2& Normalize();
+    };
+
+    //vec2 operator-(const vec2& v1, const vec2& v2);
+    vec2 operator*(double scale, const vec2& v);
+
+
+
+    struct ivec2 {
+        int x{ 0 };
+        int y{ 0 };
+
+        ivec2() = default;
+        ivec2(int x, int y) : x(x), y(y) {};
+        explicit operator vec2() {
+            return vec2{ static_cast<double>(x),static_cast<double>(y) };
+        }
+
+        bool operator==(const ivec2& v);
+        bool operator!=(const ivec2& v);
+
+        ivec2 operator+(const ivec2& v);
+        ivec2 operator+(const ivec2& v)const;
+        ivec2& operator+=(const ivec2& v);
+
+        ivec2 operator-(const ivec2& v);
+        ivec2 operator-(const ivec2& v)const;
+        ivec2& operator-=(const ivec2& v);
+
+        ivec2 operator*(int scale);
+        ivec2 operator*(int scale)const;
+        ivec2& operator*=(int scale);
+
+        ivec2 operator/(int divisor);
+        ivec2 operator/(int divisor)const;
+        ivec2& operator/=(int divisor);
+
+        vec2 operator*(double scale);
+        vec2 operator*(double scale)const;
+        vec2 operator/(double divisor);
+        vec2 operator/(double divisor)const;
+
+        ivec2 operator-();
+    };
+
+    /*ivec2 operator-(const ivec2& v);*/
+    ivec2 operator*(int scale, const ivec2& v);
+    vec2 operator*(double scale, const ivec2& v);
+
+} 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Window.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Window.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    March 11, 2025
+*/
+
+#pragma once
+#include <string>
+#include <raylib.h>
+#include <rlgl.h>
+#include "Vec2.h"
+
+namespace CS230 {
+    class Window {
+    public:
+        void Start(std::string title);
+        void Update();
+        bool IsClosed() const;
+        Math::ivec2 GetSize() const;
+        void Clear(unsigned int color);
+
+    private:
+        Math::ivec2 size;
+        static constexpr int default_width = 800;
+        static constexpr int default_height = 600;
+        static constexpr unsigned int default_background = UINT_MAX;
+    };
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Animation.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Animation.cpp
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    April 16, 2025
+*/
+#include "Animation.h"
+
+CS230::Animation::Animation(const std::filesystem::path& animation_file) : current_command(0) 
+{
+    if (animation_file.extension() != ".anm") {
+        throw std::runtime_error(animation_file.generic_string() + " is not a .anm file");
+    }
+    std::ifstream in_file(animation_file);
+    if (in_file.is_open() == false) {
+        throw std::runtime_error("Failed to load " + animation_file.generic_string());
+    }
+
+    std::string command;
+    while (in_file.eof() == false) {
+        in_file >> command;
+        if (command == "PlayFrame") {
+            int frame;
+            float target_time;
+            in_file >> frame;
+            in_file >> target_time;
+
+            commands.push_back(new PlayFrame(frame, target_time));
+        }
+        else if (command == "Loop") {
+            int loop_to_frame;
+            in_file >> loop_to_frame;
+            commands.push_back(new Loop(loop_to_frame));
+        }
+        else if (command == "End") {
+            commands.push_back(new End());
+        }
+        else {
+            Engine::GetLogger().LogError(command + " in " + animation_file.generic_string());
+        }
+    }
+    Reset();
+}
+
+CS230::Animation::Animation() : Animation("./Assets/None.anm") {}
+CS230::Animation::~Animation()
+{
+    for (Command* command : commands) {
+        delete command;
+    }
+    commands.clear();
+}
+
+void CS230::Animation::Update(double dt)
+{
+    current_frame->Update(dt);
+    if (current_frame->Ended() == true) {
+        current_frame->ResetTime();
+        current_command++;
+        if (commands[current_command]->Type() == CommandType::PlayFrame) {
+            current_frame = static_cast<PlayFrame*>(commands[current_command]);
+        }
+        else if (commands[current_command]->Type() == CommandType::Loop) {
+            Loop* loop_data = static_cast<Loop*>(commands[current_command]);
+            current_command = loop_data->LoopIndex();
+            if (commands[current_command]->Type() == CommandType::PlayFrame) {
+                current_frame = static_cast<PlayFrame*>(commands[current_command]);
+            }
+            else {
+                Engine::GetLogger().LogError("Loop does not go to PlayFrame");
+                Reset();
+            }
+        }
+        else if (commands[current_command]->Type() == CommandType::End) {
+            ended = true;
+        }
+    }
+
+}
+
+int CS230::Animation::CurrentFrame()
+{
+    return current_frame->Frame();
+}
+
+void CS230::Animation::Reset()
+{
+    current_command = 0;
+    ended = false;
+    current_frame = static_cast<PlayFrame*>(commands[current_command]);
+    current_frame->ResetTime();
+}
+
+bool CS230::Animation::Ended()
+{
+    return ended;
+}
+
+CS230::Animation::PlayFrame::PlayFrame(int frame, double duration) : frame(frame),target_time(duration), timer(0.0){}
+
+void CS230::Animation::PlayFrame::Update(double dt)
+{
+
+        timer += dt;
+    
+}
+
+bool CS230::Animation::PlayFrame::Ended()
+{
+    if (timer >= target_time) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+void CS230::Animation::PlayFrame::ResetTime()
+{
+    timer = 0.0;
+}
+
+int CS230::Animation::PlayFrame::Frame()
+{
+    return frame;
+}
+
+CS230::Animation::Loop::Loop(int loop_index) : loop_index(loop_index){}
+
+int CS230::Animation::Loop::LoopIndex()
+{
+    return loop_index;
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Camera.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Camera.cpp
+Project:    CS230 Engine
+Author:     Jonathan Holmes
+Created:    March 8, 2023
+*/
+#include "Camera.h"
+#include "Engine.h"
+
+CS230::Camera::Camera(Math::rect player_zone) : player_zone(player_zone) , position({0,0}) {}
+
+void CS230::Camera::SetPosition(Math::vec2 new_position){
+    position = new_position;
+}
+
+const Math::vec2& CS230::Camera::GetPosition() const { return position; }
+
+void CS230::Camera::SetLimit(Math::irect new_limit){
+    limit = new_limit;
+}
+
+void CS230::Camera::Update(const Math::vec2& player_position){
+    if (player_position.x > player_zone.Right() + position.x) {
+        position.x = player_position.x - player_zone.Right();
+    }
+    if (player_position.x - position.x < player_zone.Left()) {
+        position.x = player_position.x - player_zone.Left();
+    }
+
+
+    if (position.x < limit.Left()) {
+        position.x = limit.Left();
+    }
+    if (position.x > limit.Right()) {
+        position.x = limit.Right();
+    }
+    if (position.y < limit.Bottom()) {
+        position.y = limit.Bottom();
+    }
+    if (position.y > limit.Top()) {
+        position.y = limit.Top();
+    }
+}
+
+Math::TransformationMatrix CS230::Camera::GetMatrix() {
+    return Math::TranslationMatrix(-position);
+}
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Collision.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Component.cpp
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    May 17, 2025
+*/
+
+#include "Collision.h"
+
+namespace CS230 {
+    RectCollision::RectCollision(Math::irect boundary, CS230::GameObject* object) :
+        boundary(boundary),
+        object(object)
+    {
+    }
+
+    void RectCollision::Draw(Math::TransformationMatrix display_matrix)
+    {
+        const double render_height = rlGetFramebufferHeight();
+
+        Math::rect world_boundary = WorldBoundary();
+
+        Math::vec2 bottom_left = display_matrix * Math::vec2{ world_boundary.Left(), world_boundary.Bottom() };
+        Math::vec2 bottom_right = display_matrix * Math::vec2{ world_boundary.Right(), world_boundary.Bottom() };
+        Math::vec2 top_left = display_matrix * Math::vec2{ world_boundary.Left(), world_boundary.Top() };
+        Math::vec2 top_right = display_matrix * Math::vec2{ world_boundary.Right(), world_boundary.Top() };
+
+        bottom_left.y = bottom_left.y * -1 + render_height;
+        bottom_right.y = bottom_right.y * -1 + render_height;
+        top_left.y = top_left.y * -1 + render_height;
+        top_right.y = top_right.y * -1 + render_height;
+
+
+        DrawLine(int(top_left.x), int(top_left.y), int(top_right.x), int(top_right.y), WHITE);
+        DrawLine(int(bottom_right.x), int(bottom_right.y), int(top_right.x), int(top_right.y), WHITE);
+        DrawLine(int(bottom_right.x), int(bottom_right.y), int(bottom_left.x), int(bottom_left.y), WHITE);
+        DrawLine(int(top_left.x), int(top_left.y), int(bottom_left.x), int(bottom_left.y), WHITE);
+
+    }
+
+    Math::rect RectCollision::WorldBoundary() {
+
+        return {
+            object->GetMatrix() * static_cast<Math::vec2>(boundary.point_1),
+            object->GetMatrix() * static_cast<Math::vec2>(boundary.point_2)
+        };
+    }
+    bool RectCollision::IsCollidingWith(GameObject* other_object)
+    {
+        Collision* other_collider = other_object->GetGOComponent<Collision>();
+
+
+        if (other_collider == nullptr) {
+            //Engine::GetLogger().LogError("No collision component found");
+            return false;
+        }
+
+
+        if (other_collider->Shape() != CollisionShape::Rect) {
+            Engine::GetLogger().LogError("Rect vs unsupported type");
+            return false;
+        }
+
+        Math::rect rectangle_1 = WorldBoundary();
+        Math::rect rectangle_2 = dynamic_cast<RectCollision*>(other_collider)->WorldBoundary();
+
+        if (!(
+            (rectangle_1.Right() <= rectangle_2.Left())   ||
+            (rectangle_1.Left()  >= rectangle_2.Right())  ||
+            (rectangle_1.Top()   <= rectangle_2.Bottom()) ||
+            (rectangle_1.Bottom()>= rectangle_2.Top())
+            )) {
+            return true;
+        }
+        return false;
+    }
+    bool RectCollision::IsCollidingWith(Math::vec2 point)
+    {
+        Math::rect rectangle = WorldBoundary();
+        if (!(
+            (rectangle.Left() > point.x) ||
+            (rectangle.Right() < point.x) ||
+            (rectangle.Top() < point.y) ||
+            (rectangle.Bottom() > point.y)
+            )
+            ) {
+            return true;
+        }
+        return false;
+    }
+    CircleCollision::CircleCollision(double radius, GameObject* object) : 
+        radius(radius), object(object)
+    {
+    }
+    void CircleCollision::Draw(Math::TransformationMatrix display_matrix)
+    {
+        const double render_height = rlGetFramebufferHeight();
+        Math::vec2 transformed_position = display_matrix * object->GetPosition();
+        transformed_position.y = transformed_position.y * -1 + render_height;
+        const int num_segments = 36;
+        Math::vec2 previous_vertex;
+        for (int i = 0; i <= num_segments + 1; i++) {
+            double theta = 2.0 * PI * static_cast<double>(i) / static_cast<double>(num_segments);
+            Math::vec2 vertex = {
+                transformed_position.x + GetRadius() * std::cos(theta),
+                transformed_position.y + GetRadius() * std::sin(theta)
+            };
+            if (i > 0) {
+                DrawLine(int(vertex.x), int(vertex.y), int(previous_vertex.x), int(previous_vertex.y), WHITE);
+            }
+            previous_vertex = vertex;
+        }
+
+    }
+    double CircleCollision::GetRadius()
+    {
+        return std::min(object->GetScale().x, object->GetScale().x) * radius;
+    }
+    bool CircleCollision::IsCollidingWith(GameObject* other_object)
+    {
+        Collision* other_collider = other_object->GetGOComponent<Collision>();
+
+
+        if (other_collider == nullptr) {
+            //Engine::GetLogger().LogError("No collision component found");
+            return false;
+        }
+
+
+        if (other_collider->Shape() != CollisionShape::Circle) {
+            Engine::GetLogger().LogError("Circle vs unsupported type");
+            return false;
+        }
+        double _radius = GetRadius();
+        Math::vec2 position = object->GetPosition();
+        double other_radius = dynamic_cast<CircleCollision*>(other_collider)->GetRadius();
+        Math::vec2 other_position = other_object->GetPosition();
+        
+        if (
+            ((position.x - other_position.x) * (position.x - other_position.x) +
+             (position.y - other_position.y) * (position.y - other_position.y)) <
+            ((_radius + other_radius) * (_radius + other_radius))
+            ) {
+            return true;
+        }       
+        return false;
+    }
+
+    bool CircleCollision::IsCollidingWith(Math::vec2 point) {
+        double _radius = GetRadius();
+        Math::vec2 position = object->GetPosition();
+
+        if (
+            ((position.x - point.x) * (position.x - point.x) +
+                (position.y - point.y) * (position.y - point.y)) <
+            (_radius  * _radius )
+            ) {
+            return true;
+        }
+        return false;
+    }
+}
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Engine.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written  consent is prohibited
+File Name:   Engine.cpp
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    March 11, 2025
+*/
+
+#include "Engine.h"
+
+Engine::Engine() :
+    last_tick(std::chrono::system_clock::now()),
+#ifdef _DEBUG
+    logger(CS230::Logger::Severity::Debug, true,last_tick)
+#else
+    logger(CS230::Logger::Severity::Event, true, last_tick )
+#endif
+{}
+
+void Engine::AddFont(const std::filesystem::path& file_name)
+{
+    fonts.push_back(CS230::Font(file_name));
+}
+
+void Engine::Start(std::string window_title) {
+    logger.LogEvent("Engine Started"); //why use logevent? --> we can use this either severity is debug or severity is event, and it is just important event..
+    window.Start(window_title);
+    //Start other services
+    last_test = last_tick;
+    unsigned int seed = static_cast<unsigned int>(time(NULL));
+    srand(seed);
+    logger.LogEvent("Seed stored :" + std::to_string(seed));
+}
+
+void Engine::Stop() {
+    //Stop all services
+    logger.LogEvent("Engine Stopped");
+}
+
+void Engine::Update() {   
+
+    std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+    double dt = std::chrono::duration<double>(now - last_tick).count();
+
+    if (dt >(1 / TargetFPS)) {
+        logger.LogVerbose("Engine Update");
+		last_tick = now;
+
+        frame_count++;
+
+        if (frame_count >= FPSTargetFrames) {
+            double actual_time = std::chrono::duration<double>(now - last_test).count();
+            logger.LogDebug("FPS: " + std::to_string(frame_count/actual_time));
+            frame_count = 0;
+            last_test = now;
+        }
+        gamestatemanager.Update(dt);
+        input.Update();
+        window.Update();        
+    }
+    
+    //Update other services
+    
+
+}
+
+bool Engine::HasGameEnded()
+{
+    if (gamestatemanager.HasGameEnded() == true || window.IsClosed() == true) {
+        return true;
+    }
+    else {
+        return false;
+    }
+    
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Font.cpp ===== 
+#include "Font.h"
+#include "Engine.h"
+
+CS230::Font::Font(const std::filesystem::path& file_name) : texture(file_name) {
+    const unsigned int white = 0xFFFFFFFF;
+
+    original_image = LoadImage(file_name.string().c_str());
+
+    //The top left pixel MUST be white (0xFFFFFFFF)
+    unsigned int color = GetPixel({ 0, 0 });
+    if (color == white) {
+        FindCharRects();
+    }
+    else {
+        Engine::GetLogger().LogError("Font " + file_name.string() + " could not be loaded");
+        return;
+    }
+
+
+    UnloadImage(original_image);
+}
+
+void CS230::Font::FindCharRects() {
+    unsigned int check_color = GetPixel({ 0, 0 });
+    unsigned int next_color;
+
+    int height = texture.GetSize().y;
+
+    int x = 1;
+    for (int index = 0; index < num_chars; index++) {
+        int width = 0;
+
+        do {
+            width++;
+            next_color = GetPixel({ x + width, 0 });
+        } while (check_color == next_color);
+
+        check_color = next_color;
+
+        char_rects[index].point_2 = { x + width - 1, 1 };
+        char_rects[index].point_1 = { x, char_rects[index].point_2.y + height - 1 };
+        x += width;
+    }
+}
+
+Math::irect& CS230::Font::GetCharRect(char c) {
+    if (c >= ' ' && c <= 'z') {
+        return char_rects[c - ' '];
+    }
+    else {
+        Engine::GetLogger().LogError("Char '" + std::to_string(c) + "' not found");
+        return char_rects[0];
+    }
+}
+
+Math::ivec2 CS230::Font::MeasureText(std::string text)
+{
+    Math::ivec2 text_size = { GetCharRect(text[0]).Size().x,GetCharRect(text[0]).Size().y };
+    for (int i = 1; i < text.size();++i) {
+        text_size.x += GetCharRect(text[i]).Size().x;
+        if (GetCharRect(text[i]).Size().y > GetCharRect(text[i - 1]).Size().y) {
+            text_size.y = GetCharRect(text[i]).Size().y;
+        }
+    }
+    return text_size;
+}
+
+void CS230::Font::DrawChar(Math::TransformationMatrix& matrix, char c, unsigned int color) {
+    const Math::irect& display_rect = GetCharRect(c);
+    const Math::ivec2 top_left_texel = { display_rect.point_1.x, display_rect.point_2.y };
+    if (c != ' ') {
+        const auto to_center = Math::TranslationMatrix(Math::vec2(-display_rect.Size().x / 2.0, -display_rect.Size().y / 2.0));
+        const auto flip = Math::ScaleMatrix(Math::vec2{ 1, -1 });
+        const auto to_bottomleft = Math::TranslationMatrix(Math::vec2(display_rect.Size().x / 2.0, display_rect.Size().y / 2.0));
+        const auto flip_quad = to_bottomleft * flip * to_center;
+        texture.Draw(matrix * flip_quad, top_left_texel, display_rect.Size(), color);
+    }
+    matrix *= Math::TranslationMatrix(Math::ivec2{ display_rect.Size().x, 0 });
+}
+
+CS230::Texture* CS230::Font::PrintToTexture(const std::string& text, unsigned int color) {
+    const Math::ivec2 text_size = MeasureText(text);
+    auto& texture_manager = Engine::GetTextureManager();
+    texture_manager.StartRenderTextureMode(text_size.x, text_size.y);
+    Math::TransformationMatrix matrix;
+    for (const char c : text) {
+        DrawChar(matrix, c, color);
+    }
+    return texture_manager.EndRenderTextureMode();
+}
+
+unsigned int CS230::Font::GetPixel(Math::ivec2 texel) {
+    Color raylib_color = GetImageColor(original_image, texel.x, texel.y);
+    unsigned int color = ((static_cast<unsigned int>(raylib_color.r) << 24) & 0xFF000000) |
+        ((static_cast<unsigned int>(raylib_color.g) << 16) & 0x00FF0000) |
+        ((static_cast<unsigned int>(raylib_color.b) << 8) & 0x0000FF00) |
+        ((static_cast<unsigned int>(raylib_color.a) << 0) & 0x000000FF);
+    return color;
+}
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\GameObject.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  GameObject.cpp
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    April 25, 2025
+*/
+#include "GameObject.h"
+
+CS230::GameObject::GameObject(Math::vec2 position) :
+    GameObject(position, 0, { 1, 1 })
+{
+}
+
+CS230::GameObject::GameObject(Math::vec2 position, double rotation, Math::vec2 scale) :
+    velocity({ 0,0 }),
+    position(position),
+    scale(scale),
+    rotation(rotation),
+    current_state(&state_none),
+    matrix_outdated(true),
+    destroy(false)
+{}
+
+bool CS230::GameObject::IsCollidingWith(GameObject* other_object)
+{
+    Collision* collider = GetGOComponent<Collision>();
+    return collider != nullptr && collider->IsCollidingWith(other_object);
+}
+
+bool CS230::GameObject::IsCollidingWith(Math::vec2 point)
+{
+    Collision* collider = GetGOComponent<Collision>();
+    return collider != nullptr && collider->IsCollidingWith(point);
+}
+
+
+
+bool CS230::GameObject::CanCollideWith([[maybe_unused]]GameObjectTypes other_object_type)
+{
+    return false;
+}
+
+void CS230::GameObject::Update(double dt) {
+    current_state->Update(this, dt);
+    //sprite.Update(dt);
+    if (velocity.x != 0 || velocity.y != 0) {
+        UpdatePosition(velocity * dt);
+    }
+    UpdateGOComponents(dt);
+    current_state->CheckExit(this);
+}
+
+void CS230::GameObject::change_state(State* new_state) {
+    current_state = new_state;
+    current_state->Enter(this);
+}
+
+
+void CS230::GameObject::Draw(Math::TransformationMatrix camera_matrix) {
+    
+    Sprite* sprite = GetGOComponent<Sprite>();
+    if (sprite != nullptr) {
+        sprite->Draw(camera_matrix * GetMatrix());
+    }
+    Collision* collision = GetGOComponent<Collision>();
+    ShowCollision* showcollision = Engine::GetGameStateManager().GetGSComponent<ShowCollision>();
+    if (showcollision != nullptr) {
+        if ((collision != nullptr) && (showcollision->Enabled() == true)) {
+            collision->Draw(camera_matrix);
+        }
+    }
+    
+}
+
+const Math::TransformationMatrix& CS230::GameObject::GetMatrix() {
+    if (matrix_outdated == true) {
+        object_matrix = Math::TranslationMatrix(position) * Math::RotationMatrix(rotation) * Math::ScaleMatrix(scale);
+        matrix_outdated = false;
+    }    
+    return object_matrix;
+}
+
+const Math::vec2& CS230::GameObject::GetPosition() const
+{
+    return position;
+}
+
+const Math::vec2& CS230::GameObject::GetVelocity() const
+{
+    return velocity;
+}
+
+const Math::vec2& CS230::GameObject::GetScale() const
+{
+    return scale;
+}
+
+double CS230::GameObject::GetRotation() const
+{
+    return rotation;
+}
+
+void CS230::GameObject::SetPosition(Math::vec2 new_position) {
+    position = new_position;
+    matrix_outdated = true;
+}
+
+void CS230::GameObject::UpdatePosition(Math::vec2 delta) {
+    position += delta;
+    matrix_outdated = true;
+}
+
+void CS230::GameObject::SetVelocity(Math::vec2 new_velocity){
+    velocity = new_velocity;
+    matrix_outdated = true;
+}
+
+void CS230::GameObject::UpdateVelocity(Math::vec2 delta)
+{
+    velocity += delta;
+    matrix_outdated = true;
+}
+
+void CS230::GameObject::SetScale(Math::vec2 new_scale)
+{
+    scale = new_scale;
+    matrix_outdated = true;
+}
+
+void CS230::GameObject::UpdateScale(Math::vec2 delta)
+{
+    scale += delta;
+    matrix_outdated = true;
+}
+
+void CS230::GameObject::SetRotation(double new_rotation)
+{
+    rotation = new_rotation;
+    matrix_outdated = true;
+}
+
+void CS230::GameObject::UpdateRotation(double delta)
+{
+    rotation += delta;
+    matrix_outdated = true;
+}
+
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\GameObjectManager.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  GameObjectManager.cpp
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    April 25, 2025
+*/
+#include "GameObjectManager.h"
+
+void CS230::GameObjectManager::Add(GameObject* object){
+	objects.push_back(object);
+}
+
+void CS230::GameObjectManager::Unload(){
+	for (GameObject* object : objects) {
+		delete object;
+	}
+	objects.clear();
+}
+
+void CS230::GameObjectManager::UpdateAll(double dt){
+	std::vector<GameObject*> destroy_objects;
+	for (GameObject* object : objects) {
+		object->Update(dt);
+		if (object->Destroyed() == true) {
+			destroy_objects.push_back(object);
+		}
+	}
+	for (GameObject* destroy_object : destroy_objects) {
+		objects.remove(destroy_object);
+		delete destroy_object;
+	}
+}
+
+void CS230::GameObjectManager::DrawAll(Math::TransformationMatrix camera_matrix){
+	for (GameObject* object : objects) {
+		object->Draw(camera_matrix);		
+	}
+}
+
+void CS230::GameObjectManager::CollisionTest()
+{
+	for (GameObject* object1 : objects) {
+		for (GameObject* object2 : objects) {
+			if (object1 != object2 && object1->CanCollideWith(object2->Type())) {
+				if (object1->IsCollidingWith(object2)) {
+					Engine::GetLogger().LogEvent("Collision Detected: " + object1->TypeName() + " and " + object2->TypeName());
+					object1->ResolveCollision(object2);
+				}
+			}
+		}
+	}
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\GameStateManager.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  GameStateManager.cpp
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    March 11, 2025
+*/
+
+#include "GameStateManager.h"
+#include "Engine.h"
+#include "GameObjectManager.h"
+
+CS230::GameStateManager::GameStateManager() :
+    current_gamestate(nullptr),
+    next_gamestate(nullptr),
+    status(Status::STARTING)
+{
+}
+
+void CS230::GameStateManager::AddGameState(GameState& gamestate) {
+    //Your Code
+    gamestates.push_back(&gamestate);
+}
+
+void CS230::GameStateManager::SetNextGameState(int index) {
+    //Your Code
+    next_gamestate = gamestates[index];//why use int data type?? just using GameState instead..
+}
+
+void CS230::GameStateManager::ReloadState() {
+    //Your Code
+    status = Status::UNLOADING;
+}
+
+void CS230::GameStateManager::ClearNextGameState() {
+    //Your Code
+    next_gamestate = nullptr;
+}
+
+bool CS230::GameStateManager::HasGameEnded() {
+    return status == Status::EXIT;
+}
+
+void CS230::GameStateManager::Update(double dt){
+    switch (status) {
+    case Status::STARTING:
+        //Your Code
+        if (gamestates.size() != 0) {
+            next_gamestate = gamestates[0];
+            status = Status::LOADING;
+        }
+        else {
+            status = Status::STOPPING;
+        }       
+        
+        break;
+    case Status::LOADING:
+        current_gamestate = next_gamestate;
+        Engine::GetLogger().LogEvent("Load " + current_gamestate->GetName());
+        current_gamestate->Load();
+        Engine::GetLogger().LogEvent("Load Complete");
+        status = Status::UPDATING;
+        break;
+    case Status::UPDATING:
+        //Your Code
+        if (current_gamestate != next_gamestate) {
+            status = Status::UNLOADING;
+        }
+        else {
+            Engine::GetLogger().LogVerbose("Update " + current_gamestate->GetName());
+            current_gamestate->Update(dt);
+            GameObjectManager* current_gameobject_manager = current_gamestate->GetGSComponent<GameObjectManager>();
+            if (current_gameobject_manager != nullptr) {
+                current_gameobject_manager->CollisionTest();
+            }
+            current_gamestate->Draw();
+        }
+        break;
+    case Status::UNLOADING:
+        //Your Code
+        Engine::GetLogger().LogEvent("Unload " + current_gamestate->GetName());
+        current_gamestate->Unload();
+        Engine::GetLogger().LogEvent("Unload Complete");
+        Engine::GetTextureManager().Unload();
+        if (next_gamestate == nullptr) {
+            status = Status::STOPPING;
+        }
+        else {
+            status = Status::LOADING;
+        }
+        break;
+    case Status::STOPPING:
+        //Your Code
+        status = Status::EXIT;
+        break;
+    case Status::EXIT:
+        break;
+    }
+}
+
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Input.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Input.cpp
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    March 17, 2025
+*/
+
+#include "Input.h"
+#include "Engine.h"
+#include <raylib.h>
+
+
+constexpr int cs230_to_rl(CS230::Input::Keys cs230_key) noexcept {
+    switch (cs230_key) {
+    case CS230::Input::Keys::A:
+        return KEY_A;
+    case CS230::Input::Keys::B:
+        return KEY_B;
+    case CS230::Input::Keys::C:
+        return KEY_C;
+    case CS230::Input::Keys::D:
+        return KEY_D;
+    case CS230::Input::Keys::E:
+        return KEY_E;
+    case CS230::Input::Keys::F:
+        return KEY_F;
+    case CS230::Input::Keys::G:
+        return KEY_G;
+    case CS230::Input::Keys::H:
+        return KEY_H;
+    case CS230::Input::Keys::I:
+        return KEY_I;
+    case CS230::Input::Keys::J:
+        return KEY_J;
+    case CS230::Input::Keys::K:
+        return KEY_K;
+    case CS230::Input::Keys::L:
+        return KEY_L;
+    case CS230::Input::Keys::M:
+        return KEY_M;
+    case CS230::Input::Keys::N:
+        return KEY_N;
+    case CS230::Input::Keys::O:
+        return KEY_O;
+    case CS230::Input::Keys::P:
+        return KEY_P;
+    case CS230::Input::Keys::Q:
+        return KEY_Q;
+    case CS230::Input::Keys::R:
+        return KEY_R;
+    case CS230::Input::Keys::S:
+        return KEY_S;
+    case CS230::Input::Keys::T:
+        return KEY_T;
+    case CS230::Input::Keys::U:
+        return KEY_U;
+    case CS230::Input::Keys::V:
+        return KEY_V;
+    case CS230::Input::Keys::W:
+        return KEY_W;
+    case CS230::Input::Keys::X:
+        return KEY_X;
+    case CS230::Input::Keys::Y:
+        return KEY_Y;
+    case CS230::Input::Keys::Z:
+        return KEY_Z;
+    case CS230::Input::Keys::Space:
+        return KEY_SPACE;
+    case CS230::Input::Keys::Enter:
+        return KEY_ENTER;
+    case CS230::Input::Keys::Left:
+        return KEY_LEFT;
+    case CS230::Input::Keys::Right:
+        return KEY_RIGHT;
+    case CS230::Input::Keys::Up:
+        return KEY_UP;
+    case CS230::Input::Keys::Down:
+        return KEY_DOWN;
+    case CS230::Input::Keys::One:
+        return KEY_ONE;
+    case CS230::Input::Keys::Two:
+        return KEY_TWO;
+    case CS230::Input::Keys::Escape:
+        return KEY_ESCAPE;
+    case CS230::Input::Keys::Tab:
+        return KEY_TAB;
+    default:
+        return -1;
+    }
+
+}
+
+constexpr CS230::Input::Keys& operator++(CS230::Input::Keys& key) noexcept {
+    key = static_cast<CS230::Input::Keys>(static_cast<unsigned>(key) + 1);
+    return key;
+}
+
+CS230::Input::Input() {
+    keys_down.resize(static_cast<int>(Keys::Count));
+    previous_keys_down.resize(static_cast<int>(Keys::Count));
+}
+
+void CS230::Input::Update() {
+    previous_keys_down = keys_down;
+    for (Keys key = Keys::A; key < Keys::Count; ++key) {
+        const auto rl_key = cs230_to_rl(static_cast<Keys>(key));
+        SetKeyDown(key, IsKeyDown(rl_key));
+        if (KeyJustPressed(key)) {
+            Engine::GetLogger().LogDebug("Key Pressed");
+        }
+        else if (KeyJustReleased(key)) {
+            Engine::GetLogger().LogDebug("Key Released");
+        }
+    }
+
+}
+
+void CS230::Input::SetKeyDown(Keys key, bool value){
+    keys_down[static_cast<int>(key)] = value;
+}
+
+bool CS230::Input::KeyDown(Keys key) {
+    return keys_down[static_cast<int>(key)];
+}
+
+bool CS230::Input::KeyJustPressed(Keys key) {
+    return keys_down[static_cast<int>(key)] == true && previous_keys_down[static_cast<int>(key)] == false;
+}
+
+bool CS230::Input::KeyJustReleased(Keys key) {
+    return keys_down[static_cast<int>(key)] == false && previous_keys_down[static_cast<int>(key)] == true;
+}
+
+
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Logger.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Logger.cpp
+Project:    CS230 Engine
+Author:     Jonathan Holmes, Taekyung Ho
+Created:    March 4, 2025
+Updated:    March 4, 2025
+*/
+#include <iostream>
+#include <map>
+#include "Logger.h"
+
+CS230::Logger::Logger(Logger::Severity severity, bool use_console, std::chrono::system_clock::time_point start_time) :
+	min_level(severity),
+	out_stream("Trace.log"),
+	start_time(start_time)
+{
+	SetTraceLogLevel(LOG_NONE);
+	if (use_console == true) {
+		out_stream.set_rdbuf(std::cout.rdbuf());
+	}
+}
+CS230::Logger::~Logger() {
+	out_stream.flush();
+	out_stream.close();
+}
+
+void CS230::Logger::log(CS230::Logger::Severity severity, std::string message) {
+	//std:: string  Severity_string[] = {
+	//		"Verbose",  //Minor messages
+	//		"Debug",    //Only used while actively debugging
+	//		"Event",    //General event, like key press or state change
+	//		"Error"     //Errors, such as file load errors
+	//};
+	// std::string answer = Severity_string[int(severity)] +"\t"+ message;
+	//=============array_version
+
+	std::map< CS230::Logger::Severity, std::string> get_error_level = {
+		{CS230::Logger::Severity::Verbose,"Verbose"},
+		{CS230::Logger::Severity::Debug,"Debug"},
+		{CS230::Logger::Severity::Event,"Event"},
+		{CS230::Logger::Severity::Error,"Error"}
+	};
+	std::string answer = get_error_level[severity] + "\t" + message;
+	//===========map_version
+	
+
+	if (int(CS230::Logger::min_level) <= int(severity)) {
+
+		out_stream.precision(4);
+		out_stream << '[' << std::fixed << seconds_since_start() << "]\t";
+		out_stream  << answer << "\n";
+	}
+	return;
+}
+
+double CS230::Logger::seconds_since_start(){
+	return std::chrono::duration<double>(std::chrono::system_clock::now() -start_time).count();
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Matrix.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Matrix.cpp
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    April 1, 2025
+*/
+
+#include "Matrix.h"
+
+Math::TransformationMatrix::TransformationMatrix(){
+	Reset();
+}
+
+
+Math::TransformationMatrix Math::TransformationMatrix::operator * (TransformationMatrix m) const {
+	TransformationMatrix result;
+
+	result.matrix[0][0] = matrix[0][0] * m[0][0] + matrix[0][1] * m[1][0] + matrix[0][2] * m[2][0];
+	result.matrix[0][1] = matrix[0][0] * m[0][1] + matrix[0][1] * m[1][1] + matrix[0][2] * m[2][1];
+	result.matrix[0][2] = matrix[0][0] * m[0][2] + matrix[0][1] * m[1][2] + matrix[0][2] * m[2][2];
+	result.matrix[1][0] = matrix[1][0] * m[0][0] + matrix[1][1] * m[1][0] + matrix[1][2] * m[2][0];
+	result.matrix[1][1] = matrix[1][0] * m[0][1] + matrix[1][1] * m[1][1] + matrix[1][2] * m[2][1];
+	result.matrix[1][2] = matrix[1][0] * m[0][2] + matrix[1][1] * m[1][2] + matrix[1][2] * m[2][2];
+	result.matrix[2][0] = matrix[2][0] * m[0][0] + matrix[2][1] * m[1][0] + matrix[2][2] * m[2][0];
+	result.matrix[2][1] = matrix[2][0] * m[0][1] + matrix[2][1] * m[1][1] + matrix[2][2] * m[2][1];
+	result.matrix[2][2] = matrix[2][0] * m[0][2] + matrix[2][1] * m[1][2] + matrix[2][2] * m[2][2];
+
+	return result;
+}
+
+Math::TransformationMatrix& Math::TransformationMatrix::operator *= (Math::TransformationMatrix m) {
+	(*this) = (*this) * m;
+	return (*this);
+}
+
+Math::TransformationMatrix Math::TransformationMatrix::operator*(double scale) const
+{	
+	TransformationMatrix result;
+	result.matrix[0][0] *= scale;
+	result.matrix[0][1] *= scale;
+	result.matrix[0][2] *= scale;
+	result.matrix[1][0] *= scale;
+	result.matrix[1][1] *= scale;
+	result.matrix[1][2] *= scale;
+	result.matrix[2][0] *= scale;
+	result.matrix[2][1] *= scale;
+	result.matrix[2][2] *= scale;
+	return result;
+}
+
+Math::TransformationMatrix& Math::TransformationMatrix::operator*=(double scale)
+{
+	(*this) = (*this) * scale;
+	return (*this);
+}
+
+Math::vec2 Math::TransformationMatrix::operator * (vec2 v) const {
+	Math::vec2 result;
+	result.x = matrix[0][0] * v.x + matrix[0][1] * v.y + matrix[0][2];
+	result.y = matrix[1][0] * v.x + matrix[1][1] * v.y + matrix[1][2];
+	return result;
+}
+
+void Math::TransformationMatrix::Reset() {
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			matrix[i][j] = 0;
+		}
+	}
+	matrix[0][0] = 1.0;
+	matrix[1][1] = 1.0;
+	matrix[2][2] = 1.0;
+}
+
+Math::TranslationMatrix::TranslationMatrix(ivec2 translate){
+	Reset();
+	matrix[0][2] = translate.x;
+	matrix[1][2] = translate.y;
+}
+
+Math::TranslationMatrix::TranslationMatrix(vec2 translate)
+{
+	Reset();
+	matrix[0][2] = translate.x;
+	matrix[1][2] = translate.y;
+}
+
+Math::ScaleMatrix::ScaleMatrix(double scale)
+{
+	Reset();
+	matrix[0][0] *= scale;
+	matrix[1][1] *= scale;
+}
+
+Math::ScaleMatrix::ScaleMatrix(vec2 scale)
+{
+	Reset();
+	matrix[0][0] *= scale.x;
+	matrix[1][1] *= scale.y;
+}
+
+Math::RotationMatrix::RotationMatrix(double theta)
+{
+	Reset();
+	matrix[0][0] = std::cos(theta);
+	matrix[0][1] = -std::sin(theta);
+	matrix[1][0] = std::sin(theta);
+	matrix[1][1] = std::cos(theta);
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Particle.cpp ===== 
+#include "Particle.h"
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Particle.cpp
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    June 6, 2025
+*/
+
+namespace CS230 {
+	Particle::Particle(const std::filesystem::path& sprite_file) : 
+		life(0.0),
+		GameObject({0,0})
+	{
+		AddGOComponent(new Sprite(sprite_file, this));
+	}
+	void Particle::Start(Math::vec2 _position, Math::vec2 _velocity, double max_life)
+	{
+		SetPosition(_position);
+		SetVelocity(_velocity);
+		life = max_life;
+		GetGOComponent<Sprite>()->PlayAnimation(0);
+	}
+
+	void Particle::Update(double dt) {
+		if (Alive()) {
+			life -= dt;
+			//Engine::GetLogger().LogDebug(std::to_string(life));
+			GameObject::Update(dt);
+		}
+	}
+
+	void Particle::Draw(Math::TransformationMatrix camera_matrix) {
+		if (Alive()) {
+			GameObject::Draw(camera_matrix);
+		}
+	}
+} 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Rect.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Rect.cpp
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    May 18, 2025
+*/
+#include "Rect.h"
+
+namespace Math {
+	int irect::Left() const noexcept
+	{
+		return std::min(point_1.x, point_2.x);
+	}
+	int irect::Right() const noexcept
+	{
+		return std::max(point_1.x, point_2.x);
+	}
+	int irect::Top() const noexcept
+	{
+		return std::max(point_1.y, point_2.y);
+	}
+	int irect::Bottom() const noexcept
+	{
+		return std::min(point_1.y, point_2.y);
+	}
+	double rect::Left() const noexcept
+	{
+		return std::min(point_1.x, point_2.x);
+	}
+	double rect::Right() const noexcept
+	{
+		return std::max(point_1.x, point_2.x);
+	}
+	double rect::Top() const noexcept
+	{
+		return std::max(point_1.y, point_2.y);
+	}
+	double rect::Bottom() const noexcept
+	{
+		return std::min(point_1.y, point_2.y);
+	}
+}
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\ShowCollision.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  ShowCollision.cpp
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    May 17, 2025
+*/
+#include "ShowCollision.h"
+
+CS230::ShowCollision::ShowCollision() : enabled(true) {}
+
+void CS230::ShowCollision::Update([[maybe_unused]]double dt) {
+    if (Engine::GetInput().KeyJustReleased(CS230::Input::Keys::Tab) == true) {
+        enabled = !enabled;
+    }
+}
+
+bool CS230::ShowCollision::Enabled() {
+    return enabled;
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Sprite.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Sprite.cpp
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    March 19, 2025
+*/
+
+#include "GameObject.h"
+#include "Sprite.h"
+
+CS230::Sprite::Sprite(const std::filesystem::path& sprite_file, GameObject* given_object) {
+    Load(sprite_file, given_object);
+}
+
+CS230::Sprite::~Sprite()
+{
+    for (Animation* animation : animations) {
+        delete animation;
+    }
+    animations.clear();
+}
+
+CS230::Sprite::Sprite(Sprite&& temporary) noexcept :
+    texture(std::move(temporary.texture)),
+    hotspots(std::move(temporary.hotspots)),
+    current_animation(temporary.current_animation),
+    frame_size(temporary.frame_size),
+    frame_texels(std::move(temporary.frame_texels)),
+    animations(std::move(temporary.animations))
+{}
+
+CS230::Sprite& CS230::Sprite::operator=(Sprite && temporary) noexcept
+{
+    std::swap(texture, temporary.texture);
+    std::swap(hotspots, temporary.hotspots);
+    std::swap(current_animation, temporary.current_animation);
+    std::swap(frame_size, temporary.frame_size);
+    std::swap(frame_texels, frame_texels);
+    std::swap(animations, temporary.animations);
+    return *this;
+}
+
+void CS230::Sprite::Update(double dt)
+{
+    animations[current_animation]->Update(dt);
+}
+
+void CS230::Sprite::Load(const std::filesystem::path& sprite_file, GameObject* _given_object)
+{
+    given_object = _given_object;
+    animations.clear();
+    if (sprite_file.extension() != ".spt") {
+        throw std::runtime_error(sprite_file.generic_string() + " is not a .spt file");
+    }
+    std::ifstream in_file(sprite_file);
+
+    if (in_file.is_open() == false) {
+        throw std::runtime_error("Failed to load " + sprite_file.generic_string());
+    }
+
+    hotspots.clear();
+    frame_texels.clear();
+
+    std::string text;
+    in_file >> text;
+    texture = Engine::GetTextureManager().Load(text);
+    frame_size = Engine::GetTextureManager().Load(text)->GetSize();
+
+    in_file >> text;
+    while (in_file.eof() == false) {
+        if (text == "FrameSize") {
+            in_file >> frame_size.x;
+            in_file >> frame_size.y;
+        }
+        
+        else if (text == "NumFrames") {
+            int frame_count;
+            in_file >> frame_count;
+            for (int i = 0; i < frame_count; i++) {
+                frame_texels.push_back({ frame_size.x * i, 0 });
+            }
+        }
+        else if (text == "Frame") {
+            int frame_location_x, frame_location_y;
+            in_file >> frame_location_x;
+            in_file >> frame_location_y;
+            frame_texels.push_back({ frame_location_x, frame_location_y });
+        }
+        else if (text == "HotSpot") {
+            int hotspot_x, hotspot_y;
+            in_file >> hotspot_x;
+            in_file >> hotspot_y;
+            hotspots.push_back({ hotspot_x, hotspot_y });
+        }
+        else if (text == "Anim") {
+            in_file >> text;
+            animations.push_back(new Animation(text));
+        }
+        else if (text == "RectCollision") {
+            Math::irect boundary;
+            in_file >> boundary.point_1.x >> boundary.point_1.y >> boundary.point_2.x >> boundary.point_2.y;
+            if (given_object == nullptr) {
+                Engine::GetLogger().LogError("Cannot add collision to a null object");
+            }
+            else {
+                given_object->AddGOComponent(new RectCollision(boundary, given_object));
+            }
+        }
+        else if (text == "CircleCollision") {
+            double radius;
+            in_file >> radius;
+            if (given_object == nullptr) {
+                Engine::GetLogger().LogError("Cannot add collision to a null object");
+            }
+            else {
+                given_object->AddGOComponent(new CircleCollision(radius, given_object));
+            }
+        }
+        else {
+            Engine::GetLogger().LogError("Unknown command: " + text);
+        }
+        in_file >> text;
+    }
+    if (frame_texels.empty() == true) {
+        frame_texels.push_back({ 0,0 });
+    }
+
+    if (animations.empty() == true) {
+        animations.push_back(new Animation());
+        PlayAnimation(0);
+    }
+    
+
+}
+
+void CS230::Sprite::Draw(Math::TransformationMatrix display_matrix){
+    texture->Draw(display_matrix * Math::TranslationMatrix(-GetHotSpot(0)), GetFrameTexel(animations[current_animation]->CurrentFrame()), GetFrameSize());
+}
+
+Math::ivec2 CS230::Sprite::GetHotSpot(int index)
+{
+	if (index < 0 || index > hotspots.size()) {
+		Engine::GetLogger().LogDebug("Invalid index in hospot!");
+		return Math::ivec2{ 0,0 };
+	}
+	return hotspots[index];
+}
+
+Math::ivec2 CS230::Sprite::GetFrameSize()
+{
+    return frame_size;
+}
+
+void CS230::Sprite::PlayAnimation(int animation)
+{
+    if (animation < 0 || animation >= animations.size()) {
+        Engine::GetLogger().LogDebug("Invalid index in animation!");
+        current_animation = 0;
+        return;
+    }
+    current_animation = animation;
+    animations[current_animation]->Reset();
+}
+
+bool CS230::Sprite::AnimationEnded()
+{
+    return animations[current_animation]->Ended();
+}
+
+Math::ivec2 CS230::Sprite::GetFrameTexel(int index) const
+{
+    if (index < 0 || index >= frame_texels.size()) {
+        Engine::GetLogger().LogDebug("Invalid index in frametexles!");
+        return Math::ivec2{ 0,0 };
+    }
+    return frame_texels[index];
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Texture.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Texture.cpp
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    March 19, 2025
+*/
+
+#include "Texture.h"
+#include "Engine.h"
+
+
+
+
+CS230::Texture::Texture(const std::filesystem::path& file_name){
+    texture = LoadTexture(file_name.string().c_str());
+    SetTextureWrap(texture, TEXTURE_WRAP_CLAMP);
+}
+
+CS230::Texture::Texture(Texture2D given_texture) {
+    texture = given_texture;
+}
+
+
+CS230::Texture::~Texture() {
+    UnloadTexture(texture);
+}
+
+CS230::Texture::Texture(Texture&& temporary) noexcept : texture(temporary.texture) {
+    temporary.texture.id = 0;
+    temporary.texture.width = 0;
+    temporary.texture.height = 0;
+    temporary.texture.mipmaps = 0;
+    temporary.texture.format = 0;
+}
+
+CS230::Texture& CS230::Texture::operator=(Texture&& temporary) noexcept {
+    std::swap(texture.id, temporary.texture.id);
+    std::swap(texture.width, temporary.texture.width);
+    std::swap(texture.height, temporary.texture.height);
+    std::swap(texture.mipmaps, temporary.texture.mipmaps);
+    std::swap(texture.format, temporary.texture.format);
+    return *this;
+}
+
+
+Math::ivec2 CS230::Texture::GetSize() const {
+    return { texture.width, texture.height };
+}
+
+
+void CS230::Texture::Draw(Math::TransformationMatrix display_matrix, unsigned int color) {
+    Draw(display_matrix, { 0, 0 }, { texture.width, texture.height }, color);
+}
+
+
+void CS230::Texture::Draw(Math::TransformationMatrix display_matrix, Math::ivec2 texel_position, Math::ivec2 frame_size, unsigned int color) {
+    const double render_height = rlGetFramebufferHeight();
+    Math::vec2 bottom_left = display_matrix * Math::vec2{ 0, 0 };
+    Math::vec2 bottom_right = display_matrix * Math::vec2{ double(frame_size.x), 0 };
+    Math::vec2 top_left = display_matrix * Math::vec2{ 0, double(frame_size.y) };
+    Math::vec2 top_right = display_matrix * Math::vec2{ double(frame_size.x), double(frame_size.y) };
+
+    bottom_left.y = bottom_left.y * -1 + render_height;
+    bottom_right.y = bottom_right.y * -1 + render_height;
+    top_left.y = top_left.y * -1 + render_height;
+    top_right.y = top_right.y * -1 + render_height;
+
+    const float left_u = float(texel_position.x) / float(texture.width);
+    const float right_u = (float(texel_position.x) + frame_size.x) / float(texture.width);
+    const float bottom_v = (float(texel_position.y) + frame_size.y) / float(texture.height);
+    const float top_v = float(texel_position.y) / float(texture.height);
+
+    rlSetTexture(texture.id);
+    rlBegin(RL_QUADS);
+
+    rlColor4ub(
+        static_cast<unsigned char>((color & 0xFF000000) >> 24),
+        static_cast<unsigned char>((color & 0x00FF0000) >> 16),
+        static_cast<unsigned char>((color & 0x0000FF00) >> 8),
+        static_cast<unsigned char>((color & 0x000000FF) >> 0));
+    rlNormal3f(0.0f, 0.0f, 1.0f);
+
+    rlTexCoord2f(left_u, top_v);
+    rlVertex2f(float(top_left.x), float(top_left.y));
+
+    rlTexCoord2f(left_u, bottom_v);
+    rlVertex2f(float(bottom_left.x), float(bottom_left.y));
+
+    rlTexCoord2f(right_u, bottom_v);
+    rlVertex2f(float(bottom_right.x), float(bottom_right.y));
+
+    rlTexCoord2f(right_u, top_v);
+    rlVertex2f(float(top_right.x), float(top_right.y));
+
+    rlEnd();
+    rlSetTexture(0);
+}
+
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\TextureManager.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  TextureManager.cpp
+Project:    CS230 Engine
+Author:     Taekuyng Ho
+Created:    April 29, 2025
+*/
+
+#include "TextureManager.h"
+#include "Engine.h"
+namespace CS230 {
+	Texture* TextureManager::Load(const std::filesystem::path& file_name)
+	{
+		if (textures.find(file_name) == textures.end()) {
+			textures[file_name] = new Texture(file_name);
+			Engine::GetLogger().LogEvent("Loading Texture: " + file_name.string());
+		}
+		return textures[file_name];
+	}
+
+	void TextureManager::Unload()
+	{
+		for (std::pair<std::filesystem::path, Texture*> texture : textures) {
+			delete texture.second;
+			Engine::GetLogger().LogEvent("Unload Texture: " + texture.first.string());
+		}
+		textures.clear();
+	}
+}
+
+namespace {
+	RenderTexture2D s_render_texture = {};
+}
+
+void CS230::TextureManager::StartRenderTextureMode(int width, int height) {
+	s_render_texture = LoadRenderTexture(width, height);
+	BeginTextureMode(s_render_texture);
+	rlClearColor(0, 0, 0, 0);
+	rlClearScreenBuffers();
+}
+
+CS230::Texture* CS230::TextureManager::EndRenderTextureMode() {
+	EndTextureMode();
+	const auto window_size = Engine::GetWindow().GetSize();
+	rlSetFramebufferWidth(window_size.x);
+	rlSetFramebufferHeight(window_size.y);
+	rlUnloadFramebuffer(s_render_texture.id);
+	const auto result = new Texture{ s_render_texture.texture };
+	rendered_textures.push_back(result);
+	return result;
+}
+
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Timer.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Timer.cpp
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    May 17, 2025
+*/
+#include "Timer.h"
+
+CS230::Timer::Timer(double timer_max):
+	timer(timer_max)
+{}
+
+void CS230::Timer::Set(double time_remaining)
+{
+	pendulum = false;
+	timer_max = time_remaining;
+	Reset();
+}
+
+void CS230::Timer::Reset() {
+	timer = timer_max;
+}
+
+bool CS230::Timer::TickTock()
+{
+	return pendulum;
+}
+
+void CS230::Timer::Update(double dt)
+{
+	if (timer >= 0.0 && (timer - dt) >= 0.0) {
+		timer -= dt;
+	}
+	else {
+		timer = 0.0;
+	}
+	
+	pendulum = !pendulum;
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Vec2.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Vec2.cpp
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    March 18, 2025
+*/
+#include "Vec2.h"
+
+
+bool Math::vec2::operator==(const vec2& v)
+{
+    return { (x == v.x) && (y == v.y) };
+}
+
+bool Math::vec2::operator!=(const vec2& v)
+{
+    return !operator==(v);
+}
+
+Math::vec2 Math::vec2::operator+(const vec2& v) {
+    return { x + v.x, y + v.y };
+}
+
+Math::vec2 Math::vec2::operator+(const vec2& v) const
+{
+    return { x + v.x, y + v.y };
+}
+
+Math::vec2& Math::vec2::operator+=(const vec2& v) {
+    x += v.x;
+    y += v.y;
+    return *this;
+}
+
+Math::vec2 Math::vec2::operator-(const vec2& v)
+{
+    return { x - v.x, y - v.y };
+}
+
+Math::vec2 Math::vec2::operator-(const vec2& v) const
+{
+    return { x - v.x, y - v.y };
+}
+
+Math::vec2& Math::vec2::operator-=(const vec2& v)
+{
+    x -= v.x;
+    y -= v.y;
+    return *this;
+}
+
+Math::vec2 Math::vec2::operator*(double scale)
+{
+    return { x * scale, y * scale };
+}
+
+Math::vec2 Math::vec2::operator*(double scale) const
+{
+    return { x * scale, y * scale };
+}
+
+Math::vec2& Math::vec2::operator*=(double scale)
+{
+    x *= scale;
+    y *= scale;
+    return *this;
+}
+
+
+
+Math::vec2 Math::vec2::operator/(double divisor)
+{
+    return { x / divisor, y / divisor };
+}
+
+Math::vec2 Math::vec2::operator/(double divisor) const
+{
+    return { x / divisor, y / divisor };
+}
+
+Math::vec2& Math::vec2::operator/=(double divisor)
+{
+    x /= divisor;
+    y /= divisor;
+    return *this;
+}
+
+Math::vec2 Math::vec2::operator-()
+{
+    return { -x,-y };
+}
+
+Math::vec2 Math::vec2::operator-() const
+{
+    return { -x,-y };
+}
+
+
+
+//Math::vec2 Math::operator-(const vec2& v1, const vec2& v2)
+//{
+//    return { v1.x - v2.x,v1.x - v2.y };
+//}
+
+Math::vec2 Math::operator*(double scale, const vec2& v)
+{
+    return { scale * v.x ,scale * v.y };
+}
+
+Math::vec2& Math::vec2::Normalize()
+{
+    double magnitude = sqrt(x * x + y*y);
+    (*this) /= magnitude;
+    return (*this);
+}
+
+//Math::vec2 Math::vec2::Normalize() const
+//{
+//    double magnitude = sqrt(x * x + y * y);
+//    Math::vec2 return_vec = (*this) /magnitude;
+//    return return_vec;
+//}
+
+/*======================================================*/
+
+bool Math::ivec2::operator==(const ivec2& v)
+{
+    return { (x == v.x) && (y == v.y) };
+}
+
+bool Math::ivec2::operator!=(const ivec2& v)
+{
+    return !operator==(v);
+}
+
+Math::ivec2 Math::ivec2::operator+(const ivec2& v) {
+    return { x + v.x, y + v.y };
+}
+
+Math::ivec2 Math::ivec2::operator+(const ivec2& v) const
+{
+    return { x + v.x, y + v.y };
+}
+
+Math::ivec2& Math::ivec2::operator+=(const ivec2& v) {
+    x += v.x;
+    y += v.y;
+    return *this;
+}
+
+Math::ivec2 Math::ivec2::operator-(const ivec2& v)
+{
+    return { x - v.x, y - v.y };
+}
+
+Math::ivec2 Math::ivec2::operator-(const ivec2& v) const
+{
+    return { x - v.x, y - v.y };
+}
+
+Math::ivec2& Math::ivec2::operator-=(const ivec2& v)
+{
+    x -= v.x;
+    y -= v.y;
+    return *this;
+}
+
+Math::ivec2 Math::ivec2::operator*(int scale)
+{
+    return { x * scale, y * scale };
+}
+
+Math::ivec2 Math::ivec2::operator*(int scale) const
+{
+    return { x * scale, y * scale };
+}
+
+Math::ivec2& Math::ivec2::operator*=(int scale)
+{
+    x *= scale;
+    y *= scale;
+    return *this;
+}
+
+Math::ivec2 Math::ivec2::operator/(int divisor)
+{
+    return { x / divisor, y / divisor };
+}
+
+Math::ivec2 Math::ivec2::operator/(int divisor) const
+{
+    return { x / divisor, y / divisor };
+}
+
+Math::ivec2& Math::ivec2::operator/=(int divisor)
+{
+    x /= divisor;
+    y /= divisor;
+    return *this;
+}
+
+Math::vec2 Math::ivec2::operator*(double scale)
+{
+    return { x * scale, y * scale };
+}
+
+Math::vec2 Math::ivec2::operator*(double scale) const
+{
+    return { x * scale, y * scale };
+}
+
+Math::vec2 Math::ivec2::operator/(double divisor)
+{
+    return { x / divisor, y / divisor };
+}
+
+Math::vec2 Math::ivec2::operator/(double divisor) const
+{
+    return { x / divisor, y / divisor };
+}
+
+Math::ivec2 Math::ivec2::operator-()
+{
+    return { -x, -y };
+}
+
+//Math::ivec2 Math::operator-(const ivec2& v)
+//{
+//    return { -v.x, -v.y };
+//}
+
+Math::ivec2 Math::operator*(int scale, const ivec2& v)
+{
+    return { scale * v.x ,scale * v.y };
+}
+
+Math::vec2 Math::operator*(double scale, const ivec2& v)
+{
+    return { scale * v.x ,scale * v.y };
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Engine\Window.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Window.cpp
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    March 11, 2025
+*/
+
+#include "Window.h"
+#include "Engine.h"
+
+
+
+void CS230::Window::Start(std::string title) {
+    size = { default_width, default_height };
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT);
+    InitWindow(default_width, default_height, title.c_str());
+    rlDisableBackfaceCulling();
+    SetExitKey(KEY_NULL);
+    BeginDrawing();
+    Clear(default_background);
+}
+
+void CS230::Window::Update() {
+    EndDrawing();
+
+    int current_width = GetScreenWidth();
+    int current_height = GetScreenHeight();
+    if (current_width != size.x || current_height != size.y) {
+        Engine::GetLogger().LogEvent("Window Resized");
+        size = { current_width, current_height };
+    }
+
+    BeginDrawing();
+}
+
+bool CS230::Window::IsClosed() const {
+    return WindowShouldClose();
+}
+
+Math::ivec2 CS230::Window::GetSize() const
+{
+    return size;
+}
+
+void CS230::Window::Clear(unsigned int rgba) {
+    const Color rl_color = Color{
+        static_cast<unsigned char>((rgba & 0xff000000) >> 24),
+        static_cast<unsigned char>((rgba & 0x00ff0000) >> 16),
+        static_cast<unsigned char>((rgba & 0x0000ff00) >> 8),
+        static_cast<unsigned char>((rgba & 0x000000ff) >> 0)
+    };
+
+    ClearBackground(rl_color);
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Action.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Action.h
+Project:    GAM200
+Author:     Seungju Song
+Created:    Oct 14, 2025
+*/
+
+#pragma once
+#include <string>
+#include "Vec2.h"
+
+class Character;
+namespace CS230 {
+    class GameState;
+}
+
+class Action {
+public:
+    virtual ~Action() = default;
+
+    virtual std::string GetName() const = 0;
+
+    virtual int GetActionPointCost() const = 0;
+    virtual int GetSpellSlotCost() const = 0;
+    virtual int GetSpellLevel() const = 0;
+
+    virtual bool CanExecute(Character* performer, CS230::GameState* context) const = 0;
+
+    virtual void Execute(Character* performer, Character* target, Math::ivec2 tile_position) = 0;
+}; 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\ActionAttack.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  ActionAttack.h
+Project:    GAM200
+Author:     Seungju Song
+Created:    Oct 15, 2025
+*/
+
+#pragma once
+#include "Action.h"
+
+class ActionAttack : public Action {
+public:
+
+    std::string GetName() const override { return "Basic Attack"; }
+
+    int GetActionPointCost() const override { return 1; }
+    int GetSpellSlotCost() const override { return 0; }
+    int GetSpellLevel() const override { return 0; }
+
+    bool CanExecute(Character* performer, CS230::GameState* context) const override;
+    void Execute(Character* performer, Character* target, Math::ivec2 tile_position) override;
+}; 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\ActionPoints.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  ActionPoints.h
+Project:    GAM200
+Author:     Seungju Song
+Created:    Oct 12, 2025
+*/
+#pragma once
+#include "../Engine/Component.h"
+
+class ActionPoints : public CS230::Component {
+public:
+	ActionPoints(int max_points);
+	void Refresh();
+	bool Consume(int amount = 1);
+	int GetCurrentPoints() const;
+	int GetMaxPoints() const;
+	bool HasEnough(int amount) const;
+	void Update([[maybe_unused]] double dt) override{}
+private:
+	int max_points;
+	int current_points;
+};
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Character.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Character.h
+Project:    GAM200
+Author:     Seungju Song
+Created:    Oct 08, 2025
+Updated:    Oct 09, 2025
+*/
+
+#pragma once
+#include "../Engine/GameObject.h"
+#include "../Engine/GameObjectManager.h"
+#include "../Engine/Matrix.h"
+#include "../Engine/Input.h"
+#include "CharacterTypes.h"
+#include "GameTypes.h"  
+#include "Action.h"
+
+
+class GridPosition;
+class ActionPoints;
+class SpellSlots;
+class StatusEffects;
+class DamageCalculator;
+class TargetingSystem;
+class AIMemory;
+class GridFootprint;
+class Action;
+class StatsComponent;
+
+class Character : public CS230::GameObject {
+public:
+    virtual ~Character() = default;
+
+    void Update(double dt) override;
+    void Draw(Math::TransformationMatrix camera_matrix) override;
+    GameObjectTypes Type() override { return GameObjectTypes::Character; }
+    std::string TypeName() override = 0;
+
+    virtual void OnTurnStart() = 0;
+    virtual void OnTurnEnd() = 0;
+
+    virtual void PerformAttack(Character* target);
+    virtual void PerformAction(Action* action, Character* target, Math::ivec2 tile_position);
+    virtual void TakeDamage(int damage, Character* attacker);
+    virtual void ReceiveHeal(int amount);
+
+    void SetPathTo(Math::ivec2 destination);
+
+    CharacterTypes GetCharacterType() const { return m_character_type; }
+    bool IsAlive() const;
+    const CharacterStats& GetStats() const;
+    int GetMovementRange() const;
+    int GetActionPoints() const;
+    bool HasSpellSlot(int level) const;
+
+    GridPosition* GetGridPosition() const;
+    StatsComponent* GetStatsComponent() const;
+    ActionPoints* GetActionPointsComponent() const;
+    SpellSlots* GetSpellSlots() const;
+    //StatusEffects* GetStatusEffects() const;
+    //GridFootprint* GetGridFootprint() const;
+protected:
+    Character(CharacterTypes charType, Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level);
+
+
+    void InitializeComponents(Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level);
+    virtual void DecideAction() = 0;
+    void UpdateMovement(double dt);
+
+    CharacterTypes m_character_type;
+
+    GameObject* m_turn_target = nullptr;
+    TurnGoal m_turn_goal = TurnGoal::None;
+
+    std::vector<Math::ivec2> m_current_path;
+    bool m_is_moving = false;
+
+    std::vector<Action*> m_action_list;
+
+private:
+}; 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\CharacterStates.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  CharacterStates.h
+Project:    GAM200
+Author:     Seungju Song
+Created:    Oct 08, 2025
+*/
+#pragma once
+#include "../Engine/GameObject.h" 
+#include <string>
+
+class State_Idle : public CS230::GameObject::State {
+public:
+    void Enter(CS230::GameObject* object) override;
+    void Update(CS230::GameObject* object, double dt) override;
+    void CheckExit(CS230::GameObject* object) override;
+    std::string GetName() override { return "Idle"; }
+};
+
+class State_Moving : public CS230::GameObject::State {
+public:
+    void Enter(CS230::GameObject* object) override;
+    void Update(CS230::GameObject* object, double dt) override;
+    void CheckExit(CS230::GameObject* object) override;
+    std::string GetName() override { return "Moving"; }
+}; 
+
+
+class State_Attacking : public CS230::GameObject::State {
+public:
+    void Enter(CS230::GameObject* object) override;
+    void Update(CS230::GameObject* object, double dt) override;
+    void CheckExit(CS230::GameObject* object) override;
+    std::string GetName() override { return "Attacking"; }
+}; 
+
+class State_TurnEnd : public CS230::GameObject::State {
+public:
+    void Enter(CS230::GameObject* object) override;
+    void Update(CS230::GameObject* object, double dt) override;
+    void CheckExit(CS230::GameObject* object) override;
+    std::string GetName() override { return "TurnEnd"; }
+};  
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\CharacterTypes.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  CharacterTypes.h
+Project:    GAM200
+Author:     Seungju Song
+Created:    Oct 7, 2025
+*/
+#include <string>
+#pragma once
+enum class CharacterTypes
+{
+    None,
+    Dragon,
+    Fighter,
+    Rogue,
+    Cleric,
+    Wizard,
+    Count
+};
+
+struct CharacterStats {
+    int max_hp = 10;
+    int current_hp = 10;
+    int base_attack = 1;
+    std::string attack_dice = "1d6";
+    int base_defend = 1;
+    std::string defend_dice = "1d4";
+    int speed = 5;
+    int attack_range = 1;
+}; 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Dragon.h ===== 
+#pragma once
+#include "Character.h"
+
+class Dragon : public Character {
+public:
+    Dragon(Math::ivec2 start_coordinates);
+
+    std::string TypeName() override { return "Dragon"; }
+    void OnTurnStart() override;
+    void OnTurnEnd() override;
+    void TakeDamage(int damage, Character* attacker) override;
+
+protected:
+    void DecideAction() override;
+};
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Fighter.h ===== 
+#pragma once
+#include "Character.h"
+class Fighter : public Character {
+public:
+    Fighter(Math::ivec2 start_coordinates);
+    std::string TypeName() override { return "Fighter"; }
+    void OnTurnStart() override;
+    void OnTurnEnd() override;
+    void TakeDamage(int damage, Character* attacker) override;
+protected:
+    void DecideAction() override;
+};
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Fonts.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Fonts.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    May 5, 2025
+*/
+#pragma once
+enum Fonts {
+    Simple,
+    Outlined
+};
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\GameObjectTypes.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  GameObjectTypes.h
+Project:    CS230 Engine
+Author:     Taekyung Ho & Seungju Song
+Created:    May 20, 2025
+*/
+#pragma once
+enum class GameObjectTypes
+{
+    Cat,
+    Robot,
+    Asteroid,
+    Crates,
+    Meteor,
+    Ship,
+    Floor,
+    Portal,
+    Score,
+    Laser,
+    Particle,
+    Character,
+    Count,
+};
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\GameTypes.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  GameTypes.h
+Project:    GAM200
+Author:     Seungju Song
+Created:    Oct 08, 2025
+*/
+
+#pragma once
+
+enum class Direction {
+    North, West, East, South
+};
+
+enum class TurnGoal {
+    Attack,
+    DebuffEnemy,
+    HealAlly,
+    BuffAlly,
+    Reposition,
+    Flee,
+    None
+}; 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\GridPosition.h ===== 
+#pragma once
+#include "../Engine/Component.h"
+#include "../Engine/Vec2.h"
+
+class GridPosition : public CS230::Component {
+public:
+	GridPosition(Math::ivec2 start_coordinates);
+
+	void Set(Math::ivec2 new_coordinates);
+
+	const Math::ivec2& Get() const;
+
+	void Update([[maybe_unused]]double dt) override {};//占쏙옙占쏙옙 占쏙옙占쌔듸옙占쏙옙 占쏙옙占십울옙占싹몌옙
+
+private:
+	Math::ivec2 coordinates;
+}; 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\MainMenu.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  MainMenu.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    May 6, 2025
+*/
+
+#pragma once
+
+#include "../Engine/Engine.h"
+#include "../Engine/GameState.h"
+#include "../Engine/Texture.h"
+
+#include "Fonts.h"
+
+class MainMenu : public CS230::GameState {
+public:
+    MainMenu();
+    void Load() override;
+    void Update(double dt) override;
+    void Unload() override;
+    void Draw() override;
+    
+
+    std::string GetName() override {
+        return "MainMenu";
+    }
+    static constexpr unsigned int title_color = 0x9A2EFEFF;
+    static constexpr unsigned int non_seleted_color = 0x3ADF00FF;
+    static constexpr unsigned int seleted_color = 0xFFFFFFFF;
+private:
+    CS230::Texture* title_texture;
+    CS230::Texture* test_texture;
+    CS230::Texture* exit_texture;
+
+
+    unsigned int test_color ;
+    unsigned int exit_color ;
+
+    enum class Option
+    {
+        test,
+        exit
+    };
+    Option current_option;
+    void update_textures();
+
+};
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Particles.h ===== 
+#pragma once
+#include "../Engine/Particle.h"
+
+namespace Particles {
+    class Smoke : public CS230::Particle {
+    public:
+        Smoke() : Particle("Assets/Smoke.spt") {};
+        std::string TypeName() override { return "Smoke Particle"; }
+        static constexpr int MaxCount = 3;
+        static constexpr double MaxLife = 5.0;
+    };
+
+    class Hit : public CS230::Particle {
+    public:
+        Hit() : Particle("Assets/Hit.spt") {};
+        std::string TypeName() override { return "Hit Particle"; }
+        static constexpr int MaxCount = 10;
+        static constexpr double MaxLife = 1.0;
+    };
+
+    class MeteorBit : public CS230::Particle {
+    public:
+        MeteorBit() : Particle("Assets/MeteorBit.spt") {};
+        std::string TypeName() override { return "MeteorBit Particle"; }
+        static constexpr int MaxCount = 150;
+        static constexpr double MaxLife = 1.25;
+    };
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Portal.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Portal.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    May 28, 2025
+*/
+#pragma once
+#include "../Engine/GameObject.h"
+#include "GameObjectTypes.h"
+class Portal : public CS230::GameObject {
+public:
+    Portal(int to_state, Math::irect boundary);
+    std::string TypeName() override { return "Portal"; }
+    virtual GameObjectTypes Type() override { return GameObjectTypes::Portal; }
+
+    void GoToState();
+private:
+    int to_state;
+};
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Score.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Score.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    May 29, 2025
+*/
+#pragma once
+
+#include "../Engine/GameObject.h"
+#include "../Engine/Vec2.h"
+class Score : public CS230::Component {
+public:
+	Score(int value);
+	void Add(int dv = 1);
+	const int& Value() const { return value; }
+private:
+	int value;
+};
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\SpellSlots.h ===== 
+#pragma once
+#include "../Engine/Component.h"
+#include <map>
+class SpellSlots : public CS230::Component {
+public:
+    SpellSlots(const std::map<int, int>& max_slots_per_level);
+    bool Consume(int level);
+    bool HasSlot(int level) const;
+    void Recover(int max_level_to_recover);
+    void Update([[maybe_unused]] double dt) override {}
+private:
+    std::map<int, int> max_slots;
+    std::map<int, int> current_slots;
+}; 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Splash.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Splash.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    March 12, 2025
+*/
+
+#pragma once
+#include "..\Engine\GameState.h"
+#include "..\Engine\Texture.h"
+
+class Splash : public CS230::GameState {
+public:
+    Splash();
+    void Load() override;
+    void Update(double) override;
+    void Unload() override;
+    void Draw() override;
+
+
+    std::string GetName() override {
+        return "Splash";
+    }
+
+private:
+    double counter = 0;
+    CS230::Texture* texture;
+};
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\States.h ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  States.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    March 12, 2025
+*/
+#pragma once
+enum class States {
+    Splash,
+    MainMenu,
+    Test
+};
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\StatsComponent.h ===== 
+#pragma once
+#include"../Engine/Component.h"
+#include "CharacterTypes.h"
+#include<string>
+
+class StatsComponent : public CS230::Component {
+public:
+    StatsComponent(const CharacterStats& initial_stats);
+
+    void TakeDamage(int damage);
+    void Heal(int amount);
+    bool IsAlive() const;
+    int GetCurrentHP() const;
+    int GetMaxHP() const;
+    float GetHealthPercentage() const;
+
+
+    int GetBaseAttack() const;
+    const std::string& GetAttackDice() const;
+    int GetBaseDefend() const;
+    const std::string& GetDefendDice() const;
+    int GetSpeed() const;
+    int GetAttackRange() const;
+
+    const CharacterStats& GetAllStats() const { return stats; }
+
+private:
+    CharacterStats stats;
+}; 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Test.h ===== 
+/*
+Copyright (C) 2025 Taekyung Ho
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Test.h
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    Oct 8, 2025
+*/
+
+#pragma once
+#include "../Engine/GameState.h"
+#include "../Game/System/GridSystem.h"
+
+class Dragon;
+class Fighter;
+
+class Test : public CS230::GameState {
+public:
+    Test();
+    void Load() override;
+    void Update(double) override;
+    void Unload() override;
+    void Draw() override;
+
+    std::string GetName() override {
+        return "Test";
+    }
+private:
+    void test_subscribe_publish_singleSubscriber();
+    void test_multiple_subscribers_sameEvent();
+    void test_multiple_different_events();
+    void test_EventData_CompleteTransfer();
+    void test_EventData_MultiplePublishes();
+    Fighter* fighter;
+    Dragon* dragon;
+    void LogFighterStatus();
+    void LogDragonStatus();
+    //void test_subscribe_publish_singleSubscriber();
+}; 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Action.cpp ===== 
+
+#include "Action.h" 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\ActionAttack.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  ActionAttack.cpp
+Project:    GAM200
+Author:     Seungju Song
+Created:    Oct 15, 2025
+*/
+
+#include "ActionAttack.h"
+#include "Character.h"
+#include "StatsComponent.h"
+#include "ActionPoints.h"
+#include "GridPosition.h"
+// #include "DamageCalculator.h"
+
+bool ActionAttack::CanExecute(Character* performer, [[maybe_unused]]CS230::GameState* context) const {
+    if (performer == nullptr) return false;
+
+    ActionPoints* ap = performer->GetActionPointsComponent();
+    if (ap == nullptr || ap->HasEnough(GetActionPointCost()) == false) {
+        return false;
+    }
+
+    // TODO
+
+    return true;
+}
+
+void ActionAttack::Execute(Character* performer, Character* target, [[maybe_unused]]Math::ivec2 tile_position) {
+    if (performer == nullptr || target == nullptr) return;
+
+    performer->GetActionPointsComponent()->Consume(GetActionPointCost());
+
+    int damage = performer->GetStatsComponent()->GetBaseAttack();
+
+    target->TakeDamage(damage, performer);
+} 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\ActionPoints.cpp ===== 
+#include "ActionPoints.h"
+
+ActionPoints::ActionPoints(int max_points)
+    : max_points(max_points), current_points(max_points)
+{
+}
+
+void ActionPoints::Refresh() {
+    current_points = max_points;
+}
+
+bool ActionPoints::Consume(int amount) {
+    if (HasEnough(amount)) {
+        current_points -= amount;
+        return true;
+    }
+    return false;
+}
+
+int ActionPoints::GetCurrentPoints() const {
+    return current_points;
+}
+
+int ActionPoints::GetMaxPoints() const {
+    return max_points;
+}
+
+bool ActionPoints::HasEnough(int amount) const {
+    return current_points >= amount;
+} 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Character.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Character.cpp
+Project:    GAM200
+Author:     Seungju Song & Gemini
+Created:    Oct 08, 2025
+Updated:    Oct 10, 2025
+*/
+
+#include "Character.h"
+#include"../Engine/GameObject.h"
+#include "StatsComponent.h" 
+#include "GridPosition.h"
+#include "ActionPoints.h"
+#include "SpellSlots.h"
+Character::Character(CharacterTypes charType, Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level)
+    : CS230::GameObject(Math::vec2{ 0, 0 }),
+    m_character_type(charType)
+{
+    InitializeComponents(start_coordinates, max_action_points, max_slots_per_level);
+}
+
+void Character::InitializeComponents(Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level) {
+    CharacterStats initial_stats;
+
+    AddGOComponent(new StatsComponent(initial_stats));
+    AddGOComponent(new GridPosition(start_coordinates));
+    AddGOComponent(new ActionPoints(max_action_points));
+    AddGOComponent(new SpellSlots(max_slots_per_level));
+}
+
+void Character::Update(double dt) {
+    if (m_is_moving) {
+        UpdateMovement(dt);
+    }
+
+    CS230::GameObject::Update(dt);
+}
+
+void Character::Draw(Math::TransformationMatrix camera_matrix) {
+    CS230::GameObject::Draw(camera_matrix);
+}
+
+
+
+void Character::PerformAttack(Character* target) {
+    if (target == nullptr || !target->IsAlive()) {
+        Engine::GetLogger().LogDebug(TypeName() + " has no valid target to attack.");
+        return;
+    }
+
+    ActionPoints* ap = GetActionPointsComponent();
+    if (ap == nullptr || ap->Consume(1) == false) {
+        Engine::GetLogger().LogDebug(TypeName() + " tried to attack, but has no Action Points.");
+        return;
+    }
+
+    int total_damage = 10;
+
+    Engine::GetLogger().LogEvent(
+        TypeName() + " attacks " + target->TypeName() +
+        " for " + std::to_string(total_damage) + " damage."
+    );
+    target->TakeDamage(total_damage, this);
+}
+
+void Character::PerformAction([[maybe_unused]] Action* action, [[maybe_unused]] Character* target, [[maybe_unused]] Math::ivec2 tile_position) {
+}
+
+void Character::ReceiveHeal(int amount) {
+    if (GetStatsComponent() != nullptr) {
+        GetStatsComponent()->Heal(amount);
+    }
+}
+
+void Character::TakeDamage(int damage, [[maybe_unused]] Character* attacker) {
+    if (GetStatsComponent() != nullptr) {
+        GetStatsComponent()->TakeDamage(damage);
+    }
+
+    if (IsAlive() == false) {
+        // Die();
+    }
+}
+
+
+void Character::SetPathTo([[maybe_unused]] Math::ivec2 destination) {
+}
+
+void Character::UpdateMovement([[maybe_unused]]double dt) {
+}
+
+
+bool Character::IsAlive() const {
+    const StatsComponent* stats = GetStatsComponent();
+    return (stats != nullptr) ? stats->IsAlive() : false;
+}
+
+const CharacterStats& Character::GetStats() const {
+    return GetStatsComponent()->GetAllStats();
+}
+
+int Character::GetMovementRange() const {
+    const StatsComponent* stats = GetStatsComponent();
+    return (stats != nullptr) ? stats->GetSpeed() : 0;
+}
+
+int Character::GetActionPoints() const {
+    const ActionPoints* ap = GetActionPointsComponent();
+    return (ap != nullptr) ? ap->GetCurrentPoints() : 0;
+}
+
+bool Character::HasSpellSlot(int level) const {
+    const SpellSlots* ss = GetSpellSlots();
+    return (ss != nullptr) ? ss->HasSlot(level) : false;
+}
+
+
+StatsComponent* Character::GetStatsComponent() const {
+    return GetGOComponent<StatsComponent>();
+}
+
+GridPosition* Character::GetGridPosition() const {
+    return GetGOComponent<GridPosition>();
+}
+
+ActionPoints* Character::GetActionPointsComponent() const {
+    return GetGOComponent<ActionPoints>();
+}
+
+SpellSlots* Character::GetSpellSlots() const {
+    return GetGOComponent<SpellSlots>();
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\CharacterStates.cpp ===== 
+#include "CharacterStates.h"
+#include "Character.h"
+
+void State_Idle::Enter([[maybe_unused]] CS230::GameObject* object) {
+}
+
+void State_Idle::Update([[maybe_unused]] CS230::GameObject* object, [[maybe_unused]] double dt) {
+}
+
+void State_Idle::CheckExit([[maybe_unused]] CS230::GameObject* object) {
+}
+
+void State_TurnEnd::Enter([[maybe_unused]] CS230::GameObject* object) {
+}
+
+void State_TurnEnd::Update([[maybe_unused]] CS230::GameObject* object, [[maybe_unused]] double dt) {
+}
+
+void State_TurnEnd::CheckExit([[maybe_unused]] CS230::GameObject* object) {
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Dragon.cpp ===== 
+#include "Dragon.h"
+#include "StatsComponent.h"
+#include "ActionPoints.h"
+#include "ActionAttack.h"
+#include "../Engine/Engine.h"
+
+Dragon::Dragon(Math::ivec2 start_coordinates)
+    : Character(
+        CharacterTypes::Dragon,
+        start_coordinates,
+        3,
+        { {1, 4}, {2, 3}, {3, 2}, {4, 2}, {5, 1} }
+    )
+{
+    CharacterStats dragon_stats;
+    dragon_stats.max_hp = 250;
+    dragon_stats.current_hp = 250;
+    dragon_stats.speed = 4;
+    dragon_stats.base_attack = 10;
+    dragon_stats.attack_dice = "3d8";
+    dragon_stats.base_defend = 5;
+    dragon_stats.defend_dice = "2d10";
+    dragon_stats.attack_range = 2;
+
+    *GetStatsComponent() = StatsComponent(dragon_stats);
+
+    m_action_list.push_back(new ActionAttack());
+}
+
+void Dragon::OnTurnStart() {
+    ActionPoints* ap = GetActionPointsComponent();
+    if (ap != nullptr) {
+        ap->Refresh();
+    }
+
+    DecideAction();
+}
+
+void Dragon::OnTurnEnd() {
+}
+
+void Dragon::TakeDamage(int damage, Character* attacker) {
+    Character::TakeDamage(damage, attacker);
+}
+
+void Dragon::DecideAction() {
+    m_turn_goal = TurnGoal::Attack;
+    Engine::GetLogger().LogEvent("Dragon roars and decides to attack!");
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Fighter.cpp ===== 
+#include "Fighter.h"
+#include "ActionPoints.h"
+#include "StatsComponent.h"
+#include "../Engine/Engine.h"
+#include "ActionAttack.h"
+
+Fighter::Fighter(Math::ivec2 start_coordinates)
+    : Character(
+        CharacterTypes::Fighter,
+        start_coordinates,
+        2,
+        { {1, 2}, {2, 2} }
+    )
+{
+    CharacterStats fighter_stats;
+    fighter_stats.max_hp = 90;
+    fighter_stats.current_hp = 90;
+    fighter_stats.speed = 3;
+    fighter_stats.base_attack = 5;
+    fighter_stats.attack_dice = "2d6";
+    fighter_stats.base_defend = 0;
+    fighter_stats.defend_dice = "1d10";
+    fighter_stats.attack_range = 1;
+
+    *GetStatsComponent() = StatsComponent(fighter_stats);
+    m_action_list.push_back(new ActionAttack());
+}
+
+void Fighter::OnTurnStart() {
+    ActionPoints* ap = GetActionPointsComponent();
+    if (ap != nullptr) {
+        ap->Refresh();
+    }
+    DecideAction();
+}
+
+void Fighter::OnTurnEnd() {
+}
+
+void Fighter::TakeDamage(int damage, Character* attacker) {
+    Character::TakeDamage(damage, attacker);
+}
+
+void Fighter::DecideAction() {
+    m_turn_goal = TurnGoal::Attack;
+
+    Character* target = nullptr;
+    CS230::GameObjectManager* gom = Engine::GetGameStateManager().GetGSComponent<CS230::GameObjectManager>();
+
+    if (gom != nullptr) {
+        for (CS230::GameObject* obj : gom->GetAll()) {
+            if (obj->Type() == GameObjectTypes::Character) {
+                Character* character = static_cast<Character*>(obj);
+                if (character->GetCharacterType() == CharacterTypes::Dragon) {
+                    target = character;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (target != nullptr) {
+        Action* basic_attack = m_action_list[0];
+        if (basic_attack != nullptr && basic_attack->CanExecute(this, nullptr)) {
+            PerformAction(basic_attack, target, {});
+            Engine::GetLogger().LogEvent("Fighter executes a Basic Attack on " + target->TypeName() + "!");
+        }
+        else {
+            Engine::GetLogger().LogEvent("Fighter wants to attack " + target->TypeName() + ", but cannot execute action! (No AP or out of range)");
+        }
+    }
+    else {
+        Engine::GetLogger().LogEvent("Fighter has no target to attack!");
+    }
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\GridPosition.cpp ===== 
+#include "GridPosition.h"
+
+GridPosition::GridPosition(Math::ivec2 start_coordinates)
+    : coordinates(start_coordinates) {
+}
+
+void GridPosition::Set(Math::ivec2 new_coordinates) {
+    coordinates = new_coordinates;
+}
+
+const Math::ivec2& GridPosition::Get() const {
+    return coordinates;
+} 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\MainMenu.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  MainMenu.cpp
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    May 6, 2025
+*/
+
+#include "MainMenu.h"
+#include "States.h"
+
+MainMenu::MainMenu() : 
+	current_option(Option::test),
+	title_texture(nullptr){}
+
+void MainMenu::Load()
+{
+	title_texture = (Engine::GetFont(static_cast<int>(Fonts::Outlined)).PrintToTexture("CS230 Engine Test", title_color));
+	update_textures();
+}
+
+void MainMenu::Update([[maybe_unused]] double dt)
+{
+	if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Down)) {
+		switch (current_option)
+		{
+		case MainMenu::Option::test:
+			current_option = Option::exit;
+			break;
+		case MainMenu::Option::exit:
+			current_option = Option::test;
+			break;
+		}
+	}
+
+	if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Up)) {
+		switch (current_option)
+		{
+		case MainMenu::Option::test:
+			current_option = Option::exit;
+			break;
+		case MainMenu::Option::exit:
+			current_option = Option::test;
+			break;
+		}
+	}
+	update_textures();
+	if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Enter)) {
+		switch (current_option)
+		{
+		case MainMenu::Option::test:
+			Engine::GetGameStateManager().SetNextGameState(static_cast<int>(States::Test));
+			break;
+		case MainMenu::Option::exit:
+			Engine::GetGameStateManager().ClearNextGameState();
+			break;
+		}
+	}
+}
+
+void MainMenu::Unload()
+{
+}
+
+void MainMenu::Draw()
+{
+	Engine::GetWindow().Clear(0x000000FF);
+	title_texture->Draw(Math::TranslationMatrix(Math::ivec2{ 
+		Engine::GetWindow().GetSize().x/2  - title_texture->GetSize().x/2 - 100, 
+		Engine::GetWindow().GetSize().y - title_texture->GetSize().y - 100 }) * Math::ScaleMatrix(1.5));
+
+
+	test_texture->Draw(Math::TranslationMatrix(Math::ivec2{
+		Engine::GetWindow().GetSize().x / 2 - test_texture->GetSize().x / 2,
+		Engine::GetWindow().GetSize().y - test_texture->GetSize().y - 400 }));
+
+	exit_texture->Draw(Math::TranslationMatrix(Math::ivec2{
+		Engine::GetWindow().GetSize().x / 2 - 10 - exit_texture->GetSize().x / 2,
+		Engine::GetWindow().GetSize().y - exit_texture->GetSize().y - 500 }));
+
+}
+
+void MainMenu::update_textures()
+{
+	delete test_texture;
+	delete exit_texture;
+	switch (current_option)
+	{
+	case MainMenu::Option::test:
+		test_color = seleted_color;
+		exit_color = non_seleted_color;
+		break;
+	case MainMenu::Option::exit:
+		test_color = non_seleted_color;
+		exit_color = seleted_color;
+		break;
+	}
+	test_texture = Engine::GetFont(static_cast<int>(Fonts::Outlined)).PrintToTexture("Test", test_color);
+	exit_texture = Engine::GetFont(static_cast<int>(Fonts::Outlined)).PrintToTexture("Exit", exit_color);
+
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Portal.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Portal.cpp
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    May 28, 2025
+*/
+#include "Portal.h"
+
+Portal::Portal(int to_state, Math::irect boundary) :
+    GameObject(static_cast<Math::vec2>(boundary.point_1)),
+    to_state(to_state)
+{
+    AddGOComponent(new CS230::RectCollision({ Math::ivec2{ 0, 0 }, boundary.Size() }, this));
+}
+
+void Portal::GoToState() {
+    Engine::GetGameStateManager().SetNextGameState(to_state);
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Score.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Score.cpp
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    May 29, 2025
+*/
+#include "Score.h"
+
+
+Score::Score( int value) 
+	:  value(value){}
+
+void Score::Add(int dv)
+{
+	value += dv;
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\SpellSlots.cpp ===== 
+#include "SpellSlots.h"
+
+SpellSlots::SpellSlots(const std::map<int, int>& max_slots_per_level)
+    : max_slots(max_slots_per_level), current_slots(max_slots_per_level)
+{
+}
+
+bool SpellSlots::Consume(int level) {
+    if (HasSlot(level)) {
+        current_slots[level]--;
+        return true;
+    }
+    return false;
+}
+
+bool SpellSlots::HasSlot(int level) const {
+    auto it = current_slots.find(level);
+    if (it != current_slots.end()) {
+        return it->second > 0;
+    }
+    return false;
+}
+
+void SpellSlots::Recover(int max_level_to_recover) {
+    for (auto& pair : current_slots) {
+        int level = pair.first;
+        if (level <= max_level_to_recover) {
+            current_slots[level] = max_slots[level];
+        }
+    }
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Splash.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Splash.cpp
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    March 12, 2025
+*/
+#include "..\Engine\Engine.h"
+#include "States.h"
+#include "Splash.h"
+
+Splash::Splash() {
+
+}
+
+void Splash::Load() {
+    counter = 0.0;
+    texture = Engine::GetTextureManager().Load("Assets/DigiPen.png");
+}
+
+void Splash::Update([[maybe_unused]] double dt) {
+    Engine::GetLogger().LogDebug(std::to_string(counter));
+    if (counter >= 2.0) {
+        Engine::GetGameStateManager().SetNextGameState(static_cast<int>(States::MainMenu));
+    }
+    counter+=dt;
+}
+
+void Splash::Unload() {
+
+}
+
+void Splash::Draw(){
+    Engine::GetWindow().Clear(UINT_MAX);
+    texture->Draw(Math::TranslationMatrix({ (Engine::GetWindow().GetSize() - texture->GetSize()) / 2.0 }));
+}
+
+
+
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\StatsComponent.cpp ===== 
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  StatsComponent.cpp
+Project:    GAM200
+Author:     Seungju Song
+Created:    Oct 10, 2025
+*/
+
+#include "StatsComponent.h"
+#include "CharacterTypes.h"
+#include <algorithm>
+
+StatsComponent::StatsComponent(const CharacterStats& initial_stats)
+    : stats(initial_stats)
+{
+  
+}
+
+void StatsComponent::TakeDamage(int damage) {
+    stats.current_hp -= damage;
+    stats.current_hp = std::max(0, stats.current_hp);
+}
+
+void StatsComponent::Heal(int amount) {
+    stats.current_hp += amount;
+    stats.current_hp = std::min(stats.max_hp, stats.current_hp);
+}
+
+bool StatsComponent::IsAlive() const {
+    return stats.current_hp > 0;
+}
+
+int StatsComponent::GetCurrentHP() const {
+    return stats.current_hp;
+}
+
+int StatsComponent::GetMaxHP() const {
+    return stats.max_hp;
+}
+
+float StatsComponent::GetHealthPercentage() const {
+    if (stats.max_hp <= 0) {
+        return 0.0f;
+    }
+    return static_cast<float>(stats.current_hp) / static_cast<float>(stats.max_hp);
+}
+
+int StatsComponent::GetBaseAttack() const {
+    return stats.base_attack;
+}
+
+const std::string& StatsComponent::GetAttackDice() const {
+    return stats.attack_dice;
+}
+
+int StatsComponent::GetBaseDefend() const {
+    return stats.base_defend;
+}
+
+const std::string& StatsComponent::GetDefendDice() const {
+    return stats.defend_dice;
+}
+
+int StatsComponent::GetSpeed() const {
+    return stats.speed;
+}
+
+int StatsComponent::GetAttackRange() const {
+    return stats.attack_range;
+} 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Test.cpp ===== 
+#include "../Engine/Engine.h"
+#include "../Game/Test/Week1TestMocks.h"
+#include "../Game/Types/Events.h"
+#include "Test.h"
+#include "States.h"
+#include "Dragon.h"
+#include "Fighter.h"
+#include "../Engine/GameObjectManager.h"
+#include "GridPosition.h"
+#include "StatsComponent.h"
+#include "ActionPoints.h"
+#include "SpellSlots.h"
+#include "../Game/Singletons/DiceManager.h"
+
+Test::Test() : fighter(nullptr), dragon(nullptr)
+{
+}
+
+void Test::Load() {
+    AddGSComponent(new CS230::GameObjectManager());
+    fighter = new Fighter({ 5, 5 });
+    GetGSComponent<CS230::GameObjectManager>()->Add(fighter);
+    dragon = new Dragon({ 6, 5 });
+    GetGSComponent<CS230::GameObjectManager>()->Add(dragon);
+    Engine::GetLogger().LogEvent("========== Combat Testbed Initialized ==========");
+    Engine::GetLogger().LogEvent("'T' -> Fighter's Turn | 'Y' -> Dragon's Turn | 'D' -> Damage Dragon | 'H' -> Heal Fighter");
+    LogFighterStatus();
+    LogDragonStatus();
+}
+
+void Test::Update([[maybe_unused]] double dt) {
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::F)) {
+        test_subscribe_publish_singleSubscriber();
+        test_multiple_subscribers_sameEvent();
+        test_multiple_different_events();
+        test_EventData_CompleteTransfer();
+        test_EventData_MultiplePublishes();
+    }
+
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::E)) {
+        DiceManager& dice = DiceManager::Instance();
+        dice.SetSeed(42);
+        dice.RollDiceFromString("4d8+2");
+    }
+    
+
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::T)) {
+        Engine::GetLogger().LogEvent("--- Player presses 'T': Starting Fighter's Turn ---");
+        fighter->OnTurnStart();
+        LogFighterStatus();
+        LogDragonStatus();
+    }
+
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Y)) {
+        Engine::GetLogger().LogEvent("--- Player presses 'Y': Starting Dragon's Turn ---");
+        dragon->OnTurnStart();
+        LogFighterStatus();
+        LogDragonStatus();
+    }
+
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::D)) {
+        Engine::GetLogger().LogEvent("--- Player presses 'D': Testing PerformAttack ---");
+        if (fighter->GetActionPoints() > 0) {
+            fighter->PerformAttack(dragon);
+        }
+        else {
+            Engine::GetLogger().LogDebug("Fighter has no Action Points to attack!");
+        }
+        LogFighterStatus();
+        LogDragonStatus();
+    }
+
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::H)) {
+        Engine::GetLogger().LogEvent("--- Player presses 'H': Applying 10 Heal to Fighter ---");
+        fighter->ReceiveHeal(10);
+        LogFighterStatus();
+    }
+
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::S)) {//junyoung
+        GridSystem grid;
+
+        // Should NOT crash, should log error instead
+        grid.SetTileType(Math::vec2{ -1, 0 }, GridSystem::TileType::Wall);    // Invalid
+        grid.SetTileType(Math::vec2{ 8, 8 }, GridSystem::TileType::Wall);     // Invalid
+        grid.SetTileType(Math::vec2{ 100, 100 }, GridSystem::TileType::Wall); // Invalid
+
+        // Verify valid tiles unaffected
+        ASSERT_EQ(grid.GetTileType(Math::vec2{ 0, 0 }), GridSystem::TileType::Empty);
+    }
+
+    if (Engine::GetInput().KeyJustReleased(CS230::Input::Keys::Escape)) {
+        Engine::GetGameStateManager().SetNextGameState(static_cast<int>(States::MainMenu));
+    }
+
+    GetGSComponent<CS230::GameObjectManager>()->UpdateAll(dt);
+}
+
+void Test::Draw() {
+    Engine::GetWindow().Clear(0x1a1a1aff);
+}
+
+void Test::LogFighterStatus() {
+    if (fighter == nullptr) return;
+
+    GridPosition* grid_pos = fighter->GetGridPosition();
+    StatsComponent* stats = fighter->GetStatsComponent();
+    ActionPoints* ap = fighter->GetActionPointsComponent();
+
+    Engine::GetLogger().LogDebug("========== Fighter Status Report ==========");
+
+    if (grid_pos != nullptr) {
+        Engine::GetLogger().LogDebug("Position: (" + std::to_string(grid_pos->Get().x) + ", " + std::to_string(grid_pos->Get().y) + ")");
+    }
+    if (stats != nullptr) {
+        std::string hp_status = "HP: " + std::to_string(stats->GetCurrentHP()) + " / " + std::to_string(stats->GetMaxHP());
+        hp_status += " (" + std::to_string(stats->GetHealthPercentage() * 100.0f) + "%)";
+        Engine::GetLogger().LogDebug(hp_status);
+        Engine::GetLogger().LogDebug("IsAlive: " + std::string(stats->IsAlive() ? "true" : "false"));
+        Engine::GetLogger().LogDebug("Speed: " + std::to_string(stats->GetSpeed()));
+    }
+    if (ap != nullptr) {
+        Engine::GetLogger().LogDebug("Action Points: " + std::to_string(ap->GetCurrentPoints()) + " / " + std::to_string(ap->GetMaxPoints()));
+    }
+
+    Engine::GetLogger().LogDebug("==========================================");
+}
+
+void Test::test_multiple_subscribers_sameEvent() {
+    auto& eventbus = Engine::GetEventBus();
+    eventbus.Clear();
+
+    int callback1Count = 0;
+    int callback2Count = 0;
+    int callback3Count = 0;
+
+    eventbus.Subscribe<CharacterDamagedEvent>([&]([[maybe_unused]] const CharacterDamagedEvent&) { callback1Count++; });
+    eventbus.Subscribe<CharacterDamagedEvent>([&]([[maybe_unused]] const CharacterDamagedEvent&) { callback2Count++; });
+    eventbus.Subscribe<CharacterDamagedEvent>([&]([[maybe_unused]] const CharacterDamagedEvent&) { callback3Count++; });
+
+    MockCharacter character("TestChar");
+    eventbus.Publish(CharacterDamagedEvent{ reinterpret_cast<Character*>(&character), 10, 90, nullptr, false });
+
+    ASSERT_EQ(callback1Count, 1);
+    ASSERT_EQ(callback2Count, 1);
+    ASSERT_EQ(callback3Count, 1);
+}
+
+void Test::test_multiple_different_events() {
+    auto& eventbus = Engine::GetEventBus();
+    eventbus.Clear();
+
+    bool damageCalled = false;
+    bool deathCalled = false;
+    bool spellCalled = false;
+
+    eventbus.Subscribe<CharacterDamagedEvent>([&]([[maybe_unused]] const CharacterDamagedEvent&) { damageCalled = true; });
+    eventbus.Subscribe<CharacterDeathEvent>([&]([[maybe_unused]] const CharacterDeathEvent&) { deathCalled = true; });
+    eventbus.Subscribe<SpellCastEvent>([&]([[maybe_unused]] const SpellCastEvent&) { spellCalled = true; });
+
+    MockCharacter character("TestChar");
+    eventbus.Publish(CharacterDamagedEvent{ reinterpret_cast<Character*>(&character), 10, 90, nullptr, false });
+    eventbus.Publish(CharacterDeathEvent{ reinterpret_cast<Character*>(&character), nullptr });
+    eventbus.Publish(SpellCastEvent{ reinterpret_cast<Character*>(&character), "Fireball", 1, {0,0}, 1 });
+
+    ASSERT_TRUE(damageCalled);
+    ASSERT_TRUE(deathCalled);
+    ASSERT_TRUE(spellCalled);
+}
+
+void Test::test_EventData_CompleteTransfer() {
+    auto& eventbus = Engine::GetEventBus();
+    eventbus.Clear();
+
+    MockCharacter victim("Victim"), attacker("Attacker");
+    CharacterDamagedEvent receivedEvent;
+
+    eventbus.Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
+        receivedEvent = e;
+        });
+
+    CharacterDamagedEvent originalEvent{ reinterpret_cast<Character*>(&victim), 42, 58, reinterpret_cast<Character*>(&attacker), true };
+    eventbus.Publish(originalEvent);
+
+    ASSERT_EQ(reinterpret_cast<Character*>(receivedEvent.target), reinterpret_cast<Character*>(&victim));
+    ASSERT_EQ(receivedEvent.damageAmount, 42);
+    ASSERT_EQ(receivedEvent.remainingHP, 58);
+    ASSERT_EQ(reinterpret_cast<Character*>(receivedEvent.attacker), reinterpret_cast<Character*>(&attacker));
+    ASSERT_TRUE(receivedEvent.wasCritical);
+}
+void Test::test_subscribe_publish_singleSubscriber()
+{
+    auto& eventbus = Engine::GetEventBus();
+    eventbus.Clear();
+
+    bool callbackInvoked = false;
+    //int receivedDamage = 0;
+    MockCharacter* receivedTarget = nullptr;
+
+    MockCharacter character("TestDragon");
+    const int damage = 30;
+    CharacterDamagedEvent event{ reinterpret_cast<Character*>(&character),damage,70,nullptr,false };
+    eventbus.Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
+        callbackInvoked = true;
+        character.SetHP(character.GetCurrentHP() - e.damageAmount);
+        receivedTarget = reinterpret_cast<MockCharacter*>(e.target);
+        });
+
+    eventbus.Publish(event);
+
+    ASSERT_TRUE(callbackInvoked);
+    ASSERT_EQ(character.GetCurrentHP(), event.remainingHP);
+    ASSERT_EQ(receivedTarget, &character);
+
+}
+
+void Test::test_EventData_MultiplePublishes() {
+    auto& eventbus = Engine::GetEventBus();
+    eventbus.Clear();
+
+    std::vector<int> damages;
+    eventbus.Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
+        damages.push_back(e.damageAmount);
+        });
+
+    MockCharacter character("TestChar");
+    eventbus.Publish(CharacterDamagedEvent{ reinterpret_cast<Character*>(&character), 10, 90, nullptr, false });
+    eventbus.Publish(CharacterDamagedEvent{ reinterpret_cast<Character*>(&character), 20, 70, nullptr, false });
+    eventbus.Publish(CharacterDamagedEvent{ reinterpret_cast<Character*>(&character), 30, 40, nullptr, true });
+
+    ASSERT_EQ(static_cast<int>(damages.size()), 3);
+    ASSERT_EQ(damages[0], 10);
+    ASSERT_EQ(damages[1], 20);
+    ASSERT_EQ(damages[2], 30);
+}
+
+void Test::LogDragonStatus() {
+    if (dragon == nullptr) return;
+    Engine::GetLogger().LogDebug("========== Dragon Status Report ==========");
+
+    GridPosition* grid_pos = dragon->GetGridPosition();
+    StatsComponent* stats = dragon->GetStatsComponent();
+    ActionPoints* ap = dragon->GetActionPointsComponent();
+    SpellSlots* ss = dragon->GetSpellSlots();
+
+    if (grid_pos != nullptr)
+        Engine::GetLogger().LogDebug("Position: (" + std::to_string(grid_pos->Get().x) + ", " + std::to_string(grid_pos->Get().y) + ")");
+    if (stats != nullptr)
+        Engine::GetLogger().LogDebug("HP: " + std::to_string(stats->GetCurrentHP()) + " / " + std::to_string(stats->GetMaxHP()));
+    if (ap != nullptr)
+        Engine::GetLogger().LogDebug("Action Points: " + std::to_string(ap->GetCurrentPoints()) + " / " + std::to_string(ap->GetMaxPoints()));
+    if (ss != nullptr)
+        Engine::GetLogger().LogDebug("Has Lvl 5 Slot: " + std::string(ss->HasSlot(5) ? "Yes" : "No"));
+
+    Engine::GetLogger().LogDebug("==========================================");
+}
+
+void Test::Unload() {
+    GetGSComponent<CS230::GameObjectManager>()->Unload();
+    fighter = nullptr;
+    dragon = nullptr;
+}
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Singletons\DiceManager.h ===== 
+#pragma once
+#include <random>
+#include <string>
+#include "..\..\Engine\Engine.h"
+#include <vector>
+
+class DiceManager {
+public:
+    static DiceManager& Instance();
+    int  RollDice(int count, int sides);
+    int  RollDiceFromString(const std::string& notation);  // TODO NdS +-M 굴리기. RollDice사용, ParseDiceString를 사용해서
+                                                           // 정확한 형태인지 확인하기. if(!ParseDiceString)
+                                                           // 나중에는 RollDiceFromString을 사용하지 않을 가능성도 있다. 그래도 해야함.ㅇㅇ
+    //string 필요한 부분만 빼오기 --> 
+    void SetSeed(int seed);
+    const std::vector<int>& GetLastRolls() const;          // TODO
+
+private:
+    DiceManager();
+    ~DiceManager() = default;
+    DiceManager(const DiceManager&) = delete;              // 복사 금지 (싱글톤 보장)
+    DiceManager& operator=(const DiceManager&) = delete;   // 대입 금지
+    DiceManager(DiceManager&&) = delete;
+    DiceManager& operator=(DiceManager&&) = delete;
+
+    //static bool ParseDiceString(const std::string& s,int& count, int& sides, int& mod); 없어도 되지않을까? 라는 의견...
+    void LogRoll(const std::string& notation, int total) const; // TODO 주사위 결과값 로그에 출력하기. Engine::LOGGER사용.
+
+private:
+    std::mt19937       rng;
+    std::vector<int>   lastRolls;
+};
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Singletons\EventBus.h ===== 
+#pragma once
+#include <functional>
+#include <map>
+#include <typeindex>
+#include <vector>
+#include <string>
+#pragma once
+#include <functional>
+#include <map>
+#include <vector>
+#include <typeindex>
+#include <string>
+
+class EventBus {
+public:
+    EventBus() = default;
+    ~EventBus() = default;
+
+    // Subscribe to event type T with callback function
+    template<typename T>
+    void Subscribe(std::function<void(const T&)> callback) {
+        auto typeIndex = std::type_index(typeid(T));
+        subscribers[typeIndex].push_back([callback](const void* data) {
+            callback(*static_cast<const T*>(data));
+            });
+    }
+
+    // Publish event of type T
+    template<typename T>
+    void Publish(const T& event) {
+        auto typeIndex = std::type_index(typeid(T));
+
+        // Optional: Log event for debugging
+        if (loggingEnabled) {
+            LogEvent(typeid(T).name(), &event);
+        }
+
+        // Call all subscribers for this event type
+        if (subscribers.find(typeIndex) != subscribers.end()) {
+            for (auto& callback : subscribers[typeIndex]) {
+                callback(&event);
+            }
+        }
+    }
+
+    // Unsubscribe all listeners (used for cleanup)
+    void Clear();
+
+    // Enable/disable event logging
+    void SetLogging(bool enabled) { loggingEnabled = enabled; }
+
+private:
+    
+    EventBus(const EventBus&) = delete;
+    EventBus& operator=(const EventBus&) = delete;
+
+    // Type-erased callback wrapper
+    using CallbackWrapper = std::function<void(const void*)>;
+
+    // Map of event type -> list of callbacks
+    std::map<std::type_index, std::vector<CallbackWrapper>> subscribers;
+
+    bool loggingEnabled = false;
+
+    void LogEvent(const std::string& eventType, const void* eventData);
+};
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Singletons\DiceManager.cpp ===== 
+#include "DiceManager.h"
+#include <cctype>
+#include <sstream>
+
+DiceManager::DiceManager() {
+    std::random_device rand;
+    rng.seed(rand());
+}
+
+DiceManager& DiceManager::Instance() {
+    static DiceManager instance;
+    return instance;
+}
+
+void DiceManager::SetSeed(int seed) {
+    rng.seed(static_cast<unsigned int>(seed));
+}
+
+const std::vector<int>& DiceManager::GetLastRolls() const {
+    return lastRolls;
+}
+
+int DiceManager::RollDice(int count, int sides) {
+    lastRolls.clear();
+    if (count <= 0 || sides <= 0) {
+        lastRolls.clear();
+        return 0;
+    }
+    
+    std::uniform_int_distribution<int> dice(1, sides);
+    lastRolls.clear();
+    int sum = 0;
+
+    for (int i = 0; i < count; i++) {
+        int roll = dice(rng);
+        lastRolls.push_back(roll);
+        sum += roll;
+    }
+    return sum;
+}
+
+//bool DiceManager::ParseDiceString(const std::string& s, int& count, int& sides, int& mod) {
+//}
+
+int DiceManager::RollDiceFromString(const std::string& notation) {
+    std::string NdS = notation;
+    NdS.erase(std::remove_if(NdS.begin(), NdS.end(), ::isspace), NdS.end());    //공백제거
+    
+    size_t dD = NdS.find_first_of("dD");    //d또는 D의 위치 찾기.
+    if (dD == std::string::npos) {
+        lastRolls.clear();
+        LogRoll(notation, 0);
+        return 0;
+    }
+
+    int count = 0;
+    int sides = 0;
+    int mod = 0;
+    
+    try {
+        count = std::stoi(NdS.substr(0, dD));   // stoi= string -> int로 변환시키기. 주사위 갯수. NdS에서 N부분과 d이후 뒤에부분 분리.
+        if (count <= 0) {
+            throw;
+        }
+
+        //NdS뒤에 오는 부호가 뭔지 찾기.
+        size_t sign = NdS.find('+', dD + 1);
+        if (sign == std::string::npos)
+            sign = NdS.find('-', dD + 1);
+
+        if (sign == std::string::npos) {
+            //따로 부호 없는 경우. ex) 3d6
+            sides = std::stoi(NdS.substr(dD + 1));
+        }
+        else {
+            //부호 있는 경우 3d6 + 2
+            sides = std::stoi(NdS.substr(dD + 1, sign - (dD + 1)));
+            mod = std::stoi(NdS.substr(sign));
+        }
+
+        if (sides <= 0) {
+            throw;
+        }
+
+    }
+
+    catch (...) {
+        //만약 입력에 오류가 났을 경우.
+        lastRolls.clear();
+        LogRoll(notation, 0);
+        return 0;
+    }
+
+    int total = RollDice(count, sides) + mod;
+    LogRoll(notation, total);
+    return total;
+}
+
+void DiceManager::LogRoll(const std::string& notation, int total) const {
+    std::string log = "[Dice] " + notation + " => " + std::to_string(total);
+
+    if (!lastRolls.empty()) {
+        log += " [";
+        for (size_t i = 0; i < lastRolls.size(); i++) {
+            log += std::to_string(lastRolls[i]);
+            if (i + 1 < lastRolls.size())
+                log += ", ";
+        }
+        log += "]";
+    }
+
+    Engine::GetLogger().LogDebug(log);
+} 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Singletons\EventBus.cpp ===== 
+#include "EventBus.h"
+#include "../../Engine/Engine.h"
+
+
+
+void EventBus::Clear() {
+    subscribers.clear();
+    Engine::GetLogger().LogEvent("EventBus: All subscriptions cleared");
+}
+
+void EventBus::LogEvent(const std::string& eventType, [[maybe_unused]]const void* eventData) {
+    Engine::GetLogger().LogDebug("EventBus: Publishing " + eventType);
+} 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\System\GridSystem.h ===== 
+#pragma once
+#include "../../Engine/Vec2.h"
+#include "../../Game/Test.h"
+#include <map>
+//#include "Character.h"  
+#include "../../Game/Test/Week1TestMocks.h"
+
+class GridSystem {
+public:
+    enum class TileType {
+        Empty,
+        Wall,
+        Lava,
+        Difficult,  // costs 2 movement
+        Invalid
+    };
+
+private:
+    static const int GRID_WIDTH = 8;
+    static const int GRID_HEIGHT = 8;
+    static const int TILE_SIZE = 64;  // pixels
+
+    
+
+    TileType tiles[GRID_WIDTH][GRID_HEIGHT];
+    std::map<Math::vec2, MockCharacter*> occupiedTiles;
+
+public:
+    GridSystem();
+    bool IsValidTile(Math::vec2 tile) const;
+    bool IsWalkable(Math::vec2 tile) const;
+    bool IsOccupied(Math::vec2 tile) const;
+    TileType GetTileType(Math::vec2 tile) const;
+    void SetTileType(Math::vec2 tile, TileType type);
+    void PlaceCharacter(MockCharacter* character, Math::vec2 pos);
+    void RemoveCharacter(Math::vec2 pos);
+    MockCharacter* GetCharacterAt(Math::vec2 pos) const;
+
+};
+
+ 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\System\GridSystem.cpp ===== 
+#include "GridSystem.h"
+#include <cassert>
+
+GridSystem::GridSystem() {
+    // Initialize all tiles to Empty
+    for (int x = 0; x < GRID_WIDTH; ++x) {
+        for (int y = 0; y < GRID_HEIGHT; ++y) {
+            tiles[x][y] = TileType::Empty;
+        }
+    }
+}
+
+bool GridSystem::IsValidTile(Math::vec2 tile) const
+{
+    int x = static_cast<int>(tile.x);
+    int y = static_cast<int>(tile.y);
+    return x >= 0 && x < GRID_WIDTH && y >= 0 && y < GRID_HEIGHT;
+}
+
+bool GridSystem::IsWalkable(Math::vec2 tile) const
+{
+    if (!IsValidTile(tile)) return false;
+    else if (IsOccupied(tile)) return false; 
+    TileType type = GetTileType(tile);
+    return type == TileType::Empty || type == TileType::Difficult || type == TileType::Lava;
+}
+
+bool GridSystem::IsOccupied(Math::vec2 tile) const
+{
+    return occupiedTiles.find(tile) != occupiedTiles.end();
+}
+
+GridSystem::TileType GridSystem::GetTileType(Math::vec2 tile) const
+{
+    if (!IsValidTile(tile))
+    {
+        std::cerr << "GetTileType: invalid tile position (" << tile.x << ", " << tile.y << ")\n";
+        return TileType::Invalid;  // 무시하거나 예외처리 또는 로그만 남기고 함수 종료
+    }
+    return tiles[static_cast<int>(tile.x)][static_cast<int>(tile.y)];
+}
+
+void GridSystem::SetTileType(Math::vec2 tile, TileType type)
+{
+    if (!IsValidTile(tile))
+    {
+        std::cerr << "SetTileType: invalid tile position (" << tile.x << ", " << tile.y << ")\n";
+        return;  // 무시하거나 예외처리 또는 로그만 남기고 함수 종료
+    }
+    tiles[static_cast<int>(tile.x)][static_cast<int>(tile.y)] = type;
+}
+
+void GridSystem::PlaceCharacter(MockCharacter* character, Math::vec2 pos)
+{
+    /*assert(IsValidTile(pos) && "PlaceCharacter: invalid tile");
+    assert(!IsOccupied(pos) && "PlaceCharacter: tile already occupied");*/
+    if (!IsValidTile(pos))
+    {
+        std::cerr << "PlaceCharacter: invalid tile" << "\n";
+        return;  // 무시하거나 예외처리 또는 로그만 남기고 함수 종료
+    }
+    if (IsOccupied(pos))
+    {
+        std::cerr << "PlaceCharacter: tile already occupied" << "\n";
+        return;  // 무시하거나 예외처리 또는 로그만 남기고 함수 종료
+    }
+
+    occupiedTiles[pos] = character;
+}
+
+void GridSystem::RemoveCharacter(Math::vec2 pos)
+{
+    occupiedTiles.erase(pos);  
+}
+MockCharacter* GridSystem::GetCharacterAt(Math::vec2 pos) const
+{
+    auto it = occupiedTiles.find(pos);
+    if (it != occupiedTiles.end())
+        return it->second;
+    return nullptr;
+} 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Test\Week1TestMocks.h ===== 
+#pragma once
+// File: CS230/Game/Test/Week1TestMocks.h
+#pragma once
+#include "../../Engine/Vec2.h"
+#include <string>
+#include <vector>
+#include <iostream>
+
+// Mock Character for EventBus and GridSystem testing
+class MockCharacter {
+public:
+    MockCharacter(const std::string& name = "MockChar")
+        : name(name), hp(100), maxHP(100), gridPos{ 0, 0 } {
+    }
+
+    // EventBus interface
+    std::string TypeName() const { return name; }
+    int GetCurrentHP() const { return hp; }
+    int GetMaxHP() const { return maxHP; }
+    void SetHP(int newHP) { hp = newHP; }
+
+    // GridSystem interface
+    Math::vec2 GetGridPosition() const { return gridPos; }
+    void SetGridPosition(Math::vec2 pos) { gridPos = pos; }
+
+private:
+    std::string name;
+    int hp, maxHP;
+    Math::vec2 gridPos;
+};
+
+// Mock Logger for DebugConsole testing
+class MockLogger {
+public:
+    void LogEvent(const std::string& msg) { events.push_back(msg); }
+    void LogError(const std::string& msg) { errors.push_back(msg); }
+    void LogDebug(const std::string& msg) { debug.push_back(msg); }
+
+    std::vector<std::string> GetEvents() const { return events; }
+    std::vector<std::string> GetErrors() const { return errors; }
+    void Clear() { events.clear(); errors.clear(); debug.clear(); }
+
+private:
+    std::vector<std::string> events, errors, debug;
+};
+
+// Test assertion macros (lightweight)
+inline bool ASSERT_TRUE(bool condition) {
+    if (!(condition)) { 
+        std::cout << " ASSERT_TRUE failed " << std::endl;
+        return false; 
+    }
+    else {
+        std::cout << " ASSERT_TRUE successed! " <<std::endl;
+        return true;
+    }
+    
+}
+
+
+inline bool ASSERT_FALSE(bool condition) {
+    if ((condition)) {
+        std::cout << " ASSERT_FALSE failed"<< std::endl;
+        return false;
+    }
+    else {
+        std::cout << " ASSERT_FALSE successed! " <<std::endl;
+        return true;
+    }
+}
+template <typename T>
+inline bool ASSERT_EQ(T actual, T expected) {
+    if ((actual) != (expected)) {
+        std::cout << " ASSERT_EQ failed"<< std::endl;
+        return false;
+    }
+    else {
+        std::cout << " ASSERT_EQ successed! "  << std::endl;
+        return true;
+    }
+}
+template <typename T>
+inline bool ASSERT_NE(T actual, T expected) {
+    if ((actual) == (expected)) {
+        std::cout << " ASSERT_NE failed: " << std::endl;
+        return false;
+    }
+    else {
+        std::cout << " ASSERT_NE successed! " << std::endl;
+        return true;
+    }
+}
+template <typename T>
+inline bool ASSERT_GE(T actual, T minimum) {
+    if ((actual) < (minimum)) {
+        std::cout << "ASSERT_GE failed: " << std::endl;
+        return false;
+    }
+    else {
+        std::cout << " ASSERT_GE successed! " << std::endl;
+        return true;
+    }
+}
+template <typename T>
+inline bool ASSERT_LE(T actual, T maximum) {
+    if ((actual) > (maximum)) {
+        std::cout << "ASSERT_LE failed: " << std::endl;
+		return false;
+    }
+	else {
+        std::cout << " ASSERT_LE successed! "  << std::endl;
+        return true;
+    }
+} 
+// ===== FILENAME: \Users\taek0\Desktop\25fall_semester\GAM200\CodePistols_DragonicTactics\CS230\Game\Types\Events.h ===== 
+#pragma once
+#include <string>
+#include <vector>
+#include "../../Engine/Vec2.h"
+class Character;
+
+// BattleEvents.h - High-level battle events
+
+struct BattleStartedEvent {
+    std::vector<Character*> allCombatants;
+    std::string mapName;
+};
+
+struct BattleEndedEvent {
+    bool playerVictory;
+    int turnsElapsed;
+    Character* lastSurvivor;  // Winning character
+};
+
+struct VictoryConditionMetEvent {
+    std::string condition;    // "all enemies defeated", "dragon survived 10 turns"
+};
+
+// CombatEvents.h - Combat action events
+
+
+struct CharacterDamagedEvent {
+    Character* target;
+    int damageAmount;
+    int remainingHP;
+    Character* attacker;
+    bool wasCritical;         // Was it a critical hit?
+};
+
+struct CharacterHealedEvent {
+    Character* target;
+    int healAmount;
+    int currentHP;
+    int maxHP;
+    Character* healer;        // Who cast healing spell (can be self)
+};
+
+struct CharacterDeathEvent {
+    Character* character;
+    Character* killer;        // Who dealt killing blow (optional)
+};
+
+struct AttackMissedEvent {
+    Character* attacker;
+    Character* target;
+    std::string reason;       // "out of range", "dodged", etc.
+};
+
+// MovementEvents.h - Grid movement events
+
+struct CharacterMovedEvent {
+    Character* character;
+    Math::ivec2 fromGrid;     // Starting grid position
+    Math::ivec2 toGrid;       // Ending grid position
+    int actionPointsSpent;    // Cost of movement
+};
+
+struct MovementBlockedEvent {
+    Character* character;
+    Math::ivec2 attemptedGrid;
+    std::string reason;       // "occupied", "out of bounds", "insufficient AP"
+};
+
+// SpellEvents.h - Magic system events
+
+struct SpellCastEvent {
+    Character* caster;
+    std::string spellName;
+    int spellLevel;           // Level at which spell was cast
+    Math::ivec2 targetGrid;   // Target tile
+    int spellSlotUsed;        // Which slot level was consumed
+};
+
+struct SpellEffectAppliedEvent {
+    Character* target;
+    std::string effectName;   // "Burn", "Fear", "Blessing", etc.
+    int duration;             // Turns remaining
+    Character* caster;        // Who applied the effect
+};
+
+struct SpellSlotConsumedEvent {
+    Character* character;
+    int slotLevel;            // Level of spell slot used
+    int slotsRemaining;       // How many of that level remain
+};
+
+struct StatusEffectAddedEvent {
+    Character* target;
+    std::string effectName;
+    int duration;
+    int magnitude;            // Effect strength (e.g., +5 attack, -2 speed)
+};
+
+struct StatusEffectRemovedEvent {
+    Character* target;
+    std::string effectName;
+    std::string reason;       // "expired", "dispelled", "death"
+};
+
+struct StatusEffectTickEvent {
+    Character* target;
+    std::string effectName;
+    int damageOrHealing;      // Burn damage, regeneration healing
+};
+
+// TurnEvents.h - Turn management events
+struct TurnStartedEvent {
+    Character* character;     // Whose turn started
+    int turnNumber;           // Current turn count
+    int actionPoints;         // Available action points
+};
+
+struct TurnEndedEvent {
+    Character* character;     // Whose turn ended
+    int actionsUsed;          // How many actions taken
+};
+
+struct InitiativeRolledEvent {
+    std::vector<Character*> turnOrder;  // Full turn order after initiative
+};
+
+// UIEvents.h - User interface events
+
+struct UIActionSelectedEvent {
+    std::string actionType;   // "Attack", "Move", "CastSpell", "EndTurn"
+    Character* character;     // Who is performing action
+};
+
+struct UITileHoveredEvent {
+    Math::ivec2 gridPos;
+    bool isValidTarget;       // Can current action target this tile?
+};
+
+struct UISpellSelectedEvent {
+    std::string spellName;
+    int upcastLevel;          // Level at which to cast
+    Character* caster;
+}; 
