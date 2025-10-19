@@ -1,0 +1,7 @@
+language,filename,blank,comment,code,"http://cloc.sourceforge.net v 1.64  T=0.17 s (35.4 files/s, 10790.8 lines/s)"
+C++,GL.cpp,240,10,1000
+C++,Shader.cpp,17,7,166
+C++,Framebuffer.cpp,12,11,73
+C++,Texture.cpp,13,8,70
+C++,VertexArray.cpp,21,75,57
+C++,Buffer.cpp,4,16,29

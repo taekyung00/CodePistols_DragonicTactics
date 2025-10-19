@@ -1,0 +1,5 @@
+language,filename,blank,comment,code,"http://cloc.sourceforge.net v 1.64  T=0.07 s (56.3 files/s, 3966.1 lines/s)"
+C++,MainMenu.cpp,14,18,135,
+C++,Splash.cpp,10,9,39,
+C++,Background.cpp,5,9,19,
+C++,Score.cpp,4,9,11,
