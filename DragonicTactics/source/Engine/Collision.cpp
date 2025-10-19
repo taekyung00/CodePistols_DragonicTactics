@@ -113,7 +113,7 @@ namespace CS230
         //     }
         //     previous_vertex = vertex;
         // }
-        const auto transform = display_matrix * Math::TranslationMatrix(object->GetPosition()) * Math::ScaleMatrix(GetRadius());
+        const auto transform = display_matrix * Math::TranslationMatrix(object->GetPosition()) * Math::ScaleMatrix(2 * GetRadius());
         auto&      renderer2d           = Engine::GetRenderer2D();
         renderer2d.DrawCircle(transform);
     }
