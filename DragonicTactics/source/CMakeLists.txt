@@ -71,7 +71,7 @@ set(SOURCE_CODE
 
     Game/DragonicTactics/States/Test.h Game/DragonicTactics/States/Test.cpp
 
-    Game/DragonicTactics/Test/Week1TestMocks.h
+    Game/DragonicTactics/Test/Week1TestMocks.h Game/DragonicTactics/Test/Week1TestMocks.cpp Game/DragonicTactics/Test/Week1TestMocks.ini
 
     Game/DragonicTactics/Types/CharacterTypes.h
     Game/DragonicTactics/Types/Events.h

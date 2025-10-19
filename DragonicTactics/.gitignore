@@ -48,3 +48,6 @@ $RECYCLE.BIN/
 .TemporaryItems
 ehthumbs.db
 Thumbs.db
+
+#cloc
+cloc-1.64.exe
