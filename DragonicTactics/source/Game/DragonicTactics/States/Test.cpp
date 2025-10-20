@@ -1,6 +1,4 @@
-
 #include "Test.h"
-
 #include "./CS200/IRenderer2D.hpp"
 #include "./CS200/NDC.hpp"
 #include "./Engine/Engine.hpp"
@@ -343,12 +341,9 @@ void Test2::Load() {
 
 
     for (int y = 0; y < map_data.size(); ++y) {
-        // string의 x 인덱스(0)는 맵의 좌측을 의미합니다.
         for (int x = 0; x < map_data[y].length(); ++x) {
             char tile_char = map_data[y][x];
 
-            // 화면 좌표계는 보통 위쪽이 y값이 크므로, 맵 데이터의 y축을 뒤집어줍니다.
-            // (0, 0)을 좌하단으로 삼는 좌표계를 사용하기 위함입니다.
             Math::ivec2 current_pos = { x, static_cast<int>(map_data.size()) - 1 - y };
 
             switch (tile_char) {
@@ -358,13 +353,13 @@ void Test2::Load() {
             case 'e':
                 grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
                 break;
-            case 'f': // 파이터
-                grid_system->SetTileType(current_pos, GridSystem::TileType::Empty); // 캐릭터가 서 있는 바닥은 '빈 공간'입니다.
+            case 'f':
+                grid_system->SetTileType(current_pos, GridSystem::TileType::Empty); 
                 fighter = new Fighter(current_pos);
                 go_manager->Add(fighter);
                 grid_system->AddCharacter(fighter, current_pos);
                 break;
-            case 'd': // 드래곤
+            case 'd':
                 grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
                 dragon = new Dragon(current_pos);
                 go_manager->Add(dragon);
@@ -379,7 +374,7 @@ void Test2::Load() {
 void Test2::Update([[maybe_unused]] double dt) {
 
 
-    if (dragon != nullptr && dragon->IsAlive()) { // 드래곤이 존재하고 살아있을 때만 조작 가능
+    if (dragon != nullptr && dragon->IsAlive()) {
 
         Math::ivec2 current_pos = dragon->GetGridPosition()->Get();
         Math::ivec2 target_pos = current_pos;
@@ -404,24 +399,19 @@ void Test2::Update([[maybe_unused]] double dt) {
 
         if (move_requested) {
             GridSystem* grid = GetGSComponent<GridSystem>();
-            // IsWalkable은 해당 타일이 비어있고(Empty), 다른 캐릭터도 없는지(Not Occupied) 모두 확인합니다.
             if (grid != nullptr && grid->IsWalkable(target_pos)) {
 
-                // 1. GridSystem에 위치 변경을 알립니다.
                 grid->MoveCharacter(current_pos, target_pos);
 
-                // 2. 드래곤 자신의 GridPosition 컴포넌트 값을 업데이트합니다.
                 dragon->GetGridPosition()->Set(target_pos);
 
-                // 3. 드래곤의 실제 월드 좌표(시각적 위치)를 업데이트합니다.
-                //    (아직 부드러운 이동 애니메이션이 없으므로, 즉시 위치를 변경합니다)
                 dragon->SetPosition({
                     static_cast<double>(target_pos.x * GridSystem::TILE_SIZE),
                     static_cast<double>(target_pos.y * GridSystem::TILE_SIZE)
                     });
 
                 Engine::GetLogger().LogEvent("Dragon moved to (" + std::to_string(target_pos.x) + ", " + std::to_string(target_pos.y) + ")");
-                LogDragonStatus(); // 이동 후 상태 로깅
+                LogDragonStatus();
             }
             else {
                 Engine::GetLogger().LogEvent("Dragon cannot move there! (Wall or Occupied)");
@@ -539,7 +529,6 @@ void Test2::Test2_subscribe_publish_singleSubscriber()
     eventbus.Clear();
 
     bool callbackInvoked = false;
-    //int receivedDamage = 0;
     MockCharacter* receivedTarget = nullptr;
 
     MockCharacter character("Test2Dragon");
