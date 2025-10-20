@@ -56,7 +56,6 @@ public:
     int GetActionPoints() const;
     bool HasSpellSlot(int level) const;
 
-    CharacterTypes GetCharacterType() const { return m_character_type; }
     Direction GetFacingDirection() const;
     GridPosition* GetGridPosition() const;
     StatsComponent* GetStatsComponent() const;
