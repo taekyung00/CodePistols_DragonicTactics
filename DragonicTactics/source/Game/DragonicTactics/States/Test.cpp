@@ -381,11 +381,11 @@ void Test2::Update([[maybe_unused]] double dt) {
         bool move_requested = false;
 
         if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Up)) {
-            target_pos.y--;
+            target_pos.y++;
             move_requested = true;
         }
         else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Down)) {
-            target_pos.y++;
+            target_pos.y--;
             move_requested = true;
         }
         else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Left)) {

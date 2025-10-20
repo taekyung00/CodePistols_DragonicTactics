@@ -46,7 +46,7 @@ void GridSystem::Draw() const {
 
             switch (tile_grid[y][x]) {
             case TileType::Wall:
-                    renderer_2d.DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x, screen_y }) * Math::ScaleMatrix(TILE_SIZE), 0U, CS200::BROWN);
+                    renderer_2d.DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x, screen_y }) * Math::ScaleMatrix(TILE_SIZE), CS200::BROWN, 0U);
                  //renderer_2d.DrawRectangle(, TILE_SIZE, TILE_SIZE, BROWN);
                 break;
             case TileType::Empty:
