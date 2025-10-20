@@ -1,6 +1,6 @@
-#include "DebugConsole.hpp"
-#include "../Engine/Engine.h"
-#include "../Engine/Input.h"
+#include "DebugConsole.h"
+#include "../../Engine/Engine.hpp"
+#include "../../Engine/Input.hpp"
 
 void DebugConsole::Update(double dt)
 {

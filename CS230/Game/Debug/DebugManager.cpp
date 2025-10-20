@@ -1,6 +1,6 @@
-#include "DebugManager.hpp"
-#include "../Engine/Engine.h"
-#include "../Engine/Logger.h"
+#include "DebugManager.h"
+#include "../../Engine/Engine.hpp"
+#include "../../Engine/Logger.hpp"
 DebugManager& DebugManager::Instance()
 {
     static DebugManager instance;
