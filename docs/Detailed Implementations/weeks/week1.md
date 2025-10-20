@@ -18,13 +18,13 @@
 
 ### Quick Status Overview
 
-| System | Developer | Status | Completion | Notes |
-|--------|-----------|--------|------------|-------|
-| **EventBus** | C | ✅ Complete | 100% | Perfect implementation, fully tested, production-ready |
-| **DiceManager** | D | ✅ Complete | 100% | Full D&D notation support, robust error handling |
-| **GridSystem** | B | ✅ Nearly Complete | 95% | Needs `Character*` instead of `MockCharacter*` |
-| **Character** | A | ⚠️ Mostly Complete | 85% | Missing: state machine integration, EventBus publishing, Die() |
-| **DebugConsole** | E | ❌ Not Started | 0% | **CRITICAL BLOCKER** for Week 2 |
+| System           | Developer | Status             | Completion | Notes                                                          |
+| ---------------- | --------- | ------------------ | ---------- | -------------------------------------------------------------- |
+| **EventBus**     | C         | ✅ Complete         | 100%       | Perfect implementation, fully tested, production-ready         |
+| **DiceManager**  | D         | ✅ Complete         | 100%       | Full D&D notation support, robust error handling               |
+| **GridSystem**   | B         | ✅ Nearly Complete  | 95%        | Needs `Character*` instead of `MockCharacter*`                 |
+| **Character**    | A         | ⚠️ Mostly Complete | 85%        | Missing: state machine integration, EventBus publishing, Die() |
+| **DebugConsole** | E         | ❌ Not Started      | 0%         | **CRITICAL BLOCKER** for Week 2                                |
 
 ### What Works Great ✅
 

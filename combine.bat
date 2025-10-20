@@ -1,10 +1,10 @@
 @echo off
 setlocal
 
-set "OUT_FILE=CS230_Code_For_Gemini.txt"
-set "SEARCH_DIR=CS230"
+set "OUT_FILE=DragonicTactics_Code_For_Gemini.txt"
+set "SEARCH_DIR=DragonicTactics"
 
-echo Combining all .h, .hpp and .cpp files inside '%SEARCH_DIR%' folder...
+echo Combining all .h and .cpp files inside '%SEARCH_DIR%' folder...
 if exist "%OUT_FILE%" del "%OUT_FILE%"
 
 rem The change is here: "for /r" now starts from the SEARCH_DIR
