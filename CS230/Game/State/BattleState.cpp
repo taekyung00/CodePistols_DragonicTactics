@@ -25,7 +25,7 @@ BattleState::~BattleState() {
 void BattleState::Load() {
     Engine::GetLogger().LogEvent("BattleState: Loading");
 
-    GridSystem& grid = GridSystem::GetInstance();
+    GridSystem& grid = Engine::GetGridSystem();
     grid.Initialize(8, 8);
 
     // Step 2.1b: Load character data

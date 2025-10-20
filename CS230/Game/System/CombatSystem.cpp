@@ -6,6 +6,7 @@
 #include "../StatsComponent.h" 
 #include "../GridPosition.h"
 #include "../ActionPoints.h"
+#include "../Types/Events.h"
 //#include "../SpellSlots.h"
 
 CombatSystem& CombatSystem::Instance() {
@@ -56,19 +57,19 @@ void CombatSystem::ApplyDamage(Character* attacker, Character* defender, int dam
         std::to_string(hpBefore) + " -> " + std::to_string(hpAfter) + " HP)");
 
     // Publish damage event
-    /*Engine::Instance().GetEventBus().Publish(                                          //IDK What it means...
+    Engine::Instance().GetEventBus().Publish(
         CharacterDamagedEvent{
         defender,
         damage,
         hpAfter,
         attacker,
         !defender->IsAlive()
-        });*/
+        });
 
     // Check if defender died
     if (!defender->IsAlive()) {
         Engine::GetLogger().LogEvent("CombatSystem: " + defender->TypeName() + " died!");
-        /*Engine::Instance().GetEventBus().Publish(CharacterDiedEvent{ defender, attacker });*/     // also this
+        //Engine::Instance().GetEventBus().Publish(CharacterDiedEvent{ defender, attacker });
     }
 }
 
