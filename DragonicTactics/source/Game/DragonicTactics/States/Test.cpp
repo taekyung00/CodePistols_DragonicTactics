@@ -429,10 +429,13 @@ void Test2::Update([[maybe_unused]] double dt) {
 
 void Test2::Draw() {
     Engine::GetWindow().Clear(0x1a1a1aff);
+    auto& renderer_2d = Engine::GetRenderer2D();
+    renderer_2d.BeginScene(CS200::build_ndc_matrix(Engine::GetWindow().GetSize()));
     GridSystem* grid_system = GetGSComponent<GridSystem>();
     if (grid_system != nullptr) {
         grid_system->Draw();
     }
+    renderer_2d.EndScene();
 }
 
 void Test2::LogFighterStatus() {

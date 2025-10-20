@@ -81,6 +81,7 @@ void MainMenu::Update([[maybe_unused]] double dt)
             case MainMenu::Option::test2:
                 Engine::GetGameStateManager().PopState();
                 Engine::GetGameStateManager().PushState<Test2>();
+                break;
             case MainMenu::Option::exit: Engine::GetGameStateManager().PopState(); break;
         }
     }

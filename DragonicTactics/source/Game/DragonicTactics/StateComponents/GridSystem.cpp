@@ -3,6 +3,7 @@
 #include "./Game/DragonicTactics/Objects/Character.h"  
 #include "./Engine/Engine.hpp"
 #include "./Engine/Logger.hpp"
+#include "./CS200/IRenderer2D.hpp"
 GridSystem::GridSystem() {
     for (int y = 0; y < MAP_HEIGHT; ++y) {
         for (int x = 0; x < MAP_WIDTH; ++x) {
@@ -34,11 +35,19 @@ bool GridSystem::IsOccupied(Math::ivec2 pos) const {
     return character_grid[pos.y][pos.x] != nullptr;
 }
 void GridSystem::Draw() const {
+    auto& renderer_2d = Engine::GetRenderer2D();
+    
 
     for (int y = 0; y < MAP_HEIGHT; ++y) {
         for (int x = 0; x < MAP_WIDTH; ++x) {
+
+            int screen_x = x * TILE_SIZE + TILE_SIZE;
+            int screen_y = y * TILE_SIZE + TILE_SIZE;
+
             switch (tile_grid[y][x]) {
             case TileType::Wall:
+                    renderer_2d.DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x, screen_y }) * Math::ScaleMatrix(TILE_SIZE), 0U, CS200::BROWN);
+                 //renderer_2d.DrawRectangle(, TILE_SIZE, TILE_SIZE, BROWN);
                 break;
             case TileType::Empty:
                 break;
@@ -58,7 +67,9 @@ void GridSystem::Draw() const {
                 default:
                     break;
                 }
+                renderer_2d.DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x, screen_y }) * Math::ScaleMatrix(TILE_SIZE),  char_color);
             }
+            renderer_2d.DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x, screen_y }) * Math::ScaleMatrix(TILE_SIZE), 0U, CS200::WHITE);
         }
     }
 }

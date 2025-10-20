@@ -46,6 +46,74 @@ namespace CS200
     /** \brief Transparent color (0, 0, 0, 0) - completely transparent black */
     constexpr RGBA CLEAR = 0x00000000;
 
+    /** \brief Light Gray color (200, 200, 200, 255) */
+    constexpr RGBA LIGHTGRAY = 0xc8c8c8ff;
+
+    /** \brief Gray color (130, 130, 130, 255) */
+    constexpr RGBA GRAY = 0x828282ff;
+
+    /** \brief Dark Gray color (80, 80, 80, 255) */
+    constexpr RGBA DARKGRAY = 0x505050ff;
+
+    /** \brief Yellow color (253, 249, 0, 255) */
+    constexpr RGBA YELLOW = 0xfdf900ff;
+
+    /** \brief Gold color (255, 203, 0, 255) */
+    constexpr RGBA GOLD = 0xffcb00ff;
+
+    /** \brief Orange color (255, 161, 0, 255) */
+    constexpr RGBA ORANGE = 0xffa100ff;
+
+    /** \brief Pink color (255, 109, 194, 255) */
+    constexpr RGBA PINK = 0xff6dc2ff;
+
+    /** \brief Red color (230, 41, 55, 255) */
+    constexpr RGBA RED = 0xe62937ff;
+
+    /** \brief Maroon color (190, 33, 55, 255) */
+    constexpr RGBA MAROON = 0xbe2137ff;
+
+    /** \brief Green color (0, 228, 48, 255) */
+    constexpr RGBA GREEN = 0x00e430ff;
+
+    /** \brief Lime color (0, 158, 47, 255) */
+    constexpr RGBA LIME = 0x009e2fff;
+
+    /** \brief Dark Green color (0, 117, 44, 255) */
+    constexpr RGBA DARKGREEN = 0x00752cff;
+
+    /** \brief Sky Blue color (102, 191, 255, 255) */
+    constexpr RGBA SKYBLUE = 0x66bffff;
+
+    /** \brief Blue color (0, 121, 241, 255) */
+    constexpr RGBA BLUE = 0x0079f1ff;
+
+    /** \brief Dark Blue color (0, 82, 172, 255) */
+    constexpr RGBA DARKBLUE = 0x0052acff;
+
+    /** \brief Purple color (200, 122, 255, 255) */
+    constexpr RGBA PURPLE = 0xc87affff;
+
+    /** \brief Violet color (135, 60, 190, 255) */
+    constexpr RGBA VIOLET = 0x873cbeff;
+
+    /** \brief Dark Purple color (112, 31, 126, 255) */
+    constexpr RGBA DARKPURPLE = 0x701f7eff;
+
+    /** \brief Beige color (211, 176, 131, 255) */
+    constexpr RGBA BEIGE = 0xd3b083ff;
+
+    /** \brief Brown color (127, 106, 79, 255) */
+    constexpr RGBA BROWN = 0x7f6a4fff;
+
+    /** \brief Dark Brown color (76, 63, 47, 255) */
+    constexpr RGBA DARKBROWN = 0x4c3f2fff;
+
+    /** \brief Magenta color (255, 0, 255, 255) */
+    constexpr RGBA MAGENTA = 0xff00ffff;
+
+
+
     /**
      * \brief Convert packed RGBA color to floating-point component array
      * \param rgba 32-bit packed color in RGBA format
