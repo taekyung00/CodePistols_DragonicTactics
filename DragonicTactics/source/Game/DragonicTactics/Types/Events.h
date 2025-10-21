@@ -141,3 +141,7 @@ struct UISpellSelectedEvent {
     int upcastLevel;          // Level at which to cast
     Character* caster;
 };
+
+struct CombatEndedEvent {
+
+};
