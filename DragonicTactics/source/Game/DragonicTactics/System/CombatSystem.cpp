@@ -1,6 +1,7 @@
 #include "CombatSystem.h"
 #include "./Engine/Engine.hpp"
 #include "./Engine/Logger.hpp"
+#include "./Engine/GameStateManager.hpp"
 #include "../Singletons/DiceManager.h"
 #include "../Singletons/EventBus.h"
 #include "./Game/DragonicTactics/StateComponents/GridSystem.h"
@@ -70,7 +71,7 @@ void CombatSystem::ApplyDamage(Character* attacker, Character* defender, int dam
     // Check if defender died
     if (!defender->IsAlive()) {
         Engine::GetLogger().LogEvent("CombatSystem: " + defender->TypeName() + " died!");
-        //Engine::Instance().GetEventBus().Publish(CharacterDiedEvent{ defender, attacker });
+        Engine::Instance().GetEventBus().Publish(CharacterDeathEvent{ defender, attacker });
     }
 }
 
@@ -113,7 +114,7 @@ bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender) {
     attacker->GetActionPointsComponent()->Consume(attackCost);
 
     // Publish attack event
-    //Engine::Instance().GetEventBus().Publish(CharacterAttackedEvent{ attacker, defender, damage });
+    Engine::Instance().GetEventBus().Publish(CharacterAttackedEvent{ attacker, defender, damage });
 
     return true;
 }
@@ -138,8 +139,9 @@ bool CombatSystem::IsInRange(Character* attacker, Character* target, int range) 
 int CombatSystem::GetDistance(Character* char1, Character* char2) {
     if (char1 == nullptr || char2 == nullptr) return -1;
 
-    return GridSystem::Instance().ManhattanDistance(
-        char1->GetGridPosition(),
-        char2->GetGridPosition()
-    );
+    auto sub = char1->GetGridPosition()->Get() - char2->GetGridPosition()->Get();
+    if(sub.x < 0) sub.x = -sub.x;
+    if(sub.y < 0) sub.y = -sub.y;
+
+    return sub.x + sub.y;
 }

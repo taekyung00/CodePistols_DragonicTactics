@@ -32,6 +32,12 @@ struct CharacterDamagedEvent {
     bool wasCritical;         // Was it a critical hit?
 };
 
+struct CharacterAttackedEvent {
+    Character* attacker;
+    Character* defender;
+    int damage;
+};
+
 struct CharacterHealedEvent {
     Character* target;
     int healAmount;

@@ -1,20 +1,8 @@
-/*
-Copyright (C) 2025 Taekyung Ho
-Reproduction or distribution of this file or its contents without
-prior written consent is prohibited
-File Name:  Test.h
-Project:    CS230 Engine
-Author:     Taekyung Ho
-Created:    Oct 8, 2025
-*/
-
 #pragma once
 #include "../StateComponents/GridSystem.h"
-#include "./Engine/GameState.hpp"
-
+#include "../../../Engine/GameState.hpp"
 class Dragon;
 class Fighter;
-
 class Test : public CS230::GameState
 {
 public:
@@ -36,5 +24,36 @@ private:
     Dragon*  dragon;
     void     LogFighterStatus();
     void     LogDragonStatus();
-    // void test_subscribe_publish_singleSubscriber();
+};
+class Test2 : public CS230::GameState
+{
+    public:
+    Test2();
+    void          Load() override;
+    void          Update(double dt) override;
+    void          Unload() override;
+    void          Draw() override;
+    void          DrawImGui() override;
+    gsl::czstring GetName() const override;
+private:
+    void     Test2_subscribe_publish_singleSubscriber();
+    void     Test2_multiple_subscribers_sameEvent();
+    void     Test2_multiple_different_events();
+    void     Test2_EventData_CompleteTransfer();
+    void     Test2_EventData_MultiplePublishes();
+    bool     Test_CombatSystem_CalculateDamage();
+    bool     Test_CombatSystem_CalculateDamage_MinRoll();
+    bool     Test_CombatSystem_CalculateDamage_MaxRoll();
+    bool     Test_CombatSystem_ApplyDamage();
+    bool     Test_CombatSystem_ApplyDamage_Negative();
+    bool     Test_CombatSystem_ExecuteAttack_Valid();
+    bool     Test_CombatSystem_ExecuteAttack_OutOfRange();
+    bool     Test_CombatSystem_ExecuteAttack_NotEnoughAP();
+    bool     Test_CombatSystem_IsInRange_Adjacent();
+    bool     Test_CombatSystem_IsInRange_TooFar();
+    bool     Test_CombatSystem_GetDistance();
+    Fighter* fighter;
+    Dragon*  dragon;
+    void     LogFighterStatus();
+    void     LogDragonStatus();
 };

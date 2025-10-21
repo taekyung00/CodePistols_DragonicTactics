@@ -51,9 +51,6 @@ set(SOURCE_CODE
     Game/CS230_Final/States/GoodSandwich.h Game/CS230_Final/States/GoodSandwich.cpp
     Game/CS230_Final/States/NormalSandwich.h Game/CS230_Final/States/NormalSandwich.cpp
     Game/CS230_Final/States/Project.h Game/CS230_Final/States/Project.cpp
-    
-    Game/DragonicTactics/Debug/DebugManager.h Game/DragonicTactics/Debug/DebugManager.cpp
-    Game/DragonicTactics/Debug/DebugConsole.h Game/DragonicTactics/Debug/DebugConsole.cpp
 
     Game/DragonicTactics/Objects/Actions/Action.h Game/DragonicTactics/Objects/Actions/Action.cpp
     Game/DragonicTactics/Objects/Actions/ActionAttack.h Game/DragonicTactics/Objects/Actions/ActionAttack.cpp
@@ -73,9 +70,6 @@ set(SOURCE_CODE
     Game/DragonicTactics/StateComponents/GridSystem.h Game/DragonicTactics/StateComponents/GridSystem.cpp
 
     Game/DragonicTactics/States/Test.h Game/DragonicTactics/States/Test.cpp
-    Game/DragonicTactics/States/BattleState.h Game/DragonicTactics/States/BattleState.cpp
-
-    Game/DragonicTactics/System/CombatSystem.h Game/DragonicTactics/System/CombatSystem.cpp
 
     Game/DragonicTactics/Test/Week1TestMocks.h Game/DragonicTactics/Test/Week1TestMocks.cpp Game/DragonicTactics/Test/Week1TestMocks.ini
 
