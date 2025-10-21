@@ -145,7 +145,6 @@ void Test2::Load() {
 
 void Test2::Update([[maybe_unused]] double dt) {
 
-
     if (dragon != nullptr && dragon->IsAlive()) {
 
         Math::ivec2 current_pos = dragon->GetGridPosition()->Get();

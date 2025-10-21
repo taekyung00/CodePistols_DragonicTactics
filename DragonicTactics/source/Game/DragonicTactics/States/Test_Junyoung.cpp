@@ -265,6 +265,8 @@ bool Test::Test_TurnManager_GetCharacterTurnIndex()
     return true;
 }
 
+
+
 void Test::test_turnmanager_all()
 {
     Test_TurnManager_Initialize();
@@ -278,3 +280,5 @@ void Test::test_turnmanager_all()
     Test_TurnManager_AllCharactersDead();
     Test_TurnManager_GetCharacterTurnIndex();
 }
+
+

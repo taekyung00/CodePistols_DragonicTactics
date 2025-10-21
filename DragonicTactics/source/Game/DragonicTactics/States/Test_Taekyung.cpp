@@ -17,6 +17,7 @@
 
 #include "../Singletons/DiceManager.h"
 #include "../Singletons/EventBus.h"
+#include "../Singletons/DataRegistry.h"
 #include "./Game/DragonicTactics/Objects/Actions/ActionAttack.h"
 #include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
 #include "./Game/DragonicTactics/Objects/Components/SpellSlots.h"
@@ -28,6 +29,7 @@ Test::Test() : fighter(nullptr), dragon(nullptr)
 
 void Test::Load()
 {
+    DataRegistry::Instance().LoadFromFile("Assets/Data/characters.json");
     AddGSComponent(new CS230::GameObjectManager());
     fighter = new Fighter({ 5, 5 });
     GetGSComponent<CS230::GameObjectManager>()->Add(fighter);
@@ -52,9 +54,7 @@ void Test::Update([[maybe_unused]] double dt)
 
     if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::E))
     {
-        DiceManager& dice = DiceManager::Instance();
-        dice.SetSeed(42);
-        dice.RollDiceFromString("4d8+2");
+        test_dice_manager();
     }
 
 
@@ -121,6 +121,19 @@ void Test::Update([[maybe_unused]] double dt)
         test_turnmanager_all();
     }
 
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::J))
+    {
+        test_json();
+    }
+
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::R))
+    {
+        test_json_reload();
+    }
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::L))
+    {
+        test_json_log();
+    }
     GetGSComponent<CS230::GameObjectManager>()->UpdateAll(dt);
 }
 

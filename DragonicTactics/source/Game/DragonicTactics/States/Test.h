@@ -36,7 +36,11 @@ private:
     bool     Test_TurnManager_AllCharactersDead();
     bool     Test_TurnManager_GetCharacterTurnIndex();
 
+    void test_dice_manager();
     void test_turnmanager_all();
+    void test_json();
+    void test_json_reload();
+    void test_json_log();
 };
 class Test2 : public CS230::GameState
 {
