@@ -117,16 +117,8 @@ void Test::Update([[maybe_unused]] double dt)
 
     if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::P))
     { // junyoung
-        Test_TurnManager_Initialize();
-        Test_TurnManager_Initialize_Empty();
-        Test_TurnManager_Initialize_DeadCharacters(); ///////////////////
-        Test_TurnManager_StartCombat();
-        Test_TurnManager_EndCurrentTurn();
-        Test_TurnManager_RoundProgression();
-        Test_TurnManager_ActionPointRefresh();///////
-        Test_TurnManager_SkipDeadCharacter();
-        Test_TurnManager_AllCharactersDead();
-        Test_TurnManager_GetCharacterTurnIndex();
+        
+        test_turnmanager_all();
     }
 
     GetGSComponent<CS230::GameObjectManager>()->UpdateAll(dt);

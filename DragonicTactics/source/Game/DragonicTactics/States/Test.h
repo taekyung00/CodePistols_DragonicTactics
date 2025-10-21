@@ -35,6 +35,8 @@ private:
     bool     Test_TurnManager_SkipDeadCharacter();
     bool     Test_TurnManager_AllCharactersDead();
     bool     Test_TurnManager_GetCharacterTurnIndex();
+
+    void test_turnmanager_all();
 };
 class Test2 : public CS230::GameState
 {
