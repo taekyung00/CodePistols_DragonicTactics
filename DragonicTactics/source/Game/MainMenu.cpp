@@ -49,7 +49,8 @@ void MainMenu::Update([[maybe_unused]] double dt)
         switch (current_option)
         {
             case MainMenu::Option::cs230_final: current_option = Option::dragonic_tactics; break;
-            case MainMenu::Option::dragonic_tactics: current_option = Option::exit; break;
+            case MainMenu::Option::dragonic_tactics: current_option = Option::test2; break;
+            case MainMenu::Option::test2: current_option = Option::exit; break;
             case MainMenu::Option::exit: current_option = Option::cs230_final; break;
         }
     }
@@ -60,7 +61,8 @@ void MainMenu::Update([[maybe_unused]] double dt)
         {
             case MainMenu::Option::cs230_final: current_option = Option::exit; break;
             case MainMenu::Option::dragonic_tactics: current_option = Option::cs230_final; break;
-            case MainMenu::Option::exit: current_option = Option::dragonic_tactics; break;
+            case MainMenu::Option::test2: current_option = Option::dragonic_tactics; break;
+            case MainMenu::Option::exit: current_option = Option::test2; break;
         }
     }
     update_colors();
@@ -75,6 +77,10 @@ void MainMenu::Update([[maybe_unused]] double dt)
             case MainMenu::Option::dragonic_tactics:
                 Engine::GetGameStateManager().PopState();
                 Engine::GetGameStateManager().PushState<Test>();
+                break;
+            case MainMenu::Option::test2:
+                Engine::GetGameStateManager().PopState();
+                Engine::GetGameStateManager().PushState<Test2>();
                 break;
             case MainMenu::Option::exit: Engine::GetGameStateManager().PopState(); break;
         }
@@ -101,7 +107,12 @@ void MainMenu::Draw()
 
     text_manager.DrawText(
         "Dragonic Tactics", Math::vec2{ static_cast<double>(window_size.x / 2 - 300 / 2), static_cast<double>(window_size.y - 68 * 3 - 200) }, Fonts::Outlined, { 1.0, 1.0 }, dragonic_tactics_color);
-    text_manager.DrawText("Exit", Math::vec2{ static_cast<double>(window_size.x / 2 - 300 / 2), static_cast<double>(window_size.y - 68 * 4 - 250) }, Fonts::Outlined, { 1.0, 1.0 }, exit_color);
+    
+    text_manager.DrawText(
+        "Test2", Math::vec2{ static_cast<double>(window_size.x / 2 - 300 / 2), static_cast<double>(window_size.y - 68 * 4 - 250) }, Fonts::Outlined, { 1.0, 1.0 }, test2_color);
+    
+    
+    text_manager.DrawText("Exit", Math::vec2{ static_cast<double>(window_size.x / 2 - 300 / 2), static_cast<double>(window_size.y - 68 * 4 - 300) }, Fonts::Outlined, { 1.0, 1.0 }, exit_color);
 
     renderer_2d.EndScene();
 }
@@ -161,18 +172,28 @@ void MainMenu::update_colors()
         case MainMenu::Option::cs230_final:
             cs230_final_color      = seleted_color;
             dragonic_tactics_color = non_seleted_color;
+            test2_color            = non_seleted_color;
             exit_color             = non_seleted_color;
             break;
 
         case MainMenu::Option::dragonic_tactics:
             cs230_final_color      = non_seleted_color;
             dragonic_tactics_color = seleted_color;
+            test2_color            = non_seleted_color;
+            exit_color             = non_seleted_color;
+            break;
+
+       case MainMenu::Option::test2:
+            cs230_final_color      = non_seleted_color;
+            dragonic_tactics_color = non_seleted_color;
+            test2_color            = seleted_color;
             exit_color             = non_seleted_color;
             break;
 
         case MainMenu::Option::exit:
             cs230_final_color      = non_seleted_color;
             dragonic_tactics_color = non_seleted_color;
+            test2_color            = non_seleted_color;
             exit_color             = seleted_color;
             break;
     }

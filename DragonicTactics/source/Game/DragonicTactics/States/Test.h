@@ -1,20 +1,8 @@
-/*
-Copyright (C) 2025 Taekyung Ho
-Reproduction or distribution of this file or its contents without
-prior written consent is prohibited
-File Name:  Test.h
-Project:    CS230 Engine
-Author:     Taekyung Ho
-Created:    Oct 8, 2025
-*/
-
 #pragma once
 #include "../StateComponents/GridSystem.h"
-#include "./Engine/GameState.hpp"
-
+#include "../../../Engine/GameState.hpp"
 class Dragon;
 class Fighter;
-
 class Test : public CS230::GameState
 {
 public:
@@ -36,5 +24,25 @@ private:
     Dragon*  dragon;
     void     LogFighterStatus();
     void     LogDragonStatus();
-    // void test_subscribe_publish_singleSubscriber();
+};
+class Test2 : public CS230::GameState
+{
+    public:
+    Test2();
+    void          Load() override;
+    void          Update(double dt) override;
+    void          Unload() override;
+    void          Draw() override;
+    void          DrawImGui() override;
+    gsl::czstring GetName() const override;
+private:
+    void     Test2_subscribe_publish_singleSubscriber();
+    void     Test2_multiple_subscribers_sameEvent();
+    void     Test2_multiple_different_events();
+    void     Test2_EventData_CompleteTransfer();
+    void     Test2_EventData_MultiplePublishes();
+    Fighter* fighter;
+    Dragon*  dragon;
+    void     LogFighterStatus();
+    void     LogDragonStatus();
 };
