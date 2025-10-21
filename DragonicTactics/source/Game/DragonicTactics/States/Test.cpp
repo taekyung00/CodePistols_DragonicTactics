@@ -22,7 +22,6 @@
 #include "./Game/DragonicTactics/Objects/Components/SpellSlots.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
 
-
 void Test::LogFighterStatus()
 {
     if (fighter == nullptr)
@@ -53,7 +52,6 @@ void Test::LogFighterStatus()
 
     Engine::GetLogger().LogDebug("==========================================");
 }
-
 
 void Test::LogDragonStatus()
 {
@@ -91,7 +89,8 @@ Test2::Test2() : fighter(nullptr), dragon(nullptr)
 {
 }
 
-void Test2::Load() {
+void Test2::Load()
+{
     AddGSComponent(new CS230::GameObjectManager());
 
     AddGSComponent(new GridSystem());
@@ -99,98 +98,90 @@ void Test2::Load() {
 
     GridSystem* grid_system = GetGSComponent<GridSystem>();
 
-    const std::vector<std::string> map_data = {
-    "wwwwwwww",
-    "weefeeew",
-    "weeeeeew",
-    "weeeeeew",
-    "weeeeeew",
-    "weeeeeew",
-    "weedeeew",
-    "wwwwwwww"
-    };
+    const std::vector<std::string> map_data = { "wwwwwwww", "weefeeew", "weeeeeew", "weeeeeew", "weeeeeew", "weeeeeew", "weedeeew", "wwwwwwww" };
 
 
-
-    for (int y = 0; y < map_data.size(); ++y) {
-        for (int x = 0; x < map_data[y].length(); ++x) {
+    for (int y = 0; y < map_data.size(); ++y)
+    {
+        for (int x = 0; x < map_data[y].length(); ++x)
+        {
             char tile_char = map_data[y][x];
 
             Math::ivec2 current_pos = { x, static_cast<int>(map_data.size()) - 1 - y };
 
-            switch (tile_char) {
-            case 'w':
-                grid_system->SetTileType(current_pos, GridSystem::TileType::Wall);
-                break;
-            case 'e':
-                grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
-                break;
-            case 'f':
-                grid_system->SetTileType(current_pos, GridSystem::TileType::Empty); 
-                fighter = new Fighter(current_pos);
-                go_manager->Add(fighter);
-                grid_system->AddCharacter(fighter, current_pos);
-                break;
-            case 'd':
-                grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
-                dragon = new Dragon(current_pos);
-                go_manager->Add(dragon);
-                grid_system->AddCharacter(dragon, current_pos);
-                break;
+            switch (tile_char)
+            {
+                case 'w': grid_system->SetTileType(current_pos, GridSystem::TileType::Wall); break;
+                case 'e': grid_system->SetTileType(current_pos, GridSystem::TileType::Empty); break;
+                case 'f':
+                    grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
+                    fighter = new Fighter(current_pos);
+                    go_manager->Add(fighter);
+                    grid_system->AddCharacter(fighter, current_pos);
+                    break;
+                case 'd':
+                    grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
+                    dragon = new Dragon(current_pos);
+                    go_manager->Add(dragon);
+                    grid_system->AddCharacter(dragon, current_pos);
+                    break;
             }
         }
     }
-
 }
 
-void Test2::Update([[maybe_unused]] double dt) {
+void Test2::Update([[maybe_unused]] double dt)
+{
+    if (dragon != nullptr && dragon->IsAlive())
+    {
+        Math::ivec2 current_pos    = dragon->GetGridPosition()->Get();
+        Math::ivec2 target_pos     = current_pos;
+        bool        move_requested = false;
 
-    if (dragon != nullptr && dragon->IsAlive()) {
-
-        Math::ivec2 current_pos = dragon->GetGridPosition()->Get();
-        Math::ivec2 target_pos = current_pos;
-        bool move_requested = false;
-
-        if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Up)) {
+        if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Up))
+        {
             target_pos.y++;
             move_requested = true;
         }
-        else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Down)) {
+        else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Down))
+        {
             target_pos.y--;
             move_requested = true;
         }
-        else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Left)) {
+        else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Left))
+        {
             target_pos.x--;
             move_requested = true;
         }
-        else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Right)) {
+        else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Right))
+        {
             target_pos.x++;
             move_requested = true;
         }
 
-        if (move_requested) {
+        if (move_requested)
+        {
             GridSystem* grid = GetGSComponent<GridSystem>();
-            if (grid != nullptr && grid->IsWalkable(target_pos)) {
-
+            if (grid != nullptr && grid->IsWalkable(target_pos))
+            {
                 grid->MoveCharacter(current_pos, target_pos);
 
                 dragon->GetGridPosition()->Set(target_pos);
 
-                dragon->SetPosition({
-                    static_cast<double>(target_pos.x * GridSystem::TILE_SIZE),
-                    static_cast<double>(target_pos.y * GridSystem::TILE_SIZE)
-                    });
+                dragon->SetPosition({ static_cast<double>(target_pos.x * GridSystem::TILE_SIZE), static_cast<double>(target_pos.y * GridSystem::TILE_SIZE) });
 
                 Engine::GetLogger().LogEvent("Dragon moved to (" + std::to_string(target_pos.x) + ", " + std::to_string(target_pos.y) + ")");
                 LogDragonStatus();
             }
-            else {
+            else
+            {
                 Engine::GetLogger().LogEvent("Dragon cannot move there! (Wall or Occupied)");
             }
         }
     }
 
-    if (Engine::GetInput().KeyJustReleased(CS230::Input::Keys::Escape)) {
+    if (Engine::GetInput().KeyJustReleased(CS230::Input::Keys::Escape))
+    {
         Engine::GetGameStateManager().PopState();
         Engine::GetGameStateManager().PushState<MainMenu>();
     }
@@ -198,44 +189,52 @@ void Test2::Update([[maybe_unused]] double dt) {
     GetGSComponent<CS230::GameObjectManager>()->UpdateAll(dt);
 }
 
-void Test2::Draw() {
+void Test2::Draw()
+{
     Engine::GetWindow().Clear(0x1a1a1aff);
     auto& renderer_2d = Engine::GetRenderer2D();
     renderer_2d.BeginScene(CS200::build_ndc_matrix(Engine::GetWindow().GetSize()));
     GridSystem* grid_system = GetGSComponent<GridSystem>();
-    if (grid_system != nullptr) {
+    if (grid_system != nullptr)
+    {
         grid_system->Draw();
     }
     renderer_2d.EndScene();
 }
 
-void Test2::LogFighterStatus() {
-    if (fighter == nullptr) return;
+void Test2::LogFighterStatus()
+{
+    if (fighter == nullptr)
+        return;
 
-    GridPosition* grid_pos = fighter->GetGridPosition();
-    StatsComponent* stats = fighter->GetStatsComponent();
-    ActionPoints* ap = fighter->GetActionPointsComponent();
+    GridPosition*   grid_pos = fighter->GetGridPosition();
+    StatsComponent* stats    = fighter->GetStatsComponent();
+    ActionPoints*   ap       = fighter->GetActionPointsComponent();
 
     Engine::GetLogger().LogDebug("========== Fighter Status Report ==========");
 
-    if (grid_pos != nullptr) {
+    if (grid_pos != nullptr)
+    {
         Engine::GetLogger().LogDebug("Position: (" + std::to_string(grid_pos->Get().x) + ", " + std::to_string(grid_pos->Get().y) + ")");
     }
-    if (stats != nullptr) {
+    if (stats != nullptr)
+    {
         std::string hp_status = "HP: " + std::to_string(stats->GetCurrentHP()) + " / " + std::to_string(stats->GetMaxHP());
         hp_status += " (" + std::to_string(stats->GetHealthPercentage() * 100.0f) + "%)";
         Engine::GetLogger().LogDebug(hp_status);
         Engine::GetLogger().LogDebug("IsAlive: " + std::string(stats->IsAlive() ? "true" : "false"));
         Engine::GetLogger().LogDebug("Speed: " + std::to_string(stats->GetSpeed()));
     }
-    if (ap != nullptr) {
+    if (ap != nullptr)
+    {
         Engine::GetLogger().LogDebug("Action Points: " + std::to_string(ap->GetCurrentPoints()) + " / " + std::to_string(ap->GetMaxPoints()));
     }
 
     Engine::GetLogger().LogDebug("==========================================");
 }
 
-void Test2::Test2_multiple_subscribers_sameEvent() {
+void Test2::Test2_multiple_subscribers_sameEvent()
+{
     auto& eventbus = Engine::GetEventBus();
     eventbus.Clear();
 
@@ -255,13 +254,14 @@ void Test2::Test2_multiple_subscribers_sameEvent() {
     ASSERT_EQ(callback3Count, 1);
 }
 
-void Test2::Test2_multiple_different_events() {
+void Test2::Test2_multiple_different_events()
+{
     auto& eventbus = Engine::GetEventBus();
     eventbus.Clear();
 
     bool damageCalled = false;
-    bool deathCalled = false;
-    bool spellCalled = false;
+    bool deathCalled  = false;
+    bool spellCalled  = false;
 
     eventbus.Subscribe<CharacterDamagedEvent>([&]([[maybe_unused]] const CharacterDamagedEvent&) { damageCalled = true; });
     eventbus.Subscribe<CharacterDeathEvent>([&]([[maybe_unused]] const CharacterDeathEvent&) { deathCalled = true; });
@@ -270,23 +270,26 @@ void Test2::Test2_multiple_different_events() {
     MockCharacter character("Test2Char");
     eventbus.Publish(CharacterDamagedEvent{ reinterpret_cast<Character*>(&character), 10, 90, nullptr, false });
     eventbus.Publish(CharacterDeathEvent{ reinterpret_cast<Character*>(&character), nullptr });
-    eventbus.Publish(SpellCastEvent{ reinterpret_cast<Character*>(&character), "Fireball", 1, {0,0}, 1 });
+    eventbus.Publish(
+        SpellCastEvent{
+            reinterpret_cast<Character*>(&character), "Fireball", 1, { 0, 0 },
+               1
+    });
 
     ASSERT_TRUE(damageCalled);
     ASSERT_TRUE(deathCalled);
     ASSERT_TRUE(spellCalled);
 }
 
-void Test2::Test2_EventData_CompleteTransfer() {
+void Test2::Test2_EventData_CompleteTransfer()
+{
     auto& eventbus = Engine::GetEventBus();
     eventbus.Clear();
 
-    MockCharacter victim("Victim"), attacker("Attacker");
+    MockCharacter         victim("Victim"), attacker("Attacker");
     CharacterDamagedEvent receivedEvent;
 
-    eventbus.Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
-        receivedEvent = e;
-        });
+    eventbus.Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) { receivedEvent = e; });
 
     CharacterDamagedEvent originalEvent{ reinterpret_cast<Character*>(&victim), 42, 58, reinterpret_cast<Character*>(&attacker), true };
     eventbus.Publish(originalEvent);
@@ -297,21 +300,24 @@ void Test2::Test2_EventData_CompleteTransfer() {
     ASSERT_EQ(reinterpret_cast<Character*>(receivedEvent.attacker), reinterpret_cast<Character*>(&attacker));
     ASSERT_TRUE(receivedEvent.wasCritical);
 }
+
 void Test2::Test2_subscribe_publish_singleSubscriber()
 {
     auto& eventbus = Engine::GetEventBus();
     eventbus.Clear();
 
-    bool callbackInvoked = false;
-    MockCharacter* receivedTarget = nullptr;
+    bool           callbackInvoked = false;
+    MockCharacter* receivedTarget  = nullptr;
 
-    MockCharacter character("Test2Dragon");
-    const int damage = 30;
-    CharacterDamagedEvent event{ reinterpret_cast<Character*>(&character),damage,70,nullptr,false };
-    eventbus.Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
-        callbackInvoked = true;
-        character.SetHP(character.GetCurrentHP() - e.damageAmount);
-        receivedTarget = reinterpret_cast<MockCharacter*>(e.target);
+    MockCharacter         character("Test2Dragon");
+    const int             damage = 30;
+    CharacterDamagedEvent event{ reinterpret_cast<Character*>(&character), damage, 70, nullptr, false };
+    eventbus.Subscribe<CharacterDamagedEvent>(
+        [&](const CharacterDamagedEvent& e)
+        {
+            callbackInvoked = true;
+            character.SetHP(character.GetCurrentHP() - e.damageAmount);
+            receivedTarget = reinterpret_cast<MockCharacter*>(e.target);
         });
 
     eventbus.Publish(event);
@@ -319,17 +325,15 @@ void Test2::Test2_subscribe_publish_singleSubscriber()
     ASSERT_TRUE(callbackInvoked);
     ASSERT_EQ(character.GetCurrentHP(), event.remainingHP);
     ASSERT_EQ(receivedTarget, &character);
-
 }
 
-void Test2::Test2_EventData_MultiplePublishes() {
+void Test2::Test2_EventData_MultiplePublishes()
+{
     auto& eventbus = Engine::GetEventBus();
     eventbus.Clear();
 
     std::vector<int> damages;
-    eventbus.Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) {
-        damages.push_back(e.damageAmount);
-        });
+    eventbus.Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) { damages.push_back(e.damageAmount); });
 
     MockCharacter character("Test2Char");
     eventbus.Publish(CharacterDamagedEvent{ reinterpret_cast<Character*>(&character), 10, 90, nullptr, false });
@@ -342,14 +346,16 @@ void Test2::Test2_EventData_MultiplePublishes() {
     ASSERT_EQ(damages[2], 30);
 }
 
-void Test2::LogDragonStatus() {
-    if (dragon == nullptr) return;
+void Test2::LogDragonStatus()
+{
+    if (dragon == nullptr)
+        return;
     Engine::GetLogger().LogDebug("========== Dragon Status Report ==========");
 
-    GridPosition* grid_pos = dragon->GetGridPosition();
-    StatsComponent* stats = dragon->GetStatsComponent();
-    ActionPoints* ap = dragon->GetActionPointsComponent();
-    SpellSlots* ss = dragon->GetSpellSlots();
+    GridPosition*   grid_pos = dragon->GetGridPosition();
+    StatsComponent* stats    = dragon->GetStatsComponent();
+    ActionPoints*   ap       = dragon->GetActionPointsComponent();
+    SpellSlots*     ss       = dragon->GetSpellSlots();
 
     if (grid_pos != nullptr)
         Engine::GetLogger().LogDebug("Position: (" + std::to_string(grid_pos->Get().x) + ", " + std::to_string(grid_pos->Get().y) + ")");
@@ -363,10 +369,11 @@ void Test2::LogDragonStatus() {
     Engine::GetLogger().LogDebug("==========================================");
 }
 
-void Test2::Unload() {
+void Test2::Unload()
+{
     GetGSComponent<CS230::GameObjectManager>()->Unload();
     fighter = nullptr;
-    dragon = nullptr;
+    dragon  = nullptr;
 }
 
 void Test2::DrawImGui()

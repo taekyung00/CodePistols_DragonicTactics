@@ -52,8 +52,8 @@ set(SOURCE_CODE
     Game/CS230_Final/States/NormalSandwich.h Game/CS230_Final/States/NormalSandwich.cpp
     Game/CS230_Final/States/Project.h Game/CS230_Final/States/Project.cpp
 
-    Game/DragonicTactics/Debug/DebugConsole.h Game/DragonicTactics/Debug/DebugConsole.cpp
-    Game/DragonicTactics/Debug/DebugManager.h Game/DragonicTactics/Debug/DebugManager.cpp
+    Game/DragonicTactics/Debugger/DebugConsole.h Game/DragonicTactics/Debugger/DebugConsole.cpp
+    Game/DragonicTactics/Debugger/DebugManager.h Game/DragonicTactics/Debugger/DebugManager.cpp
     
     Game/DragonicTactics/Objects/Actions/Action.h Game/DragonicTactics/Objects/Actions/Action.cpp
     Game/DragonicTactics/Objects/Actions/ActionAttack.h Game/DragonicTactics/Objects/Actions/ActionAttack.cpp

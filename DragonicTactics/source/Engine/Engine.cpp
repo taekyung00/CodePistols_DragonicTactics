@@ -7,6 +7,7 @@
  * \copyright DigiPen Institute of Technology
  */
 #include "Engine.hpp"
+#include "./Game/DragonicTactics/Singletons/CombatSystem.h"
 #include "./Game/DragonicTactics/Singletons/EventBus.h"
 #include "CS200/ImGuiHelper.hpp"
 #include "CS200/ImmediateRenderer2D.hpp"
@@ -53,6 +54,7 @@ public:
     CS230::TextureManager      textureManager{};
     TextManager                textManager{};
     EventBus                   eventbus{};
+    CombatSystem               combatsystem{};
 };
 
 Engine& Engine::Instance()
@@ -104,6 +106,9 @@ TextManager& Engine::GetTextManager()
 EventBus& Engine::GetEventBus()
 {
     return Instance().impl->eventbus;
+}
+CombatSystem& Engine::GetCombatSystem(){
+    return Instance().impl->combatsystem;
 }
 
 void Engine::Start(std::string_view window_title)

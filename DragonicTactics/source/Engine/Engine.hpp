@@ -9,10 +9,10 @@
 #pragma once
 
 #include "Vec2.hpp"
+#include <filesystem>
 #include <gsl/gsl>
 #include <memory>
 #include <string_view>
-#include <filesystem>
 
 namespace CS230
 {
@@ -23,7 +23,7 @@ namespace CS230
     class GameStateManager;
     class TextureManager;
     class Font;
-    
+
 }
 
 namespace CS200
@@ -33,6 +33,7 @@ namespace CS200
 
 class TextManager;
 class EventBus;
+class CombatSystem;
 
 /**
  * \brief Runtime information about the window and application state
@@ -242,9 +243,11 @@ public:
      */
     static CS230::TextureManager& GetTextureManager();
 
-     static TextManager& GetTextManager();
+    static TextManager& GetTextManager();
 
-     static EventBus& GetEventBus();
+    static EventBus& GetEventBus();
+
+    static CombatSystem& GetCombatSystem();
 
 
 public:

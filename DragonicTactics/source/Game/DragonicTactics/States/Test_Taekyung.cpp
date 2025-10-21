@@ -134,6 +134,21 @@ void Test::Update([[maybe_unused]] double dt)
     {
         test_json_log();
     }
+
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Enter))
+    {
+        Test_CombatSystem_CalculateDamage();
+        Test_CombatSystem_CalculateDamage_MinRoll();
+        Test_CombatSystem_CalculateDamage_MaxRoll();
+        Test_CombatSystem_ApplyDamage();
+        Test_CombatSystem_ApplyDamage_Negative();
+        Test_CombatSystem_ExecuteAttack_Valid();
+        Test_CombatSystem_ExecuteAttack_OutOfRange();
+        Test_CombatSystem_ExecuteAttack_NotEnoughAP();
+        Test_CombatSystem_IsInRange_Adjacent();
+        Test_CombatSystem_IsInRange_TooFar();
+        Test_CombatSystem_GetDistance();
+    }
     GetGSComponent<CS230::GameObjectManager>()->UpdateAll(dt);
 }
 
