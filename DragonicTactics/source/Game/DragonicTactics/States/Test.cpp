@@ -77,13 +77,13 @@ void Test::Update([[maybe_unused]] double dt)
     if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::D))
     {
         Engine::GetLogger().LogEvent("--- Player presses 'D': Testing PerformAttack ---");
-        if (fighter->GetActionPoints() > 0)
+        if (dragon->GetActionPoints() > 0)
         {
-            fighter->PerformAttack(dragon);
+            dragon->PerformAttack(fighter);
         }
         else
         {
-            Engine::GetLogger().LogDebug("Fighter has no Action Points to attack!");
+            Engine::GetLogger().LogDebug("Dragon has no Action Points to attack!");
         }
         LogFighterStatus();
         LogDragonStatus();
