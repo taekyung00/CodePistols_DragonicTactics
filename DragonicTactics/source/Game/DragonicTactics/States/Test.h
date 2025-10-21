@@ -20,6 +20,19 @@ private:
     void     test_multiple_different_events();
     void     test_EventData_CompleteTransfer();
     void     test_EventData_MultiplePublishes();
+    
+    bool     Test_CombatSystem_CalculateDamage();
+    bool     Test_CombatSystem_CalculateDamage_MinRoll();
+    bool     Test_CombatSystem_CalculateDamage_MaxRoll();
+    bool     Test_CombatSystem_ApplyDamage();
+    bool     Test_CombatSystem_ApplyDamage_Negative();
+    bool     Test_CombatSystem_ExecuteAttack_Valid();
+    bool     Test_CombatSystem_ExecuteAttack_OutOfRange();
+    bool     Test_CombatSystem_ExecuteAttack_NotEnoughAP();
+    bool     Test_CombatSystem_IsInRange_Adjacent();
+    bool     Test_CombatSystem_IsInRange_TooFar();
+    bool     Test_CombatSystem_GetDistance();
+    
     Fighter* fighter;
     Dragon*  dragon;
     void     LogFighterStatus();
@@ -41,17 +54,6 @@ private:
     void     Test2_multiple_different_events();
     void     Test2_EventData_CompleteTransfer();
     void     Test2_EventData_MultiplePublishes();
-    bool     Test_CombatSystem_CalculateDamage();
-    bool     Test_CombatSystem_CalculateDamage_MinRoll();
-    bool     Test_CombatSystem_CalculateDamage_MaxRoll();
-    bool     Test_CombatSystem_ApplyDamage();
-    bool     Test_CombatSystem_ApplyDamage_Negative();
-    bool     Test_CombatSystem_ExecuteAttack_Valid();
-    bool     Test_CombatSystem_ExecuteAttack_OutOfRange();
-    bool     Test_CombatSystem_ExecuteAttack_NotEnoughAP();
-    bool     Test_CombatSystem_IsInRange_Adjacent();
-    bool     Test_CombatSystem_IsInRange_TooFar();
-    bool     Test_CombatSystem_GetDistance();
     Fighter* fighter;
     Dragon*  dragon;
     void     LogFighterStatus();

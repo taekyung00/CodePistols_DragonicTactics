@@ -11,11 +11,6 @@
 #include "../Types/Events.h"
 //#include "../SpellSlots.h"
 
-CombatSystem& CombatSystem::Instance() {
-    static CombatSystem instance;
-    return instance;
-}
-
 int CombatSystem::CalculateDamage(Character* attacker, Character* defender,
     const std::string& damageDice, int baseDamage)
 {
@@ -27,9 +22,6 @@ int CombatSystem::CalculateDamage(Character* attacker, Character* defender,
     // Roll attack dice
     int diceRoll = DiceManager::Instance().RollDiceFromString(damageDice);
     int totalDamage = diceRoll + baseDamage;
-
-    // Week 2: Simple damage calculation
-    // Week 4: Add defense calculation, resistances, etc.
 
     Engine::GetLogger().LogEvent("CombatSystem: " + attacker->TypeName() +
         " rolled " + damageDice + " = " + std::to_string(diceRoll) +
@@ -125,7 +117,6 @@ int CombatSystem::RollAttackDamage(const std::string& damageDice, int baseDamage
 }
 
 bool CombatSystem::IsCriticalHit() {
-    // Week 4: Implement critical hit system (1d20 >= 18)
     return false;
 }
 

@@ -12,7 +12,7 @@ enum class DamageType {
 
 class CombatSystem {
 public:
-    static CombatSystem& Instance();
+    CombatSystem() = default;
 
     // Core combat methods
     int CalculateDamage(Character* attacker, Character* defender, const std::string& damageDice, int baseDamage);
@@ -30,7 +30,6 @@ public:
     int GetDistance(Character* char1, Character* char2);
 
 private:
-    CombatSystem() = default;
     CombatSystem(const CombatSystem&) = delete;
     CombatSystem& operator=(const CombatSystem&) = delete;
 };

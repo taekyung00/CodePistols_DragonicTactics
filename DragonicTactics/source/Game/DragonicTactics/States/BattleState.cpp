@@ -28,7 +28,7 @@ BattleState::~BattleState() {
 void BattleState::Load() {
     Engine::GetLogger().LogEvent("BattleState: Loading");
 
-    auto grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    //auto grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
 
     // DataRegistry& registry = DataRegistry::GetInstance();
     // registry.LoadAllCharacterData();

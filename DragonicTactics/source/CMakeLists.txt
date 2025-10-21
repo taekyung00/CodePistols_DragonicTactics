@@ -66,10 +66,15 @@ set(SOURCE_CODE
 
     Game/DragonicTactics/Singletons/EventBus.h Game/DragonicTactics/Singletons/EventBus.cpp
     Game/DragonicTactics/Singletons/DiceManager.h Game/DragonicTactics/Singletons/DiceManager.cpp
+    Game/DragonicTactics/Singletons/CombatSystem.h Game/DragonicTactics/Singletons/CombatSystem.cpp
+
+    Game/DragonicTactics/Debug/DebugConsole.h Game/DragonicTactics/Debug/DebugConsole.cpp
+    Game/DragonicTactics/Debug/DebugManager.h Game/DragonicTactics/Debug/DebugManager.cpp
 
     Game/DragonicTactics/StateComponents/GridSystem.h Game/DragonicTactics/StateComponents/GridSystem.cpp
 
-    Game/DragonicTactics/States/Test.h Game/DragonicTactics/States/Test.cpp
+    Game/DragonicTactics/States/Test.h Game/DragonicTactics/States/Test.cpp Game/DragonicTactics/States/Test_SY.cpp
+    Game/DragonicTactics/States/BattleState.h Game/DragonicTactics/States/BattleState.cpp
 
     Game/DragonicTactics/Test/Week1TestMocks.h Game/DragonicTactics/Test/Week1TestMocks.cpp Game/DragonicTactics/Test/Week1TestMocks.ini
 

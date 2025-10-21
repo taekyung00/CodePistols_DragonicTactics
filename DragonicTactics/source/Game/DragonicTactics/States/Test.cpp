@@ -21,7 +21,7 @@
 #include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
 #include "./Game/DragonicTactics/Objects/Components/SpellSlots.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
-#include "./Game/DragonicTactics/System/CombatSystem.h"
+#include "./Game/DragonicTactics/Singletons/CombatSystem.h"
 
 Test::Test() : fighter(nullptr), dragon(nullptr)
 {
@@ -109,6 +109,24 @@ void Test::Update([[maybe_unused]] double dt)
         // Verify valid tiles unaffected
         ASSERT_EQ(grid.GetTileType(Math::vec2{ 0, 0 }), GridSystem::TileType::Empty);
     }
+
+    
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Enter))
+    {
+        Test_CombatSystem_CalculateDamage();
+        Test_CombatSystem_CalculateDamage_MinRoll();
+        Test_CombatSystem_CalculateDamage_MaxRoll();
+        Test_CombatSystem_ApplyDamage();
+        Test_CombatSystem_ApplyDamage_Negative();
+        Test_CombatSystem_ExecuteAttack_Valid();
+        Test_CombatSystem_ExecuteAttack_OutOfRange();
+        Test_CombatSystem_ExecuteAttack_NotEnoughAP();
+        Test_CombatSystem_IsInRange_Adjacent();
+        Test_CombatSystem_IsInRange_TooFar();
+        Test_CombatSystem_GetDistance();
+    }
+
+    
 
     if (Engine::GetInput().KeyJustReleased(CS230::Input::Keys::Escape))
     {
@@ -592,177 +610,6 @@ void Test2::LogDragonStatus() {
 
     Engine::GetLogger().LogDebug("==========================================");
 }
-
-
-
-
-bool Test2::Test_CombatSystem_CalculateDamage() {
-    Dragon dragon({0, 0});
-    Fighter fighter({0, 1});
-
-    int damage = CombatSystem::Instance().CalculateDamage(&dragon, &fighter, "3d8", 5);
-
-    ASSERT_GE(damage, 8);
-    ASSERT_LE(damage, 29);
-
-    std::cout << "Test_CombatSystem_CalculateDamage passed (damage=" << damage << ")" << std::endl;
-    return true;
-}
-
-bool Test2::Test_CombatSystem_CalculateDamage_MinRoll() {
-    // Setup
-    DiceManager::Instance().SetSeed(1000);
-    Dragon dragon({0, 0});
-    Fighter fighter({0, 1});
-
-    int minDamage = 999;
-    for (int i = 0; i < 100; ++i) {
-        int damage = CombatSystem::Instance().CalculateDamage(&dragon, &fighter, "3d8", 5);
-        if (damage < minDamage) minDamage = damage;
-    }
-
-    ASSERT_GE(minDamage, 8);
-    ASSERT_LE(minDamage, 10);
-
-    std::cout << "Test_CombatSystem_CalculateDamage_MinRoll passed (min=" << minDamage << ")" << std::endl;
-    return true;
-}
-
-bool Test2::Test_CombatSystem_CalculateDamage_MaxRoll() {
-    Dragon dragon({0, 0});
-    Fighter fighter({0, 1});
-
-    int maxDamage = 0;
-    for (int i = 0; i < 100; ++i) {
-        int damage = CombatSystem::Instance().CalculateDamage(&dragon, &fighter, "3d8", 5);
-        if (damage > maxDamage) maxDamage = damage;
-    }
-
-    ASSERT_GE(maxDamage, 25);
-    ASSERT_LE(maxDamage, 29);
-
-    std::cout << "Test_CombatSystem_CalculateDamage_MaxRoll passed (max=" << maxDamage << ")" << std::endl;
-    return true;
-}
-
-bool Test2::Test_CombatSystem_ApplyDamage() {
-    Dragon dragon({0, 0});
-    Fighter fighter({0, 1});
-    int fighterHPBefore = fighter.GetStatsComponent()->GetCurrentHP();
-
-    CombatSystem::Instance().ApplyDamage(&dragon, &fighter, 20);
-
-    ASSERT_EQ(fighter.GetStatsComponent()->GetCurrentHP(), fighterHPBefore - 20);
-    ASSERT_TRUE(fighter.IsAlive());
-
-    std::cout << "Test_CombatSystem_ApplyDamage passed" << std::endl;
-    return true;
-}
-
-bool Test2::Test_CombatSystem_ApplyDamage_Negative() {
-    Fighter fighter({0, 0});
-    int hpBefore = fighter.GetStatsComponent()->GetCurrentHP();
-
-    CombatSystem::Instance().ApplyDamage(nullptr, &fighter, -10);
-
-    ASSERT_EQ(fighter.GetStatsComponent()->GetCurrentHP(), hpBefore);
-
-    std::cout << "Test_CombatSystem_ApplyDamage_Negative passed" << std::endl;
-    return true;
-}
-
-bool Test2::Test_CombatSystem_ExecuteAttack_Valid() {
-    Dragon dragon({0, 0});
-    Fighter fighter({0, 1});
-    Engine::GetGameStateManager().GetGSComponent<GridSystem>()->MoveCharacter(dragon.GetGridPosition()->Get(), {0, 0});
-    Engine::GetGameStateManager().GetGSComponent<GridSystem>()->MoveCharacter(fighter.GetGridPosition()->Get(), {0, 1});
-
-    int fighterHPBefore = fighter.GetStatsComponent()->GetCurrentHP();
-    int dragonAPBefore = dragon.GetActionPoints();
-
-    bool success = CombatSystem::Instance().ExecuteAttack(&dragon, &fighter);
-
-    ASSERT_TRUE(success);
-    ASSERT_TRUE(fighter.GetStatsComponent()->GetCurrentHP() < fighterHPBefore);
-    ASSERT_EQ(dragon.GetActionPoints(), dragonAPBefore - 2);
-
-    std::cout << "Test_CombatSystem_ExecuteAttack_Valid passed" << std::endl;
-    return true;
-}
-
-bool Test2::Test_CombatSystem_ExecuteAttack_OutOfRange() {
-    Dragon dragon({0, 0});
-    Fighter fighter({5, 5});
-    Engine::GetGameStateManager().GetGSComponent<GridSystem>()->MoveCharacter(dragon.GetGridPosition()->Get(), {0, 0});
-    Engine::GetGameStateManager().GetGSComponent<GridSystem>()->MoveCharacter(fighter.GetGridPosition()->Get(), {5, 5});
-
-    int fighterHPBefore = fighter.GetStatsComponent()->GetCurrentHP();
-
-    bool success = CombatSystem::Instance().ExecuteAttack(&dragon, &fighter);
-
-    ASSERT_FALSE(success);
-    ASSERT_EQ(fighter.GetStatsComponent()->GetCurrentHP(), fighterHPBefore);
-
-    std::cout << "Test_CombatSystem_ExecuteAttack_OutOfRange passed" << std::endl;
-    return true;
-}
-
-bool Test2::Test_CombatSystem_ExecuteAttack_NotEnoughAP() {
-    Dragon dragon({0, 0});
-    Fighter fighter({0, 1});
-    Engine::GetGameStateManager().GetGSComponent<GridSystem>()->MoveCharacter(dragon.GetGridPosition()->Get(), {0, 0});
-    Engine::GetGameStateManager().GetGSComponent<GridSystem>()->MoveCharacter(fighter.GetGridPosition()->Get(), {0, 1});
-
-    dragon.GetActionPointsComponent()->Consume(4);
-
-    int fighterHPBefore = fighter.GetStatsComponent()->GetCurrentHP();
-
-    bool success = CombatSystem::Instance().ExecuteAttack(&dragon, &fighter);
-
-    ASSERT_FALSE(success);
-    ASSERT_EQ(fighter.GetStatsComponent()->GetCurrentHP(), fighterHPBefore);
-
-    std::cout << "Test_CombatSystem_ExecuteAttack_NotEnoughAP passed" << std::endl;
-    return true;
-}
-
-bool Test2::Test_CombatSystem_IsInRange_Adjacent() {
-    Dragon dragon({0, 0});
-    Fighter fighter({0, 1});
-
-    bool inRange = CombatSystem::Instance().IsInRange(&dragon, &fighter, 1);
-
-    ASSERT_TRUE(inRange);
-
-    std::cout << "Test_CombatSystem_IsInRange_Adjacent passed" << std::endl;
-    return true;
-}
-
-bool Test2::Test_CombatSystem_IsInRange_TooFar() {
-    Dragon dragon({0, 0});
-    Fighter fighter({5, 5});
-
-    bool inRange = CombatSystem::Instance().IsInRange(&dragon, &fighter, 1);
-
-    ASSERT_FALSE(inRange);
-
-    std::cout << "Test_CombatSystem_IsInRange_TooFar passed" << std::endl;
-    return true;
-}
-
-bool Test2::Test_CombatSystem_GetDistance() {
-    Dragon dragon({0, 0});
-    Fighter fighter({3, 4});
-
-    int distance = CombatSystem::Instance().GetDistance(&dragon, &fighter);
-
-    ASSERT_EQ(distance, 7);
-
-    std::cout << "Test_CombatSystem_GetDistance passed" << std::endl;
-    return true;
-}
-
-
 
 void Test2::Unload() {
     GetGSComponent<CS230::GameObjectManager>()->Unload();
