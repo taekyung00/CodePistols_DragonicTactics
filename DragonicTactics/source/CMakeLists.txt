@@ -52,6 +52,9 @@ set(SOURCE_CODE
     Game/CS230_Final/States/NormalSandwich.h Game/CS230_Final/States/NormalSandwich.cpp
     Game/CS230_Final/States/Project.h Game/CS230_Final/States/Project.cpp
 
+    Game/DragonicTactics/Debug/DebugConsole.h Game/DragonicTactics/Debug/DebugConsole.cpp
+    Game/DragonicTactics/Debug/DebugManager.h Game/DragonicTactics/Debug/DebugManager.cpp
+    
     Game/DragonicTactics/Objects/Actions/Action.h Game/DragonicTactics/Objects/Actions/Action.cpp
     Game/DragonicTactics/Objects/Actions/ActionAttack.h Game/DragonicTactics/Objects/Actions/ActionAttack.cpp
 
@@ -67,6 +70,7 @@ set(SOURCE_CODE
     Game/DragonicTactics/Singletons/EventBus.h Game/DragonicTactics/Singletons/EventBus.cpp
     Game/DragonicTactics/Singletons/DiceManager.h Game/DragonicTactics/Singletons/DiceManager.cpp
     Game/DragonicTactics/Singletons/DataRegistry.cpp Game/DragonicTactics/Singletons/DataRegistry.h
+    Game/DragonicTactics/Singletons/CombatSystem.h Game/DragonicTactics/Singletons/CombatSystem.cpp
 
     Game/DragonicTactics/StateComponents/GridSystem.h Game/DragonicTactics/StateComponents/GridSystem.cpp
     Game/DragonicTactics/StateComponents/TurnManager.h Game/DragonicTactics/StateComponents/TurnManager.cpp
@@ -74,6 +78,9 @@ set(SOURCE_CODE
     Game/DragonicTactics/States/Test.h 
     Game/DragonicTactics/States/Test.cpp Game/DragonicTactics/States/Test_Taekyung.cpp
     Game/DragonicTactics/States/Test_Junyoung.cpp Game/DragonicTactics/States/Test_Ginam.cpp
+    Game/DragonicTactics/States/Test_SY.cpp
+
+    Game/DragonicTactics/States/BattleState.h Game/DragonicTactics/States/BattleState.cpp
 
     Game/DragonicTactics/Test/Week1TestMocks.h Game/DragonicTactics/Test/Week1TestMocks.cpp Game/DragonicTactics/Test/Week1TestMocks.ini
 
