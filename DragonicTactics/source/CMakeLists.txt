@@ -76,7 +76,7 @@ set(SOURCE_CODE
     Game/DragonicTactics/StateComponents/TurnManager.h Game/DragonicTactics/StateComponents/TurnManager.cpp
 
     Game/DragonicTactics/States/Test.h 
-    Game/DragonicTactics/States/Test.cpp Game/DragonicTactics/States/Test_Taekyung.cpp
+    Game/DragonicTactics/States/Test_Seungju.cpp Game/DragonicTactics/States/Test_Taekyung.cpp
     Game/DragonicTactics/States/Test_Junyoung.cpp Game/DragonicTactics/States/Test_Ginam.cpp
     Game/DragonicTactics/States/Test_SY.cpp
 
