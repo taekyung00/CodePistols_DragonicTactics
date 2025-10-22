@@ -23,23 +23,9 @@
 #include "./Game/DragonicTactics/Objects/Components/SpellSlots.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
 
-Test::Test() : fighter(nullptr), dragon(nullptr)
-{
-}
 
-void Test::Load()
-{
-    DataRegistry::Instance().LoadFromFile("Assets/Data/characters.json");
-    AddGSComponent(new CS230::GameObjectManager());
-    fighter = new Fighter({ 5, 5 });
-    GetGSComponent<CS230::GameObjectManager>()->Add(fighter);
-    dragon = new Dragon({ 6, 5 });
-    GetGSComponent<CS230::GameObjectManager>()->Add(dragon);
-    Engine::GetLogger().LogEvent("========== Combat Testbed Initialized ==========");
-    Engine::GetLogger().LogEvent("'T' -> Fighter's Turn | 'Y' -> Dragon's Turn | 'D' -> Damage Dragon | 'H' -> Heal Fighter");
-    LogFighterStatus();
-    LogDragonStatus();
-}
+
+
 
 void Test::Update([[maybe_unused]] double dt)
 {
@@ -152,25 +138,7 @@ void Test::Update([[maybe_unused]] double dt)
     GetGSComponent<CS230::GameObjectManager>()->UpdateAll(dt);
 }
 
-void Test::Draw()
-{
-    Engine::GetWindow().Clear(0x1a1a1aff);
-    auto& renderer_2d = Engine::GetRenderer2D();
-    renderer_2d.BeginScene(CS200::build_ndc_matrix(Engine::GetWindow().GetSize()));
 
-    renderer_2d.DrawCircle(Math::TranslationMatrix(Math::ivec2{ 100, 100 }) * Math::ScaleMatrix(30.0));
-
-    renderer_2d.EndScene();
-}
-
-void Test::DrawImGui()
-{
-}
-
-gsl::czstring Test::GetName() const
-{
-    return "Test";
-}
 
 void Test::test_multiple_subscribers_sameEvent()
 {
@@ -267,21 +235,4 @@ void Test::test_subscribe_publish_singleSubscriber()
     ASSERT_EQ(receivedTarget, &character);
 }
 
-void Test::test_EventData_MultiplePublishes()
-{
-    auto& eventbus = Engine::GetEventBus();
-    eventbus.Clear();
 
-    std::vector<int> damages;
-    eventbus.Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) { damages.push_back(e.damageAmount); });
-
-    MockCharacter character("TestChar");
-    eventbus.Publish(CharacterDamagedEvent{ reinterpret_cast<Character*>(&character), 10, 90, nullptr, false });
-    eventbus.Publish(CharacterDamagedEvent{ reinterpret_cast<Character*>(&character), 20, 70, nullptr, false });
-    eventbus.Publish(CharacterDamagedEvent{ reinterpret_cast<Character*>(&character), 30, 40, nullptr, true });
-
-    ASSERT_EQ(static_cast<int>(damages.size()), 3);
-    ASSERT_EQ(damages[0], 10);
-    ASSERT_EQ(damages[1], 20);
-    ASSERT_EQ(damages[2], 30);
-}

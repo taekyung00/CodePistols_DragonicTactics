@@ -26,6 +26,153 @@
 #include "../StateComponents/GridSystem.h"
 #include "../StateComponents/TurnManager.h"
 
+Test::Test() : fighter(nullptr), dragon(nullptr)
+{
+}
+
+void Test::Load()
+{
+    DataRegistry::Instance().LoadFromFile("Assets/Data/characters.json");
+    AddGSComponent(new CS230::GameObjectManager());
+    fighter = new Fighter({ 5, 5 });
+    GetGSComponent<CS230::GameObjectManager>()->Add(fighter);
+    dragon = new Dragon({ 6, 5 });
+    GetGSComponent<CS230::GameObjectManager>()->Add(dragon);
+    Engine::GetLogger().LogEvent("========== Combat Testbed Initialized ==========");
+    Engine::GetLogger().LogEvent("'T' -> Fighter's Turn | 'Y' -> Dragon's Turn | 'D' -> Damage Dragon | 'H' -> Heal Fighter");
+    LogFighterStatus();
+    LogDragonStatus();
+}
+void Test::Draw()
+{
+    Engine::GetWindow().Clear(0x1a1a1aff);
+    auto& renderer_2d = Engine::GetRenderer2D();
+    renderer_2d.BeginScene(CS200::build_ndc_matrix(Engine::GetWindow().GetSize()));
+
+    renderer_2d.DrawCircle(Math::TranslationMatrix(Math::ivec2{ 100, 100 }) * Math::ScaleMatrix(30.0));
+
+    renderer_2d.EndScene();
+}
+
+void Test::DrawImGui()
+{
+}
+
+gsl::czstring Test::GetName() const
+{
+    return "Test";
+}
+void Test2::Draw()
+{
+    Engine::GetWindow().Clear(0x1a1a1aff);
+    auto& renderer_2d = Engine::GetRenderer2D();
+    renderer_2d.BeginScene(CS200::build_ndc_matrix(Engine::GetWindow().GetSize()));
+    GridSystem* grid_system = GetGSComponent<GridSystem>();
+    if (grid_system != nullptr)
+    {
+        grid_system->Draw();
+    }
+    renderer_2d.EndScene();
+}
+void Test2::Update([[maybe_unused]] double dt)
+{
+    if (dragon != nullptr && dragon->IsAlive())
+    {
+        Math::ivec2 current_pos    = dragon->GetGridPosition()->Get();
+        Math::ivec2 target_pos     = current_pos;
+        bool        move_requested = false;
+
+        if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Up))
+        {
+            target_pos.y++;
+            move_requested = true;
+        }
+        else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Down))
+        {
+            target_pos.y--;
+            move_requested = true;
+        }
+        else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Left))
+        {
+            target_pos.x--;
+            move_requested = true;
+        }
+        else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Right))
+        {
+            target_pos.x++;
+            move_requested = true;
+        }
+
+        if (move_requested)
+        {
+            GridSystem* grid = GetGSComponent<GridSystem>();
+            if (grid != nullptr && grid->IsWalkable(target_pos))
+            {
+                grid->MoveCharacter(current_pos, target_pos);
+
+                dragon->GetGridPosition()->Set(target_pos);
+
+                dragon->SetPosition({ static_cast<double>(target_pos.x * GridSystem::TILE_SIZE), static_cast<double>(target_pos.y * GridSystem::TILE_SIZE) });
+
+                Engine::GetLogger().LogEvent("Dragon moved to (" + std::to_string(target_pos.x) + ", " + std::to_string(target_pos.y) + ")");
+                LogDragonStatus();
+            }
+            else
+            {
+                Engine::GetLogger().LogEvent("Dragon cannot move there! (Wall or Occupied)");
+            }
+        }
+    }
+
+    if (Engine::GetInput().KeyJustReleased(CS230::Input::Keys::Escape))
+    {
+        Engine::GetGameStateManager().PopState();
+        Engine::GetGameStateManager().PushState<MainMenu>();
+    }
+
+    GetGSComponent<CS230::GameObjectManager>()->UpdateAll(dt);
+}
+void Test2::Load()
+{
+    AddGSComponent(new CS230::GameObjectManager());
+
+    AddGSComponent(new GridSystem());
+    CS230::GameObjectManager* go_manager = GetGSComponent<CS230::GameObjectManager>();
+
+    GridSystem* grid_system = GetGSComponent<GridSystem>();
+
+    const std::vector<std::string> map_data = { "wwwwwwww", "weefeeew", "weeeeeew", "weeeeeew", "weeeeeew", "weeeeeew", "weedeeew", "wwwwwwww" };
+
+
+    for (int y = 0; y < map_data.size(); ++y)
+    {
+        for (int x = 0; x < map_data[y].length(); ++x)
+        {
+            char tile_char = map_data[y][x];
+
+            Math::ivec2 current_pos = { x, static_cast<int>(map_data.size()) - 1 - y };
+
+            switch (tile_char)
+            {
+                case 'w': grid_system->SetTileType(current_pos, GridSystem::TileType::Wall); break;
+                case 'e': grid_system->SetTileType(current_pos, GridSystem::TileType::Empty); break;
+                case 'f':
+                    grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
+                    fighter = new Fighter(current_pos);
+                    go_manager->Add(fighter);
+                    grid_system->AddCharacter(fighter, current_pos);
+                    break;
+                case 'd':
+                    grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
+                    dragon = new Dragon(current_pos);
+                    go_manager->Add(dragon);
+                    grid_system->AddCharacter(dragon, current_pos);
+                    break;
+            }
+        }
+    }
+}
+
 void Test::test_json()
 {
     Engine::GetLogger().LogEvent("========== JSON Test ==========");
@@ -59,4 +206,23 @@ void Test::test_dice_manager()
     DiceManager& dice = DiceManager::Instance();
     dice.SetSeed(42);
     dice.RollDiceFromString("4d8+2");
+}
+
+void Test::test_EventData_MultiplePublishes()
+{
+    auto& eventbus = Engine::GetEventBus();
+    eventbus.Clear();
+
+    std::vector<int> damages;
+    eventbus.Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) { damages.push_back(e.damageAmount); });
+
+    MockCharacter character("TestChar");
+    eventbus.Publish(CharacterDamagedEvent{ reinterpret_cast<Character*>(&character), 10, 90, nullptr, false });
+    eventbus.Publish(CharacterDamagedEvent{ reinterpret_cast<Character*>(&character), 20, 70, nullptr, false });
+    eventbus.Publish(CharacterDamagedEvent{ reinterpret_cast<Character*>(&character), 30, 40, nullptr, true });
+
+    ASSERT_EQ(static_cast<int>(damages.size()), 3);
+    ASSERT_EQ(damages[0], 10);
+    ASSERT_EQ(damages[1], 20);
+    ASSERT_EQ(damages[2], 30);
 }
