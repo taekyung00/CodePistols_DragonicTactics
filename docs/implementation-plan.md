@@ -271,13 +271,13 @@
 
 #### Week 2: Dragon + Grid + Combat Foundation (All systems connect)
 
-| Developer | Task                           | Deliverable                                       |
-| --------- | ------------------------------ | ------------------------------------------------- |
-| **Dev A** | **Dragon class**               | Dragon extends Character, basic movement, HP=250  |
-| **Dev B** | GridSystem pathfinding         | A* pathfinding, GetReachableTiles()               |
-| **Dev C** | TurnManager basics             | InitializeTurnOrder(), turn progression           |
-| **Dev D** | **Fighter enemy class**        | Fighter extends Character, HP=90, basic attack    |
-| **Dev E** | CombatSystem foundation        | ApplyDamage(), dice-based damage calculation      |
+| Developer | Task                    | Deliverable                                      |
+| --------- | ----------------------- | ------------------------------------------------ |
+| **Dev A** | **Dragon class**        | Dragon extends Character, basic movement, HP=250 |
+| **Dev B** | GridSystem pathfinding  | A* pathfinding, GetReachableTiles()              |
+| **Dev C** | TurnManager basics      | InitializeTurnOrder(), turn progression          |
+| **Dev D** | **Fighter enemy class** | Fighter extends Character, HP=90, basic attack   |
+| **Dev E** | CombatSystem foundation | ApplyDamage(), dice-based damage calculation     |
 
 **Integration Test (Friday Week 2)**:
 
@@ -290,13 +290,13 @@
 
 #### Week 3: All Dragon Spells + Combat Integration
 
-| Developer | Task                        | Deliverable                                                        |
-| --------- | --------------------------- | ------------------------------------------------------------------ |
-| **Dev A** | All 3 Dragon spells         | Fireball, CreateWall, LavaPool complete                            |
-| **Dev B** | Fighter combat abilities    | Melee attack, Shield Bash abilities                                |
-| **Dev C** | SpellSystem complete        | CastSpell(), spell slot management, validation                     |
-| **Dev D** | DataRegistry basics         | Load dragon_stats.json, fighter_stats.json                         |
-| **Dev E** | BattleState integration     | Integrate all systems, Dragon vs Fighter playable                  |
+| Developer | Task                     | Deliverable                                       |
+| --------- | ------------------------ | ------------------------------------------------- |
+| **Dev A** | All 3 Dragon spells      | Fireball, CreateWall, LavaPool complete           |
+| **Dev B** | Fighter combat abilities | Melee attack, Shield Bash abilities               |
+| **Dev C** | SpellSystem complete     | CastSpell(), spell slot management, validation    |
+| **Dev D** | DataRegistry basics      | Load dragon_stats.json, fighter_stats.json        |
+| **Dev E** | BattleState integration  | Integrate all systems, Dragon vs Fighter playable |
 
 **Integration Test (Friday Week 3)**:
 
@@ -310,13 +310,13 @@
 
 #### Week 4: Initiative + Basic AI + Polish
 
-| Developer | Task                           | Deliverable                                              |
-| --------- | ------------------------------ | -------------------------------------------------------- |
-| **Dev A** | Dragon spell balance           | Tune damage, costs, ranges for all 3 spells              |
-| **Dev B** | TurnManager initiative         | Initiative rolling (1d20 + speed), full turn order       |
-| **Dev C** | Fighter basic AI               | Fighter makes basic decisions (move toward, attack)      |
-| **Dev D** | Data-driven stats complete     | All stats loaded from JSON, hot-reload working           |
-| **Dev E** | StatusEffectManager foundation | Track status effects (for Dragon spells like LavaPool)   |
+| Developer | Task                           | Deliverable                                            |
+| --------- | ------------------------------ | ------------------------------------------------------ |
+| **Dev A** | Dragon spell balance           | Tune damage, costs, ranges for all 3 spells            |
+| **Dev B** | TurnManager initiative         | Initiative rolling (1d20 + speed), full turn order     |
+| **Dev C** | Fighter basic AI               | Fighter makes basic decisions (move toward, attack)    |
+| **Dev D** | Data-driven stats complete     | All stats loaded from JSON, hot-reload working         |
+| **Dev E** | StatusEffectManager foundation | Track status effects (for Dragon spells like LavaPool) |
 
 **Integration Test (Friday Week 4)**:
 
@@ -329,13 +329,13 @@
 
 #### Week 5: Final Polish + PLAYTEST 1 🧪
 
-| Developer | Task                           | Deliverable                                         |
-| --------- | ------------------------------ | --------------------------------------------------- |
-| **Dev A** | Final spell polish             | All 3 spells tuned, visual feedback clear           |
-| **Dev B** | Combat system complete         | Death handling, damage formula finalized            |
-| **Dev C** | Fighter AI polish              | AI makes smart decisions consistently               |
-| **Dev D** | Balance tuning                 | HP, damage, costs balanced for fair gameplay        |
-| **Dev E** | **Playtest build integration** | BattleState complete, all systems working smoothly  |
+| Developer | Task                           | Deliverable                                        |
+| --------- | ------------------------------ | -------------------------------------------------- |
+| **Dev A** | Final spell polish             | All 3 spells tuned, visual feedback clear          |
+| **Dev B** | Combat system complete         | Death handling, damage formula finalized           |
+| **Dev C** | Fighter AI polish              | AI makes smart decisions consistently              |
+| **Dev D** | Balance tuning                 | HP, damage, costs balanced for fair gameplay       |
+| **Dev E** | **Playtest build integration** | BattleState complete, all systems working smoothly |
 
 **🧪 PLAYTEST 1 (Friday Week 5)**: Dragon vs Fighter Battle
 
@@ -381,13 +381,13 @@
 
 ### Week 6: Dragon Spells Expansion + Debug Tools Begin
 
-| Developer | Task                                                   | Deliverable                                                 |
-| --------- | ------------------------------------------------------ | ----------------------------------------------------------- |
-| **Dev A** | Dragon spells 4-6 (DragonRoar, TailSwipe, DragonWrath) | 3 additional spells, spell slot integration                 |
-| **Dev B** | StatusEffectManager expansion                          | Track Fear, Burn, Stun, Curse effects                       |
-| **Dev C** | **DebugConsole foundation**                            | Console UI, command registration (~10 basic commands)       |
-| **Dev D** | SpellFactory foundation                                | Load spell definitions from spells.json                     |
-| **Dev E** | **GridDebugRenderer (F1)**                             | Grid overlay, tile coordinates, movement/attack ranges      |
+| Developer | Task                                                   | Deliverable                                            |
+| --------- | ------------------------------------------------------ | ------------------------------------------------------ |
+| **Dev A** | Dragon spells 4-6 (DragonRoar, TailSwipe, DragonWrath) | 3 additional spells, spell slot integration            |
+| **Dev B** | StatusEffectManager expansion                          | Track Fear, Burn, Stun, Curse effects                  |
+| **Dev C** | **DebugConsole foundation**                            | Console UI, command registration (~10 basic commands)  |
+| **Dev D** | SpellFactory foundation                                | Load spell definitions from spells.json                |
+| **Dev E** | **GridDebugRenderer (F1)**                             | Grid overlay, tile coordinates, movement/attack ranges |
 
 **Integration Test (Friday Week 6)**:
 
@@ -400,13 +400,13 @@
 
 ### Week 7: Advanced Dragon Spells + More Debug Tools
 
-| Developer | Task                                                      | Deliverable                                         |
-| --------- | --------------------------------------------------------- | --------------------------------------------------- |
-| **Dev A** | Dragon spells 7-9 (MeteorStrike, HeatAbsorb, HeatRelease) | All 9 Dragon spells complete                        |
-| **Dev B** | StatusEffectManager complete                              | Effects modify stats (Fear → -2 attack)             |
+| Developer | Task                                                      | Deliverable                                               |
+| --------- | --------------------------------------------------------- | --------------------------------------------------------- |
+| **Dev A** | Dragon spells 7-9 (MeteorStrike, HeatAbsorb, HeatRelease) | All 9 Dragon spells complete                              |
+| **Dev B** | StatusEffectManager complete                              | Effects modify stats (Fear → -2 attack)                   |
 | **Dev C** | **DebugConsole command expansion**                        | Add combat/spell commands (`damage`, `castspell`, `heal`) |
-| **Dev D** | EffectFactory foundation                                  | Create visual effects for spells                    |
-| **Dev E** | **CombatFormulaInspector (F12) + DiceHistoryPanel (F9)**  | Show damage calculations + last 20 dice rolls       |
+| **Dev D** | EffectFactory foundation                                  | Create visual effects for spells                          |
+| **Dev E** | **CombatFormulaInspector (F12) + DiceHistoryPanel (F9)**  | Show damage calculations + last 20 dice rolls             |
 
 **Integration Test (Friday Week 7)**:
 
@@ -420,13 +420,13 @@
 
 ### Week 8: Fighter Improvements + Status Debug Tools
 
-| Developer | Task                              | Deliverable                                          |
-| --------- | --------------------------------- | ---------------------------------------------------- |
-| **Dev A** | Fighter advanced abilities        | Add Taunt, Second Wind abilities                     |
-| **Dev B** | Fighter AI improvements           | Smarter positioning, ability usage                   |
-| **Dev C** | AISystem GSComponent improvements | Better decision tree, threat awareness               |
-| **Dev D** | CharacterFactory foundation       | Spawn characters from JSON data                      |
-| **Dev E** | **StatusInfoOverlay (F7)**        | Display active effects, HP/AP bars, status timers    |
+| Developer | Task                              | Deliverable                                       |
+| --------- | --------------------------------- | ------------------------------------------------- |
+| **Dev A** | Fighter advanced abilities        | Add Taunt, Second Wind abilities                  |
+| **Dev B** | Fighter AI improvements           | Smarter positioning, ability usage                |
+| **Dev C** | AISystem GSComponent improvements | Better decision tree, threat awareness            |
+| **Dev D** | CharacterFactory foundation       | Spawn characters from JSON data                   |
+| **Dev E** | **StatusInfoOverlay (F7)**        | Display active effects, HP/AP bars, status timers |
 
 **Integration Test (Friday Week 8)**:
 

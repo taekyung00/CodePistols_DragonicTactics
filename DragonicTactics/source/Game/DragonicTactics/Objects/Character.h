@@ -56,6 +56,7 @@ public:
     int GetMovementRange();
     int GetActionPoints();
     bool HasSpellSlot(int level);
+    void RefreshActionPoints();
 
     GridPosition* GetGridPosition() ;
     StatsComponent* GetStatsComponent() ;

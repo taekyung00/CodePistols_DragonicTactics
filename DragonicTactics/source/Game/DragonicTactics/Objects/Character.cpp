@@ -13,9 +13,9 @@ Updated:    Oct 10, 2025
 #include "./Engine/GameObject.h"
 #include "./Engine/Logger.hpp"
 #include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
-#include "Components/GridPosition.h"
 #include "./Game/DragonicTactics/Objects/Components/SpellSlots.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
+#include "Components/GridPosition.h"
 
 Character::Character(CharacterTypes charType, Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level)
     : CS230::GameObject(Math::vec2{ 0, 0 }), m_character_type(charType)
@@ -31,6 +31,11 @@ void Character::InitializeComponents(Math::ivec2 start_coordinates, int max_acti
     AddGOComponent(new GridPosition(start_coordinates));
     AddGOComponent(new ActionPoints(max_action_points));
     AddGOComponent(new SpellSlots(max_slots_per_level));
+}
+
+void Character::RefreshActionPoints()
+{
+    GetGOComponent<ActionPoints>()->Refresh();
 }
 
 void Character::Update(double dt)

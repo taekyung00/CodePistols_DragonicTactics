@@ -65,11 +65,9 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
 {
     Engine& engine = Engine::Instance();
     engine.Start("Taekyung Ho OpenGL Engine");
-    // engine.AddFont("Assets/fonts/Font_Simple.png");
-    // engine.AddFont("Assets/fonts/Font_Outlined.png");
     engine.GetGameStateManager().PushState<Splash>();
 
-    //std::ifstream in_file("Assets/sprites/CS230_Final/Tears.spt");
+    //std::ifstream in_file("Assets/sprites/CS230_Final/Bomb.spt ");
 
     //if (in_file.is_open() == false)
     //{
