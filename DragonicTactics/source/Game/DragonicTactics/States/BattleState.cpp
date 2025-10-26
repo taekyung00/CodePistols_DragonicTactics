@@ -255,3 +255,12 @@ void BattleState::Unload() {
     dragon = nullptr;
     fighter = nullptr;
 }
+
+void BattleState::DrawImGui()
+{
+}
+
+gsl::czstring BattleState::GetName() const
+{
+    return "BattleState";
+}

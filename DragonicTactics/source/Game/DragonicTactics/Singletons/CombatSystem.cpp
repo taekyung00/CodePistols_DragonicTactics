@@ -106,7 +106,7 @@ bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender) {
     attacker->GetActionPointsComponent()->Consume(attackCost);
 
     // Publish attack event
-    Engine::Instance().GetEventBus().Publish(CharacterAttackedEvent{ attacker, defender, damage });
+    // Engine::Instance().GetEventBus().Publish(CharacterAttackedEvent{ attacker, defender, damage });
 
     return true;
 }

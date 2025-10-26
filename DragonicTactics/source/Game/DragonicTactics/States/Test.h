@@ -1,8 +1,9 @@
 #pragma once
-#include "../StateComponents/GridSystem.h"
 #include "../../../Engine/GameState.hpp"
+#include "../StateComponents/GridSystem.h"
 class Dragon;
 class Fighter;
+
 class Test : public CS230::GameState
 {
 public:
@@ -20,27 +21,44 @@ private:
     void     test_multiple_different_events();
     void     test_EventData_CompleteTransfer();
     void     test_EventData_MultiplePublishes();
-    
-    bool     Test_CombatSystem_CalculateDamage();
-    bool     Test_CombatSystem_CalculateDamage_MinRoll();
-    bool     Test_CombatSystem_CalculateDamage_MaxRoll();
-    bool     Test_CombatSystem_ApplyDamage();
-    bool     Test_CombatSystem_ApplyDamage_Negative();
-    bool     Test_CombatSystem_ExecuteAttack_Valid();
-    bool     Test_CombatSystem_ExecuteAttack_OutOfRange();
-    bool     Test_CombatSystem_ExecuteAttack_NotEnoughAP();
-    bool     Test_CombatSystem_IsInRange_Adjacent();
-    bool     Test_CombatSystem_IsInRange_TooFar();
-    bool     Test_CombatSystem_GetDistance();
-    
     Fighter* fighter;
     Dragon*  dragon;
     void     LogFighterStatus();
     void     LogDragonStatus();
+
+    bool Test_TurnManager_Initialize();
+    bool Test_TurnManager_Initialize_Empty();
+    bool Test_TurnManager_Initialize_DeadCharacters();
+    bool Test_TurnManager_StartCombat();
+    bool Test_TurnManager_EndCurrentTurn();
+    bool Test_TurnManager_RoundProgression();
+    bool Test_TurnManager_ActionPointRefresh();
+    bool Test_TurnManager_SkipDeadCharacter();
+    bool Test_TurnManager_AllCharactersDead();
+    bool Test_TurnManager_GetCharacterTurnIndex();
+
+    void test_dice_manager();
+    void test_turnmanager_all();
+    void test_json();
+    void test_json_reload();
+    void test_json_log();
+
+    bool Test_CombatSystem_CalculateDamage();
+    bool Test_CombatSystem_CalculateDamage_MinRoll();
+    bool Test_CombatSystem_CalculateDamage_MaxRoll();
+    bool Test_CombatSystem_ApplyDamage();
+    bool Test_CombatSystem_ApplyDamage_Negative();
+    bool Test_CombatSystem_ExecuteAttack_Valid();
+    bool Test_CombatSystem_ExecuteAttack_OutOfRange();
+    bool Test_CombatSystem_ExecuteAttack_NotEnoughAP();
+    bool Test_CombatSystem_IsInRange_Adjacent();
+    bool Test_CombatSystem_IsInRange_TooFar();
+    bool Test_CombatSystem_GetDistance();
 };
+
 class Test2 : public CS230::GameState
 {
-    public:
+public:
     Test2();
     void          Load() override;
     void          Update(double dt) override;
@@ -48,6 +66,7 @@ class Test2 : public CS230::GameState
     void          Draw() override;
     void          DrawImGui() override;
     gsl::czstring GetName() const override;
+
 private:
     void     Test2_subscribe_publish_singleSubscriber();
     void     Test2_multiple_subscribers_sameEvent();

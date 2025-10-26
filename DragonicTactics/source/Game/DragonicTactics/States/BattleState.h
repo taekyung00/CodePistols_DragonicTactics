@@ -14,6 +14,8 @@ public:
     void Update(double dt) override;
     void Draw() override;
     void Unload() override;
+    void          DrawImGui() override;
+    gsl::czstring GetName() const override;
 
     enum class BattlePhase {
         Setup,

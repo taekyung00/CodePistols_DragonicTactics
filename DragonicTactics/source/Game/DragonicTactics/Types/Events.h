@@ -32,12 +32,6 @@ struct CharacterDamagedEvent {
     bool wasCritical;         // Was it a critical hit?
 };
 
-struct CharacterAttackedEvent {
-    Character* attacker;
-    Character* defender;
-    int damage;
-};
-
 struct CharacterHealedEvent {
     Character* target;
     int healAmount;
@@ -146,4 +140,8 @@ struct UISpellSelectedEvent {
     std::string spellName;
     int upcastLevel;          // Level at which to cast
     Character* caster;
+};
+
+struct CombatEndedEvent {
+
 };
