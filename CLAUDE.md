@@ -12,7 +12,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
   - **[docs/index.md](docs/index.md)** - Main navigation hub for all documentation
   - **[docs/architecture.md](docs/architecture.md)** - High-level architecture overview (703 lines)
-  - **[docs/implementation-plan.md](docs/implementation-plan.md)** - 26-week development timeline (821 lines)
+  - **[docs/implementation-plan.md](docs/implementation-plan.md)** - 26-week development timeline (strategic overview)
+  - **[docs/Detailed Implementations/weeks/](docs/Detailed%20Implementations/weeks/)** - Week-by-week tactical guides (3,921 lines total):
+    - [week1.md](docs/Detailed%20Implementations/weeks/week1.md) - Foundation (5 systems in parallel) - 1,940 lines
+    - [week2.md](docs/Detailed%20Implementations/weeks/week2.md) - Dragon + Grid integration - 540 lines
+    - [week3.md](docs/Detailed%20Implementations/weeks/week3.md) - Combat + Spells - 542 lines
+    - [week4.md](docs/Detailed%20Implementations/weeks/week4.md) - Spell expansion - 528 lines
+    - [week5.md](docs/Detailed%20Implementations/weeks/week5.md) - Polish + Playtest 1 - 371 lines
   - **[docs/systems/](docs/systems/)** - Detailed system specifications:
     - [characters.md](docs/systems/characters.md) - Character implementations (705 lines)
     - [singletons.md](docs/systems/singletons.md) - Global services (755 lines)
@@ -198,26 +204,34 @@ When working on this project, read these files based on your task:
    - Architectural patterns (Factory, Singleton, Component)
    - System interaction diagrams
 
-2. **[docs/implementation-plan.md](docs/implementation-plan.md)** - 26-week development timeline
+2. **[docs/implementation-plan.md](docs/implementation-plan.md)** - 26-week development timeline (strategic)
    - Phase-by-phase implementation strategy
    - Dependency chains
    - When to build each system
 
-3. **[docs/systems/](docs/systems/)** - Detailed system specifications (read as needed):
+3. **[docs/Detailed Implementations/weeks/](docs/Detailed%20Implementations/weeks/)** - Week-by-week tactical guides (for active implementation)
+   - [week1.md](docs/Detailed%20Implementations/weeks/week1.md) - Week 1: Foundation (5 systems in parallel)
+   - [week2.md](docs/Detailed%20Implementations/weeks/week2.md) - Week 2: Dragon + Grid integration
+   - [week3.md](docs/Detailed%20Implementations/weeks/week3.md) - Week 3: Combat + Spells
+   - [week4.md](docs/Detailed%20Implementations/weeks/week4.md) - Week 4: Spell expansion
+   - [week5.md](docs/Detailed%20Implementations/weeks/week5.md) - Week 5: Polish + Playtest 1
+   - Complete code examples, test cases, daily task breakdowns
+
+4. **[docs/systems/](docs/systems/)** - Detailed system specifications (read as needed):
    - [characters.md](docs/systems/characters.md) - Character class implementations
    - [singletons.md](docs/systems/singletons.md) - Global service specifications
    - [game-state-components.md](docs/systems/game-state-components.md) - Battle system details
    - [game-object-components.md](docs/systems/game-object-components.md) - Component behaviors
    - [interfaces.md](docs/systems/interfaces.md) - Interface design & factory patterns
 
-4. **[docs/debug/](docs/debug/)** - Debug tools (for development workflow):
+5. **[docs/debug/](docs/debug/)** - Debug tools (for development workflow):
    - [tools.md](docs/debug/tools.md) - Debug system specification
    - [commands.md](docs/debug/commands.md) - Console command examples
    - [ui.md](docs/debug/ui.md) - Debug UI layout
 
-5. **[architecture/dragonic_tactics.md](architecture/dragonic_tactics.md)** - Original game design (Korean)
+6. **[architecture/dragonic_tactics.md](architecture/dragonic_tactics.md)** - Original game design (Korean)
 
-6. **[ENGINE_COMPONENTS.md](ENGINE_COMPONENTS.md)** - Existing CS230 engine reference
+7. **[ENGINE_COMPONENTS.md](ENGINE_COMPONENTS.md)** - Existing CS230 engine reference
 
 ### Workflow for /init or New Sessions
 
@@ -225,9 +239,10 @@ When starting a new session or receiving `/init`:
 
 1. Start with [docs/index.md](docs/index.md) - Navigation hub
 2. Read [docs/architecture.md](docs/architecture.md) for overall project vision
-3. For specific tasks, navigate to relevant `docs/systems/*.md` file
-4. Check [docs/implementation-plan.md](docs/implementation-plan.md) for timeline context
-5. Review [ENGINE_COMPONENTS.md](ENGINE_COMPONENTS.md) to understand existing CS230 capabilities
+3. **For active implementation (Weeks 1-5)**: Read relevant week file in [docs/Detailed Implementations/weeks/](docs/Detailed%20Implementations/weeks/)
+4. For specific system design questions, navigate to relevant `docs/systems/*.md` file
+5. Check [docs/implementation-plan.md](docs/implementation-plan.md) for timeline context
+6. Review [ENGINE_COMPONENTS.md](ENGINE_COMPONENTS.md) to understand existing CS230 capabilities
 
 **Key Principle**: Each documentation file now focuses on a single topic area (<1050 lines). Read only what you need for your current task. 
 
