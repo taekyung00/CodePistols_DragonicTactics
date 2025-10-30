@@ -19,6 +19,7 @@ Created:    May 6, 2025
 #include "../Demo/DemoText.hpp"
 #include "../Demo/DemoTexturing.hpp"
 #include "../Demo/DemoVAO.hpp"
+#include "../Engine/Engine.hpp"
 #include "../Engine/GameStateManager.hpp"
 #include "../Engine/Input.hpp"
 #include "../Engine/TextManager.hpp"
@@ -32,6 +33,32 @@ MainMenu::MainMenu() : current_option(Option::cs230_final)
 {
 }
 
+void MainMenu::SelecetOption()
+{
+    switch (current_option)
+    {
+        case MainMenu::Option::cs230_final:
+            Engine::GetGameStateManager().PopState();
+            Engine::GetGameStateManager().PushState<Project>();
+            break;
+
+        case MainMenu::Option::dragonic_tactics:
+            Engine::GetGameStateManager().PopState();
+            Engine::GetGameStateManager().PushState<Test>();
+            break;
+
+        case MainMenu::Option::test2:
+            Engine::GetGameStateManager().PopState();
+            Engine::GetGameStateManager().PushState<Test2>();
+            break;
+
+        case MainMenu::Option::exit:
+            Engine::GetGameStateManager().PopState(); 
+            break;
+    }
+}
+
+
 void MainMenu::Load()
 {
     CS200::RenderingAPI::SetClearColor(0x000000FF);
@@ -44,47 +71,96 @@ void MainMenu::Load()
 
 void MainMenu::Update([[maybe_unused]] double dt)
 {
-    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Down))
+    CS230::Input& input = Engine::GetInput();
+    Math::vec2 mouse_pos = input.GetMousePos();
+  if (input.KeyJustReleased(CS230::Input::Keys::Up))
     {
-        switch (current_option)
+        if (current_option == Option::cs230_final)
         {
-            case MainMenu::Option::cs230_final: current_option = Option::dragonic_tactics; break;
-            case MainMenu::Option::dragonic_tactics: current_option = Option::test2; break;
-            case MainMenu::Option::test2: current_option = Option::exit; break;
-            case MainMenu::Option::exit: current_option = Option::cs230_final; break;
+            current_option = Option::exit;
+        }
+        else
+        {
+            current_option = static_cast<Option>(static_cast<int>(current_option) - 1);
         }
     }
-
-    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Up))
+    else if (input.KeyJustReleased(CS230::Input::Keys::Down))
     {
-        switch (current_option)
+        if (current_option == Option::exit)
         {
-            case MainMenu::Option::cs230_final: current_option = Option::exit; break;
-            case MainMenu::Option::dragonic_tactics: current_option = Option::cs230_final; break;
-            case MainMenu::Option::test2: current_option = Option::dragonic_tactics; break;
-            case MainMenu::Option::exit: current_option = Option::test2; break;
+            current_option = Option::cs230_final;
+        }
+        else
+        {
+            current_option = static_cast<Option>(static_cast<int>(current_option) + 1);
+        }
+    }
+    else if (input.KeyJustReleased(CS230::Input::Keys::Enter))
+    {
+        SelecetOption();
+    }
+
+    // --- 2. mouse hover ---
+   
+    const float text_x = 300.f;
+    const float text_width = 300.f; 
+    const float text_height = 40.f; 
+
+    // Hitbox 1: "CS230 Final" (y=300)
+    if (mouse_pos.x >= text_x && mouse_pos.x <= text_x + text_width &&
+        mouse_pos.y >= 300 && mouse_pos.y <= 300 + text_height)
+    {
+        current_option = Option::cs230_final;
+    }
+    // Hitbox 2: "Dragonic Tactics" (y=350)
+    else if (mouse_pos.x >= text_x && mouse_pos.x <= text_x + text_width &&
+             mouse_pos.y >= 350 && mouse_pos.y <= 350 + text_height)
+    {
+        current_option = Option::dragonic_tactics;
+    }
+    // Hitbox 3: "Test 2" (y=400)
+    else if (mouse_pos.x >= text_x && mouse_pos.x <= text_x + text_width &&
+             mouse_pos.y >= 400 && mouse_pos.y <= 400 + text_height)
+    {
+        current_option = Option::test2;
+    }
+    // Hitbox 4: "Exit" (y=450)
+    else if (mouse_pos.x >= text_x && mouse_pos.x <= text_x + text_width &&
+             mouse_pos.y >= 450 && mouse_pos.y <= 450 + text_height)
+    {
+        current_option = Option::exit;
+    }
+
+
+    if (input.MouseJustPressed(0)) // 0 = Left Click
+    {
+        
+        if (current_option == Option::cs230_final &&
+            mouse_pos.x >= text_x && mouse_pos.x <= text_x + text_width &&
+            mouse_pos.y >= 300 && mouse_pos.y <= 300 + text_height)
+        {
+            SelecetOption();
+        }
+        else if (current_option == Option::dragonic_tactics &&
+                 mouse_pos.x >= text_x && mouse_pos.x <= text_x + text_width &&
+                 mouse_pos.y >= 350 && mouse_pos.y <= 350 + text_height)
+        {
+            SelecetOption();
+        }
+        else if (current_option == Option::test2 &&
+                 mouse_pos.x >= text_x && mouse_pos.x <= text_x + text_width &&
+                 mouse_pos.y >= 400 && mouse_pos.y <= 400 + text_height)
+        {
+            SelecetOption();
+        }
+        else if (current_option == Option::exit &&
+                 mouse_pos.x >= text_x && mouse_pos.x <= text_x + text_width &&
+                 mouse_pos.y >= 450 && mouse_pos.y <= 450 + text_height)
+        {
+            SelecetOption();
         }
     }
     update_colors();
-    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Enter))
-    {
-        switch (current_option)
-        {
-            case MainMenu::Option::cs230_final:
-                Engine::GetGameStateManager().PopState();
-                Engine::GetGameStateManager().PushState<Project>();
-                break;
-            case MainMenu::Option::dragonic_tactics:
-                Engine::GetGameStateManager().PopState();
-                Engine::GetGameStateManager().PushState<Test>();
-                break;
-            case MainMenu::Option::test2:
-                Engine::GetGameStateManager().PopState();
-                Engine::GetGameStateManager().PushState<Test2>();
-                break;
-            case MainMenu::Option::exit: Engine::GetGameStateManager().PopState(); break;
-        }
-    }
 }
 
 void MainMenu::Unload()

@@ -11,7 +11,6 @@
  */
 
 #pragma once
-#include <SDL.h>
 #include <gsl/gsl>
 #include <vector>
 #include "Vec2.hpp"
@@ -69,7 +68,7 @@ namespace CS230
         bool KeyJustReleased(Keys key) const;
         bool KeyJustPressed(Keys key) const;
 
-        // (0 = Left, 1 = Right, 2 = Middle)
+        //(0: Left, 1: Middle, 2: Right)
         bool MouseDown(int button);
         bool MouseJustPressed(int button);
         bool MouseJustReleased(int button);
@@ -90,7 +89,7 @@ namespace CS230
         std::array<bool, static_cast<std::size_t>(Keys::Count)> currentKeys;
         void                                                    SetKeyDown(Keys key, bool is_pressed);
 
-        //(0: Left, 1: Right, 2: Middle)
+        //(0: Left, 1: Middle, 2: Right)
         std::array<bool, 3> current_mouse_state;
         std::array<bool, 3> last_mouse_state;
 
@@ -105,7 +104,6 @@ namespace CS230
         return the_key;
     }
 
-    SDL_Scancode convert_cs230_to_sdl(Input::Keys cs230_key);
 
     constexpr gsl::czstring to_string(Input::Keys key) noexcept
     {

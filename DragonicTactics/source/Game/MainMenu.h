@@ -25,6 +25,7 @@ public:
     void          Unload() override;
     void          Draw() override;
     void          DrawImGui() override;
+    void          SelecetOption();
     gsl::czstring GetName() const override;
     static constexpr CS200::RGBA  title_color       = 0x9A2EFEFF;
     static constexpr CS200::RGBA  non_seleted_color = 0xFFFFFFFF;
