@@ -25,7 +25,6 @@
 #include "Window.hpp"
 
 #include <chrono>
-#include <functional>
 
 namespace {
     CS230::Input::Keys convert_sdl_to_cs230(SDL_Scancode scancode)
@@ -215,7 +214,7 @@ void Engine::Start(std::string_view window_title)
     CS200::RenderingAPI::SetViewport(window_size);
     impl->environment.DisplaySize = { static_cast<double>(window_size.x), static_cast<double>(window_size.y) };
     ImGuiHelper::Initialize(window.GetSDLWindow(), window.GetGLContext());
-    window.SetEventCallback(std::bind(&Engine::OnEvent, this, std::placeholders::_1));
+    window.SetEventCallback([this](const SDL_Event& event){this->OnEvent(event);});
     impl->renderer2D.Init();
     impl->timer.ResetTimeStamp();
     impl->textManager.Init();

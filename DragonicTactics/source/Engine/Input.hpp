@@ -104,7 +104,6 @@ namespace CS230
         return the_key;
     }
 
-
     constexpr gsl::czstring to_string(Input::Keys key) noexcept
     {
         switch (key)
