@@ -3,7 +3,9 @@
  * \author Rudy Castan
  * \author Jonathan Holmes
  * \author Taekyung Ho
+ * \author Seungju Song
  * \date 2025 Fall
+ * \update 10-30-2025
  * \par CS200 Computer Graphics I
  * \copyright DigiPen Institute of Technology
  */
@@ -12,12 +14,14 @@
 #include <SDL.h>
 #include <gsl/gsl>
 #include <vector>
+#include "Vec2.hpp"
 
 namespace CS230
 {
     class Input
     {
     public:
+
         enum class Keys
         {
             A,
@@ -65,10 +69,34 @@ namespace CS230
         bool KeyJustReleased(Keys key) const;
         bool KeyJustPressed(Keys key) const;
 
+        // (0 = Left, 1 = Right, 2 = Middle)
+        bool MouseDown(int button);
+        bool MouseJustPressed(int button);
+        bool MouseJustReleased(int button);
+
+        Math::vec2 GetMousePos() const;
+        double GetMouseScroll() const;
+
+        void SetKeyPressed(Keys key);
+        void SetKeyReleased(Keys key);
+
+        void SetMousePressed(int button);
+        void SetMouseReleased(int button);
+        void SetMousePos(Math::vec2 pos);
+        void SetMouseScroll(double offset);
+
     private:
         std::array<bool, static_cast<std::size_t>(Keys::Count)> previousKeys;
         std::array<bool, static_cast<std::size_t>(Keys::Count)> currentKeys;
         void                                                    SetKeyDown(Keys key, bool is_pressed);
+
+        //(0: Left, 1: Right, 2: Middle)
+        std::array<bool, 3> current_mouse_state;
+        std::array<bool, 3> last_mouse_state;
+
+        Math::vec2 mouse_position;
+
+        double mouse_scroll;
     };
 
     constexpr Input::Keys& operator++(Input::Keys& the_key) noexcept
