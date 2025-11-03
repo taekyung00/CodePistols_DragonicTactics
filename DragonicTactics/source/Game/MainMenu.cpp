@@ -102,9 +102,9 @@ void MainMenu::Update([[maybe_unused]] double dt)
 
     // --- 2. mouse hover ---
    
-    const float text_x = 300.f;
-    const float text_width = 300.f; 
-    const float text_height = 40.f; 
+    const double text_x = 300.f;
+    const double text_width = 300.f; 
+    const double text_height = 40.f; 
 
     // Hitbox 1: "CS230 Final" (y=300)
     if (mouse_pos.x >= text_x && mouse_pos.x <= text_x + text_width &&
