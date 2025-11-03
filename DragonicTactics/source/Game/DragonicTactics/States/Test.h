@@ -1,6 +1,11 @@
 #pragma once
 #include "../../../Engine/GameState.hpp"
+#include "../../../Engine/Fonts.h"
+#include "../../../Engine/Engine.hpp"
+#include "../../../Engine/Texture.hpp"
+#include "../../../CS200/RGBA.hpp"
 #include "../StateComponents/GridSystem.h"
+
 class Dragon;
 class Fighter;
 
@@ -68,6 +73,41 @@ public:
     gsl::czstring GetName() const override;
 
 private:
+
+    enum class PlayerActionState
+    {
+        None,          
+        SelectingMove,  
+        SelectingAction 
+    };
+    PlayerActionState currentPlayerState = PlayerActionState::None;
+
+    enum class ButtonHoverState
+    {
+        None,
+        Move,
+        Action,
+        EndTurn
+    };
+    ButtonHoverState currentHoverState = ButtonHoverState::None;
+
+    static constexpr CS200::RGBA button_color_normal = 0xFFFFFFFF; // non_seleted_color
+    static constexpr CS200::RGBA button_color_hover = 0x3ADF00FF;  // seleted_color
+    static constexpr CS200::RGBA button_color_disabled = 0x808080FF;
+
+    CS200::RGBA move_button_color;
+    CS200::RGBA action_button_color;
+    CS200::RGBA end_turn_button_color;
+
+    //these are hard coded numbers
+    const Math::vec2 move_button_pos{ 1000, 50 };    
+    const Math::vec2 action_button_pos{ 1000, 100 }; 
+    const Math::vec2 end_turn_button_pos{ 1000, 150 }; 
+    const Math::vec2 button_size{ 250, 40 };
+
+    void update_button_colors();
+    void update_button_logic();
+    
     void     Test2_subscribe_publish_singleSubscriber();
     void     Test2_multiple_subscribers_sameEvent();
     void     Test2_multiple_different_events();
