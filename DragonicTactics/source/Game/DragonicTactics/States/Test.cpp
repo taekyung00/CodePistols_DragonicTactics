@@ -372,59 +372,202 @@ void Test2::Load() {
 }
 
 void Test2::Update([[maybe_unused]] double dt) {
-
-
-    if (dragon != nullptr && dragon->IsAlive()) {
-
-        Math::ivec2 current_pos = dragon->GetGridPosition()->Get();
-        Math::ivec2 target_pos = current_pos;
-        bool move_requested = false;
-
-        if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Up)) {
-            target_pos.y++;
-            move_requested = true;
-        }
-        else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Down)) {
-            target_pos.y--;
-            move_requested = true;
-        }
-        else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Left)) {
-            target_pos.x--;
-            move_requested = true;
-        }
-        else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Right)) {
-            target_pos.x++;
-            move_requested = true;
-        }
-
-        if (move_requested) {
-            GridSystem* grid = GetGSComponent<GridSystem>();
-            if (grid != nullptr && grid->IsWalkable(target_pos)) {
-
-                grid->MoveCharacter(current_pos, target_pos);
-
-                dragon->GetGridPosition()->Set(target_pos);
-
-                dragon->SetPosition({
-                    static_cast<double>(target_pos.x * GridSystem::TILE_SIZE),
-                    static_cast<double>(target_pos.y * GridSystem::TILE_SIZE)
-                    });
-
-                Engine::GetLogger().LogEvent("Dragon moved to (" + std::to_string(target_pos.x) + ", " + std::to_string(target_pos.y) + ")");
-                LogDragonStatus();
-            }
-            else {
-                Engine::GetLogger().LogEvent("Dragon cannot move there! (Wall or Occupied)");
-            }
-        }
-    }
-
-    if (Engine::GetInput().KeyJustReleased(CS230::Input::Keys::Escape)) {
-        Engine::GetGameStateManager().PopState();
-        Engine::GetGameStateManager().PushState<MainMenu>();
-    }
-
     GetGSComponent<CS230::GameObjectManager>()->UpdateAll(dt);
+    update_button_logic();
+
+    update_button_colors();
+
+    CS230::Input& input = Engine::GetInput();
+    if (input.MouseJustPressed(0))
+    {
+        Math::vec2 mouse_pos = input.GetMousePos();
+        
+        bool is_clicking_ui = (currentHoverState != ButtonHoverState::None);
+
+        if (!is_clicking_ui)
+        {
+            // Math::ivec2 grid_pos = ConvertScreenToGrid(mouse_pos); 
+
+            switch (currentPlayerState)
+            {
+            case PlayerActionState::SelectingMove:
+                Engine::GetLogger().LogEvent("Map clicked while in SelectingMove state.");
+                // player->MoveTo(grid_pos);
+                // currentPlayerState = PlayerActionState::None; //
+                break;
+            case PlayerActionState::SelectingAction:
+                Engine::GetLogger().LogEvent("Map clicked while in SelectingAction state.");
+                // player->PerformAction(grid_pos);
+                // currentPlayerState = PlayerActionState::None; //
+                break;
+            case PlayerActionState::None:
+
+                break;
+            }
+        }
+    }
+    
+    if (input.MouseJustPressed(2)) // 2 = Right Click
+    {
+        if (currentPlayerState != PlayerActionState::None)
+        {
+            Engine::GetLogger().LogEvent("Action cancelled via Right Click.");
+            currentPlayerState = PlayerActionState::None;
+        }
+    }
+
+    // if (dragon != nullptr && dragon->IsAlive()) {
+
+    //     Math::ivec2 current_pos = dragon->GetGridPosition()->Get();
+    //     Math::ivec2 target_pos = current_pos;
+    //     bool move_requested = false;
+
+    //     if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Up)) {
+    //         target_pos.y++;
+    //         move_requested = true;
+    //     }
+    //     else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Down)) {
+    //         target_pos.y--;
+    //         move_requested = true;
+    //     }
+    //     else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Left)) {
+    //         target_pos.x--;
+    //         move_requested = true;
+    //     }
+    //     else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Right)) {
+    //         target_pos.x++;
+    //         move_requested = true;
+    //     }
+
+    //     if (move_requested) {
+    //         GridSystem* grid = GetGSComponent<GridSystem>();
+    //         if (grid != nullptr && grid->IsWalkable(target_pos)) {
+
+    //             grid->MoveCharacter(current_pos, target_pos);
+
+    //             dragon->GetGridPosition()->Set(target_pos);
+
+    //             dragon->SetPosition({
+    //                 static_cast<double>(target_pos.x * GridSystem::TILE_SIZE),
+    //                 static_cast<double>(target_pos.y * GridSystem::TILE_SIZE)
+    //                 });
+
+    //             Engine::GetLogger().LogEvent("Dragon moved to (" + std::to_string(target_pos.x) + ", " + std::to_string(target_pos.y) + ")");
+    //             LogDragonStatus();
+    //         }
+    //         else {
+    //             Engine::GetLogger().LogEvent("Dragon cannot move there! (Wall or Occupied)");
+    //         }
+    //     }
+    // }
+
+    // if (Engine::GetInput().KeyJustReleased(CS230::Input::Keys::Escape)) {
+    //     Engine::GetGameStateManager().PopState();
+    //     Engine::GetGameStateManager().PushState<MainMenu>();
+    // }
+
+
+}
+
+void Test2::update_button_logic()
+{
+    CS230::Input& input = Engine::GetInput();
+    Math::vec2 mouse_pos = input.GetMousePos();
+    bool is_clicked = input.MouseJustPressed(0);
+
+    currentHoverState = ButtonHoverState::None;
+
+    if (IsPointInRect(mouse_pos, move_button_pos, button_size))
+    {
+        currentHoverState = ButtonHoverState::Move;
+    }
+    else if (IsPointInRect(mouse_pos, action_button_pos, button_size))
+    {
+        currentHoverState = ButtonHoverState::Action;
+    }
+    else if (IsPointInRect(mouse_pos, end_turn_button_pos, button_size))
+    {
+        currentHoverState = ButtonHoverState::EndTurn;
+    }
+
+    if (is_clicked)
+    {
+        switch (currentHoverState)
+        {
+        case ButtonHoverState::Move:
+            if (currentPlayerState == PlayerActionState::None)
+            {
+                currentPlayerState = PlayerActionState::SelectingMove;
+                Engine::GetLogger().LogEvent("UI: 'Move' button clicked.");
+            }
+            else if (currentPlayerState == PlayerActionState::SelectingMove)
+            {
+                currentPlayerState = PlayerActionState::None; // "Cancel Move"
+                Engine::GetLogger().LogEvent("UI: 'Cancel Move' button clicked.");
+            }
+            break;
+        
+        case ButtonHoverState::Action:
+             if (currentPlayerState == PlayerActionState::None)
+            {
+                currentPlayerState = PlayerActionState::SelectingAction;
+                Engine::GetLogger().LogEvent("UI: 'Action' button clicked.");
+            }
+            else if (currentPlayerState == PlayerActionState::SelectingAction)
+            {
+                currentPlayerState = PlayerActionState::None; // "Cancel Action"
+                Engine::GetLogger().LogEvent("UI: 'Cancel Action' button clicked.");
+            }
+            break;
+
+        case ButtonHoverState::EndTurn:
+            if (currentPlayerState == PlayerActionState::None)
+            {
+                Engine::GetLogger().LogEvent("UI: 'End Turn' button clicked.");
+                // Engine::GetCombatSystem().EndPlayerTurn(); 
+            }
+            break;
+        case ButtonHoverState::None:
+            break;
+        }
+    }
+}
+
+
+void Test2::update_button_colors()
+{
+    move_button_color = button_color_normal;
+    action_button_color = button_color_normal;
+    end_turn_button_color = button_color_normal;
+
+    if (currentPlayerState == PlayerActionState::SelectingAction)
+    {
+        move_button_color = button_color_disabled;
+        end_turn_button_color = button_color_disabled;
+    }
+    else if (currentPlayerState == PlayerActionState::SelectingMove)
+    {
+        action_button_color = button_color_disabled;
+        end_turn_button_color = button_color_disabled;
+    }
+
+    switch (currentHoverState)
+    {
+    case ButtonHoverState::Move:
+        if(currentPlayerState != PlayerActionState::SelectingAction) 
+            move_button_color = button_color_hover;
+        break;
+    case ButtonHoverState::Action:
+        if(currentPlayerState != PlayerActionState::SelectingMove) 
+            action_button_color = button_color_hover;
+        break;
+    case ButtonHoverState::EndTurn:
+        if(currentPlayerState == PlayerActionState::None) 
+            end_turn_button_color = button_color_hover;
+        break;
+    case ButtonHoverState::None:
+        break;
+    }
 }
 
 void Test2::Draw() {
