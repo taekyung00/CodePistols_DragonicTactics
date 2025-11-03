@@ -143,6 +143,103 @@ Test2::Test2() : fighter(nullptr), dragon(nullptr)
 {
 }
 
+void Test2::update_button_logic()
+{
+    CS230::Input& input      = Engine::GetInput();
+    Math::vec2    mouse_pos  = input.GetMousePos();
+    bool          is_clicked = input.MouseJustPressed(0);
+
+    currentHoverState = ButtonHoverState::None;
+
+    if (IsPointInRect(mouse_pos, move_button_pos, button_size))
+    {
+        currentHoverState = ButtonHoverState::Move;
+    }
+    else if (IsPointInRect(mouse_pos, action_button_pos, button_size))
+    {
+        currentHoverState = ButtonHoverState::Action;
+    }
+    else if (IsPointInRect(mouse_pos, end_turn_button_pos, button_size))
+    {
+        currentHoverState = ButtonHoverState::EndTurn;
+    }
+
+    if (is_clicked)
+    {
+        switch (currentHoverState)
+        {
+            case ButtonHoverState::Move:
+                if (currentPlayerState == PlayerActionState::None)
+                {
+                    currentPlayerState = PlayerActionState::SelectingMove;
+                    Engine::GetLogger().LogEvent("UI: 'Move' button clicked.");
+                }
+                else if (currentPlayerState == PlayerActionState::SelectingMove)
+                {
+                    currentPlayerState = PlayerActionState::None; // "Cancel Move"
+                    Engine::GetLogger().LogEvent("UI: 'Cancel Move' button clicked.");
+                }
+                break;
+
+            case ButtonHoverState::Action:
+                if (currentPlayerState == PlayerActionState::None)
+                {
+                    currentPlayerState = PlayerActionState::SelectingAction;
+                    Engine::GetLogger().LogEvent("UI: 'Action' button clicked.");
+                }
+                else if (currentPlayerState == PlayerActionState::SelectingAction)
+                {
+                    currentPlayerState = PlayerActionState::None; // "Cancel Action"
+                    Engine::GetLogger().LogEvent("UI: 'Cancel Action' button clicked.");
+                }
+                break;
+
+            case ButtonHoverState::EndTurn:
+                if (currentPlayerState == PlayerActionState::None)
+                {
+                    Engine::GetLogger().LogEvent("UI: 'End Turn' button clicked.");
+                    // Engine::GetCombatSystem().EndPlayerTurn();
+                }
+                break;
+            case ButtonHoverState::None: break;
+        }
+    }
+}
+
+void Test2::update_button_colors()
+{
+    move_button_color     = button_color_normal;
+    action_button_color   = button_color_normal;
+    end_turn_button_color = button_color_normal;
+
+    if (currentPlayerState == PlayerActionState::SelectingAction)
+    {
+        move_button_color     = button_color_disabled;
+        end_turn_button_color = button_color_disabled;
+    }
+    else if (currentPlayerState == PlayerActionState::SelectingMove)
+    {
+        action_button_color   = button_color_disabled;
+        end_turn_button_color = button_color_disabled;
+    }
+
+    switch (currentHoverState)
+    {
+        case ButtonHoverState::Move:
+            if (currentPlayerState != PlayerActionState::SelectingAction)
+                move_button_color = button_color_hover;
+            break;
+        case ButtonHoverState::Action:
+            if (currentPlayerState != PlayerActionState::SelectingMove)
+                action_button_color = button_color_hover;
+            break;
+        case ButtonHoverState::EndTurn:
+            if (currentPlayerState == PlayerActionState::None)
+                end_turn_button_color = button_color_hover;
+            break;
+        case ButtonHoverState::None: break;
+    }
+}
 
 
 void Test2::LogFighterStatus()

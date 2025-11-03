@@ -193,3 +193,11 @@ Engine::OnEvent 콜백 함수를 새로 만들어서, 모든 SDL 이벤트를 Im
 Engine::Start에서 window.SetEventCallback이 OnEvent를 가리키도록 변경.
 Engine::Update의 실행 순서(input.Update()를 window.Update() 앞으로)를 바로잡아 JustPressed 오류를 해결.
 테스트용 함수도 추가함
+
+2025-11-03
+걍 코드가 좆같음
+CS200 데모랑 CS230 final도 지우고
+팀원들 테스트 코드로 합쳐야할거같음
+그거랑 별개로 point rect 충돌 로직을 벡터에 만듦
+만든김에 클릭할수있는 버튼도 만들려는데
+내가 짠 test코드가 기남이거랑 잘려서 그거 합치고 하는게 안헷갈리게 할수있을듯

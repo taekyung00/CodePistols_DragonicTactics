@@ -5,6 +5,7 @@
 #include "./Engine/GameStateManager.hpp"
 #include "./Engine/Logger.hpp"
 #include "./Engine/Window.hpp"
+#include "./Engine/TextManager.hpp"
 #include "Test.h"
 
 #include "./Game/DragonicTactics/Test/Week1TestMocks.h"
@@ -64,6 +65,26 @@ gsl::czstring Test::GetName() const
 }
 void Test2::Draw()
 {
+    TextManager& textManager = Engine::GetTextManager();
+    const Fonts  font_to_use = Fonts::Outlined;
+    std::string  move_text   = "Move";
+    if (currentPlayerState == PlayerActionState::SelectingMove)
+    {
+        move_text = "Cancel";
+    }
+    textManager.DrawText(move_text, move_button_pos, font_to_use, { 1, 1 }, move_button_color);
+
+    // "Action" 또는 "Cancel Action" 텍스트
+    std::string action_text = "Action";
+    if (currentPlayerState == PlayerActionState::SelectingAction)
+    {
+        action_text = "Cancel Action";
+    }
+    textManager.DrawText(action_text, action_button_pos, font_to_use, { 1, 1 }, action_button_color);
+
+    // "End Turn" 텍스트
+    textManager.DrawText("End Turn", end_turn_button_pos, font_to_use, { 1, 1 }, end_turn_button_color);
+
     Engine::GetWindow().Clear(0x1a1a1aff);
     auto& renderer_2d = Engine::GetRenderer2D();
     renderer_2d.BeginScene(CS200::build_ndc_matrix(Engine::GetWindow().GetSize()));
@@ -76,6 +97,49 @@ void Test2::Draw()
 }
 void Test2::Update([[maybe_unused]] double dt)
 {
+
+    update_button_logic();
+
+    update_button_colors();
+
+    CS230::Input& input = Engine::GetInput();
+    if (input.MouseJustPressed(0))
+    {
+        Math::vec2 mouse_pos = input.GetMousePos();
+
+        bool is_clicking_ui = (currentHoverState != ButtonHoverState::None);
+
+        if (!is_clicking_ui)
+        {
+            // Math::ivec2 grid_pos = ConvertScreenToGrid(mouse_pos);
+
+            switch (currentPlayerState)
+            {
+                case PlayerActionState::SelectingMove:
+                    Engine::GetLogger().LogEvent("Map clicked while in SelectingMove state.");
+                    // player->MoveTo(grid_pos);
+                    // currentPlayerState = PlayerActionState::None; 
+                    break;
+                case PlayerActionState::SelectingAction:
+                    Engine::GetLogger().LogEvent("Map clicked while in SelectingAction state.");
+                    // player->PerformAction(grid_pos);
+                    // currentPlayerState = PlayerActionState::None; 
+                    break;
+                case PlayerActionState::None:
+                   
+                    break;
+            }
+        }
+    }
+    if (input.MouseJustPressed(1)) 
+    {
+        if (currentPlayerState != PlayerActionState::None)
+        {
+            Engine::GetLogger().LogEvent("Action cancelled via Right Click.");
+            currentPlayerState = PlayerActionState::None;
+        }
+    }
+
     if (dragon != nullptr && dragon->IsAlive())
     {
         Math::ivec2 current_pos    = dragon->GetGridPosition()->Get();
