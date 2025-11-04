@@ -45,6 +45,13 @@ enum class Option
     CS200::RGBA test2_color ;
     CS200::RGBA exit_color;
 
+    Math::vec2 title_pos;
+    Math::vec2 title_scale;
+
+    Math::vec2 menu_start_pos_bl;   
+    Math::vec2 menu_item_size;      
+    double     menu_item_total_height; 
+
     void update_colors();
 
     static constexpr Math::ivec2 default_window_size = {800,600};

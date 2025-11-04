@@ -13,6 +13,7 @@
 #include "Input.hpp"
 #include "Engine.hpp"
 #include "Logger.hpp"
+#include "Window.hpp"
 #include <SDL.h>
 
 namespace CS230
@@ -111,7 +112,9 @@ namespace CS230
 
     void Input::SetMousePos(Math::vec2 pos)
     {
-        mouse_position = pos;
+        int window_height = Engine::GetWindow().GetSize().y;
+        mouse_position.x = pos.x;
+        mouse_position.y = window_height - pos.y;
     }
 
     void Input::SetMouseScroll(double offset)
