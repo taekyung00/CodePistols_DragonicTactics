@@ -12,35 +12,25 @@ Created:    May 6, 2025
 #include "../CS200/IRenderer2D.hpp"
 #include "../CS200/NDC.hpp"
 #include "../CS200/RenderingAPI.hpp"
-#include "../Demo/DemoBufferTypes.hpp"
-#include "../Demo/DemoCS230Textures.hpp"
-#include "../Demo/DemoFramebuffer.hpp"
-#include "../Demo/DemoShapes.hpp"
-#include "../Demo/DemoText.hpp"
-#include "../Demo/DemoTexturing.hpp"
-#include "../Demo/DemoVAO.hpp"
 #include "../Engine/Engine.hpp"
 #include "../Engine/GameStateManager.hpp"
 #include "../Engine/Input.hpp"
 #include "../Engine/TextManager.hpp"
 #include "../Engine/Window.hpp"
-#include "../Game/CS230_Final/States/Project.h"
 #include "./Game/DragonicTactics/States/Test.h"
 #include "States.h"
 #include <imgui.h>
 
-MainMenu::MainMenu() : current_option(Option::cs230_final)
+MainMenu::MainMenu() : current_option(Option::dragonic_tactics)
 {
 }
+
+void MainMenu::DrawImGui(){}
 
 void MainMenu::SelecetOption()
 {
     switch (current_option)
     {
-        case MainMenu::Option::cs230_final:
-            Engine::GetGameStateManager().PopState();
-            Engine::GetGameStateManager().PushState<Project>();
-            break;
 
         case MainMenu::Option::dragonic_tactics:
             Engine::GetGameStateManager().PopState();
@@ -68,99 +58,79 @@ void MainMenu::Load()
 	}
     update_colors();
 }
-
 void MainMenu::Update([[maybe_unused]] double dt)
 {
-    CS230::Input& input = Engine::GetInput();
-    Math::vec2 mouse_pos = input.GetMousePos();
+  CS230::Input& input = Engine::GetInput();
+  Math::vec2 mouse_pos = input.GetMousePos();
+
   if (input.KeyJustReleased(CS230::Input::Keys::Up))
-    {
-        if (current_option == Option::cs230_final)
-        {
-            current_option = Option::exit;
-        }
-        else
-        {
-            current_option = static_cast<Option>(static_cast<int>(current_option) - 1);
-        }
-    }
-    else if (input.KeyJustReleased(CS230::Input::Keys::Down))
-    {
-        if (current_option == Option::exit)
-        {
-            current_option = Option::cs230_final;
-        }
-        else
-        {
-            current_option = static_cast<Option>(static_cast<int>(current_option) + 1);
-        }
-    }
-    else if (input.KeyJustReleased(CS230::Input::Keys::Enter))
-    {
-        SelecetOption();
-    }
+  {
+    int current_index = static_cast<int>(current_option);
 
-    // --- 2. mouse hover ---
-   
-    const double text_x = 300.f;
-    const double text_width = 300.f; 
-    const double text_height = 40.f; 
+    int total_options = static_cast<int>(Option::COUNT);
 
-    // Hitbox 1: "CS230 Final" (y=300)
-    if (mouse_pos.x >= text_x && mouse_pos.x <= text_x + text_width &&
-        mouse_pos.y >= 300 && mouse_pos.y <= 300 + text_height)
-    {
-        current_option = Option::cs230_final;
-    }
-    // Hitbox 2: "Dragonic Tactics" (y=350)
-    else if (mouse_pos.x >= text_x && mouse_pos.x <= text_x + text_width &&
-             mouse_pos.y >= 350 && mouse_pos.y <= 350 + text_height)
-    {
-        current_option = Option::dragonic_tactics;
-    }
-    // Hitbox 3: "Test 2" (y=400)
-    else if (mouse_pos.x >= text_x && mouse_pos.x <= text_x + text_width &&
-             mouse_pos.y >= 400 && mouse_pos.y <= 400 + text_height)
-    {
-        current_option = Option::test2;
-    }
-    // Hitbox 4: "Exit" (y=450)
-    else if (mouse_pos.x >= text_x && mouse_pos.x <= text_x + text_width &&
-             mouse_pos.y >= 450 && mouse_pos.y <= 450 + text_height)
-    {
-        current_option = Option::exit;
-    }
+    current_index = (current_index - 1 + total_options) % total_options;
 
+    current_option = static_cast<Option>(current_index);
+  }
+  else if (input.KeyJustReleased(CS230::Input::Keys::Down))
+  {
+    int current_index = static_cast<int>(current_option);
+    int total_options = static_cast<int>(Option::COUNT);
 
-    if (input.MouseJustPressed(0)) // 0 = Left Click
+    current_index = (current_index + 1) % total_options;
+
+    current_option = static_cast<Option>(current_index);
+  }
+  else if (input.KeyJustReleased(CS230::Input::Keys::Enter))
+  {
+    SelecetOption();
+  }
+
+  // --- 2. mouse hover ---
+  
+  const double text_x = 300.f;
+  const double text_width = 300.f; 
+  const double text_height = 40.f; 
+
+  if (mouse_pos.x >= text_x && mouse_pos.x <= text_x + text_width &&
+      mouse_pos.y >= 350 && mouse_pos.y <= 350 + text_height)
+  {
+    current_option = Option::dragonic_tactics;
+  }
+  else if (mouse_pos.x >= text_x && mouse_pos.x <= text_x + text_width &&
+      mouse_pos.y >= 400 && mouse_pos.y <= 400 + text_height)
+  {
+    current_option = Option::test2;
+  }
+  else if (mouse_pos.x >= text_x && mouse_pos.x <= text_x + text_width &&
+      mouse_pos.y >= 450 && mouse_pos.y <= 450 + text_height)
+  {
+    current_option = Option::exit;
+  }
+
+  if (input.MouseJustPressed(0)) // 0 = Left Click
+  {
+    if (current_option == Option::dragonic_tactics &&
+        mouse_pos.x >= text_x && mouse_pos.x <= text_x + text_width &&
+        mouse_pos.y >= 350 && mouse_pos.y <= 350 + text_height)
     {
-        
-        if (current_option == Option::cs230_final &&
-            mouse_pos.x >= text_x && mouse_pos.x <= text_x + text_width &&
-            mouse_pos.y >= 300 && mouse_pos.y <= 300 + text_height)
-        {
-            SelecetOption();
-        }
-        else if (current_option == Option::dragonic_tactics &&
-                 mouse_pos.x >= text_x && mouse_pos.x <= text_x + text_width &&
-                 mouse_pos.y >= 350 && mouse_pos.y <= 350 + text_height)
-        {
-            SelecetOption();
-        }
-        else if (current_option == Option::test2 &&
-                 mouse_pos.x >= text_x && mouse_pos.x <= text_x + text_width &&
-                 mouse_pos.y >= 400 && mouse_pos.y <= 400 + text_height)
-        {
-            SelecetOption();
-        }
-        else if (current_option == Option::exit &&
-                 mouse_pos.x >= text_x && mouse_pos.x <= text_x + text_width &&
-                 mouse_pos.y >= 450 && mouse_pos.y <= 450 + text_height)
-        {
-            SelecetOption();
-        }
+      SelecetOption();
     }
-    update_colors();
+    else if (current_option == Option::test2 &&
+        mouse_pos.x >= text_x && mouse_pos.x <= text_x + text_width &&
+        mouse_pos.y >= 400 && mouse_pos.y <= 400 + text_height)
+    {
+      SelecetOption();
+    }
+    else if (current_option == Option::exit &&
+        mouse_pos.x >= text_x && mouse_pos.x <= text_x + text_width &&
+        mouse_pos.y >= 450 && mouse_pos.y <= 450 + text_height)
+    {
+      SelecetOption();
+    }
+  }
+  update_colors();
 }
 
 void MainMenu::Unload()
@@ -178,8 +148,6 @@ void MainMenu::Draw()
     text_manager.DrawText(
         "Game Porting", Math::vec2{ static_cast<double>(window_size.x / 2 - 300 / 2 - 100), static_cast<double>(Engine::GetWindow().GetSize().y - 69 - 100) }, Fonts::Outlined, { 1.5, 1.5 },
         title_color);
-    text_manager.DrawText(
-        "CS230 Final", Math::vec2{ static_cast<double>(window_size.x / 2 - 300 / 2), static_cast<double>(window_size.y - 68 * 2 - 150) }, Fonts::Outlined, { 1.0, 1.0 }, cs230_final_color);
 
     text_manager.DrawText(
         "Dragonic Tactics", Math::vec2{ static_cast<double>(window_size.x / 2 - 300 / 2), static_cast<double>(window_size.y - 68 * 3 - 200) }, Fonts::Outlined, { 1.0, 1.0 }, dragonic_tactics_color);
@@ -193,49 +161,6 @@ void MainMenu::Draw()
     renderer_2d.EndScene();
 }
 
-void MainMenu::DrawImGui()
-{
-    if (ImGui::Begin("Demo Controls"))
-    {
-        if (ImGui::Button("Switch to Demo DemoBufferTypes"))
-        {
-            Engine::GetGameStateManager().PopState();
-            Engine::GetGameStateManager().PushState<DemoBufferTypes>();
-        }
-        if (ImGui::Button("Switch to Demo DemoCS230Textures"))
-        {
-            Engine::GetGameStateManager().PopState();
-            Engine::GetGameStateManager().PushState<DemoCS230Textures>();
-        }
-        if (ImGui::Button("Switch to Demo DemoFramebuffer"))
-        {
-            Engine::GetGameStateManager().PopState();
-            Engine::GetGameStateManager().PushState<DemoFramebuffer>();
-        }
-        if (ImGui::Button("Switch to Demo DemoShapes"))
-        {
-            Engine::GetGameStateManager().PopState();
-            Engine::GetGameStateManager().PushState<DemoShapes>();
-        }
-        if (ImGui::Button("Switch to Demo DemoText"))
-        {
-            Engine::GetGameStateManager().PopState();
-            Engine::GetGameStateManager().PushState<DemoText>();
-        }
-        if (ImGui::Button("Switch to Demo DemoTexturing"))
-        {
-            Engine::GetGameStateManager().PopState();
-            Engine::GetGameStateManager().PushState<DemoTexturing>();
-        }
-        if (ImGui::Button("Switch to Demo DemoVAO"))
-        {
-            Engine::GetGameStateManager().PopState();
-            Engine::GetGameStateManager().PushState<DemoVAO>();
-        }
-    }
-    ImGui::End();
-}
-
 gsl::czstring MainMenu::GetName() const
 {
     return "MainMenu";
@@ -245,29 +170,20 @@ void MainMenu::update_colors()
 {
     switch (current_option)
     {
-        case MainMenu::Option::cs230_final:
-            cs230_final_color      = seleted_color;
-            dragonic_tactics_color = non_seleted_color;
-            test2_color            = non_seleted_color;
-            exit_color             = non_seleted_color;
-            break;
 
         case MainMenu::Option::dragonic_tactics:
-            cs230_final_color      = non_seleted_color;
             dragonic_tactics_color = seleted_color;
             test2_color            = non_seleted_color;
             exit_color             = non_seleted_color;
             break;
 
        case MainMenu::Option::test2:
-            cs230_final_color      = non_seleted_color;
             dragonic_tactics_color = non_seleted_color;
             test2_color            = seleted_color;
             exit_color             = non_seleted_color;
             break;
 
         case MainMenu::Option::exit:
-            cs230_final_color      = non_seleted_color;
             dragonic_tactics_color = non_seleted_color;
             test2_color            = non_seleted_color;
             exit_color             = seleted_color;
