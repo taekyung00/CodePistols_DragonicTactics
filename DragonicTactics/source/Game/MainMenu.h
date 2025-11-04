@@ -37,8 +37,11 @@ enum class Option
         dragonic_tactics,
         test2,
         exit
-    };
-    Option current_option;
+    }current_option;
+    // Option& operator++(){
+    //     curret
+    // }
+    // Option current_option;
 
     CS200::RGBA cs230_final_color ;
     CS200::RGBA dragonic_tactics_color ;

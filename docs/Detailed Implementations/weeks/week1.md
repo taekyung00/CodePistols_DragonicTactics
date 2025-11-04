@@ -862,7 +862,7 @@ CS230/Game/Systems/GridSystem.cpp
   ASSERT_EQ(grid.GetCharacterAt({3, 4}), nullptr);
   ```
 
-- [ ] **Test_PlaceCharacter_MultipleCharacters()**
+- [ ] **Test_PlaceCharacter_MultipleCharacters()** -> eliminate
   
   ```cpp
   GridSystem grid;
