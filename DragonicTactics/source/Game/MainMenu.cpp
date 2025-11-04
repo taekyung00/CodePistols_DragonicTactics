@@ -18,6 +18,7 @@ Created:    May 6, 2025
 #include "../Engine/TextManager.hpp"
 #include "../Engine/Window.hpp"
 #include "./Game/DragonicTactics/States/Test.h"
+#include "./Game/DragonicTactics/States/GamePlay.h"
 #include "States.h"
 #include <imgui.h>
 
@@ -36,7 +37,7 @@ namespace
     const double MENU_START_Y_RATIO = 0.4;    
 }
 
-MainMenu::MainMenu() : current_option(Option::dragonic_tactics)
+MainMenu::MainMenu() : current_option(Option::DragonicTactics)
 {
 }
 
@@ -47,17 +48,13 @@ void MainMenu::SelecetOption()
     switch (current_option)
     {
 
-        case MainMenu::Option::dragonic_tactics:
+        case MainMenu::Option::DragonicTactics:
             Engine::GetGameStateManager().PopState();
-            Engine::GetGameStateManager().PushState<Test>();
+            Engine::GetGameStateManager().PushState<GamePlay>();
             break;
 
-        case MainMenu::Option::test2:
-            Engine::GetGameStateManager().PopState();
-            Engine::GetGameStateManager().PushState<Test2>();
-            break;
 
-        case MainMenu::Option::exit:
+        case MainMenu::Option::Exit:
             Engine::GetGameStateManager().PopState(); 
             break;
     }
@@ -166,23 +163,16 @@ void MainMenu::Draw()
     int i = 0;
 
     // Option: dragonic_tactics
-    i = static_cast<int>(Option::dragonic_tactics);
+    i = static_cast<int>(Option::DragonicTactics);
     current_item_y = menu_start_pos_bl.y - (i * menu_item_total_height);
     text_manager.DrawText(
         "Dragonic Tactics", 
         Math::vec2{ menu_start_pos_bl.x, current_item_y }, 
         Fonts::Outlined, { 1.0, 1.0 }, dragonic_tactics_color);
     
-    // Option: test2
-    i = static_cast<int>(Option::test2);
-    current_item_y = menu_start_pos_bl.y - (i * menu_item_total_height);
-    text_manager.DrawText(
-        "Test2", 
-        Math::vec2{ menu_start_pos_bl.x, current_item_y }, 
-        Fonts::Outlined, { 1.0, 1.0 }, test2_color);
-    
+   
     // Option: exit
-    i = static_cast<int>(Option::exit);
+    i = static_cast<int>(Option::Exit);
     current_item_y = menu_start_pos_bl.y - (i * menu_item_total_height);
     text_manager.DrawText(
         "Exit", 
@@ -202,21 +192,14 @@ void MainMenu::update_colors()
     switch (current_option)
     {
 
-        case MainMenu::Option::dragonic_tactics:
+        case MainMenu::Option::DragonicTactics:
             dragonic_tactics_color = seleted_color;
-            test2_color            = non_seleted_color;
             exit_color             = non_seleted_color;
             break;
 
-       case MainMenu::Option::test2:
-            dragonic_tactics_color = non_seleted_color;
-            test2_color            = seleted_color;
-            exit_color             = non_seleted_color;
-            break;
 
-        case MainMenu::Option::exit:
+        case MainMenu::Option::Exit:
             dragonic_tactics_color = non_seleted_color;
-            test2_color            = non_seleted_color;
             exit_color             = seleted_color;
             break;
     }
