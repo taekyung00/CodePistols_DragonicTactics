@@ -16,15 +16,6 @@ set(SOURCE_CODE
     CS200/RenderingAPI.hpp CS200/RenderingAPI.cpp
     CS200/RGBA.hpp
 
-    Demo/DemoShapes.hpp Demo/DemoShapes.cpp
-    Demo/DemoFramebuffer.hpp Demo/DemoFramebuffer.cpp
-    Demo/DemoText.hpp Demo/DemoText.cpp
-    Demo/DemoVAO.hpp Demo/DemoVAO.cpp
-    Demo/DemoBufferTypes.hpp Demo/DemoBufferTypes.cpp
-    Demo/DemoTexturing.hpp Demo/DemoTexturing.cpp
-    Demo/DemoCS230Textures.hpp Demo/DemoCS230Textures.cpp
-
-
     Game/Background.h Game/Background.cpp
     Game/GameObjectTypes.h
     Game/MainMenu.h Game/MainMenu.cpp
@@ -32,25 +23,6 @@ set(SOURCE_CODE
     Game/Score.h Game/Score.cpp
     Game/Splash.h Game/Splash.cpp
     Game/States.h
-
-    Game/CS230_Final/Components/Bounce.h Game/CS230_Final/Components/Bounce.cpp
-    Game/CS230_Final/Components/Grid.h Game/CS230_Final/Components/Grid.cpp
-    Game/CS230_Final/Components/Random.h Game/CS230_Final/Components/Random.cpp
-    Game/CS230_Final/Components/Ziggle.h Game/CS230_Final/Components/Ziggle.cpp
-
-    Game/CS230_Final/Objects/Bus.h Game/CS230_Final/Objects/Bus.cpp
-    Game/CS230_Final/Objects/BusLine.h
-    Game/CS230_Final/Objects/Constants.h
-    Game/CS230_Final/Objects/Bus.h Game/CS230_Final/Objects/Bus.cpp
-    Game/CS230_Final/Objects/Food.h Game/CS230_Final/Objects/Food.cpp
-    Game/CS230_Final/Objects/Obstacle.h Game/CS230_Final/Objects/Obstacle.cpp
-    Game/CS230_Final/Objects/Passenger.h Game/CS230_Final/Objects/Passenger.cpp
-    Game/CS230_Final/Objects/Player.h Game/CS230_Final/Objects/Player.cpp
-
-    Game/CS230_Final/States/BadSandwich.h Game/CS230_Final/States/BadSandwich.cpp
-    Game/CS230_Final/States/GoodSandwich.h Game/CS230_Final/States/GoodSandwich.cpp
-    Game/CS230_Final/States/NormalSandwich.h Game/CS230_Final/States/NormalSandwich.cpp
-    Game/CS230_Final/States/Project.h Game/CS230_Final/States/Project.cpp
 
     Game/DragonicTactics/Debugger/DebugConsole.h Game/DragonicTactics/Debugger/DebugConsole.cpp
     Game/DragonicTactics/Debugger/DebugManager.h Game/DragonicTactics/Debugger/DebugManager.cpp
