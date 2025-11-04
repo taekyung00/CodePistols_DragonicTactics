@@ -55,19 +55,19 @@ namespace CS230
         return !currentKeys[index] && previousKeys[index];
     }
 
-    bool Input::MouseDown(int button)
-    {
+    bool Input::MouseDown(int button) const
+    { 
         if (button < 0 || button >= 3) return false;
         return current_mouse_state[button];
     }
 
-    bool Input::MouseJustPressed(int button)
+    bool Input::MouseJustPressed(int button) const
     {
         if (button < 0 || button >= 3) return false;
         return current_mouse_state[button] && !last_mouse_state[button];
     }
 
-    bool Input::MouseJustReleased(int button)
+    bool Input::MouseJustReleased(int button) const
     {
         if (button < 0 || button >= 3) return false;
         return !current_mouse_state[button] && last_mouse_state[button];

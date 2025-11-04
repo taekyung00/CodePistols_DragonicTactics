@@ -69,9 +69,9 @@ namespace CS230
         bool KeyJustPressed(Keys key) const;
 
         //(0: Left, 1: Middle, 2: Right)
-        bool MouseDown(int button);
-        bool MouseJustPressed(int button);
-        bool MouseJustReleased(int button);
+        bool MouseDown(int button) const;
+        bool MouseJustPressed(int button) const;
+        bool MouseJustReleased(int button) const;
 
         Math::vec2 GetMousePos() const;
         double GetMouseScroll() const;
