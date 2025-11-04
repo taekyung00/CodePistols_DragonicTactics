@@ -2,6 +2,8 @@
 #include <string>
 #include <vector>
 #include "../../../Engine/Vec2.hpp"
+#include "./Game/DragonicTactics/Objects/Character.h"
+
 class Character;
 
 // BattleEvents.h - High-level battle events

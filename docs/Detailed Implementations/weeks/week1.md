@@ -316,9 +316,10 @@ CS230/Game/GameObjectTypes.h (update with new character types)
 
 **Implementation Tasks**:
 
-- [ ] **Character data members**
+- [ ] **Character data members** <- 이것들은 전부 protected 멤버 변수가 아닌 컴포넌트로 분산되어 구현함 구조체는 CharacterTypes.h에 존재
+
   
-  ```cpp
+  ```cpp 
   protected:
       int maxHP;
       int currentHP;
@@ -333,31 +334,57 @@ CS230/Game/GameObjectTypes.h (update with new character types)
       std::map<int, int> spellSlots;   // level -> count
       Math::vec2 gridPosition;
   ```
+  StatsComponent.h가 관리:
+  maxHP
+  currentHP
+  speed
+  baseAttackPower (코드: baseAttack)
+  baseDefensePower (코드: baseDefense)
+  attackDice, defenseDice (현재 StatsComponent 또는 CharacterData에 포함)
+  attackRange (현재 CharacterData 또는 Action 클래스에 포함)
+
+  ActionPoints.h가 관리:
+  maxActionPoints (코드: maxPoints)
+  currentActionPoints (코드: currentPoints)
+
+  GridPosition.h가 관리:
+  gridPosition (코드: m_pos)
+
+  SpellSlots.h가 관리:
+  spellSlots (코드: m_slots)
+
+  Character.h가 직접 관리:
+  m_character_data (CharacterData 구조체 포인터, JSON에서 로드한 스탯 저장)
+  m_action_list (std::vector<Action*>, "Basic Attack" 등 행동 목록)
+  m_turn_goal (AI가 사용하는 TurnGoal 열거형)
 
 - [ ] **Health system methods**
   
   ```cpp
-  void TakeDamage(int damage);
-  void Heal(int amount);
+  void TakeDamage(int damage, Character* attacker); //어태커 인자 추가
+  void ReceiveHeal(int amount); //Heal 에서 ReceiveHeal로 바꿈, 기능 동일
+
   int GetCurrentHP() const;
   int GetMaxHP() const;
   bool IsAlive() const;
-  void Die();
+
+  void Die(); // 미구현
   ```
 
 - [ ] **Action system methods**
   
   ```cpp
   int GetActionPoints() const;
-  void ConsumeActionPoints(int cost);
-  void RefreshActionPoints();
-  int GetMovementRange() const;
+  void ConsumeActionPoints(int cost);  //ActionPoints 컴포넌트에서 관리
+  void RefreshActionPoints(); //ActionPoints 컴포넌트에서 관리
+  int GetMovementRange() const; //GetSpeed와 중복
   int GetSpeed() const;
   ```
 
 - [ ] **State machine setup**
   
-  ```cpp
+  ```cpp 
+  //스테이트는 전체 미구현
   class State {
   public:
       virtual void Enter(Character* character) = 0;
@@ -378,12 +405,14 @@ CS230/Game/GameObjectTypes.h (update with new character types)
   ```cpp
   enum class GameObjectTypes {
       // Existing types...
+      None,
       Dragon,
       Fighter,
+      Rogue,
       Cleric,
       Wizard,
-      Rogue
-  };
+      Count
+  }; //추후 확장성을 위해서 None과 Count를 추가
   ```
 
 **Rigorous Testing**:

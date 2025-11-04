@@ -51,6 +51,8 @@ set(SOURCE_CODE
     Game/DragonicTactics/States/Test_Seungju.cpp Game/DragonicTactics/States/Test_Taekyung.cpp
     Game/DragonicTactics/States/Test_Junyoung.cpp Game/DragonicTactics/States/Test_Ginam.cpp
     Game/DragonicTactics/States/Test_SY.cpp
+    Game/DragonicTactics/States/GamePlay.h Game/DragonicTactics/States/GamePlay.cpp
+
 
     Game/DragonicTactics/States/BattleState.h Game/DragonicTactics/States/BattleState.cpp
 
