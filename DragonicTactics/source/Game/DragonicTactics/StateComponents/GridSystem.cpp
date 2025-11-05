@@ -5,14 +5,23 @@
 #include "./Engine/Logger.hpp"
 #include "./CS200/IRenderer2D.hpp"
 GridSystem::GridSystem() {
-    for (int y = 0; y < MAP_HEIGHT; ++y) {
-        for (int x = 0; x < MAP_WIDTH; ++x) {
-            tile_grid[y][x] = TileType::Empty;
+    Reset();
+}
+
+void GridSystem::Reset()
+{
+    for (int y = 0; y < MAP_HEIGHT; ++y)
+    {
+        for (int x = 0; x < MAP_WIDTH; ++x)
+        {
+            tile_grid[y][x]      = TileType::Empty;
             character_grid[y][x] = nullptr;
         }
     }
 }
-bool GridSystem::IsValidTile(Math::ivec2 pos) const {
+
+bool GridSystem::IsValidTile(Math::ivec2 pos) const
+{
     return pos.x >= 0 && pos.x < MAP_WIDTH && pos.y >= 0 && pos.y < MAP_HEIGHT;
 }
 void GridSystem::SetTileType(Math::ivec2 pos, TileType type) {

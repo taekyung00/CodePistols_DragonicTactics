@@ -28,6 +28,8 @@ public:
 
     GridSystem();
 
+    void Reset();
+
     // validation methods
     bool     IsValidTile(Math::ivec2 tile) const;
     bool     IsWalkable(Math::ivec2 tile) const;
