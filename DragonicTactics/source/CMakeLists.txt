@@ -75,6 +75,7 @@ set(SOURCE_CODE
     Game/DragonicTactics/Singletons/DiceManager.h Game/DragonicTactics/Singletons/DiceManager.cpp
     Game/DragonicTactics/Singletons/DataRegistry.cpp Game/DragonicTactics/Singletons/DataRegistry.h
     Game/DragonicTactics/Singletons/CombatSystem.h Game/DragonicTactics/Singletons/CombatSystem.cpp
+    Game/DragonicTactics/Singletons/SpellSystem.h Game/DragonicTactics/Singletons/SpellSystem.cpp
 
     Game/DragonicTactics/StateComponents/GridSystem.h Game/DragonicTactics/StateComponents/GridSystem.cpp
     Game/DragonicTactics/StateComponents/TurnManager.h Game/DragonicTactics/StateComponents/TurnManager.cpp
@@ -87,6 +88,7 @@ set(SOURCE_CODE
     Game/DragonicTactics/States/BattleState.h Game/DragonicTactics/States/BattleState.cpp
 
     Game/DragonicTactics/Test/Week1TestMocks.h Game/DragonicTactics/Test/Week1TestMocks.cpp Game/DragonicTactics/Test/Week1TestMocks.ini
+    Game/DragonicTactics/Test/Week3TestMocks.h Game/DragonicTactics/Test/Week3TestMocks.cpp
 
     Game/DragonicTactics/Types/CharacterTypes.h
     Game/DragonicTactics/Types/Events.h

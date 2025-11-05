@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include <map>
 
 // ============================================================================
 // DEV A: TREASURE BOX MOCKUPS
@@ -81,7 +82,7 @@ struct MockSpellResult {
     std::vector<Character*> affected_targets;  // Characters hit by spell
     std::vector<Math::ivec2> affected_tiles;   // Tiles affected (for terrain changes)
     int total_damage;                          // Total damage dealt (for damage spells)
-    std::string failure_reason;                // Why it failed (if success = false)
+    std::string failureReason;                // Why it failed (if success = false)
 };
 
 // Spell target types
@@ -113,6 +114,7 @@ public:
 
     // Upcasting support (cast at higher level for more power)
     virtual MockSpellResult CastAtLevel(Character* caster, Math::ivec2 target_tile, int cast_level);
+    virtual std::vector<Math::vec2> GetAffectedTiles(Math::vec2 targetTile) const = 0;
 
 protected:
     // Helper for range checking
@@ -138,7 +140,7 @@ public:
     bool CanCast(Character* caster, Math::ivec2 target_tile) const override;
     MockSpellResult Cast(Character* caster, Math::ivec2 target_tile) override;
     MockSpellResult CastAtLevel(Character* caster, Math::ivec2 target_tile, int cast_level) override;
-
+    std::vector<Math::vec2> GetAffectedTiles(Math::vec2 targetTile) const override;
 private:
     int GetAreaRadius() const { return 2; }  // 2-tile radius explosion
     std::string GetDamageDice(int cast_level) const;  // Returns "8d6" for level 3, +1d6 per level
@@ -163,6 +165,7 @@ public:
     bool CanCast(Character* caster, Math::ivec2 target_tile) const override;
     MockSpellResult Cast(Character* caster, Math::ivec2 target_tile) override;
     MockSpellResult CastAtLevel(Character* caster, Math::ivec2 target_tile, int cast_level) override;
+    std::vector<Math::vec2> GetAffectedTiles(Math::vec2 targetTile) const override;
 
 private:
     int GetWallLength(int cast_level) const;  // Returns 3 for level 2, +1 per level
@@ -188,6 +191,7 @@ public:
     bool CanCast(Character* caster, Math::ivec2 target_tile) const override;
     MockSpellResult Cast(Character* caster, Math::ivec2 target_tile) override;
     MockSpellResult CastAtLevel(Character* caster, Math::ivec2 target_tile, int cast_level) override;
+    std::vector<Math::vec2> GetAffectedTiles(Math::vec2 targetTile) const override;
 
 private:
     int GetPoolRadius(int cast_level) const;  // Returns 1 for level 4, +1 every 2 levels
@@ -199,37 +203,37 @@ private:
 // SPELL SYSTEM MANAGER (Singleton)
 // Manages all spells, handles casting, validates spell slots
 // ============================================================================
-class MockSpellSystem {
-public:
-    // Singleton access
-    static MockSpellSystem& Instance() {
-        static MockSpellSystem instance;
-        return instance;
-    }
+// class MockSpellSystem {
+// public:
+//     // Singleton access
+//     static MockSpellSystem& Instance() {
+//         static MockSpellSystem instance;
+//         return instance;
+//     }
 
-    // Spell casting
-    MockSpellResult CastSpell(Character* caster, const std::string& spell_name,
-                              Math::ivec2 target_tile, int cast_level = -1);
+//     // Spell casting
+//     MockSpellResult CastSpell(Character* caster, const std::string& spell_name,
+//                               Math::ivec2 target_tile, int cast_level = -1);
 
-    // Spell registration (call during initialization)
-    void RegisterSpell(const std::string& name, MockSpellBase* spell);
+//     // Spell registration (call during initialization)
+//     void RegisterSpell(const std::string& name, MockSpellBase* spell);
 
-    // Spell queries
-    MockSpellBase* GetSpell(const std::string& name) const;
-    std::vector<std::string> GetAvailableSpells(Character* caster) const;
-    bool CanCharacterCastSpell(Character* caster, const std::string& spell_name, int level) const;
+//     // Spell queries
+//     MockSpellBase* GetSpell(const std::string& name) const;
+//     std::vector<std::string> GetAvailableSpells(Character* caster) const;
+//     bool CanCharacterCastSpell(Character* caster, const std::string& spell_name, int level) const;
 
-    // Cleanup
-    void ClearSpells();
+//     // Cleanup
+//     void ClearSpells();
 
-private:
-    MockSpellSystem() = default;
-    ~MockSpellSystem();
-    MockSpellSystem(const MockSpellSystem&) = delete;
-    MockSpellSystem& operator=(const MockSpellSystem&) = delete;
+// private:
+//     MockSpellSystem() = default;
+//     ~MockSpellSystem();
+//     MockSpellSystem(const MockSpellSystem&) = delete;
+//     MockSpellSystem& operator=(const MockSpellSystem&) = delete;
 
-    std::map<std::string, MockSpellBase*> registered_spells;
-};
+//     std::map<std::string, MockSpellBase*> registered_spells;
+// };
 
 // ============================================================================
 // TEST HELPER FUNCTIONS
@@ -257,9 +261,9 @@ namespace Week3Tests {
     bool TestLavaPoolUpcasting();
 
     // Integration tests
-    bool TestSpellSystemRegistration();
-    bool TestSpellSlotConsumption();
-    bool TestMultipleSpellsCombat();
+    // bool TestSpellSystemRegistration();
+    // bool TestSpellSlotConsumption();
+    // bool TestMultipleSpellsCombat();
 
     // Run all Week 3 tests
     void RunAllWeek3Tests();
@@ -270,7 +274,7 @@ namespace Week3Tests {
 // ============================================================================
 
 // MockSpellBase inline methods
-inline MockSpellResult MockSpellBase::CastAtLevel(Character* caster, Math::ivec2 target_tile, int cast_level) {
+inline MockSpellResult MockSpellBase::CastAtLevel(Character* caster, Math::ivec2 target_tile, [[maybe_unused]]int cast_level) {
     // Default implementation: just call Cast() and ignore cast_level
     // Subclasses should override for true upcasting support
     return Cast(caster, target_tile);

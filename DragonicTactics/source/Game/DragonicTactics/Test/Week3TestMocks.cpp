@@ -2,13 +2,14 @@
 #include "../../../Engine/Engine.hpp"
 #include "../Singletons/DiceManager.h"
 #include <map>
+#include "../StateComponents/GridSystem.h"
 
 // ============================================================================
 // MOCKTREASURECRIPT - TreasureBox GameObject Implementation
 // ============================================================================
 
 MockTreasureBox::MockTreasureBox(Math::ivec2 grid_position, TreasureType treasure_type)
-    : grid_pos(grid_position), state(TreasureBoxState::Closed),
+    : GameObject(grid_position), grid_pos(grid_position), state(TreasureBoxState::Closed),   //////// gameobject default constructer?
       treasure_type(treasure_type), animation_timer(0.0) {
 }
 
@@ -114,6 +115,23 @@ MockSpellResult MockFireball::CastAtLevel([[maybe_unused]] Character* caster, Ma
     return result;
 }
 
+std::vector<Math::vec2> MockFireball::GetAffectedTiles(Math::vec2 targetTile) const {
+    std::vector<Math::vec2> tiles;
+    GridSystem& grid = GridSystem::GetInstance();
+
+    // 2x2 area centered on target
+    for (int dx = -1; dx <= 1; ++dx) {
+        for (int dy = -1; dy <= 1; ++dy) {
+            Math::vec2 checkTile = targetTile + Math::vec2{(double)dx, (double)dy};
+
+            if (grid.IsValidTile(checkTile)) {
+                tiles.push_back(checkTile);
+            }
+        }
+    }
+
+    return tiles;
+}
 // ============================================================================
 // MOCKCREATEWALL - Create Wall Spell Implementation
 // ============================================================================
@@ -148,6 +166,23 @@ MockSpellResult MockCreateWall::CastAtLevel([[maybe_unused]] Character* caster, 
     return result;
 }
 
+std::vector<Math::vec2> MockCreateWall::GetAffectedTiles(Math::vec2 targetTile) const {
+    std::vector<Math::vec2> tiles;
+    GridSystem& grid = GridSystem::GetInstance();
+
+    // 2x2 area centered on target
+    for (int dx = -1; dx <= 1; ++dx) {
+        for (int dy = -1; dy <= 1; ++dy) {
+            Math::vec2 checkTile = targetTile + Math::vec2{(double)dx, (double)dy};
+
+            if (grid.IsValidTile(checkTile)) {
+                tiles.push_back(checkTile);
+            }
+        }
+    }
+
+    return tiles;
+}
 // ============================================================================
 // MOCKLAVAPOOL - Lava Pool Spell Implementation
 // ============================================================================
@@ -187,74 +222,91 @@ MockSpellResult MockLavaPool::CastAtLevel([[maybe_unused]] Character* caster, Ma
     return result;
 }
 
+std::vector<Math::vec2> MockLavaPool::GetAffectedTiles(Math::vec2 targetTile) const {
+    std::vector<Math::vec2> tiles;
+    GridSystem& grid = GridSystem::GetInstance();
+
+    // 2x2 area centered on target
+    for (int dx = -1; dx <= 1; ++dx) {
+        for (int dy = -1; dy <= 1; ++dy) {
+            Math::vec2 checkTile = targetTile + Math::vec2{(double)dx, (double)dy};
+
+            if (grid.IsValidTile(checkTile)) {
+                tiles.push_back(checkTile);
+            }
+        }
+    }
+
+    return tiles;
+}
 // ============================================================================
 // MOCKSPELLSYSTEM - Spell System Manager Implementation
 // ============================================================================
 
-MockSpellSystem::~MockSpellSystem() {
-    ClearSpells();
-}
+// MockSpellSystem::~MockSpellSystem() {
+//     ClearSpells();
+// }
 
-void MockSpellSystem::RegisterSpell(const std::string& name, MockSpellBase* spell) {
-    registered_spells[name] = spell;
-}
+// void MockSpellSystem::RegisterSpell(const std::string& name, MockSpellBase* spell) {
+//     registered_spells[name] = spell;
+// }
 
-MockSpellBase* MockSpellSystem::GetSpell(const std::string& name) const {
-    auto it = registered_spells.find(name);
-    if (it != registered_spells.end()) {
-        return it->second;
-    }
-    return nullptr;
-}
+// MockSpellBase* MockSpellSystem::GetSpell(const std::string& name) const {
+//     auto it = registered_spells.find(name);
+//     if (it != registered_spells.end()) {
+//         return it->second;
+//     }
+//     return nullptr;
+// }
 
-std::vector<std::string> MockSpellSystem::GetAvailableSpells([[maybe_unused]] Character* caster) const {
-    std::vector<std::string> available;
-    for (const auto& pair : registered_spells) {
-        available.push_back(pair.first);
-    }
-    return available;
-}
+// std::vector<std::string> MockSpellSystem::GetAvailableSpells([[maybe_unused]] Character* caster) const {
+//     std::vector<std::string> available;
+//     for (const auto& pair : registered_spells) {
+//         available.push_back(pair.first);
+//     }
+//     return available;
+// }
 
-bool MockSpellSystem::CanCharacterCastSpell([[maybe_unused]] Character* caster,
-                                            const std::string& spell_name,
-                                            [[maybe_unused]] int level) const {
-    // Mock: just check if spell exists
-    return GetSpell(spell_name) != nullptr;
-}
+// bool MockSpellSystem::CanCharacterCastSpell([[maybe_unused]] Character* caster,
+//                                             const std::string& spell_name,
+//                                             [[maybe_unused]] int level) const {
+//     // Mock: just check if spell exists
+//     return GetSpell(spell_name) != nullptr;
+// }
 
-MockSpellResult MockSpellSystem::CastSpell(Character* caster, const std::string& spell_name,
-                                           Math::ivec2 target_tile, int cast_level) {
-    MockSpellBase* spell = GetSpell(spell_name);
-    if (!spell) {
-        MockSpellResult failed;
-        failed.success = false;
-        failed.failure_reason = "Spell not found: " + spell_name;
-        return failed;
-    }
+// MockSpellResult MockSpellSystem::CastSpell(Character* caster, const std::string& spell_name,
+//                                            Math::ivec2 target_tile, int cast_level) {
+//     MockSpellBase* spell = GetSpell(spell_name);
+//     if (!spell) {
+//         MockSpellResult failed;
+//         failed.success = false;
+//         failed.failureReason = "Spell not found: " + spell_name;
+//         return failed;
+//     }
 
-    // Use spell's base level if cast_level not specified
-    if (cast_level == -1) {
-        cast_level = spell->GetLevel();
-    }
+//     // Use spell's base level if cast_level not specified
+//     if (cast_level == -1) {
+//         cast_level = spell->GetLevel();
+//     }
 
-    // Validate caster can cast this spell
-    if (!CanCharacterCastSpell(caster, spell_name, cast_level)) {
-        MockSpellResult failed;
-        failed.success = false;
-        failed.failure_reason = "Character cannot cast this spell";
-        return failed;
-    }
+//     // Validate caster can cast this spell
+//     if (!CanCharacterCastSpell(caster, spell_name, cast_level)) {
+//         MockSpellResult failed;
+//         failed.success = false;
+//         failed.failureReason = "Character cannot cast this spell";
+//         return failed;
+//     }
 
-    // Cast the spell
-    return spell->CastAtLevel(caster, target_tile, cast_level);
-}
+//     // Cast the spell
+//     return spell->CastAtLevel(caster, target_tile, cast_level);
+// }
 
-void MockSpellSystem::ClearSpells() {
-    for (auto& pair : registered_spells) {
-        delete pair.second;
-    }
-    registered_spells.clear();
-}
+// void MockSpellSystem::ClearSpells() {
+//     for (auto& pair : registered_spells) {
+//         delete pair.second;
+//     }
+//     registered_spells.clear();
+// }
 
 // ============================================================================
 // TEST IMPLEMENTATIONS - Week 3 Tests
@@ -509,38 +561,38 @@ namespace Week3Tests {
         return passed;
     }
 
-    bool TestSpellSystemRegistration() {
-        std::cout << "\n=== Testing Spell System Registration ===" << std::endl;
+    // bool TestSpellSystemRegistration() {
+    //     std::cout << "\n=== Testing Spell System Registration ===" << std::endl;
 
-        // Register spells
-        MockSpellSystem::Instance().RegisterSpell("Fireball", new MockFireball());
-        MockSpellSystem::Instance().RegisterSpell("CreateWall", new MockCreateWall());
-        MockSpellSystem::Instance().RegisterSpell("LavaPool", new MockLavaPool());
+    //     // Register spells
+    //     MockSpellSystem::Instance().RegisterSpell("Fireball", new MockFireball());
+    //     MockSpellSystem::Instance().RegisterSpell("CreateWall", new MockCreateWall());
+    //     MockSpellSystem::Instance().RegisterSpell("LavaPool", new MockLavaPool());
 
-        bool passed = true;
+    //     bool passed = true;
 
-        if (MockSpellSystem::Instance().GetSpell("Fireball") == nullptr) {
-            std::cout << "FAILED: Fireball not registered" << std::endl;
-            passed = false;
-        }
+    //     if (MockSpellSystem::Instance().GetSpell("Fireball") == nullptr) {
+    //         std::cout << "FAILED: Fireball not registered" << std::endl;
+    //         passed = false;
+    //     }
 
-        if (MockSpellSystem::Instance().GetSpell("CreateWall") == nullptr) {
-            std::cout << "FAILED: CreateWall not registered" << std::endl;
-            passed = false;
-        }
+    //     if (MockSpellSystem::Instance().GetSpell("CreateWall") == nullptr) {
+    //         std::cout << "FAILED: CreateWall not registered" << std::endl;
+    //         passed = false;
+    //     }
 
-        if (MockSpellSystem::Instance().GetSpell("LavaPool") == nullptr) {
-            std::cout << "FAILED: LavaPool not registered" << std::endl;
-            passed = false;
-        }
+    //     if (MockSpellSystem::Instance().GetSpell("LavaPool") == nullptr) {
+    //         std::cout << "FAILED: LavaPool not registered" << std::endl;
+    //         passed = false;
+    //     }
 
-        if (passed) {
-            std::cout << "PASSED: All spells registered successfully" << std::endl;
-        }
+    //     if (passed) {
+    //         std::cout << "PASSED: All spells registered successfully" << std::endl;
+    //     }
 
-        MockSpellSystem::Instance().ClearSpells();
-        return passed;
-    }
+    //     MockSpellSystem::Instance().ClearSpells();
+    //     return passed;
+    // }
 
     bool TestSpellSlotConsumption() {
         std::cout << "\n=== Testing Spell Slot Consumption ===" << std::endl;
@@ -549,30 +601,30 @@ namespace Week3Tests {
         return true;
     }
 
-    bool TestMultipleSpellsCombat() {
-        std::cout << "\n=== Testing Multiple Spells in Combat ===" << std::endl;
+    // bool TestMultipleSpellsCombat() {
+    //     std::cout << "\n=== Testing Multiple Spells in Combat ===" << std::endl;
 
-        // Register all spells
-        MockSpellSystem::Instance().RegisterSpell("Fireball", new MockFireball());
-        MockSpellSystem::Instance().RegisterSpell("CreateWall", new MockCreateWall());
-        MockSpellSystem::Instance().RegisterSpell("LavaPool", new MockLavaPool());
+    //     // Register all spells
+    //     MockSpellSystem::Instance().RegisterSpell("Fireball", new MockFireball());
+    //     MockSpellSystem::Instance().RegisterSpell("CreateWall", new MockCreateWall());
+    //     MockSpellSystem::Instance().RegisterSpell("LavaPool", new MockLavaPool());
 
-        // Cast multiple spells
-        MockSpellResult r1 = MockSpellSystem::Instance().CastSpell(nullptr, "Fireball", { 4, 4 });
-        MockSpellResult r2 = MockSpellSystem::Instance().CastSpell(nullptr, "CreateWall", { 2, 2 });
-        MockSpellResult r3 = MockSpellSystem::Instance().CastSpell(nullptr, "LavaPool", { 6, 6 });
+    //     // Cast multiple spells
+    //     MockSpellResult r1 = MockSpellSystem::Instance().CastSpell(nullptr, "Fireball", { 4, 4 });
+    //     MockSpellResult r2 = MockSpellSystem::Instance().CastSpell(nullptr, "CreateWall", { 2, 2 });
+    //     MockSpellResult r3 = MockSpellSystem::Instance().CastSpell(nullptr, "LavaPool", { 6, 6 });
 
-        bool passed = (r1.success && r2.success && r3.success);
+    //     bool passed = (r1.success && r2.success && r3.success);
 
-        if (passed) {
-            std::cout << "PASSED: Multiple spells can be cast" << std::endl;
-        } else {
-            std::cout << "FAILED: One or more spells failed to cast" << std::endl;
-        }
+    //     if (passed) {
+    //         std::cout << "PASSED: Multiple spells can be cast" << std::endl;
+    //     } else {
+    //         std::cout << "FAILED: One or more spells failed to cast" << std::endl;
+    //     }
 
-        MockSpellSystem::Instance().ClearSpells();
-        return passed;
-    }
+    //     MockSpellSystem::Instance().ClearSpells();
+    //     return passed;
+    // }
 
     void RunAllWeek3Tests() {
         std::cout << "\n==========================================" << std::endl;
@@ -609,9 +661,9 @@ namespace Week3Tests {
 
         // Integration tests
         std::cout << "\n--- SPELL SYSTEM INTEGRATION TESTS ---" << std::endl;
-        if (TestSpellSystemRegistration()) passed++; total++;
-        if (TestSpellSlotConsumption()) passed++; total++;
-        if (TestMultipleSpellsCombat()) passed++; total++;
+        // if (TestSpellSystemRegistration()) passed++; total++;
+        // if (TestSpellSlotConsumption()) passed++; total++;
+        // if (TestMultipleSpellsCombat()) passed++; total++;
 
         std::cout << "\n==========================================" << std::endl;
         std::cout << "      WEEK 3 TESTS COMPLETE               " << std::endl;

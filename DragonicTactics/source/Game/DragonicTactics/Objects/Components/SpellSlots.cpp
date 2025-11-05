@@ -29,3 +29,14 @@ void SpellSlots::Recover(int max_level_to_recover) {
         }
     }
 }
+
+////////ADD////////
+int SpellSlots::GetSpellSlotCount(int level) {
+    return current_slots[level];
+}
+
+void SpellSlots::SetSpellSlots(std::map<int, int> spellSlot) {
+    current_slots = spellSlot;
+}
+///////////////////
+

@@ -39,6 +39,16 @@ private:
 
     void test_dice_manager();
     void test_turnmanager_all();
+    bool TestSpellRegistration();
+    bool TestSpellCasting();
+    bool TestSpellUpcast();
+    bool TestGetAvailableSpells();
+    bool TestPreviewSpellArea();
+    void RunSpellSystemTests();
+
+    void test_dice_manager();
+    void test_turnmanager_all();
+    void test_spellsystem_all();
     void test_json();
     void test_json_reload();
     void test_json_log();
@@ -68,7 +78,6 @@ public:
     gsl::czstring GetName() const override;
 
 private:
-
     Fighter* fighter;
     Dragon*  dragon;
     void     LogFighterStatus();

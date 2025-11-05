@@ -64,6 +64,10 @@ public:
     SpellSlots* GetSpellSlots() ;
     //StatusEffects* GetStatusEffects() const;
     //GridFootprint* GetGridFootprint() const;
+    int GetSpellSlotCount(int level);
+    void SetSpellSlots(std::map<int, int> spellSlot);
+    void ConsumeSpell(int level);
+
 protected:
     Character(CharacterTypes charType, Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level);
 
