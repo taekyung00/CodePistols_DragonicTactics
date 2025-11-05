@@ -11,6 +11,7 @@ GridSystem::GridSystem()
 	Reset();
 }
 
+
 void GridSystem::Reset()
 {
 	for (int y = 0; y < MAP_HEIGHT; ++y)

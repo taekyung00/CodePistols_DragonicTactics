@@ -207,7 +207,7 @@ MockSpellResult SpellSystem::CastSpell(
         std::to_string((int)targetTile.y) + ")" +
         (upcastLevel > 0 ? " (upcast to level " + std::to_string(upcastLevel) + ")" : "")
     );
-    ///////////////////////////////////////////////////caster->ConsumeSpell(level);//////////////////////////////////////////////
+	caster->ConsumeSpell(spell->GetLevel());
     // Step 4.1d: Execute the spell
     // Reason: Delegate to the spell's own Cast() method
     result = spell->Cast(caster, targetTile/*, upcastLevel*/);

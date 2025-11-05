@@ -3,6 +3,7 @@
 #include "../Singletons/DiceManager.h"
 #include <map>
 #include "../StateComponents/GridSystem.h"
+#include "./Engine/GameStateManager.hpp"
 
 // ============================================================================
 // MOCKTREASURECRIPT - TreasureBox GameObject Implementation
@@ -117,14 +118,14 @@ MockSpellResult MockFireball::CastAtLevel([[maybe_unused]] Character* caster, Ma
 
 std::vector<Math::vec2> MockFireball::GetAffectedTiles(Math::vec2 targetTile) const {
     std::vector<Math::vec2> tiles;
-    GridSystem& grid = GridSystem::GetInstance();
+	GridSystem*				grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
 
     // 2x2 area centered on target
     for (int dx = -1; dx <= 1; ++dx) {
         for (int dy = -1; dy <= 1; ++dy) {
             Math::vec2 checkTile = targetTile + Math::vec2{(double)dx, (double)dy};
 
-            if (grid.IsValidTile(checkTile)) {
+            if (grid->IsValidTile(checkTile)) {
                 tiles.push_back(checkTile);
             }
         }
@@ -168,14 +169,14 @@ MockSpellResult MockCreateWall::CastAtLevel([[maybe_unused]] Character* caster, 
 
 std::vector<Math::vec2> MockCreateWall::GetAffectedTiles(Math::vec2 targetTile) const {
     std::vector<Math::vec2> tiles;
-    GridSystem& grid = GridSystem::GetInstance();
+	GridSystem*				grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
 
     // 2x2 area centered on target
     for (int dx = -1; dx <= 1; ++dx) {
         for (int dy = -1; dy <= 1; ++dy) {
             Math::vec2 checkTile = targetTile + Math::vec2{(double)dx, (double)dy};
 
-            if (grid.IsValidTile(checkTile)) {
+            if (grid->IsValidTile(checkTile)) {
                 tiles.push_back(checkTile);
             }
         }
@@ -224,14 +225,14 @@ MockSpellResult MockLavaPool::CastAtLevel([[maybe_unused]] Character* caster, Ma
 
 std::vector<Math::vec2> MockLavaPool::GetAffectedTiles(Math::vec2 targetTile) const {
     std::vector<Math::vec2> tiles;
-    GridSystem& grid = GridSystem::GetInstance();
+	GridSystem*				grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
 
     // 2x2 area centered on target
     for (int dx = -1; dx <= 1; ++dx) {
         for (int dy = -1; dy <= 1; ++dy) {
             Math::vec2 checkTile = targetTile + Math::vec2{(double)dx, (double)dy};
 
-            if (grid.IsValidTile(checkTile)) {
+            if (grid->IsValidTile(checkTile)) {
                 tiles.push_back(checkTile);
             }
         }

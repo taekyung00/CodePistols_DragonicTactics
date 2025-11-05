@@ -46,8 +46,7 @@ private:
     bool TestPreviewSpellArea();
     void RunSpellSystemTests();
 
-    void test_dice_manager();
-    void test_turnmanager_all();
+
     void test_spellsystem_all();
     void test_json();
     void test_json_reload();

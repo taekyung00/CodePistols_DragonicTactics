@@ -289,7 +289,7 @@ bool Test::TestSpellRegistration() {
 }
 
 bool Test::TestSpellCasting() {
-    GridSystem& grid = GridSystem::GetInstance();
+	GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
 
     SpellSystem& spellSys = SpellSystem::GetInstance();
 
@@ -302,8 +302,8 @@ bool Test::TestSpellCasting() {
 
     // Create target
     Character* target = new Dragon(Math::vec2{3, 3});
-    grid.AddCharacter(target, Math::vec2{3, 3});
-
+    grid->AddCharacter(target, Math::vec2{3, 3});
+     
     // Test: Cast spell through SpellSystem
     MockSpellResult result = spellSys.CastSpell(caster, "Fireball", Math::vec2{3, 3});
 
@@ -314,12 +314,13 @@ bool Test::TestSpellCasting() {
 
     delete caster;
     delete target;
-    grid.Clear();
+    grid->Reset();
     return true;
 }
 
 bool Test::TestSpellUpcast() {
     Character* caster = new Dragon(Math::vec2{0, 0});
+
     caster->SetSpellSlots({{1, 2}}); // 1 level 2 slot
     caster->SetSpellSlots({{2, 3}}); // 2 level 3 slots
 
@@ -329,11 +330,11 @@ bool Test::TestSpellUpcast() {
     // Test: Upcast Fireball to level 3
     MockSpellResult result = spellSys.CastSpell(caster, "Fireball", Math::vec2{3, 3}, 3);
 
-    ASSERT_TRUE(result.success);    //fail//fail//fail
+    ASSERT_TRUE(result.success);  
     std::cout << caster->GetSpellSlotCount(1) << " should be 2" << std::endl;
-    ASSERT_TRUE(caster->GetSpellSlotCount(1) == 2); // Didn't use level 2 slot   //fail//fail//fail
+    ASSERT_TRUE(caster->GetSpellSlotCount(1) == 2); // Didn't use level 2 slot  
     std::cout << caster->GetSpellSlotCount(2) << " should be 3" << std::endl;
-    ASSERT_TRUE(caster->GetSpellSlotCount(2) == 3); // Used level 3 slot     //fail//fail//fail
+    ASSERT_TRUE(caster->GetSpellSlotCount(2) == 3); // Used level 3 slot     
 
     delete caster;
     return true;
