@@ -40,9 +40,48 @@ void Test::Load()
     GetGSComponent<CS230::GameObjectManager>()->Add(dragon);
     Engine::GetLogger().LogEvent("========== Combat Testbed Initialized ==========");
     Engine::GetLogger().LogEvent("'T' -> Fighter's Turn | 'Y' -> Dragon's Turn | 'D' -> Damage Dragon | 'H' -> Heal Fighter");
+    Engine::GetLogger().LogEvent("========== Ginam: Ability Tests ==========");
+    Engine::GetLogger().LogEvent("'1' -> Test Melee Attack | '2' -> Test Shield Bash");
+    Engine::GetLogger().LogEvent("'3' -> Test AP Consumption | '4' -> Test Out of Range");
     LogFighterStatus();
     LogDragonStatus();
 }
+
+void Test::Update([[maybe_unused]] double dt)
+{
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::One))
+    {
+        test_MeleeAttack_Basic();
+    }
+    
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Two))
+    {
+        test_ShieldBash_Knockback();
+    }
+    
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Three))
+    {
+        test_Ability_APConsumption();
+    }
+    
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Four))
+    {
+        test_Ability_OutOfRange();
+    }
+    
+    if (Engine::GetInput().KeyJustReleased(CS230::Input::Keys::Escape))
+    {
+        Engine::GetGameStateManager().PopState();
+        Engine::GetGameStateManager().PushState<MainMenu>();
+    }
+    
+    GetGSComponent<CS230::GameObjectManager>()->UpdateAll(dt);
+}
+
+void Test::Unload()
+{
+}
+
 void Test::Draw()
 {
     Engine::GetWindow().Clear(0x1a1a1aff);
@@ -62,6 +101,22 @@ gsl::czstring Test::GetName() const
 {
     return "Test";
 }
+
+//Ginam
+Test2::Test2() : fighter(nullptr), dragon(nullptr)
+{
+}
+
+//Ginam
+void Test2::Unload()
+{
+}
+
+gsl::czstring Test2::GetName() const
+{
+    return "Test2";
+}
+
 void Test2::Draw()
 {
     Engine::GetWindow().Clear(0x1a1a1aff);
@@ -74,8 +129,29 @@ void Test2::Draw()
     }
     renderer_2d.EndScene();
 }
+
+// Ginam
 void Test2::Update([[maybe_unused]] double dt)
 {
+    //Test 1 - Melee Attack on grid (press '1')
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::One))
+    {
+        test_MeleeAttack_WithGrid();
+    }
+    
+    //Test 2 - Shield Bash on grid (press '2')
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Two))
+    {
+        test_ShieldBash_WithGrid();
+    }
+    
+    //Test 3 - Shield Bash into wall (press '3')
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Three))
+    {
+        test_ShieldBash_IntoWall();
+    }
+    
+    //Arrow keys - move dragon for visual testing
     if (dragon != nullptr && dragon->IsAlive())
     {
         Math::ivec2 current_pos    = dragon->GetGridPosition()->Get();
@@ -109,11 +185,8 @@ void Test2::Update([[maybe_unused]] double dt)
             if (grid != nullptr && grid->IsWalkable(target_pos))
             {
                 grid->MoveCharacter(current_pos, target_pos);
-
                 dragon->GetGridPosition()->Set(target_pos);
-
                 dragon->SetPosition({ static_cast<double>(target_pos.x * GridSystem::TILE_SIZE), static_cast<double>(target_pos.y * GridSystem::TILE_SIZE) });
-
                 Engine::GetLogger().LogEvent("Dragon moved to (" + std::to_string(target_pos.x) + ", " + std::to_string(target_pos.y) + ")");
                 LogDragonStatus();
             }
@@ -132,24 +205,21 @@ void Test2::Update([[maybe_unused]] double dt)
 
     GetGSComponent<CS230::GameObjectManager>()->UpdateAll(dt);
 }
+
 void Test2::Load()
 {
     AddGSComponent(new CS230::GameObjectManager());
-
     AddGSComponent(new GridSystem());
     CS230::GameObjectManager* go_manager = GetGSComponent<CS230::GameObjectManager>();
-
     GridSystem* grid_system = GetGSComponent<GridSystem>();
 
     const std::vector<std::string> map_data = { "wwwwwwww", "weefeeew", "weeeeeew", "weeeeeew", "weeeeeew", "weeeeeew", "weedeeew", "wwwwwwww" };
-
 
     for (int y = 0; y < map_data.size(); ++y)
     {
         for (int x = 0; x < map_data[y].length(); ++x)
         {
             char tile_char = map_data[y][x];
-
             Math::ivec2 current_pos = { x, static_cast<int>(map_data.size()) - 1 - y };
 
             switch (tile_char)
@@ -171,20 +241,22 @@ void Test2::Load()
             }
         }
     }
+    
+    // Ginam
+    Engine::GetLogger().LogEvent("========== Grid-based Ability Tests ==========");
+    Engine::GetLogger().LogEvent("'1' -> Test Melee Attack | '2' -> Test Shield Bash");
+    Engine::GetLogger().LogEvent("'3' -> Test Shield Bash into Wall");
+    Engine::GetLogger().LogEvent("Arrow Keys -> Move Dragon");
 }
 
 void Test::test_json()
 {
     Engine::GetLogger().LogEvent("========== JSON Test ==========");
-
     DataRegistry& registry = DataRegistry::Instance();
-
     int dragonHP  = registry.GetValue<int>("Dragon.maxHP", 0);
     int fighterHP = registry.GetValue<int>("Fighter.maxHP", 0);
-
     Engine::GetLogger().LogDebug("Dragon HP: " + std::to_string(dragonHP));
     Engine::GetLogger().LogDebug("Fighter HP: " + std::to_string(fighterHP));
-
     bool hasRogue = registry.HasKey("Rogue.maxHP");
     Engine::GetLogger().LogDebug("Has Rogue: " + std::string(hasRogue ? "Yes" : "No"));
 }
@@ -212,17 +284,223 @@ void Test::test_EventData_MultiplePublishes()
 {
     auto& eventbus = Engine::GetEventBus();
     eventbus.Clear();
-
     std::vector<int> damages;
     eventbus.Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) { damages.push_back(e.damageAmount); });
-
     MockCharacter character("TestChar");
     eventbus.Publish(CharacterDamagedEvent{ reinterpret_cast<Character*>(&character), 10, 90, nullptr, false });
     eventbus.Publish(CharacterDamagedEvent{ reinterpret_cast<Character*>(&character), 20, 70, nullptr, false });
     eventbus.Publish(CharacterDamagedEvent{ reinterpret_cast<Character*>(&character), 30, 40, nullptr, true });
-
     ASSERT_EQ(static_cast<int>(damages.size()), 3);
     ASSERT_EQ(damages[0], 10);
     ASSERT_EQ(damages[1], 20);
     ASSERT_EQ(damages[2], 30);
+}
+
+void Test::test_MeleeAttack_Basic()
+{
+    Engine::GetLogger().LogEvent("========== Testing Melee Attack ==========");
+    if (fighter == nullptr || dragon == nullptr) {
+        Engine::GetLogger().LogError("Fighter or Dragon is null!");
+        return;
+    }
+    int initialDragonHP = dragon->GetStatsComponent()->GetCurrentHP();
+    Engine::GetLogger().LogEvent("Dragon initial HP: " + std::to_string(initialDragonHP));
+    AbilityResult result = fighter->PerformMeleeAttack(dragon);
+    if (result.success) {
+        int finalDragonHP = dragon->GetStatsComponent()->GetCurrentHP();
+        Engine::GetLogger().LogEvent("Melee Attack SUCCESS!");
+        Engine::GetLogger().LogEvent("Damage dealt: " + std::to_string(result.damageDealt));
+        Engine::GetLogger().LogEvent("Dragon HP after attack: " + std::to_string(finalDragonHP));
+        ASSERT_EQ(finalDragonHP, initialDragonHP - result.damageDealt);
+    } else {
+        Engine::GetLogger().LogError("Melee Attack FAILED: " + result.failureReason);
+    }
+}
+
+void Test::test_ShieldBash_Knockback()
+{
+    Engine::GetLogger().LogEvent("========== Testing Shield Bash ==========");
+    if (fighter == nullptr || dragon == nullptr) {
+        Engine::GetLogger().LogError("Fighter or Dragon is null!");
+        return;
+    }
+    Math::ivec2 initialDragonPos = dragon->GetGridPosition()->Get();
+    int initialDragonHP = dragon->GetStatsComponent()->GetCurrentHP();
+    Engine::GetLogger().LogEvent("Dragon initial position: (" + 
+        std::to_string(initialDragonPos.x) + ", " + 
+        std::to_string(initialDragonPos.y) + ")");
+    Engine::GetLogger().LogEvent("Dragon initial HP: " + std::to_string(initialDragonHP));
+    AbilityResult result = fighter->PerformShieldBash(dragon);
+    if (result.success) {
+        Math::ivec2 finalDragonPos = dragon->GetGridPosition()->Get();
+        int finalDragonHP = dragon->GetStatsComponent()->GetCurrentHP();
+        Engine::GetLogger().LogEvent("Shield Bash SUCCESS!");
+        Engine::GetLogger().LogEvent("Damage dealt: " + std::to_string(result.damageDealt));
+        Engine::GetLogger().LogEvent("Dragon HP after bash: " + std::to_string(finalDragonHP));
+        Engine::GetLogger().LogEvent("Dragon final position: (" + 
+            std::to_string(finalDragonPos.x) + ", " + 
+            std::to_string(finalDragonPos.y) + ")");
+        ASSERT_EQ(finalDragonHP, initialDragonHP - result.damageDealt);
+        bool positionChanged = (finalDragonPos.x != initialDragonPos.x) || 
+                              (finalDragonPos.y != initialDragonPos.y);
+        ASSERT_TRUE(positionChanged);
+        Engine::GetLogger().LogEvent("Knockback verified: Dragon moved!");
+    } else {
+        Engine::GetLogger().LogError("Shield Bash FAILED: " + result.failureReason);
+    }
+}
+
+void Test::test_Ability_APConsumption()
+{
+    Engine::GetLogger().LogEvent("========== Testing AP Consumption ==========");
+    if (fighter == nullptr || dragon == nullptr) {
+        Engine::GetLogger().LogError("Fighter or Dragon is null!");
+        return;
+    }
+    fighter->GetActionPointsComponent()->Refresh();
+    int initialAP = fighter->GetActionPointsComponent()->GetCurrentPoints();
+    Engine::GetLogger().LogEvent("Fighter initial AP: " + std::to_string(initialAP));
+    AbilityResult meleeResult = fighter->PerformMeleeAttack(dragon);
+    int apAfterMelee = fighter->GetActionPointsComponent()->GetCurrentPoints();
+    Engine::GetLogger().LogEvent("Fighter AP after Melee Attack: " + std::to_string(apAfterMelee));
+    if (meleeResult.success) {
+        ASSERT_EQ(apAfterMelee, initialAP - 1);
+        Engine::GetLogger().LogEvent("Melee Attack consumed 1 AP correctly!");
+    }
+    fighter->GetActionPointsComponent()->Refresh();
+    int apBeforeBash = fighter->GetActionPointsComponent()->GetCurrentPoints();
+    Engine::GetLogger().LogEvent("Fighter AP before Shield Bash: " + std::to_string(apBeforeBash));
+    AbilityResult bashResult = fighter->PerformShieldBash(dragon);
+    int apAfterBash = fighter->GetActionPointsComponent()->GetCurrentPoints();
+    Engine::GetLogger().LogEvent("Fighter AP after Shield Bash: " + std::to_string(apAfterBash));
+    if (bashResult.success) {
+        ASSERT_EQ(apAfterBash, apBeforeBash - 2);
+        Engine::GetLogger().LogEvent("Shield Bash consumed 2 AP correctly!");
+    }
+}
+
+void Test::test_Ability_OutOfRange()
+{
+    Engine::GetLogger().LogEvent("========== Testing Out of Range ==========");
+    if (fighter == nullptr || dragon == nullptr) {
+        Engine::GetLogger().LogError("Fighter or Dragon is null!");
+        return;
+    }
+    dragon->GetGridPosition()->Set({10, 10});
+    Math::ivec2 fighterPos = fighter->GetGridPosition()->Get();
+    Math::ivec2 dragonPos = dragon->GetGridPosition()->Get();
+    Engine::GetLogger().LogEvent("Fighter position: (" + 
+        std::to_string(fighterPos.x) + ", " + 
+        std::to_string(fighterPos.y) + ")");
+    Engine::GetLogger().LogEvent("Dragon position: (" + 
+        std::to_string(dragonPos.x) + ", " + 
+        std::to_string(dragonPos.y) + ")");
+    AbilityResult result = fighter->PerformMeleeAttack(dragon);
+    ASSERT_FALSE(result.success);
+    Engine::GetLogger().LogEvent("Attack correctly FAILED when out of range!");
+    Engine::GetLogger().LogEvent("Failure reason: " + result.failureReason);
+}
+
+// Ginam
+void Test2::test_MeleeAttack_WithGrid()
+{
+    Engine::GetLogger().LogEvent("========== Grid Test - Melee Attack ==========");
+    if (fighter == nullptr || dragon == nullptr) {
+        Engine::GetLogger().LogError("Fighter or Dragon is null!");
+        return;
+    }
+    
+    GridSystem* grid = GetGSComponent<GridSystem>();
+    Math::ivec2 fighterPos = fighter->GetGridPosition()->Get();
+    Math::ivec2 dragonPos = dragon->GetGridPosition()->Get();
+    
+    Engine::GetLogger().LogEvent("Fighter at (" + std::to_string(fighterPos.x) + "," + std::to_string(fighterPos.y) + ")");
+    Engine::GetLogger().LogEvent("Dragon at (" + std::to_string(dragonPos.x) + "," + std::to_string(dragonPos.y) + ")");
+    
+    int initialHP = dragon->GetStatsComponent()->GetCurrentHP();
+    fighter->GetActionPointsComponent()->Refresh();
+    
+    AbilityResult result = fighter->PerformMeleeAttack(dragon);
+    
+    if (result.success) {
+        int finalHP = dragon->GetStatsComponent()->GetCurrentHP();
+        Engine::GetLogger().LogEvent("SUCCESS! Damage: " + std::to_string(result.damageDealt));
+        Engine::GetLogger().LogEvent("Dragon HP: " + std::to_string(initialHP) + " -> " + std::to_string(finalHP));
+    } else {
+        Engine::GetLogger().LogError("FAILED: " + result.failureReason);
+    }
+}
+
+void Test2::test_ShieldBash_WithGrid()
+{
+    Engine::GetLogger().LogEvent("========== Grid Test - Shield Bash ==========");
+    if (fighter == nullptr || dragon == nullptr) {
+        Engine::GetLogger().LogError("Fighter or Dragon is null!");
+        return;
+    }
+    
+    GridSystem* grid = GetGSComponent<GridSystem>();
+    Math::ivec2 initialPos = dragon->GetGridPosition()->Get();
+    int initialHP = dragon->GetStatsComponent()->GetCurrentHP();
+    
+    Engine::GetLogger().LogEvent("Before: Dragon at (" + std::to_string(initialPos.x) + "," + std::to_string(initialPos.y) + ")");
+    
+    fighter->GetActionPointsComponent()->Refresh();
+    AbilityResult result = fighter->PerformShieldBash(dragon);
+    
+    if (result.success) {
+        Math::ivec2 finalPos = dragon->GetGridPosition()->Get();
+        int finalHP = dragon->GetStatsComponent()->GetCurrentHP();
+        
+        Engine::GetLogger().LogEvent("SUCCESS! Damage: " + std::to_string(result.damageDealt));
+        Engine::GetLogger().LogEvent("Dragon HP: " + std::to_string(initialHP) + " -> " + std::to_string(finalHP));
+        Engine::GetLogger().LogEvent("Dragon pushed: (" + std::to_string(initialPos.x) + "," + std::to_string(initialPos.y) + ") -> (" + std::to_string(finalPos.x) + "," + std::to_string(finalPos.y) + ")");
+        
+        //update dragon visual position
+        dragon->SetPosition({ static_cast<double>(finalPos.x * GridSystem::TILE_SIZE), static_cast<double>(finalPos.y * GridSystem::TILE_SIZE) });
+    } else {
+        Engine::GetLogger().LogError("FAILED: " + result.failureReason);
+    }
+}
+
+void Test2::test_ShieldBash_IntoWall()
+{
+    Engine::GetLogger().LogEvent("========== Grid Test - Shield Bash Into Wall ==========");
+    if (fighter == nullptr || dragon == nullptr) {
+        Engine::GetLogger().LogError("Fighter or Dragon is null!");
+        return;
+    }
+    
+    GridSystem* grid = GetGSComponent<GridSystem>();
+    
+    // Ginam
+    Math::ivec2 dragonPos = {2, 6};
+    Math::ivec2 fighterPos = {3, 6};
+    
+    // Ginam
+    Math::ivec2 oldDragonPos = dragon->GetGridPosition()->Get();
+    Math::ivec2 oldFighterPos = fighter->GetGridPosition()->Get();
+    
+    grid->MoveCharacter(oldDragonPos, dragonPos);
+    grid->MoveCharacter(oldFighterPos, fighterPos);
+    
+    dragon->GetGridPosition()->Set(dragonPos);
+    fighter->GetGridPosition()->Set(fighterPos);
+    
+    dragon->SetPosition({ static_cast<double>(dragonPos.x * GridSystem::TILE_SIZE), static_cast<double>(dragonPos.y * GridSystem::TILE_SIZE) });
+    fighter->SetPosition({ static_cast<double>(fighterPos.x * GridSystem::TILE_SIZE), static_cast<double>(fighterPos.y * GridSystem::TILE_SIZE) });
+    
+    Engine::GetLogger().LogEvent("Setup: Dragon at (" + std::to_string(dragonPos.x) + "," + std::to_string(dragonPos.y) + ")");
+    Engine::GetLogger().LogEvent("Setup: Fighter at (" + std::to_string(fighterPos.x) + "," + std::to_string(fighterPos.y) + ")");
+    Engine::GetLogger().LogEvent("Wall should be at (1, 6) - Dragon should NOT be pushable!");
+    
+    fighter->GetActionPointsComponent()->Refresh();
+    AbilityResult result = fighter->PerformShieldBash(dragon);
+    
+    if (result.success) {
+        Engine::GetLogger().LogError("UNEXPECTED: Shield Bash succeeded (should have failed due to wall)");
+    } else {
+        Engine::GetLogger().LogEvent("CORRECT: Shield Bash failed as expected!");
+        Engine::GetLogger().LogEvent("Reason: " + result.failureReason);
+    }
 }

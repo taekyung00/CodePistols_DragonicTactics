@@ -54,7 +54,11 @@ namespace CS230
             Down,
             Escape,
             Tab,
-            Count
+            Count,
+            One,
+            Two,
+            Three,
+            Four
         };
 
         Input();
@@ -117,6 +121,10 @@ namespace CS230
             case Input::Keys::Down: return "Down";
             case Input::Keys::Escape: return "Escape";
             case Input::Keys::Tab: return "Tab";
+            case Input::Keys::One: return "One";
+            case Input::Keys::Two: return "Two";
+            case Input::Keys::Three: return "Three";
+            case Input::Keys::Four: return "Four";
             case Input::Keys::Count: return "Count";
         }
         return "Unknown";

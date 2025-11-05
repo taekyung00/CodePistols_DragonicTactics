@@ -54,6 +54,12 @@ private:
     bool Test_CombatSystem_IsInRange_Adjacent();
     bool Test_CombatSystem_IsInRange_TooFar();
     bool Test_CombatSystem_GetDistance();
+    
+    // Ginam: Week3 Developer B - Fighter Ability Test Functions
+    void test_MeleeAttack_Basic();          // Ginam: test basic melee attack
+    void test_ShieldBash_Knockback();       // Ginam: test shield bash with knockback
+    void test_Ability_APConsumption();      // Ginam: test AP consumption
+    void test_Ability_OutOfRange();         // Ginam: test out of range failure
 };
 
 class Test2 : public CS230::GameState
@@ -77,4 +83,10 @@ private:
     Dragon*  dragon;
     void     LogFighterStatus();
     void     LogDragonStatus();
+    
+    // Ginam: Week3 Developer B - Grid-based Ability Tests
+    void test_MeleeAttack_WithGrid();       // Ginam: test melee attack on grid
+    void test_ShieldBash_WithGrid();        // Ginam: test shield bash knockback on grid
+    void test_ShieldBash_IntoWall();        // Ginam: test shield bash blocked by wall
+    void test_Ability_VisualTest();         // Ginam: visual test with arrow keys
 };
