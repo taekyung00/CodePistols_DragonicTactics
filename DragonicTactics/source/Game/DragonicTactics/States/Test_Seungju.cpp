@@ -214,3 +214,8 @@ void Test2::DrawImGui()
 {
     RunMouseInputTest();
 }
+
+gsl::czstring Test2::GetName() const
+{
+    return "Test2";
+}

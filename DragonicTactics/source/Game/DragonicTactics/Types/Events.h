@@ -2,7 +2,6 @@
 #include <string>
 #include <vector>
 #include "../../../Engine/Vec2.hpp"
-#include "./Game/DragonicTactics/Objects/Character.h"
 
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
 class Character;

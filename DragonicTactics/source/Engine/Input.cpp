@@ -14,7 +14,7 @@
 #include "Engine.hpp"
 #include "Logger.hpp"
 #include "Window.hpp"
-#include <SDL.h>
+
 
 namespace CS230
 {

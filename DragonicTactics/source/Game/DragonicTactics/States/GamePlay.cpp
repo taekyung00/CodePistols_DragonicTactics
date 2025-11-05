@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
 prior written consent is prohibited
@@ -35,46 +35,46 @@ std::vector<Math::ivec2> GamePlay::CalculateSimplePath(Math::ivec2 start, Math::
     std::vector<Math::ivec2> path;
     Math::ivec2 current = start;
 
-    // GridSystem 컴포넌트를 가져옵니다.
+
     GridSystem* grid = GetGSComponent<GridSystem>();
     if (grid == nullptr)
     {
         Engine::GetLogger().LogError("CalculateSimplePath: GridSystem is null!");
-        return path; // 빈 경로 반환
+        return path;
     }
 
-    // 무한 루프 방지를 위한 안전장치 (최대 500칸)
+
     int safety_break = 0; 
     while (current != end && safety_break < 500)
     {
         safety_break++;
         Math::ivec2 next_step = current;
 
-        // 1. X축을 먼저 목표(end.x)에 맞추려 시도
+
         if (current.x < end.x) {
             next_step.x++;
         } else if (current.x > end.x) {
             next_step.x--;
         }
-        // 2. X축이 맞춰졌으면, Y축을 목표(end.y)에 맞추려 시도
+
         else if (current.y < end.y) {
             next_step.y++;
         } else if (current.y > end.y) {
             next_step.y--;
         }
 
-        // 3. 다음 갈 타일(next_step)이 걸어갈 수 있는 곳인지 확인
+
         if (grid->IsWalkable(next_step))
         {
-            path.push_back(next_step); // 경로에 추가
-            current = next_step;       // 현재 위치 갱신
+            path.push_back(next_step);
+            current = next_step;
         }
         else
         {
-            // 길이 막힘! "대충" 만든거라 돌아가지 않고 여기서 멈춥니다.
+
             Engine::GetLogger().LogError("Simple path blocked at (" + 
                 std::to_string(next_step.x) + ", " + std::to_string(next_step.y) + "). Stopping path.");
-            return path; // 지금까지 계산된 경로만 반환
+            return path;
         }
     }
     
@@ -82,7 +82,7 @@ std::vector<Math::ivec2> GamePlay::CalculateSimplePath(Math::ivec2 start, Math::
         Engine::GetLogger().LogError("CalculateSimplePath: Hit safety break, possible infinite loop!");
     }
 
-    // 목표 지점에 도달했으면 전체 경로 반환
+
     return path;
 }
 

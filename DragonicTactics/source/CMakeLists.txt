@@ -24,6 +24,10 @@ set(SOURCE_CODE
     Game/Splash.h Game/Splash.cpp
     Game/States.h
 
+    Game/DragonicTactics/Abilities/AbilityBase.h
+    Game/DragonicTactics/Abilities/MeleeAttack.h Game/DragonicTactics/Abilities/MeleeAttack.cpp
+    Game/DragonicTactics/Abilities/ShieldBash.h Game/DragonicTactics/Abilities/ShieldBash.cpp
+
     Game/DragonicTactics/Debugger/DebugConsole.h Game/DragonicTactics/Debugger/DebugConsole.cpp
     Game/DragonicTactics/Debugger/DebugManager.h Game/DragonicTactics/Debugger/DebugManager.cpp
     
