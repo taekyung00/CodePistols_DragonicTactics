@@ -4,17 +4,13 @@
 #include <typeindex>
 #include <vector>
 #include <string>
-#include <functional>
-#include <map>
-#include <vector>
-#include <typeindex>
-#include <string>
 
 class EventBus {
 public:
     EventBus() = default;
     ~EventBus() = default;
-
+    
+    static EventBus& GetInstance();
     // Subscribe to event type T with callback function
     template<typename T>
     void Subscribe(std::function<void(const T&)> callback) {

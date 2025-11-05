@@ -44,6 +44,15 @@ private:
 
     void test_dice_manager();
     void test_turnmanager_all();
+    bool TestSpellRegistration();
+    bool TestSpellCasting();
+    bool TestSpellUpcast();
+    bool TestGetAvailableSpells();
+    bool TestPreviewSpellArea();
+    void RunSpellSystemTests();
+
+
+    void test_spellsystem_all();
     void test_json();
     void test_json_reload();
     void test_json_log();
@@ -73,48 +82,14 @@ public:
     gsl::czstring GetName() const override;
 
 private:
-
-    enum class PlayerActionState
-    {
-        None,          
-        SelectingMove,  
-        SelectingAction 
-    };
-    PlayerActionState currentPlayerState = PlayerActionState::None;
-
-    enum class ButtonHoverState
-    {
-        None,
-        Move,
-        Action,
-        EndTurn
-    };
-    ButtonHoverState currentHoverState = ButtonHoverState::None;
-
-    static constexpr CS200::RGBA button_color_normal = 0xFFFFFFFF; // non_seleted_color
-    static constexpr CS200::RGBA button_color_hover = 0x3ADF00FF;  // seleted_color
-    static constexpr CS200::RGBA button_color_disabled = 0x808080FF;
-
-    CS200::RGBA move_button_color;
-    CS200::RGBA action_button_color;
-    CS200::RGBA end_turn_button_color;
-
-    //these are hard coded numbers
-    const Math::vec2 move_button_pos{ 1000, 50 };    
-    const Math::vec2 action_button_pos{ 1000, 100 }; 
-    const Math::vec2 end_turn_button_pos{ 1000, 150 }; 
-    const Math::vec2 button_size{ 250, 40 };
-
-    void update_button_colors();
-    void update_button_logic();
-    
-    void     Test2_subscribe_publish_singleSubscriber();
-    void     Test2_multiple_subscribers_sameEvent();
-    void     Test2_multiple_different_events();
-    void     Test2_EventData_CompleteTransfer();
-    void     Test2_EventData_MultiplePublishes();
     Fighter* fighter;
     Dragon*  dragon;
     void     LogFighterStatus();
     void     LogDragonStatus();
+
+        // Ginam: Week3 Developer B - Grid-based Ability Tests
+	void test_MeleeAttack_WithGrid(); // Ginam: test melee attack on grid
+	void test_ShieldBash_WithGrid();  // Ginam: test shield bash knockback on grid
+	void test_ShieldBash_IntoWall();  // Ginam: test shield bash blocked by wall
+	//void test_Ability_VisualTest();	  // Ginam: visual test with arrow keys
 };

@@ -35,12 +35,14 @@ private:
 enum class Option
     {
         DragonicTactics,
+        Test2,
         Exit,
         COUNT
     };
     Option current_option;
 
     CS200::RGBA dragonic_tactics_color ;
+    CS200::RGBA test2_color ;
     CS200::RGBA exit_color;
 
     Math::vec2 title_pos;

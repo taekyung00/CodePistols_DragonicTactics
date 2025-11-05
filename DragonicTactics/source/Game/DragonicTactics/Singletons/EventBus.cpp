@@ -2,7 +2,10 @@
 #include "./Engine/Engine.hpp"
 #include "./Engine/Logger.hpp"
 
-
+EventBus& EventBus::GetInstance() {
+    static EventBus instance;
+    return instance;
+}
 
 void EventBus::Clear() {
     subscribers.clear();

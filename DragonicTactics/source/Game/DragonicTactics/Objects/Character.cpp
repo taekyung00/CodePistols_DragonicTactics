@@ -4,7 +4,7 @@ Reproduction or distribution of this file or its contents without
 prior written consent is prohibited
 File Name:  Character.cpp
 Project:    GAM200
-Author:     Seungju Song & Gemini
+Author:     Seungju Song
 Created:    Oct 08, 2025
 Updated:    Oct 10, 2025
 */
@@ -188,6 +188,11 @@ StatsComponent* Character::GetStatsComponent()
     return GetGOComponent<StatsComponent>();
 }
 
+// void Character::SetHp()
+// {
+//     GetGOComponent<StatsComponent>()
+// }
+
 GridPosition* Character::GetGridPosition()
 {
     return GetGOComponent<GridPosition>();
@@ -202,3 +207,23 @@ SpellSlots* Character::GetSpellSlots()
 {
     return GetGOComponent<SpellSlots>();
 }
+
+int Character::GetSpellSlotCount(int level) {
+    return GetGOComponent<SpellSlots>()->GetSpellSlotCount(level);
+}
+
+void Character::SetSpellSlots(std::map<int, int> spellSlot) {
+    GetGOComponent<SpellSlots>()->SetSpellSlots(spellSlot);
+}
+
+void Character::ConsumeSpell(int level) {    // REALLY? WHAT THE FUCK? WHERE IS THE USE OF CONSUME IN MD FILE? 
+    GetGOComponent<SpellSlots>()->Consume(level);
+}
+// void Character::RefreshActionPoints()
+// {
+//     GetGOComponent<ActionPoints>()->Refresh();
+// }
+// void Character::SetCurrentHP(int hp) 
+// {
+    
+// }
