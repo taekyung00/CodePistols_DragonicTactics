@@ -107,6 +107,10 @@ namespace CS230
             case CS230::Input::Keys::Down: return SDL_SCANCODE_DOWN;
             case CS230::Input::Keys::Escape: return SDL_SCANCODE_ESCAPE;
             case CS230::Input::Keys::Tab: return SDL_SCANCODE_TAB;
+			case CS230::Input::Keys::One: return SDL_SCANCODE_1;
+			case CS230::Input::Keys::Two: return SDL_SCANCODE_2;
+			case CS230::Input::Keys::Three: return SDL_SCANCODE_3;
+			case CS230::Input::Keys::Four: return SDL_SCANCODE_4;
             default: return SDL_SCANCODE_UNKNOWN; // SDL's equivalent of an unknown key
         }
     }

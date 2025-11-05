@@ -52,6 +52,10 @@ set(SOURCE_CODE
     Game/CS230_Final/States/NormalSandwich.h Game/CS230_Final/States/NormalSandwich.cpp
     Game/CS230_Final/States/Project.h Game/CS230_Final/States/Project.cpp
 
+    Game/DragonicTactics/Abilities/AbilityBase.h
+    Game/DragonicTactics/Abilities/MeleeAttack.h Game/DragonicTactics/Abilities/MeleeAttack.cpp
+    Game/DragonicTactics/Abilities/ShieldBash.h Game/DragonicTactics/Abilities/ShieldBash.cpp
+    
     Game/DragonicTactics/Debugger/DebugConsole.h Game/DragonicTactics/Debugger/DebugConsole.cpp
     Game/DragonicTactics/Debugger/DebugManager.h Game/DragonicTactics/Debugger/DebugManager.cpp
     

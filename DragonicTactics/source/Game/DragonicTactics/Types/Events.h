@@ -166,3 +166,12 @@ struct UISpellSelectedEvent
 struct CombatEndedEvent
 {
 };
+
+// Ginam
+struct AbilityUsedEvent
+{
+	Character*	user;		 // who used ability
+	Character*	target;		 // who is target
+	std::string abilityName; // ability name like "Melee Attack", "Shield Bash"
+	int			damageDealt; // total damage
+};

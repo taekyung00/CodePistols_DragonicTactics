@@ -68,13 +68,15 @@ public:
     gsl::czstring GetName() const override;
 
 private:
-    void     Test2_subscribe_publish_singleSubscriber();
-    void     Test2_multiple_subscribers_sameEvent();
-    void     Test2_multiple_different_events();
-    void     Test2_EventData_CompleteTransfer();
-    void     Test2_EventData_MultiplePublishes();
+
     Fighter* fighter;
     Dragon*  dragon;
     void     LogFighterStatus();
     void     LogDragonStatus();
+
+        // Ginam: Week3 Developer B - Grid-based Ability Tests
+	void test_MeleeAttack_WithGrid(); // Ginam: test melee attack on grid
+	void test_ShieldBash_WithGrid();  // Ginam: test shield bash knockback on grid
+	void test_ShieldBash_IntoWall();  // Ginam: test shield bash blocked by wall
+	//void test_Ability_VisualTest();	  // Ginam: visual test with arrow keys
 };

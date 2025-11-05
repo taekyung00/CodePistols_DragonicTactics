@@ -4,11 +4,6 @@
 #include <typeindex>
 #include <vector>
 #include <string>
-#include <functional>
-#include <map>
-#include <vector>
-#include <typeindex>
-#include <string>
 
 class EventBus {
 public:
