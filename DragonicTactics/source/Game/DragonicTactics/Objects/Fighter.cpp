@@ -39,6 +39,10 @@ void Fighter::OnTurnStart() {
 void Fighter::OnTurnEnd() {
 }
 
+void Fighter::Update(double dt){
+    Character::Update(dt);
+}
+
 void Fighter::TakeDamage(int damage, Character* attacker) {
     Character::TakeDamage(damage, attacker);
 }

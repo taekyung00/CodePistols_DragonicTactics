@@ -30,6 +30,61 @@ Created:    November 5, 2025
 #include "./Game/DragonicTactics/Objects/Fighter.h"
 #include "./Game/DragonicTactics/Objects/Dragon.h"
 
+std::vector<Math::ivec2> GamePlay::CalculateSimplePath(Math::ivec2 start, Math::ivec2 end)
+{
+    std::vector<Math::ivec2> path;
+    Math::ivec2 current = start;
+
+    // GridSystem 컴포넌트를 가져옵니다.
+    GridSystem* grid = GetGSComponent<GridSystem>();
+    if (grid == nullptr)
+    {
+        Engine::GetLogger().LogError("CalculateSimplePath: GridSystem is null!");
+        return path; // 빈 경로 반환
+    }
+
+    // 무한 루프 방지를 위한 안전장치 (최대 500칸)
+    int safety_break = 0; 
+    while (current != end && safety_break < 500)
+    {
+        safety_break++;
+        Math::ivec2 next_step = current;
+
+        // 1. X축을 먼저 목표(end.x)에 맞추려 시도
+        if (current.x < end.x) {
+            next_step.x++;
+        } else if (current.x > end.x) {
+            next_step.x--;
+        }
+        // 2. X축이 맞춰졌으면, Y축을 목표(end.y)에 맞추려 시도
+        else if (current.y < end.y) {
+            next_step.y++;
+        } else if (current.y > end.y) {
+            next_step.y--;
+        }
+
+        // 3. 다음 갈 타일(next_step)이 걸어갈 수 있는 곳인지 확인
+        if (grid->IsWalkable(next_step))
+        {
+            path.push_back(next_step); // 경로에 추가
+            current = next_step;       // 현재 위치 갱신
+        }
+        else
+        {
+            // 길이 막힘! "대충" 만든거라 돌아가지 않고 여기서 멈춥니다.
+            Engine::GetLogger().LogError("Simple path blocked at (" + 
+                std::to_string(next_step.x) + ", " + std::to_string(next_step.y) + "). Stopping path.");
+            return path; // 지금까지 계산된 경로만 반환
+        }
+    }
+    
+    if (safety_break >= 500) {
+        Engine::GetLogger().LogError("CalculateSimplePath: Hit safety break, possible infinite loop!");
+    }
+
+    // 목표 지점에 도달했으면 전체 경로 반환
+    return path;
+}
 
 GamePlay::GamePlay():fighter(nullptr), dragon(nullptr){}
 
@@ -56,12 +111,14 @@ void GamePlay::Load(){
                 case 'f':
                     grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
                     fighter = new Fighter(current_pos); 
+                    fighter->SetGridSystem(grid_system);
                     go_manager->Add(fighter);
                     grid_system->AddCharacter(fighter, current_pos);
                     break;
                 case 'd':
                     grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
                     dragon = new Dragon(current_pos); 
+                    dragon->SetGridSystem(grid_system);
                     go_manager->Add(dragon);
                     grid_system->AddCharacter(dragon, current_pos);
                     break;
@@ -70,20 +127,24 @@ void GamePlay::Load(){
     }
 }
 
-Math::ivec2 ConvertScreenToGrid(Math::vec2 screen_pos)
+Math::ivec2 ConvertScreenToGrid(Math::vec2 world_pos)
 {
-    int grid_x = static_cast<int>(screen_pos.x / GridSystem::TILE_SIZE);
-    int grid_y = static_cast<int>(screen_pos.y / GridSystem::TILE_SIZE);
+    int grid_x = static_cast<int>(world_pos.x / GridSystem::TILE_SIZE);
+    int grid_y = static_cast<int>(world_pos.y / GridSystem::TILE_SIZE);
     return { grid_x, grid_y };
 }
 
 void GamePlay::Update(double dt){
 
     CS230::Input& input = Engine::GetInput();
-
     bool is_clicking_ui = ImGui::GetIO().WantCaptureMouse;
 
+    
+
     if (input.MouseJustPressed(0))
+    {
+        Engine::GetLogger().LogEvent("Map clicked at (" + std::to_string(input.GetMousePos().x) + ", " + std::to_string(input.GetMousePos().y) + ")");
+
         if (!is_clicking_ui)
         {
             Math::vec2 mouse_pos = input.GetMousePos();
@@ -96,6 +157,12 @@ void GamePlay::Update(double dt){
                     Engine::GetLogger().LogEvent("Map clicked while in SelectingMove state.");
                     // player->MoveTo(grid_pos);
                     // currentPlayerState = PlayerActionState::None; 
+                    if (grid_system->IsWalkable(grid_pos))
+                    {
+                        std::vector<Math::ivec2> new_path = CalculateSimplePath(dragon->GetGridPosition()->Get(), grid_pos);
+                        dragon->SetPath(std::move(new_path));
+                    }
+                    currentPlayerState = PlayerActionState::None;
                     break;
                 case PlayerActionState::SelectingAction:
                     Engine::GetLogger().LogEvent("Map clicked while in SelectingAction state.");
@@ -159,7 +226,7 @@ void GamePlay::Update(double dt){
         }
     }
 
-    if (dragon != nullptr && dragon->IsAlive()) 
+    if (dragon != nullptr && dragon->IsAlive()) {
         Math::ivec2 current_pos    = dragon->GetGridPosition()->Get();
         Math::ivec2 target_pos     = current_pos;
         bool        move_requested = false;
@@ -242,7 +309,7 @@ void GamePlay::DrawImGui(){
     }
     if (is_move_disabled) ImGui::EndDisabled();
 
-   const char* action_text = (currentPlayerState == PlayerActionState::SelectingAction) ? "Cancel Action" : "Action";
+    const char* action_text = (currentPlayerState == PlayerActionState::SelectingAction) ? "Cancel Action" : "Action";
     bool is_action_disabled = (currentPlayerState != PlayerActionState::None && 
                                currentPlayerState != PlayerActionState::SelectingAction);
     if (is_action_disabled) ImGui::BeginDisabled();

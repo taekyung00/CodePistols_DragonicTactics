@@ -4,6 +4,7 @@
 #include "./Engine/Engine.hpp"
 #include "./Engine/Logger.hpp"
 #include "./CS200/IRenderer2D.hpp"
+
 GridSystem::GridSystem() {
     for (int y = 0; y < MAP_HEIGHT; ++y) {
         for (int x = 0; x < MAP_WIDTH; ++x) {
@@ -12,9 +13,11 @@ GridSystem::GridSystem() {
         }
     }
 }
+
 bool GridSystem::IsValidTile(Math::ivec2 pos) const {
     return pos.x >= 0 && pos.x < MAP_WIDTH && pos.y >= 0 && pos.y < MAP_HEIGHT;
 }
+
 void GridSystem::SetTileType(Math::ivec2 pos, TileType type) {
     if (!IsValidTile(pos)) {
         Engine::GetLogger().LogError("SetTileType: Invalid tile position.");
@@ -22,22 +25,24 @@ void GridSystem::SetTileType(Math::ivec2 pos, TileType type) {
     }
     tile_grid[pos.y][pos.x] = type;
 }
+
 GridSystem::TileType GridSystem::GetTileType(Math::ivec2 pos) const {
     if (!IsValidTile(pos)) {
         return TileType::Invalid;
     }
     return tile_grid[pos.y][pos.x];
 }
+
 bool GridSystem::IsOccupied(Math::ivec2 pos) const {
     if (!IsValidTile(pos)) {
         return true;
     }
     return character_grid[pos.y][pos.x] != nullptr;
 }
+
 void GridSystem::Draw() const {
     auto& renderer_2d = Engine::GetRenderer2D();
     
-
     for (int y = 0; y < MAP_HEIGHT; ++y) {
         for (int x = 0; x < MAP_WIDTH; ++x) {
 
@@ -46,7 +51,7 @@ void GridSystem::Draw() const {
 
             switch (tile_grid[y][x]) {
             case TileType::Wall:
-                    renderer_2d.DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x, screen_y }) * Math::ScaleMatrix(TILE_SIZE), CS200::BROWN, 0U);
+                    renderer_2d.DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE/2), screen_y- (TILE_SIZE/2) }) * Math::ScaleMatrix(TILE_SIZE), CS200::BROWN, 0U);
                  //renderer_2d.DrawRectangle(, TILE_SIZE, TILE_SIZE, BROWN);
                 break;
             case TileType::Empty:
@@ -67,9 +72,9 @@ void GridSystem::Draw() const {
                 default:
                     break;
                 }
-                renderer_2d.DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x, screen_y }) * Math::ScaleMatrix(TILE_SIZE),  char_color);
+                renderer_2d.DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE/2), screen_y- (TILE_SIZE/2) }) * Math::ScaleMatrix(TILE_SIZE),  char_color);
             }
-            renderer_2d.DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x, screen_y }) * Math::ScaleMatrix(TILE_SIZE), 0U, CS200::WHITE);
+            renderer_2d.DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE/2), screen_y- (TILE_SIZE/2) }) * Math::ScaleMatrix(TILE_SIZE), 0U, CS200::WHITE);
         }
     }
 }

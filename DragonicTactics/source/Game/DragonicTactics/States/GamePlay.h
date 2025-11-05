@@ -42,5 +42,6 @@ private:
     Fighter* fighter;
     Dragon* dragon;
 
-
+    std::vector<Math::ivec2> CalculateSimplePath(Math::ivec2 start, Math::ivec2 end);
+    
 };
