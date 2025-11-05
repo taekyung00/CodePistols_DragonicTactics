@@ -59,7 +59,6 @@ public:
 
 	// Character placement
 	void	   AddCharacter(Character* character, Math::ivec2 pos); // instead of void PlaceCharacter(Character* character, Math::vec2 pos);
-	void	   AddCharacter(Character* character, Math::ivec2 pos); // instead of void PlaceCharacter(Character* character, Math::vec2 pos);
 	void	   RemoveCharacter(Math::ivec2 pos);
 	void	   MoveCharacter(Math::ivec2 old_pos, Math::ivec2 new_pos);
 	Character* GetCharacterAt(Math::ivec2 pos) const;

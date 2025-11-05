@@ -4,6 +4,7 @@
 #include "./Engine/Logger.hpp"
 #include "./Game/DragonicTactics/Objects/Character.h"
 #include <cassert>
+#include <algorithm>
 
 GridSystem::GridSystem()
 {
@@ -186,19 +187,19 @@ std::vector<Math::vec2> GridSystem::FindPath(Math::vec2 start, Math::vec2 goal)
 	// A* algorithm
 	std::vector<Node*>			 openSet;
 	std::vector<Node*>			 closedSet;
-	std::map<Math::ivec2, Node*> allNodes; //to find nodes with positions easily!!
+	std::map<std::pair<int, int>, Node*> allNodes; // to find nodes with positions easily!!
 
 	// create start node
 	Node* startNode = new Node(start, 0, ManhattanDistance(start, goal));
 	openSet.push_back(startNode);
-	allNodes[start] = startNode;
+	allNodes[{ (int)start.x, (int)start.y }] = startNode;
 
 	Node* goalNode = nullptr;
 
 	while (!openSet.empty())
 	{
 		// find node with lowest fCost
-		auto minIt = std::min_element(std::begin(openSet), std::end(openSet), [](Node* a, Node* b) { return a->fCost() < b->fCost(); });
+		auto minIt = std::min_element(std::begin(openSet), std::end(openSet), [](Node* a, Node* b) { return static_cast<int>(a->fCost()) < static_cast<int>(b->fCost()); });
 
 		Node* current = *minIt;
 		openSet.erase(minIt);
@@ -236,8 +237,8 @@ std::vector<Math::vec2> GridSystem::FindPath(Math::vec2 start, Math::vec2 goal)
 
 			//check if neighbor is in open set
 			Node* neighborNode = nullptr;
-
-			if (allNodes.find(neighborPos) == allNodes.end()) //not in open and close set
+			auto  nodeKey	   = std::make_pair((int)neighborPos.x, (int)neighborPos.y);
+			if (allNodes.find(nodeKey) == allNodes.end()) // not in open and close set
 			{
 				//create new node
 				neighborNode = new Node(
@@ -246,7 +247,7 @@ std::vector<Math::vec2> GridSystem::FindPath(Math::vec2 start, Math::vec2 goal)
 					current
 				);
 				openSet.push_back(neighborNode);
-				allNodes[neighborPos] = neighborNode;
+				allNodes[nodeKey] = neighborNode;
 			}
 		}
 	}
@@ -256,6 +257,16 @@ std::vector<Math::vec2> GridSystem::FindPath(Math::vec2 start, Math::vec2 goal)
 	
 
 
+	return std::vector<Math::vec2>();
+}
+
+int GridSystem::GetPathLength([[maybe_unused]] Math::vec2 start, [[maybe_unused]] Math::vec2 goal)
+{
+	return 0;
+}
+
+std::vector<Math::vec2> GridSystem::GetReachableTiles([[maybe_unused]] Math::vec2 start, [[maybe_unused]] int maxDistance)
+{
 	return std::vector<Math::vec2>();
 }
 

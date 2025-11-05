@@ -609,9 +609,14 @@ std::vector<Math::vec2> GridSystem::FindPath(Math::vec2 start, Math::vec2 goal) 
     }
 
     // A* algorithm
+    // Initialize the open set
     std::vector<Node*> openSet;
+
+    // Initialize the closed set
     std::vector<Node*> closedSet;
-    std::map<std::pair<int, int>, Node*> allNodes;
+
+    std::map<Math::vec2, Node*> allNodes;
+    //instead of std::map<std::pair<int, int>, Node*> allNodes;
 
     // Create start node
     Node* startNode = new Node(start, 0, ManhattanDistance(start, goal));
@@ -640,10 +645,12 @@ std::vector<Math::vec2> GridSystem::FindPath(Math::vec2 start, Math::vec2 goal) 
         for (const Math::vec2& neighborPos : neighbors) {
             // Skip if not walkable or in closed set
             if (!IsWalkable(neighborPos)) continue;
-            if (IsOccupied(neighborPos) && !(neighborPos.x == goal.x && neighborPos.y == goal.y)) {
-                continue;  // Allow goal tile even if occupied
-            }
 
+            //neighbor is not goal and occupied, okay
+
+            //if (IsOccupied(neighborPos) && !(neighborPos.x == goal.x && neighborPos.y == goal.y)) {
+              //  continue;  // Allow goal tile even if occupied
+            //}
             bool inClosedSet = false;
             for (Node* closed : closedSet) {
                 if (closed->position.x == neighborPos.x && closed->position.y == neighborPos.y) {
@@ -656,27 +663,40 @@ std::vector<Math::vec2> GridSystem::FindPath(Math::vec2 start, Math::vec2 goal) 
             int newGCost = current->gCost + 1;  // Each tile costs 1
 
             // Check if neighbor is in open set
-            auto nodeKey = std::make_pair((int)neighborPos.x, (int)neighborPos.y);
+            //auto nodeKey = std::make_pair((int)neighborPos.x, (int)neighborPos.y);
             Node* neighborNode = nullptr;
 
-            if (allNodes.find(nodeKey) != allNodes.end()) {
-                neighborNode = allNodes[nodeKey];
-                if (newGCost < neighborNode->gCost) {
-                    // Found a better path
-                    neighborNode->gCost = newGCost;
-                    neighborNode->parent = current;
-                }
-            } else {
+            //if (allNodes.find(/*nodeKey*/neighborPos) != allNodes.end()) {
+            //    neighborNode = allNodes[nodeKey];
+            //    if (newGCost < neighborNode->gCost) {
+            //        // Found a better path
+            //        neighborNode->gCost = newGCost;
+            //        neighborNode->parent = current;
+            //    }
+            //} else {
+            //    // Create new node
+            //    neighborNode = new Node(
+            //        neighborPos,
+            //        newGCost,
+            //        ManhattanDistance(neighborPos, goal),
+            //        current
+            //    );
+            //    openSet.push_back(neighborNode);
+            //    allNodes[nodeKey] = neighborNode;
+            //}
+
+            if (allNodes.find(/*nodeKey*/neighborPos) == allNodes.end()) {
                 // Create new node
                 neighborNode = new Node(
                     neighborPos,
                     newGCost,
-                    ManhattanDistance(neighborPos, goal),
+                   ManhattanDistance(neighborPos, goal),
                     current
                 );
-                openSet.push_back(neighborNode);
-                allNodes[nodeKey] = neighborNode;
+              openSet.push_back(neighborNode);
+              allNodes[nodeKey] = neighborNode;
             }
+
         }
     }
 
