@@ -247,20 +247,100 @@ bool TestGetReachableTilesCornerGrid()
 
 bool TestGetReachableTilesWithObstacles()
 {
-	return false;
+	// Setup
+	GridSystem* gridsys = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+	if (!gridsys)
+	{
+		Engine::GetLogger().LogEvent("GridSystem isn't uploaded!");
+		return false;
+	}
+	gridsys->Reset();
+
+	// Place walls to limit movement
+	gridsys->SetTileType({ 2, 0 }, GridSystem::TileType::Wall);
+	gridsys->SetTileType({ 2, 1 }, GridSystem::TileType::Wall);
+	gridsys->SetTileType({ 2, 2 }, GridSystem::TileType::Wall);
+
+	Math::vec2 start{ 0, 1 };
+	int		   maxDistance = 3;
+
+	// Action
+	std::vector<Math::vec2> reachable = gridsys->GetReachableTiles(start, maxDistance);
+
+	// Assertions - Should have fewer tiles due to walls
+	ASSERT_GE(reachable.size(), (size_t)3); // At least some tiles reachable
+
+	// Verify wall tiles are NOT reachable
+	for (const Math::vec2& tile : reachable)
+	{
+		ASSERT_FALSE(tile.x == 2 && (tile.y == 0 || tile.y == 1 || tile.y == 2));
+	}
+
+	std::cout << "Test_GetReachableTiles_WithObstacles passed" << std::endl;
+	return true;
+
 }
 
 bool TestPathfindingInvalidStart()
 {
-	return false;
+	// Setup
+	GridSystem* gridsys = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+	if (!gridsys)
+	{
+		Engine::GetLogger().LogEvent("GridSystem isn't uploaded!");
+		return false;
+	}
+	gridsys->Reset();
+
+	// Action - Invalid start position
+	std::vector<Math::vec2> path = gridsys->FindPath({ -1, -1 }, { 4, 4 });
+
+	// Assertions
+	ASSERT_EQ(path.size(), (size_t)0); // Should return empty path
+
+	std::cout << "Test_Pathfinding_InvalidStart passed" << std::endl;
+	return true;
 }
 
 bool TestPathfindingInvalidGoal()
 {
-	return false;
+	// Setup
+	GridSystem* gridsys = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+	if (!gridsys)
+	{
+		Engine::GetLogger().LogEvent("GridSystem isn't uploaded!");
+		return false;
+	}
+	gridsys->Reset();
+
+	// Action - Invalid goal position
+	std::vector<Math::vec2> path = gridsys->FindPath({ 4, 4 }, { 10, 10 });
+
+	// Assertions
+	ASSERT_EQ(path.size(), (size_t)0);
+
+	std::cout << "Test_Pathfinding_InvalidGoal passed" << std::endl;
+	return true;
 }
 
 bool TestPathfindingUnwalkableGoal()
 {
-	return false;
+	// Setup
+	GridSystem* gridsys = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+	if (!gridsys)
+	{
+		Engine::GetLogger().LogEvent("GridSystem isn't uploaded!");
+		return false;
+	}
+	gridsys->Reset();
+	gridsys->SetTileType({ 5, 5 }, GridSystem::TileType::Wall);
+
+	// Action - Goal is a wall
+	std::vector<Math::vec2> path = gridsys->FindPath({ 4, 4 }, { 5, 5 });
+
+	// Assertions
+	ASSERT_EQ(path.size(), (size_t)0);
+
+	std::cout << "Test_Pathfinding_UnwalkableGoal passed" << std::endl;
+	return true;
 }
