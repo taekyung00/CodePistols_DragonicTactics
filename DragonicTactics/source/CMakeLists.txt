@@ -49,7 +49,7 @@ set(SOURCE_CODE
     Game/DragonicTactics/Singletons/CombatSystem.h Game/DragonicTactics/Singletons/CombatSystem.cpp
     Game/DragonicTactics/Singletons/SpellSystem.h Game/DragonicTactics/Singletons/SpellSystem.cpp
 
-    Game/DragonicTactics/StateComponents/GridSystem.h Game/DragonicTactics/StateComponents/GridSystem.cpp
+    Game/DragonicTactics/StateComponents/GridSystem.h Game/DragonicTactics/StateComponents/GridSystem.cpp Game/DragonicTactics/StateComponents/AStar.cpp
     Game/DragonicTactics/StateComponents/TurnManager.h Game/DragonicTactics/StateComponents/TurnManager.cpp
 
     Game/DragonicTactics/States/Test.h 
@@ -57,19 +57,19 @@ set(SOURCE_CODE
     Game/DragonicTactics/States/Test_Junyoung.cpp Game/DragonicTactics/States/Test_Ginam.cpp
     Game/DragonicTactics/States/Test_SY.cpp
     Game/DragonicTactics/States/GamePlay.h Game/DragonicTactics/States/GamePlay.cpp
-
-
+    Game/DragonicTactics/States/RenderingTest.h Game/DragonicTactics/States/RenderingTest.cpp
+    Game/DragonicTactics/States/ConsoleTest.h Game/DragonicTactics/States/ConsoleTest.cpp
     Game/DragonicTactics/States/BattleState.h Game/DragonicTactics/States/BattleState.cpp
 
-    Game/DragonicTactics/Test/Week1TestMocks.h Game/DragonicTactics/Test/Week1TestMocks.cpp Game/DragonicTactics/Test/Week1TestMocks.ini
+    Game/DragonicTactics/Test/Week1TestMocks.h Game/DragonicTactics/Test/Week1TestMocks.cpp
     Game/DragonicTactics/Test/Week3TestMocks.h Game/DragonicTactics/Test/Week3TestMocks.cpp
+    Game/DragonicTactics/Test/TestAStar.h Game/DragonicTactics/Test/TestAStar.cpp 
+    Game/DragonicTactics/Test/TestAssert.h Game/DragonicTactics/Test/TestAssert.cpp Game/DragonicTactics/Test/TestAssert.ini
 
     Game/DragonicTactics/Types/CharacterTypes.h
     Game/DragonicTactics/Types/Events.h
     Game/DragonicTactics/Types/GameObjectTypes.h
     Game/DragonicTactics/Types/GameTypes.h
-
-
 
     Engine/Engine.hpp Engine/Engine.cpp
     Engine/Error.hpp

@@ -9,6 +9,7 @@
 
 #include "./Game/DragonicTactics/Test/Week1TestMocks.h"
 #include "./Game/DragonicTactics/Test/Week3TestMocks.h"
+#include "./Game/DragonicTactics/Test/TestAssert.h"
 #include "./Game/DragonicTactics/Types/Events.h"
 
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"

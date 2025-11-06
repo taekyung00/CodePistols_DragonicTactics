@@ -1,4 +1,5 @@
 #include "Test.h"
+#include "./Game/DragonicTactics/Test/TestAssert.h"
 #include "./Game/DragonicTactics/Singletons/CombatSystem.h"
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
 #include "./Game/DragonicTactics/Objects/Dragon.h"
