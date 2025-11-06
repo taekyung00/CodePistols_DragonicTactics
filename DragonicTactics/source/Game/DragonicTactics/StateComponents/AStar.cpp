@@ -155,3 +155,44 @@ std::vector<Math::vec2> GridSystem::FindPath(Math::vec2 start, Math::vec2 goal)
 
 	return path;
 }
+
+int GridSystem::GetPathLength(Math::vec2 start, Math::vec2 goal)
+{
+	std::vector<Math::vec2> path = FindPath(start, goal);
+	return path.empty() ? -1 : (int)path.size() - 1; // -1 because start tile doesn't count
+}
+
+std::vector<Math::vec2> GridSystem::GetReachableTiles(Math::vec2 start, int maxDistance)
+{
+	std::vector<Math::vec2> reachable;
+
+	// Check all tiles on the grid
+	for (int y = 0; y < MAP_HEIGHT; ++y)
+	{
+		for (int x = 0; x < MAP_WIDTH; ++x)
+		{
+			Math::vec2 tile{ (double)x, (double)y };
+
+			// Skip start tile
+			if (tile.x == start.x && tile.y == start.y)
+				continue;
+
+			// Skip if not walkable
+			if (!IsWalkable(tile))
+				continue;
+
+			// Skip if occupied
+			if (IsOccupied(tile))
+				continue;
+
+			// Check path length
+			int pathLength = GetPathLength(start, tile);
+			if (pathLength > 0 && pathLength <= maxDistance)
+			{
+				reachable.push_back(tile);
+			}
+		}
+	}
+
+	return reachable;
+}

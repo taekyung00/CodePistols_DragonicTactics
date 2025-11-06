@@ -9,7 +9,12 @@
 #include "./CS200/NDC.hpp"
 
 #include "./Game/MainMenu.h"
+#include "./Game/DragonicTactics/Test/TestAStar.h"
+#include "./Game/DragonicTactics/StateComponents/GridSystem.h"
 
+#include <imgui.h>
+
+bool TestAStar = false;
 
 ConsoleTest::ConsoleTest()
 {
@@ -28,6 +33,30 @@ void ConsoleTest::Update([[maybe_unused]] double dt)
 		Engine::GetGameStateManager().PushState<MainMenu>();
 	}
 
+	if (TestAStar) //astar test
+	{
+		AddGSComponent(new GridSystem());
+
+		TestPathfindingStraightLine();
+		TestPathfindingAroundObstacle();
+		TestPathfindingNoPath();
+		TestPathfindingAlreadyAtGoal();
+
+		TestGetPathLengthDirect();
+		TestGetPathLengthNoPath();
+
+		TestGetReachableTilesCenterGrid();
+		TestGetReachableTilesCornerGrid();
+		TestGetReachableTilesWithObstacles();
+
+		TestPathfindingInvalidStart();
+		TestPathfindingInvalidGoal();
+		TestPathfindingUnwalkableGoal();
+
+		RemoveGSComponent<GridSystem>();
+
+		TestAStar = false;
+	}
 }
 
 void ConsoleTest::Draw()
@@ -43,6 +72,12 @@ void ConsoleTest::Draw()
 
 void ConsoleTest::DrawImGui()
 {
+	ImGui::Begin("Tests");
+	if (ImGui::Button("TestAStar"))
+	{
+		TestAStar = true;
+	}
+	ImGui::End();
 }
 
 void ConsoleTest::Unload()

@@ -318,22 +318,22 @@ CS230/Game/GameObjectTypes.h (update with new character types)
 
 - [ ] **Character data members** <- 이것들은 전부 protected 멤버 변수가 아닌 컴포넌트로 분산되어 구현함 구조체는 CharacterTypes.h에 존재
 
-  
-  ```cpp 
-  protected:
-      int maxHP;
-      int currentHP;
-      int speed;
-      int maxActionPoints;
-      int currentActionPoints;
-      int baseAttackPower;
-      std::string attackDice;          // "3d6"
-      int baseDefensePower;
-      std::string defenseDice;         // "2d8"
-      int attackRange;
-      std::map<int, int> spellSlots;   // level -> count
-      Math::vec2 gridPosition;
-  ```
+```cpp
+protected:
+    int maxHP;
+    int currentHP;
+    int speed;
+    int maxActionPoints;
+    int currentActionPoints;
+    int baseAttackPower;
+    std::string attackDice;          // "3d6"
+    int baseDefensePower;
+    std::string defenseDice;         // "2d8"
+    int attackRange;
+    std::map<int, int> spellSlots;   // level -> count
+    Math::vec2 gridPosition;
+```
+
   StatsComponent.h가 관리:
   maxHP
   currentHP
@@ -363,11 +363,11 @@ CS230/Game/GameObjectTypes.h (update with new character types)
   ```cpp
   void TakeDamage(int damage, Character* attacker); //어태커 인자 추가
   void ReceiveHeal(int amount); //Heal 에서 ReceiveHeal로 바꿈, 기능 동일
-
+  
   int GetCurrentHP() const;
   int GetMaxHP() const;
   bool IsAlive() const;
-
+  
   void Die(); // 미구현
   ```
 
@@ -383,7 +383,7 @@ CS230/Game/GameObjectTypes.h (update with new character types)
 
 - [ ] **State machine setup**
   
-  ```cpp 
+  ```cpp
   //스테이트는 전체 미구현
   class State {
   public:
