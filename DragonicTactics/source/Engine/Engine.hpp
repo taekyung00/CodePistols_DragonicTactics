@@ -13,6 +13,7 @@
 #include <gsl/gsl>
 #include <memory>
 #include <string_view>
+#include <SDL.h>
 
 namespace CS230
 {
@@ -249,7 +250,6 @@ public:
 
     static CombatSystem& GetCombatSystem();
 
-
 public:
     /**
      * \brief Initialize and start the engine with all subsystems
@@ -341,6 +341,8 @@ public:
      * without requiring direct access to window or state management internals.
      */
     bool HasGameEnded();
+
+    void OnEvent(const SDL_Event& event);
 
 private:
     // Forward declaration for Pimpl (Pointer to Implementation) idiom

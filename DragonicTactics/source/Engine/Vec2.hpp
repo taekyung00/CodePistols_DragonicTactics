@@ -161,6 +161,18 @@ namespace Math
     std::ostream& operator<<(std::ostream& os, const vec2& v);
     std::istream& operator>>(std::istream& is, vec2& v);
 
+    inline bool IsPointInRect(Math::vec2 point, Math::vec2 rect_pos, Math::vec2 rect_size)
+    {
+        return point.x >= rect_pos.x && point.x <= rect_pos.x + rect_size.x &&
+               point.y >= rect_pos.y && point.y <= rect_pos.y + rect_size.y;
+    }
+
+    inline bool IsPointInIRect(Math::ivec2 point, Math::ivec2 rect_pos, Math::ivec2 rect_size)
+    {
+        return point.x >= rect_pos.x && point.x <= rect_pos.x + rect_size.x &&
+               point.y >= rect_pos.y && point.y <= rect_pos.y + rect_size.y;
+    }
+
     struct vec3
     {
         double x{ 0 };

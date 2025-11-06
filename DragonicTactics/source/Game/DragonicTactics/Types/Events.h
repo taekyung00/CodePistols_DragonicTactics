@@ -1,7 +1,9 @@
 #pragma once
-#include "../../../Engine/Vec2.hpp"
 #include <string>
 #include <vector>
+#include "../../../Engine/Vec2.hpp"
+
+#include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
 class Character;
 
 // BattleEvents.h - High-level battle events
@@ -142,6 +144,15 @@ struct InitiativeRolledEvent
 	std::vector<Character*> turnOrder; // Full turn order after initiative
 };
 
+/// @brief /////////////////
+struct SpellCastEventForSpell {
+    Character* caster;                    
+    const std::string spellName; // Who was hit?
+    Math::vec2 TargetTile;   // Which tiles were affected?
+    std::vector<Character*> affectedTargets;                         // Total damage (for damage spells)
+    int damage;               // Why it failed (out of range, no slots, etc.)
+};
+/// @brief /////////////////
 // UIEvents.h - User interface events
 
 struct UIActionSelectedEvent

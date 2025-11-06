@@ -1,7 +1,9 @@
 #include "Test.h"
 #include "./CS200/IRenderer2D.hpp"
 #include "./CS200/NDC.hpp"
+#include "./CS200/ImGuiHelper.hpp"
 #include "./Engine/Engine.hpp"
+#include "./Engine/Input.hpp"
 #include "./Engine/GameObjectManager.h"
 #include "./Engine/GameStateManager.hpp"
 #include "./Engine/Logger.hpp"
@@ -21,6 +23,58 @@
 #include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
 #include "./Game/DragonicTactics/Objects/Components/SpellSlots.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
+#include <imgui.h>
+
+void RunMouseInputTest()
+{
+    CS230::Input& input = Engine::GetInput();
+
+    if (!ImGui::Begin("Mouse Input Test Window"))
+    {
+        ImGui::End();
+        return;
+    }
+
+    Math::vec2 pos = input.GetMousePos();
+    ImGui::Text("Mouse Position: (%.1f, %.1f)", pos.x, pos.y);
+    
+    ImGui::Separator(); 
+
+    const char* button_names[] = { "Left (0)", "Middle (1)", "Right (2)" };
+    for (int i = 0; i < 3; ++i)
+    {
+        ImGui::PushID(i); 
+        
+        ImGui::Text("%s:", button_names[i]);
+        ImGui::SameLine();
+
+        if (input.MouseJustPressed(i)) {
+            ImGui::TextColored(ImVec4(0, 1, 0, 1), "JUST PRESSED"); 
+        } else if (input.MouseJustReleased(i)) {
+            ImGui::TextColored(ImVec4(1, 0, 0, 1), "JUST RELEASED"); 
+        } else if (input.MouseDown(i)) {
+            ImGui::TextColored(ImVec4(1, 1, 0, 1), "DOWN");
+        } else {
+            ImGui::Text("UP"); 
+        }
+        
+        ImGui::PopID();
+    }
+
+    ImGui::Separator();
+    double frame_scroll = input.GetMouseScroll();
+    
+    static double total_scroll = 0.0;
+    if (frame_scroll != 0.0)
+    {
+        total_scroll += frame_scroll;
+    }
+
+    ImGui::Text("Frame Scroll: %.2f", frame_scroll);
+    ImGui::Text("Total Scroll: %.2f", total_scroll);
+
+    ImGui::End();
+}
 
 void Test::LogFighterStatus()
 {
@@ -158,6 +212,7 @@ void Test2::Unload()
 
 void Test2::DrawImGui()
 {
+    RunMouseInputTest();
 }
 
 gsl::czstring Test2::GetName() const

@@ -11,6 +11,7 @@ GridSystem::GridSystem()
 	Reset();
 }
 
+
 void GridSystem::Reset()
 {
 	for (int y = 0; y < MAP_HEIGHT; ++y)
@@ -55,7 +56,7 @@ bool GridSystem::IsOccupied(Math::ivec2 pos) const
 	}
 	return character_grid[pos.y][pos.x] != nullptr;
 }
-
+//A* algorithm
 int GridSystem::ManhattanDistance(Math::vec2 a, Math::vec2 b) const
 {
 	return static_cast<int>(std::abs(a.x - b.x) + std::abs(a.y - b.y));
@@ -99,7 +100,7 @@ void GridSystem::Draw() const
 			switch (tile_grid[y][x])
 			{
 				case TileType::Wall:
-					renderer_2d.DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x, screen_y }) * Math::ScaleMatrix(TILE_SIZE), CS200::BROWN, 0U);
+					renderer_2d.DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x- (TILE_SIZE/2), screen_y- (TILE_SIZE/2) }) * Math::ScaleMatrix(TILE_SIZE), CS200::BROWN, 0U);
 					// renderer_2d.DrawRectangle(, TILE_SIZE, TILE_SIZE, BROWN);
 					break;
 				case TileType::Empty: break;
@@ -115,9 +116,9 @@ void GridSystem::Draw() const
 					case CharacterTypes::Dragon: char_color = 0xFF0000FF; break;
 					default: break;
 				}
-				renderer_2d.DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x, screen_y }) * Math::ScaleMatrix(TILE_SIZE), char_color);
+				renderer_2d.DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE/2), screen_y- (TILE_SIZE/2) }) * Math::ScaleMatrix(TILE_SIZE), char_color);
 			}
-			renderer_2d.DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x, screen_y }) * Math::ScaleMatrix(TILE_SIZE), 0U, CS200::WHITE);
+			renderer_2d.DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x- (TILE_SIZE/2), screen_y- (TILE_SIZE/2) }) * Math::ScaleMatrix(TILE_SIZE), 0U, CS200::WHITE);
 		}
 	}
 }

@@ -9,7 +9,8 @@ class EventBus {
 public:
     EventBus() = default;
     ~EventBus() = default;
-
+    
+    static EventBus& GetInstance();
     // Subscribe to event type T with callback function
     template<typename T>
     void Subscribe(std::function<void(const T&)> callback) {

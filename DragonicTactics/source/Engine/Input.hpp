@@ -3,21 +3,24 @@
  * \author Rudy Castan
  * \author Jonathan Holmes
  * \author Taekyung Ho
+ * \author Seungju Song
  * \date 2025 Fall
+ * \update 10-30-2025
  * \par CS200 Computer Graphics I
  * \copyright DigiPen Institute of Technology
  */
 
 #pragma once
-#include <SDL.h>
 #include <gsl/gsl>
 #include <vector>
+#include "Vec2.hpp"
 
 namespace CS230
 {
     class Input
     {
     public:
+
         enum class Keys
         {
             A,
@@ -69,10 +72,34 @@ namespace CS230
         bool KeyJustReleased(Keys key) const;
         bool KeyJustPressed(Keys key) const;
 
+        //(0: Left, 1: Middle, 2: Right)
+        bool MouseDown(int button) const;
+        bool MouseJustPressed(int button) const;
+        bool MouseJustReleased(int button) const;
+
+        Math::vec2 GetMousePos() const;
+        double GetMouseScroll() const;
+
+        void SetKeyPressed(Keys key);
+        void SetKeyReleased(Keys key);
+
+        void SetMousePressed(int button);
+        void SetMouseReleased(int button);
+        void SetMousePos(Math::vec2 pos);
+        void SetMouseScroll(double offset);
+
     private:
         std::array<bool, static_cast<std::size_t>(Keys::Count)> previousKeys;
         std::array<bool, static_cast<std::size_t>(Keys::Count)> currentKeys;
         void                                                    SetKeyDown(Keys key, bool is_pressed);
+
+        //(0: Left, 1: Middle, 2: Right)
+        std::array<bool, 3> current_mouse_state;
+        std::array<bool, 3> last_mouse_state;
+
+        Math::vec2 mouse_position;
+
+        double mouse_scroll;
     };
 
     constexpr Input::Keys& operator++(Input::Keys& the_key) noexcept
@@ -80,8 +107,6 @@ namespace CS230
         the_key = static_cast<Input::Keys>(static_cast<unsigned>(the_key) + 1);
         return the_key;
     }
-
-    SDL_Scancode convert_cs230_to_sdl(Input::Keys cs230_key);
 
     constexpr gsl::czstring to_string(Input::Keys key) noexcept
     {

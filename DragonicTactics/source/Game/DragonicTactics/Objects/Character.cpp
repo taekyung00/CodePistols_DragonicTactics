@@ -4,7 +4,7 @@ Reproduction or distribution of this file or its contents without
 prior written consent is prohibited
 File Name:  Character.cpp
 Project:    GAM200
-Author:     Seungju Song & Gemini
+Author:     Seungju Song
 Created:    Oct 08, 2025
 Updated:    Oct 10, 2025
 */
@@ -15,7 +15,10 @@ Updated:    Oct 10, 2025
 #include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
 #include "./Game/DragonicTactics/Objects/Components/SpellSlots.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
+#include "./Game/DragonicTactics/StateComponents/GridSystem.h"
 #include "Components/GridPosition.h"
+#include "./Engine/Engine.hpp"
+
 
 Character::Character(CharacterTypes charType, Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level)
     : CS230::GameObject(Math::vec2{ 0, 0 }), m_character_type(charType)
@@ -40,10 +43,7 @@ void Character::RefreshActionPoints()
 
 void Character::Update(double dt)
 {
-    if (m_is_moving)
-    {
-        UpdateMovement(dt);
-    }
+    UpdateMovement(dt);
 
     CS230::GameObject::Update(dt);
 }
@@ -78,6 +78,17 @@ void Character::PerformAction([[maybe_unused]] Action* action, [[maybe_unused]] 
 {
 }
 
+void Character::SetGridSystem(GridSystem* grid)
+{
+    m_gridSystem = grid;
+}
+
+void Character::SetPath(std::vector<Math::ivec2> path)
+{
+    m_current_path = std::move(path);
+    m_moveTimer = 0.0;
+}
+
 void Character::ReceiveHeal(int amount)
 {
     if (GetStatsComponent() != nullptr)
@@ -99,12 +110,48 @@ void Character::TakeDamage(int damage, [[maybe_unused]] Character* attacker)
     }
 }
 
-void Character::SetPathTo([[maybe_unused]] Math::ivec2 destination)
-{
-}
 
 void Character::UpdateMovement([[maybe_unused]] double dt)
 {
+    if (m_current_path.empty() || !IsAlive())
+    {
+        return; 
+    }
+    
+    if (m_gridSystem == nullptr)
+    {
+        Engine::GetLogger().LogError("Character cannot move: GridSystem is null.");
+        m_current_path.clear();
+        return;
+    }
+
+    m_moveTimer += dt;
+
+    if (m_moveTimer >= MOVE_TIME_PER_TILE)
+    {
+        m_moveTimer = 0.0; 
+
+        Math::ivec2 next_pos = m_current_path.front();
+        m_current_path.erase(m_current_path.begin()); 
+
+        Math::ivec2 current_pos = GetGridPosition()->Get();
+        
+        if (m_gridSystem->IsWalkable(next_pos))
+        {
+            m_gridSystem->MoveCharacter(current_pos, next_pos);
+            
+            GetGridPosition()->Set(next_pos);
+            SetPosition({ static_cast<double>(next_pos.x * GridSystem::TILE_SIZE), 
+                          static_cast<double>(next_pos.y * GridSystem::TILE_SIZE) });
+            
+            Engine::GetLogger().LogEvent(TypeName() + " moved to (" + std::to_string(next_pos.x) + ", " + std::to_string(next_pos.y) + ")");
+        }
+        else
+        {
+            Engine::GetLogger().LogError(TypeName() + " path blocked! Clearing rest of path.");
+            m_current_path.clear(); 
+        }
+    }
 }
 
 bool Character::IsAlive()
@@ -141,6 +188,11 @@ StatsComponent* Character::GetStatsComponent()
     return GetGOComponent<StatsComponent>();
 }
 
+// void Character::SetHp()
+// {
+//     GetGOComponent<StatsComponent>()
+// }
+
 GridPosition* Character::GetGridPosition()
 {
     return GetGOComponent<GridPosition>();
@@ -155,3 +207,23 @@ SpellSlots* Character::GetSpellSlots()
 {
     return GetGOComponent<SpellSlots>();
 }
+
+int Character::GetSpellSlotCount(int level) {
+    return GetGOComponent<SpellSlots>()->GetSpellSlotCount(level);
+}
+
+void Character::SetSpellSlots(std::map<int, int> spellSlot) {
+    GetGOComponent<SpellSlots>()->SetSpellSlots(spellSlot);
+}
+
+void Character::ConsumeSpell(int level) {    // REALLY? WHAT THE FUCK? WHERE IS THE USE OF CONSUME IN MD FILE? 
+    GetGOComponent<SpellSlots>()->Consume(level);
+}
+// void Character::RefreshActionPoints()
+// {
+//     GetGOComponent<ActionPoints>()->Refresh();
+// }
+// void Character::SetCurrentHP(int hp) 
+// {
+    
+// }

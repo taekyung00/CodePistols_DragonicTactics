@@ -39,6 +39,10 @@ void Fighter::OnTurnStart() {
 void Fighter::OnTurnEnd() {
 }
 
+void Fighter::Update(double dt){
+    Character::Update(dt);
+}
+
 void Fighter::TakeDamage(int damage, Character* attacker) {
     Character::TakeDamage(damage, attacker);
 }
@@ -50,7 +54,8 @@ void Fighter::DecideAction() {
     CS230::GameObjectManager* gom = Engine::GetGameStateManager().GetGSComponent<CS230::GameObjectManager>();
 
     if (gom != nullptr) {
-        for (CS230::GameObject* obj : gom->GetAll()) {
+        for (const auto& obj_smart_ptr : gom->GetAll()) {
+            CS230::GameObject* obj = obj_smart_ptr.get();
             if (obj->Type() == GameObjectTypes::Character) {
                 Character* character = static_cast<Character*>(obj);
                 if (character->GetCharacterType() == CharacterTypes::Dragon) {

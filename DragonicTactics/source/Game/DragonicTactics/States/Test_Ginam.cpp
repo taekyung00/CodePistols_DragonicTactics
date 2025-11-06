@@ -32,6 +32,7 @@ Test::Test() : fighter(nullptr), dragon(nullptr)
 
 void Test::Load()
 {
+	AddGSComponent(new GridSystem());
     DataRegistry::Instance().LoadFromFile("Assets/Data/characters.json");
     AddGSComponent(new CS230::GameObjectManager());
     fighter = new Fighter({ 5, 5 });

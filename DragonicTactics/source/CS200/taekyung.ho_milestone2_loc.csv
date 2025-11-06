@@ -1,6 +1,0 @@
-language,filename,blank,comment,code,"http://cloc.sourceforge.net v 1.64  T=0.02 s (251.6 files/s, 31696.5 lines/s)"
-C++,ImmediateRenderer2D.cpp,57,39,194
-C++,ImGuiHelper.cpp,11,12,89
-C++,RenderingAPI.cpp,14,10,88
-C++,Image.cpp,12,8,50
-C++,Renderer2DUtils.cpp,5,7,34

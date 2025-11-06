@@ -5,7 +5,6 @@
  * \copyright DigiPen Institute of Technology
  */
 
-#include "Demo/DemoShapes.hpp"
 #include "Engine/Engine.hpp"
 #include "Engine/GameStateManager.hpp"
 #include "Engine/Window.hpp"
@@ -64,15 +63,9 @@ EMSCRIPTEN_BINDINGS(main_window)
 int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
 {
     Engine& engine = Engine::Instance();
-    engine.Start("Taekyung Ho OpenGL Engine");
+    engine.Start("Dragonic Tactics");
     engine.GetGameStateManager().PushState<Splash>();
 
-    //std::ifstream in_file("Assets/sprites/CS230_Final/Bomb.spt ");
-
-    //if (in_file.is_open() == false)
-    //{
-    //    throw std::runtime_error("Failed to load ");
-    //}
 
 #if !defined(__EMSCRIPTEN__)
     while (engine.HasGameEnded() == false)

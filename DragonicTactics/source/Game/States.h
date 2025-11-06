@@ -8,8 +8,10 @@ Author:     Taekyung Ho
 Created:    March 12, 2025
 */
 #pragma once
-enum class States {
+
+enum class State {
     Splash,
     MainMenu,
     Final
 };
+
