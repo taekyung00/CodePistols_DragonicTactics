@@ -19,11 +19,11 @@ bool TestPathfindingStraightLine()
 
 	//setup
 	gridsys->Reset();
-	Math::vec2 start{ 0, 0 };
-	Math::vec2 goal{ 0, 3 };
+	Math::ivec2 start{ 0, 0 };
+	Math::ivec2 goal{ 0, 3 };
 
 	//action
-	std::vector<Math::vec2> path = gridsys->FindPath(start, goal);
+	std::vector<Math::ivec2> path = gridsys->FindPath(start, goal);
 
 	// Assertions
 	ASSERT_EQ(static_cast<int>(path.size()), 4); // {0,0}, {0,1}, {0,2}, {0,3}
@@ -61,16 +61,16 @@ bool TestPathfindingAroundObstacle()
 	gridsys->SetTileType({ 1, 1 }, GridSystem::TileType::Wall);
 	gridsys->SetTileType({ 1, 2 }, GridSystem::TileType::Wall);
 
-	Math::vec2 start{ 0, 1 };
-	Math::vec2 goal{ 2, 1 };
+	Math::ivec2 start{ 0, 1 };
+	Math::ivec2 goal{ 2, 1 };
 
-	std::vector<Math::vec2> path = gridsys->FindPath(start, goal);
+	std::vector<Math::ivec2> path = gridsys->FindPath(start, goal);
 	ASSERT_TRUE(path.size() > 3);
 	ASSERT_EQ(path[0], { 0, 1 });
 	ASSERT_EQ(path[path.size() - 1], { 2, 1 });
 
 	//verify path doesn't go through walls
-	for (const Math::vec2& tile : path)
+	for (const Math::ivec2& tile : path)
 	{
 		ASSERT_TRUE(gridsys->IsWalkable(tile));
 	}
@@ -95,11 +95,11 @@ bool TestPathfindingNoPath()
 		gridsys->SetTileType({ 3, y }, GridSystem::TileType::Wall);
 	}
 
-	Math::vec2 start{ 0, 0 };
-	Math::vec2 goal{ 5, 5 }; // On the other side of the wall
+	Math::ivec2 start{ 0, 0 };
+	Math::ivec2 goal{ 5, 5 }; // On the other side of the wall
 
 	// Action
-	std::vector<Math::vec2> path = gridsys->FindPath(start, goal);
+	std::vector<Math::ivec2> path = gridsys->FindPath(start, goal);
 
 	// Assertions - Should return empty path
 	ASSERT_EQ(path.size(), static_cast<size_t>(0));
@@ -118,11 +118,11 @@ bool TestPathfindingAlreadyAtGoal()
 	}
 	// setup
 	gridsys->Reset();
-	Math::vec2 start{ 4, 4 };
-	Math::vec2 goal{ 4, 4 };
+	Math::ivec2 start{ 4, 4 };
+	Math::ivec2 goal{ 4, 4 };
 
 	// Action
-	std::vector<Math::vec2> path = gridsys->FindPath(start, goal);
+	std::vector<Math::ivec2> path = gridsys->FindPath(start, goal);
 
 	// Assertions
 	ASSERT_EQ(path.size(), static_cast<size_t>(1));
@@ -190,11 +190,11 @@ bool TestGetReachableTilesCenterGrid()
 	}
 	gridsys->Reset();
 
-	Math::vec2 start{ 4, 4 }; // Center of 8x8 grid
+	Math::ivec2 start{ 4, 4 }; // Center of 8x8 grid
 	int		   maxDistance = 2;
 
 	// Action
-	std::vector<Math::vec2> reachable = gridsys->GetReachableTiles(start, maxDistance);
+	std::vector<Math::ivec2> reachable = gridsys->GetReachableTiles(start, maxDistance);
 
 	// Assertions
 	// With maxDistance=2, should reach 12 tiles (4-directional movement)
@@ -203,7 +203,7 @@ bool TestGetReachableTilesCenterGrid()
 	ASSERT_LE(reachable.size(), (size_t)12);
 
 	// Verify all tiles are within distance
-	for (const Math::vec2& tile : reachable)
+	for (const Math::ivec2& tile : reachable)
 	{
 		int pathLength = gridsys->GetPathLength(start, tile);
 		ASSERT_GE(pathLength, 1);
@@ -211,7 +211,7 @@ bool TestGetReachableTilesCenterGrid()
 	}
 
 	// Verify start tile NOT in reachable tiles
-	for (const Math::vec2& tile : reachable)
+	for (const Math::ivec2& tile : reachable)
 	{
 		ASSERT_FALSE(tile == start);
 	}
@@ -231,12 +231,12 @@ bool TestGetReachableTilesCornerGrid()
 	}
 	gridsys->Reset();
 
-	Math::vec2 start{ 0, 0 }; // Corner
+	Math::ivec2 start{ 0, 0 }; // Corner
 	int		   maxDistance = 3;
 
 
 	// Action
-	std::vector<Math::vec2> reachable = gridsys->GetReachableTiles(start, maxDistance);
+	std::vector<Math::ivec2> reachable = gridsys->GetReachableTiles(start, maxDistance);
 
 	// Assertions - Should have fewer reachable tiles due to corner
 	ASSERT_GE(reachable.size(), (size_t)6); // At least 6 tiles reachable from corner
@@ -261,17 +261,17 @@ bool TestGetReachableTilesWithObstacles()
 	gridsys->SetTileType({ 2, 1 }, GridSystem::TileType::Wall);
 	gridsys->SetTileType({ 2, 2 }, GridSystem::TileType::Wall);
 
-	Math::vec2 start{ 0, 1 };
+	Math::ivec2 start{ 0, 1 };
 	int		   maxDistance = 3;
 
 	// Action
-	std::vector<Math::vec2> reachable = gridsys->GetReachableTiles(start, maxDistance);
+	std::vector<Math::ivec2> reachable = gridsys->GetReachableTiles(start, maxDistance);
 
 	// Assertions - Should have fewer tiles due to walls
 	ASSERT_GE(reachable.size(), (size_t)3); // At least some tiles reachable
 
 	// Verify wall tiles are NOT reachable
-	for (const Math::vec2& tile : reachable)
+	for (const Math::ivec2& tile : reachable)
 	{
 		ASSERT_FALSE(tile.x == 2 && (tile.y == 0 || tile.y == 1 || tile.y == 2));
 	}
@@ -293,7 +293,7 @@ bool TestPathfindingInvalidStart()
 	gridsys->Reset();
 
 	// Action - Invalid start position
-	std::vector<Math::vec2> path = gridsys->FindPath({ -1, -1 }, { 4, 4 });
+	std::vector<Math::ivec2> path = gridsys->FindPath({ -1, -1 }, { 4, 4 });
 
 	// Assertions
 	ASSERT_EQ(path.size(), (size_t)0); // Should return empty path
@@ -314,7 +314,7 @@ bool TestPathfindingInvalidGoal()
 	gridsys->Reset();
 
 	// Action - Invalid goal position
-	std::vector<Math::vec2> path = gridsys->FindPath({ 4, 4 }, { 10, 10 });
+	std::vector<Math::ivec2> path = gridsys->FindPath({ 4, 4 }, { 10, 10 });
 
 	// Assertions
 	ASSERT_EQ(path.size(), (size_t)0);
@@ -336,7 +336,7 @@ bool TestPathfindingUnwalkableGoal()
 	gridsys->SetTileType({ 5, 5 }, GridSystem::TileType::Wall);
 
 	// Action - Goal is a wall
-	std::vector<Math::vec2> path = gridsys->FindPath({ 4, 4 }, { 5, 5 });
+	std::vector<Math::ivec2> path = gridsys->FindPath({ 4, 4 }, { 5, 5 });
 
 	// Assertions
 	ASSERT_EQ(path.size(), (size_t)0);
