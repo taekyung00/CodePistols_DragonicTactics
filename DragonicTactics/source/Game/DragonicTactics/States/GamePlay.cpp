@@ -159,7 +159,7 @@ void GamePlay::Update(double dt){
                     // currentPlayerState = PlayerActionState::None; 
                     if (grid_system->IsWalkable(grid_pos))
                     {
-                        std::vector<Math::ivec2> new_path = CalculateSimplePath(dragon->GetGridPosition()->Get(), grid_pos);
+                        std::vector<Math::ivec2> new_path = grid_system->FindPath(dragon->GetGridPosition()->Get(), grid_pos);
                         dragon->SetPath(std::move(new_path));
                     }
                     currentPlayerState = PlayerActionState::None;

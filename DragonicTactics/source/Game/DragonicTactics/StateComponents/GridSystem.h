@@ -27,7 +27,7 @@ private:
 	// A* pathfinding node
 	struct Node
 	{
-		Math::vec2 position;
+		Math::ivec2 position;
 		int		   gCost;
 		int		   hCost;
 
@@ -38,7 +38,7 @@ private:
 
 		Node* parent;
 
-		Node(Math::vec2 pos, int g, int h, Node* p = nullptr) : position(pos), gCost(g), hCost(h), parent(p)
+		Node(Math::ivec2 pos, int g, int h, Node* p = nullptr) : position(pos), gCost(g), hCost(h), parent(p)
 		{
 		}
 	};
@@ -64,13 +64,13 @@ public:
 	Character* GetCharacterAt(Math::ivec2 pos) const;
 
 	// week2 : pathfinding methods
-	std::vector<Math::vec2> FindPath(Math::vec2 start, Math::vec2 goal);
-	int						GetPathLength(Math::vec2 start, Math::vec2 goal);
-	std::vector<Math::vec2> GetReachableTiles(Math::vec2 start, int maxDistance);
+	std::vector<Math::ivec2> FindPath(Math::ivec2 start, Math::ivec2 goal);
+	int						GetPathLength(Math::ivec2 start, Math::ivec2 goal);
+	std::vector<Math::ivec2> GetReachableTiles(Math::ivec2 start, int maxDistance);
 
 	// week2 : helper methods
-	int						ManhattanDistance(Math::vec2 a, Math::vec2 b) const;
-	std::vector<Math::vec2> GetNeighbors(Math::vec2 position) const;
+	int						ManhattanDistance(Math::ivec2 a, Math::ivec2 b) const;
+	std::vector<Math::ivec2> GetNeighbors(Math::ivec2 position) const;
 
 	void Draw() const;
 
