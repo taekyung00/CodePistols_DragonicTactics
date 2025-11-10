@@ -587,6 +587,11 @@ CodePistols_DragonicTactics/
 │   │   │   │
 │   │   │   └── DragonicTactics/                # Dragonic Tactics game
 │   │   │       │
+│   │   │       ├── Abilities/                  # Character abilities
+│   │   │       │   ├── AbilityBase.h           # Ability interface
+│   │   │       │   ├── MeleeAttack.h/cpp       # Melee attack ability
+│   │   │       │   └── ShieldBash.h/cpp        # Fighter shield bash
+│   │   │       │
 │   │   │       ├── Objects/                    # Game entities
 │   │   │       │   ├── Character.h/cpp         # Base character class
 │   │   │       │   ├── Dragon.h/cpp            # Player dragon
@@ -606,16 +611,26 @@ CodePistols_DragonicTactics/
 │   │   │       │   ├── EventBus.h/cpp          # Event system
 │   │   │       │   ├── DiceManager.h/cpp       # Dice rolling
 │   │   │       │   ├── CombatSystem.h/cpp      # Combat resolution
+│   │   │       │   ├── SpellSystem.h/cpp       # Spell casting system
+│   │   │       │   ├── TurnManager.h/cpp       # Turn management singleton
 │   │   │       │   └── DataRegistry.h/cpp      # Config data storage
 │   │   │       │
 │   │   │       ├── StateComponents/            # GameState components
 │   │   │       │   ├── GridSystem.h/cpp        # 8x8 tactical grid
-│   │   │       │   └── TurnManager.h/cpp       # Turn management
+│   │   │       │   ├── TurnManager.h/cpp       # Turn management component
+│   │   │       │   └── AStar.cpp               # A* pathfinding implementation
 │   │   │       │
 │   │   │       ├── States/                     # Game states
 │   │   │       │   ├── BattleState.h/cpp       # Main combat state
+│   │   │       │   ├── GamePlay.h/cpp          # Gameplay state
+│   │   │       │   ├── RenderingTest.h/cpp     # Rendering test state
+│   │   │       │   ├── ConsoleTest.h/cpp       # Console test state
 │   │   │       │   ├── Test.h                  # Test interface
-│   │   │       │   └── Test_*.cpp              # Team member tests
+│   │   │       │   ├── Test_Ginam.cpp          # Ginam's test state
+│   │   │       │   ├── Test_Junyoung.cpp       # Junyoung's test state
+│   │   │       │   ├── Test_Seungju.cpp        # Seungju's test state
+│   │   │       │   ├── Test_SY.cpp             # SY's test state
+│   │   │       │   └── Test_Taekyung.cpp       # Taekyung's test state
 │   │   │       │
 │   │   │       ├── Types/                      # Shared types
 │   │   │       │   ├── GameObjectTypes.h       # Entity type enum
@@ -624,11 +639,17 @@ CodePistols_DragonicTactics/
 │   │   │       │   └── Events.h                # Event definitions
 │   │   │       │
 │   │   │       ├── Debugger/                   # Debug tools
-│   │   │       │   ├── DebugManager.h/cpp
-│   │   │       │   └── DebugConsole.h/cpp
+│   │   │       │   ├── DebugManager.h/cpp      # Debug system manager
+│   │   │       │   └── DebugConsole.h/cpp      # Console interface
+│   │   │       │
+│   │   │       ├── External/                   # External integrations
+│   │   │       │   └── (placeholder)
 │   │   │       │
 │   │   │       └── Test/                       # Test implementations
-│   │   │           └── Week1TestMocks.h/cpp    # Mock characters
+│   │   │           ├── TestAssert.h/cpp        # Test assertion utilities
+│   │   │           ├── TestAStar.h/cpp         # A* pathfinding tests
+│   │   │           ├── Week1TestMocks.h/cpp    # Week 1 mock characters
+│   │   │           └── Week3TestMocks.h/cpp    # Week 3 mock objects (spells, treasure)
 │   │   │
 │   │   ├── CS200/                              # Rendering abstraction
 │   │   │   ├── IRenderer2D.hpp                 # 2D rendering interface
