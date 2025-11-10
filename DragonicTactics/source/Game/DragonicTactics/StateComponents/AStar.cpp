@@ -171,7 +171,7 @@ std::vector<Math::ivec2> GridSystem::GetReachableTiles(Math::ivec2 start, int ma
 	{
 		for (int x = 0; x < MAP_WIDTH; ++x)
 		{
-			Math::ivec2 tile{ (double)x, (double)y };
+			Math::ivec2 tile{ x, y };
 
 			// Skip start tile
 			if (tile.x == start.x && tile.y == start.y)

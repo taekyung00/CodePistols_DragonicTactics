@@ -72,25 +72,6 @@ void MainMenu::SelecetOption()
 	}
 }
 
-void MainMenu::DrawImGui(){}
-
-void MainMenu::SelecetOption()
-{
-    switch (current_option)
-    {
-
-        case MainMenu::Option::DragonicTactics:
-            Engine::GetGameStateManager().PopState();
-            Engine::GetGameStateManager().PushState<GamePlay>();
-            break;
-
-
-        case MainMenu::Option::Exit:
-            Engine::GetGameStateManager().PopState(); 
-            break;
-    }
-}
-
 
 void MainMenu::Load()
 {
