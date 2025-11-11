@@ -16,6 +16,7 @@ Updated:    Oct 10, 2025
 #include "./Game/DragonicTactics/Objects/Components/SpellSlots.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
 #include "./Game/DragonicTactics/StateComponents/GridSystem.h"
+#include "./Game/DragonicTactics/Singletons/DiceManager.h"
 #include "Components/GridPosition.h"
 #include "./Engine/Engine.hpp"
 
@@ -68,7 +69,8 @@ void Character::PerformAttack(Character* target)
         return;
     }
 
-    int total_damage = 10;
+    
+    int total_damage = 10 + Engine::GetDiceManager().RollDiceFromString("4d6");
 
     Engine::GetLogger().LogEvent(TypeName() + " attacks " + target->TypeName() + " for " + std::to_string(total_damage) + " damage.");
     target->TakeDamage(total_damage, this);

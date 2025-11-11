@@ -61,7 +61,7 @@ AbilityResult MeleeAttack::Use(Character* user, Character* target) {
     }
     
     //rolldice
-    DiceManager& dice = DiceManager::Instance();
+    DiceManager& dice = Engine::GetDiceManager();
     std::string attackRoll = user->GetStatsComponent()->GetAttackDice(); // "2d6"
     int baseDamage = dice.RollDiceFromString(attackRoll);                // 2~12
     int attackModifier = user->GetStatsComponent()->GetBaseAttack();     // ex) +3

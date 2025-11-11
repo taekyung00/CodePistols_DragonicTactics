@@ -106,7 +106,7 @@ MockSpellResult MockFireball::CastAtLevel([[maybe_unused]] Character* caster, Ma
     // Roll damage
     std::string damage_dice = GetDamageDice(cast_level);
     // Mock: just return a fixed value for testing
-    // Real implementation: DiceManager::Instance().RollDiceFromString(damage_dice)
+    // Real implementation: Engine::GetDiceManager().RollDiceFromString(damage_dice)
     result.total_damage = 28;  // Average of 8d6
 
     std::cout << "Fireball cast at level " << cast_level << "!" << std::endl;

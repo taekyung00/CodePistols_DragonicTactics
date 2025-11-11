@@ -18,11 +18,12 @@ Created:    November 5, 2025
 
 #include "../StateComponents/GridSystem.h"
 #include "../StateComponents/TurnManager.h" 
-#include "./Game/DragonicTactics/Objects/Actions/ActionAttack.h"
-#include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
-#include "./Game/DragonicTactics/Objects/Components/SpellSlots.h"
-#include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
-#include "./Game/MainMenu.h" 
+#include "Game/DragonicTactics/Objects/Actions/ActionAttack.h"
+#include "Game/DragonicTactics/Objects/Components/ActionPoints.h"
+#include "Game/DragonicTactics/Objects/Components/SpellSlots.h"
+#include "Game/DragonicTactics/Objects/Components/StatsComponent.h"
+#include "Game/MainMenu.h" 
+#include "Game/DragonicTactics/Singletons/DiceManager.h"
 
 #include <imgui.h>
 #include "./Engine/Input.hpp"
@@ -89,6 +90,7 @@ std::vector<Math::ivec2> GamePlay::CalculateSimplePath(Math::ivec2 start, Math::
 GamePlay::GamePlay():fighter(nullptr), dragon(nullptr){}
 
 void GamePlay::Load(){
+	Engine::GetDiceManager().SetSeed(100);
     AddGSComponent(new CS230::GameObjectManager());
     
     AddGSComponent(new GridSystem());
@@ -159,7 +161,7 @@ void GamePlay::Update(double dt){
                     // currentPlayerState = PlayerActionState::None; 
                     if (grid_system->IsWalkable(grid_pos))
                     {
-                        std::vector<Math::ivec2> new_path = CalculateSimplePath(dragon->GetGridPosition()->Get(), grid_pos);
+						std::vector<Math::ivec2> new_path = grid_system->FindPath(dragon->GetGridPosition()->Get(), grid_pos); // CalculateSimplePath(dragon->GetGridPosition()->Get(), grid_pos);
                         dragon->SetPath(std::move(new_path));
                     }
                     currentPlayerState = PlayerActionState::None;

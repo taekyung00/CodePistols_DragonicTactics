@@ -33,7 +33,7 @@ void BattleState::Load() {
     // DataRegistry& registry = DataRegistry::GetInstance();
     // registry.LoadAllCharacterData();
 
-    // SpellSystem& spellSys = SpellSystem::GetInstance();
+    // SpellSystem& spellSys = Engine::GetSpellSystem();
     // spellSys.RegisterSpell("Fireball", new Fireball());
     // spellSys.RegisterSpell("CreateWall", new CreateWall());
     // spellSys.RegisterSpell("LavaPool", new LavaPool());
@@ -87,7 +87,7 @@ void BattleState::HandlePlayerTurnInput() {
     }
 
     if (input.KeyJustPressed(CS230::Input::Keys::Q)) {
-        // SpellSystem& spellSys = SpellSystem::GetInstance();
+        // SpellSystem& spellSys = Engine::GetSpellSystem();
         // SpellResult result = spellSys.CastSpell(dragon, "Fireball", cursorPosition);
 
         //if (result.success) {
@@ -95,7 +95,7 @@ void BattleState::HandlePlayerTurnInput() {
         //}
     }
     if (input.KeyJustPressed(CS230::Input::Keys::W)) {
-        // SpellSystem& spellSys = SpellSystem::GetInstance();
+        // SpellSystem& spellSys = Engine::GetSpellSystem();
         // SpellResult result = spellSys.CastSpell(dragon, "CreateWall", cursorPosition);
 
         //if (result.success) {
@@ -103,7 +103,7 @@ void BattleState::HandlePlayerTurnInput() {
         //}
     }
     if (input.KeyJustPressed(CS230::Input::Keys::E)) {
-        // SpellSystem& spellSys = SpellSystem::GetInstance();
+        // SpellSystem& spellSys = Engine::GetSpellSystem();
         // SpellResult result = spellSys.CastSpell(dragon, "LavaPool", cursorPosition);
 
         //if (result.success) {
