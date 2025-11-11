@@ -65,8 +65,8 @@ public:
 
 	// week2 : pathfinding methods
 	std::vector<Math::ivec2> FindPath(Math::ivec2 start, Math::ivec2 goal);
-	int						GetPathLength(Math::ivec2 start, Math::ivec2 goal);
-	std::vector<Math::ivec2> GetReachableTiles(Math::ivec2 start, int maxDistance);
+	//int						GetPathLength(Math::ivec2 start, Math::ivec2 goal);
+	//std::vector<Math::ivec2> GetReachableTiles(Math::ivec2 start, int maxDistance);
 
 	// week2 : helper methods
 	int						ManhattanDistance(Math::ivec2 a, Math::ivec2 b) const;

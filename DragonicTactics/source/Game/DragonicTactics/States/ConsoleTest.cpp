@@ -42,12 +42,6 @@ void ConsoleTest::Update([[maybe_unused]] double dt)
 		TestPathfindingNoPath();
 		TestPathfindingAlreadyAtGoal();
 
-		TestGetPathLengthDirect();
-		TestGetPathLengthNoPath();
-
-		TestGetReachableTilesCenterGrid();
-		TestGetReachableTilesCornerGrid();
-		TestGetReachableTilesWithObstacles();
 
 		TestPathfindingInvalidStart();
 		TestPathfindingInvalidGoal();

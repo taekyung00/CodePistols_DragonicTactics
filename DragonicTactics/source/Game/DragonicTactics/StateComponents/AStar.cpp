@@ -57,7 +57,7 @@ std::vector<Math::ivec2> GridSystem::FindPath(Math::ivec2 start, Math::ivec2 goa
 
 	if (start == goal)
 	{
-		return { start };
+		return {};
 	}
 
 	// A* algorithm
@@ -135,7 +135,10 @@ std::vector<Math::ivec2> GridSystem::FindPath(Math::ivec2 start, Math::ivec2 goa
 		Node* current = goalNode;
 		while (current != nullptr)
 		{
-			path.push_back(current->position);
+			if (current->position != start)
+			{
+				path.push_back(current->position);
+			}			
 			current = current->parent;
 		}
 		std::reverse(path.begin(), path.end());
@@ -156,43 +159,43 @@ std::vector<Math::ivec2> GridSystem::FindPath(Math::ivec2 start, Math::ivec2 goa
 	return path;
 }
 
-int GridSystem::GetPathLength(Math::ivec2 start, Math::ivec2 goal)
-{
-	std::vector<Math::ivec2> path = FindPath(start, goal);
-	return path.empty() ? -1 : (int)path.size() - 1; // -1 because start tile doesn't count
-}
-
-std::vector<Math::ivec2> GridSystem::GetReachableTiles(Math::ivec2 start, int maxDistance)
-{
-	std::vector<Math::ivec2> reachable;
-
-	// Check all tiles on the grid
-	for (int y = 0; y < MAP_HEIGHT; ++y)
-	{
-		for (int x = 0; x < MAP_WIDTH; ++x)
-		{
-			Math::ivec2 tile{ x, y };
-
-			// Skip start tile
-			if (tile.x == start.x && tile.y == start.y)
-				continue;
-
-			// Skip if not walkable
-			if (!IsWalkable(tile))
-				continue;
-
-			// Skip if occupied
-			if (IsOccupied(tile))
-				continue;
-
-			// Check path length
-			int pathLength = GetPathLength(start, tile);
-			if (pathLength > 0 && pathLength <= maxDistance)
-			{
-				reachable.push_back(tile);
-			}
-		}
-	}
-
-	return reachable;
-}
+//int GridSystem::GetPathLength(Math::ivec2 start, Math::ivec2 goal)
+//{
+//	std::vector<Math::ivec2> path = FindPath(start, goal);
+//	return path.empty() ? -1 : (int)path.size() - 1; // -1 because start tile doesn't count
+//}
+//
+//std::vector<Math::ivec2> GridSystem::GetReachableTiles(Math::ivec2 start, int maxDistance)
+//{
+//	std::vector<Math::ivec2> reachable;
+//
+//	// Check all tiles on the grid
+//	for (int y = 0; y < MAP_HEIGHT; ++y)
+//	{
+//		for (int x = 0; x < MAP_WIDTH; ++x)
+//		{
+//			Math::ivec2 tile{ x, y };
+//
+//			// Skip start tile
+//			if (tile.x == start.x && tile.y == start.y)
+//				continue;
+//
+//			// Skip if not walkable
+//			if (!IsWalkable(tile))
+//				continue;
+//
+//			// Skip if occupied
+//			if (IsOccupied(tile))
+//				continue;
+//
+//			// Check path length
+//			int pathLength = GetPathLength(start, tile);
+//			if (pathLength > 0 && pathLength <= maxDistance)
+//			{
+//				reachable.push_back(tile);
+//			}
+//		}
+//	}
+//
+//	return reachable;
+//}
