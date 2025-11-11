@@ -59,7 +59,6 @@ set(SOURCE_CODE
     Game/DragonicTactics/States/GamePlay.h Game/DragonicTactics/States/GamePlay.cpp
     Game/DragonicTactics/States/RenderingTest.h Game/DragonicTactics/States/RenderingTest.cpp
     Game/DragonicTactics/States/ConsoleTest.h Game/DragonicTactics/States/ConsoleTest.cpp
-    Game/DragonicTactics/States/BattleState.h Game/DragonicTactics/States/BattleState.cpp
 
     Game/DragonicTactics/Test/Week1TestMocks.h Game/DragonicTactics/Test/Week1TestMocks.cpp
     Game/DragonicTactics/Test/Week3TestMocks.h Game/DragonicTactics/Test/Week3TestMocks.cpp

@@ -1,7 +1,14 @@
 #include "Week1TestMocks.h"
 
-MockCharacter::MockCharacter(const std::string& _name) : name(_name), hp(100), maxHP(100), gridPos{ 0, 0 }
+MockCharacter::MockCharacter(const std::string& _name) 
+    : name(_name), hp(100), maxHP(100), gridPos{ 0, 0 }, speed(10)
 {
+    statsComp = new MockStatsComponent(speed);
+}
+
+MockCharacter::~MockCharacter()
+{
+    delete statsComp;
 }
 
 std::string MockCharacter::TypeName() const

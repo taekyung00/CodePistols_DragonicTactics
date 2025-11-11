@@ -139,10 +139,22 @@ struct TurnEndedEvent
 	int		   actionsUsed; // How many actions taken
 };
 
+// ===== SangYun: Initiative System Events (NEW) =====
 struct InitiativeRolledEvent
 {
-	std::vector<Character*> turnOrder; // Full turn order after initiative
+    Character* character;
+    int        roll;             // 1d20 result
+    int        speedModifier;    // (speed - 10) / 2
+    int        totalInitiative;  // roll + modifier
 };
+
+struct TurnOrderEstablishedEvent
+{
+    std::vector<Character*> turnOrder; // Full turn order after initiative (sorted highest first)
+};
+
+
+// =================== SangYun =====================
 
 /// @brief /////////////////
 struct SpellCastEventForSpell {
