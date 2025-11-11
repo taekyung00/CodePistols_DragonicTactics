@@ -106,8 +106,6 @@ void Test::Update([[maybe_unused]] double dt)
     { // junyoung
         test_spellsystem_all();
         test_turnmanager_all();
-        
-        //test_turnmanager_all();
     }
 
     if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::J))

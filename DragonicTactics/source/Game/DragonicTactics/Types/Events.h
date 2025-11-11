@@ -130,21 +130,32 @@ struct TurnStartedEvent
 {
 	Character* character;	 // Whose turn started
 	int		   turnNumber;	 // Current turn count
-	int		   actionPoints; // Available action points
+	int		   roundNumber;  // Current round number
 };
 
 struct TurnEndedEvent
 {
 	Character* character;	// Whose turn ended
-	int		   actionsUsed; // How many actions taken
+	int		   turnNumber;  // Current turn count
 };
 
+// ===== SangYun: Initiative System Events (NEW) =====
 struct InitiativeRolledEvent
 {
-	std::vector<Character*> turnOrder; // Full turn order after initiative
+	Character* character;
+	int        roll;             // 1d20 result
+	int        speedModifier;    // (speed - 10) / 2
+	int        totalInitiative;  // roll + modifier
 };
 
-/// @brief /////////////////
+struct TurnOrderEstablishedEvent
+{
+	std::vector<Character*> turnOrder; // Full turn order after initiative (sorted highest first)
+};
+
+
+// =================== SangYun =====================
+
 struct SpellCastEventForSpell {
     Character* caster;                    
     const std::string spellName; // Who was hit?
@@ -152,7 +163,6 @@ struct SpellCastEventForSpell {
     std::vector<Character*> affectedTargets;                         // Total damage (for damage spells)
     int damage;               // Why it failed (out of range, no slots, etc.)
 };
-/// @brief /////////////////
 // UIEvents.h - User interface events
 
 struct UIActionSelectedEvent

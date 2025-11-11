@@ -125,6 +125,9 @@ void GamePlay::Load(){
             }
         }
     }
+    
+    AddGSComponent(new TurnManager());
+    GetGSComponent<TurnManager>()->InitializeTurnOrder({fighter, dragon});
 }
 
 Math::ivec2 ConvertScreenToGrid(Math::vec2 world_pos)
@@ -139,7 +142,23 @@ void GamePlay::Update(double dt){
     CS230::Input& input = Engine::GetInput();
     bool is_clicking_ui = ImGui::GetIO().WantCaptureMouse;
 
-    
+    TurnManager* turnMgr = GetGSComponent<TurnManager>();
+    bool isPlayerTurn = false;
+    if (turnMgr && turnMgr->IsCombatActive()) {
+        Character* current = turnMgr->GetCurrentCharacter();
+        isPlayerTurn = (current == dragon);
+    }
+
+    if(!isPlayerTurn){
+        if (Engine::GetInput().KeyJustReleased(CS230::Input::Keys::Escape))
+        {
+            Engine::GetGameStateManager().PopState();
+            Engine::GetGameStateManager().PushState<MainMenu>();
+        }
+
+        GetGSComponent<CS230::GameObjectManager>()->UpdateAll(dt);
+        return;
+    }
 
     if (input.MouseJustPressed(0))
     {
@@ -292,6 +311,21 @@ void GamePlay::Draw(){
 }
 
 void GamePlay::DrawImGui(){
+    TurnManager* turnMgr = GetGSComponent<TurnManager>();
+    if (turnMgr && turnMgr->IsCombatActive()) {
+        ImGui::Begin("Combat Status");
+        Character* current = turnMgr->GetCurrentCharacter();
+        if (current) {
+            ImGui::Text("Current Turn: %s", current->TypeName().c_str());
+            ImGui::Text("Turn #%d | Round #%d", 
+                       turnMgr->GetCurrentTurnNumber(), 
+                       turnMgr->GetRoundNumber());
+            ImGui::Text("Initiative: %d", 
+                       turnMgr->GetInitiativeValue(current));
+        }
+        ImGui::End();
+    }
+
     ImGui::Begin("Player Actions");
 
     const char* move_text = (currentPlayerState == PlayerActionState::SelectingMove) ? "Cancel Move" : "Move";
@@ -328,7 +362,9 @@ void GamePlay::DrawImGui(){
     if (is_end_turn_disabled) ImGui::BeginDisabled();
     if (ImGui::Button("End Turn")) {
         Engine::GetLogger().LogEvent("UI: 'End Turn' button clicked.");
-        // (Phase 2에서 여기에 로직 추가)
+        if (turnMgr && turnMgr->IsCombatActive()) {
+            turnMgr->EndCurrentTurn();
+        }
     }
     if (is_end_turn_disabled) ImGui::EndDisabled();
 
