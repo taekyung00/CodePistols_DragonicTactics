@@ -31,62 +31,6 @@ Created:    November 5, 2025
 #include "./Game/DragonicTactics/Objects/Fighter.h"
 #include "./Game/DragonicTactics/Objects/Dragon.h"
 
-std::vector<Math::ivec2> GamePlay::CalculateSimplePath(Math::ivec2 start, Math::ivec2 end)
-{
-    std::vector<Math::ivec2> path;
-    Math::ivec2 current = start;
-
-
-    GridSystem* grid = GetGSComponent<GridSystem>();
-    if (grid == nullptr)
-    {
-        Engine::GetLogger().LogError("CalculateSimplePath: GridSystem is null!");
-        return path;
-    }
-
-
-    int safety_break = 0; 
-    while (current != end && safety_break < 500)
-    {
-        safety_break++;
-        Math::ivec2 next_step = current;
-
-
-        if (current.x < end.x) {
-            next_step.x++;
-        } else if (current.x > end.x) {
-            next_step.x--;
-        }
-
-        else if (current.y < end.y) {
-            next_step.y++;
-        } else if (current.y > end.y) {
-            next_step.y--;
-        }
-
-
-        if (grid->IsWalkable(next_step))
-        {
-            path.push_back(next_step);
-            current = next_step;
-        }
-        else
-        {
-
-            Engine::GetLogger().LogError("Simple path blocked at (" + 
-                std::to_string(next_step.x) + ", " + std::to_string(next_step.y) + "). Stopping path.");
-            return path;
-        }
-    }
-    
-    if (safety_break >= 500) {
-        Engine::GetLogger().LogError("CalculateSimplePath: Hit safety break, possible infinite loop!");
-    }
-
-
-    return path;
-}
-
 GamePlay::GamePlay():fighter(nullptr), dragon(nullptr){}
 
 void GamePlay::Load(){
