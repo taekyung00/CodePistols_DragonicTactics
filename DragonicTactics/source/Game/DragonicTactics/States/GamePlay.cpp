@@ -282,7 +282,6 @@ void GamePlay::Update(double dt){
 
 void GamePlay::Unload(){
     GetGSComponent<CS230::GameObjectManager>()->Unload();
-    damage_texts.clear();
     fighter = nullptr;
     dragon  = nullptr;
 }
