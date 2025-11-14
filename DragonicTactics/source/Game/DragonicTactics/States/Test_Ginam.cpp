@@ -26,7 +26,6 @@
 
 #include "../StateComponents/GridSystem.h"
 #include "../StateComponents/TurnManager.h"
-#include "../Test/Test_SY.h"
 
 Test::Test() : fighter(nullptr), dragon(nullptr)
 {

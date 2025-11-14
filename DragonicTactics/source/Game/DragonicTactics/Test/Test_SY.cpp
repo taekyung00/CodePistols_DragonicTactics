@@ -10,11 +10,11 @@
 #include "./Game/DragonicTactics/Objects/Fighter.h"
 #include "./Game/DragonicTactics/Singletons/CombatSystem.h"
 #include "./Game/DragonicTactics/Test/TestAssert.h"
-
-#include "Test.h"
 #include "Week1TestMocks.h"
 #include <iostream>
 #include <vector>
+
+#include "Test_SY.h"
 
 
 bool Test_CombatSystem_CalculateDamage()

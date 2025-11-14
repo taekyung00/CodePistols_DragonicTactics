@@ -25,7 +25,7 @@
 #include "./Game/DragonicTactics/Objects/Components/SpellSlots.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
 
-
+#include "../Test/Test_SY.h"
 
 
 
@@ -131,6 +131,9 @@ void Test::Update([[maybe_unused]] double dt)
         Test_CombatSystem_IsInRange_Adjacent();
         Test_CombatSystem_IsInRange_TooFar();
         Test_CombatSystem_GetDistance();
+
+        // Run all initiative tests
+        RunTurnManagerInitiativeTests();
     }
     GetGSComponent<CS230::GameObjectManager>()->UpdateAll(dt);
 }
