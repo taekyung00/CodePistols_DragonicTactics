@@ -56,18 +56,6 @@ private:
     void test_json();
     void test_json_reload();
     void test_json_log();
-
-    bool Test_CombatSystem_CalculateDamage();
-    bool Test_CombatSystem_CalculateDamage_MinRoll();
-    bool Test_CombatSystem_CalculateDamage_MaxRoll();
-    bool Test_CombatSystem_ApplyDamage();
-    bool Test_CombatSystem_ApplyDamage_Negative();
-    bool Test_CombatSystem_ExecuteAttack_Valid();
-    bool Test_CombatSystem_ExecuteAttack_OutOfRange();
-    bool Test_CombatSystem_ExecuteAttack_NotEnoughAP();
-    bool Test_CombatSystem_IsInRange_Adjacent();
-    bool Test_CombatSystem_IsInRange_TooFar();
-    bool Test_CombatSystem_GetDistance();
 };
 
 class Test2 : public CS230::GameState
