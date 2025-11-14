@@ -68,6 +68,14 @@ private:
     bool Test_CombatSystem_IsInRange_Adjacent();
     bool Test_CombatSystem_IsInRange_TooFar();
     bool Test_CombatSystem_GetDistance();
+
+    bool TestAITargetsClosestEnemy();
+    bool TestAIMovesCloserWhenOutOfRange();
+    bool TestAIAttacksWhenInRange();
+    bool TestAIUsesShieldBashWhenAdjacent();
+    bool TestAIEnds TurnWhenNoActions();
+    void RunFighterAITests();
+
 };
 
 class Test2 : public CS230::GameState

@@ -29,6 +29,7 @@
 
 // File: CS230/Game/Test/SpellSystemTests.cpp
 #include "./Game/DragonicTactics/Singletons/SpellSystem.h"
+#include "./Game/DragonicTactics/Singletons/AISystem.h"
 
 bool Test::Test_TurnManager_Initialize()
 {
@@ -380,6 +381,148 @@ void Test::RunSpellSystemTests() {
     std::cout << (TestSpellUpcast() ? "O" : "X") << " Spell Upcasting\n";
     std::cout << (TestGetAvailableSpells() ? "O" : "X") << " Get Available Spells\n";
     std::cout << (TestPreviewSpellArea() ? "O" : "X") << " Preview Spell Area\n";
+}
+
+// File: CS230/Game/Test/FighterAITests.cpp
+#include "../../Engine/Engine.h"
+#include "../Singletons/AISystem.h"
+#include "../Objects/Dragon.h"
+#include "../Objects/Fighter.h"
+#include "../StateComponents/GridSystem.h"
+#include <iostream>
+
+bool TestAITargetsClosestEnemy() {
+    // Test: AI should target closest enemy
+    GridSystem& grid = GridSystem::GetInstance();
+    grid.Reset();
+
+    Fighter fighter;
+    fighter.SetGridPosition({0, 0});
+
+    Dragon dragon;
+    dragon.SetGridPosition({2, 2}); // Distance = 4
+
+    AISystem& ai = AISystem::GetInstance();
+    Character* target = ai.AssessThreats(&fighter);
+
+    bool passed = (target == &dragon);
+
+    if (!passed) {
+        std::cout << "  FAILED: AI didn't target Dragon\n";
+    }
+
+    return passed;
+}
+
+bool TestAIMovesCloserWhenOutOfRange() {
+    // Test: AI should move closer if target out of range
+    GridSystem& grid = GridSystem::GetInstance();
+    grid.Reset();
+
+    Fighter fighter;
+    fighter.SetGridPosition({0, 0});
+    fighter.SetAttackRange(1); // Melee
+
+    Dragon dragon;
+    dragon.SetGridPosition({5, 5}); // Far away
+
+    AISystem& ai = AISystem::GetInstance();
+    AIDecision decision = ai.MakeDecision(&fighter);
+
+    bool passed = (decision.type == AIDecisionType::Move);
+
+    if (!passed) {
+        std::cout << "  FAILED: AI didn't move closer (decision: "
+                  << (int)decision.type << ")\n";
+    }
+
+    return passed;
+}
+
+bool TestAIAttacksWhenInRange() {
+    // Test: AI should attack if target in range
+    GridSystem& grid = GridSystem::GetInstance();
+    grid.Reset();
+
+    Fighter fighter;
+    fighter.SetGridPosition({4, 4});
+    fighter.SetActionPoints(10); // Enough for attack
+    fighter.SetAttackRange(1);
+
+    Dragon dragon;
+    dragon.SetGridPosition({4, 5}); // Adjacent (distance = 1)
+
+    AISystem& ai = AISystem::GetInstance();
+    AIDecision decision = ai.MakeDecision(&fighter);
+
+    bool passed = (decision.type == AIDecisionType::Attack ||
+                   decision.type == AIDecisionType::UseAbility);
+
+    if (!passed) {
+        std::cout << "  FAILED: AI didn't attack when in range\n";
+    }
+
+    return passed;
+}
+
+bool TestAIUsesShieldBashWhenAdjacent() {
+    // Test: AI should use Shield Bash when adjacent to healthy target
+    GridSystem& grid = GridSystem::GetInstance();
+    grid.Reset();
+
+    Fighter fighter;
+    fighter.SetGridPosition({4, 4});
+    fighter.SetActionPoints(10);
+    fighter.EnableAbility("Shield Bash"); // Ability available
+
+    Dragon dragon;
+    dragon.SetGridPosition({4, 5}); // Adjacent
+    dragon.SetHP(dragon.GetMaxHP()); // Full HP
+
+    AISystem& ai = AISystem::GetInstance();
+    bool shouldUse = ai.ShouldUseAbility(&fighter, &dragon);
+
+    bool passed = shouldUse;
+
+    if (!passed) {
+        std::cout << "  FAILED: AI didn't use Shield Bash when appropriate\n";
+    }
+
+    return passed;
+}
+
+bool TestAIEnds TurnWhenNoActions() {
+    // Test: AI should end turn if no valid actions
+    GridSystem& grid = GridSystem::GetInstance();
+    grid.Reset();
+
+    Fighter fighter;
+    fighter.SetGridPosition({0, 0});
+    fighter.SetActionPoints(0); // No action points
+
+    Dragon dragon;
+    dragon.SetGridPosition({7, 7}); // Far away
+
+    AISystem& ai = AISystem::GetInstance();
+    AIDecision decision = ai.MakeDecision(&fighter);
+
+    bool passed = (decision.type == AIDecisionType::EndTurn);
+
+    if (!passed) {
+        std::cout << "  FAILED: AI didn't end turn when no actions available\n";
+    }
+
+    return passed;
+}
+
+void RunFighterAITests() {
+    std::cout << "\n=== FIGHTER AI TESTS ===\n";
+    std::cout << (TestAITargetsClosestEnemy() ? "O" : "X") << " AI targets closest enemy\n";
+    std::cout << (TestAIMovesCloserWhenOutOfRange() ? "O" : "X") << " AI moves closer when out of range\n";
+    std::cout << (TestAIAttacksWhenInRange() ? "O" : "X") << " AI attacks when in range\n";
+    std::cout << (TestAIUsesShieldBashWhenAdjacent() ? "O" : "X") << " AI uses Shield Bash appropriately\n";
+    std::cout << (TestAIEndsTurnWhenNoActions() ? "O" : "X") << " AI ends turn when no actions\n";
+    std::cout << "==========================\n";
 }
 
 void Test::test_turnmanager_all()
