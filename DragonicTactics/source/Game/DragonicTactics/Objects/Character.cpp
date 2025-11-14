@@ -54,27 +54,27 @@ void Character::Draw(Math::TransformationMatrix camera_matrix)
     CS230::GameObject::Draw(camera_matrix);
 }
 
-void Character::PerformAttack(Character* target)
-{
-    if (target == nullptr || !target->IsAlive())
-    {
-        Engine::GetLogger().LogDebug(TypeName() + " has no valid target to attack.");
-        return;
-    }
+// void Character::PerformAttack(Character* target)
+// {
+//     if (target == nullptr || !target->IsAlive())
+//     {
+//         Engine::GetLogger().LogDebug(TypeName() + " has no valid target to attack.");
+//         return;
+//     }
 
-    ActionPoints* ap = GetActionPointsComponent();
-    if (ap == nullptr || ap->Consume(1) == false)
-    {
-        Engine::GetLogger().LogDebug(TypeName() + " tried to attack, but has no Action Points.");
-        return;
-    }
+//     ActionPoints* ap = GetActionPointsComponent();
+//     if (ap == nullptr || ap->Consume(1) == false)
+//     {
+//         Engine::GetLogger().LogDebug(TypeName() + " tried to attack, but has no Action Points.");
+//         return;
+//     }
 
     
-    int total_damage = 10 + Engine::GetDiceManager().RollDiceFromString("4d6");
+//     int total_damage = 10 + Engine::GetDiceManager().RollDiceFromString("4d6");
 
-    Engine::GetLogger().LogEvent(TypeName() + " attacks " + target->TypeName() + " for " + std::to_string(total_damage) + " damage.");
-    target->TakeDamage(total_damage, this);
-}
+//     Engine::GetLogger().LogEvent(TypeName() + " attacks " + target->TypeName() + " for " + std::to_string(total_damage) + " damage.");
+//     target->TakeDamage(total_damage, this);
+// }
 
 void Character::PerformAction([[maybe_unused]] Action* action, [[maybe_unused]] Character* target, [[maybe_unused]] Math::ivec2 tile_position)
 {

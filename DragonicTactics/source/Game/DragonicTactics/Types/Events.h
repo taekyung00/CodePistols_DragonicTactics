@@ -153,6 +153,13 @@ struct TurnOrderEstablishedEvent
     std::vector<Character*> turnOrder; // Full turn order after initiative (sorted highest first)
 };
 
+struct CharacterAttackedEvent
+{
+	Character* attacker;
+	Character* defender;
+	int		   damageAmount;
+};
+
 
 // =================== SangYun =====================
 

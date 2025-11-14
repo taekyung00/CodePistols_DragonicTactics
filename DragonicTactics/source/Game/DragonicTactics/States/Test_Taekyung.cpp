@@ -19,6 +19,7 @@
 #include "../Singletons/DiceManager.h"
 #include "../Singletons/EventBus.h"
 #include "../Singletons/DataRegistry.h"
+#include "Game/DragonicTactics/Singletons/CombatSystem.h"
 #include "./Game/DragonicTactics/Objects/Actions/ActionAttack.h"
 #include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
 #include "./Game/DragonicTactics/Objects/Components/SpellSlots.h"
@@ -64,14 +65,7 @@ void Test::Update([[maybe_unused]] double dt)
     if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::D))
     {
         Engine::GetLogger().LogEvent("--- Player presses 'D': Testing PerformAttack ---");
-        if (dragon->GetActionPoints() > 0)
-        {
-            dragon->PerformAttack(fighter);
-        }
-        else
-        {
-            Engine::GetLogger().LogDebug("Dragon has no Action Points to attack!");
-        }
+        Engine::GetCombatSystem().ExecuteAttack(dragon, fighter);
         LogFighterStatus();
         LogDragonStatus();
     }

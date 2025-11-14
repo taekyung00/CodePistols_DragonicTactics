@@ -14,6 +14,7 @@ Created:    November 5, 2025
 #include "./Engine/GameStateManager.hpp"
 #include "./Engine/Logger.hpp"
 #include "./Engine/Window.hpp"
+#include "./Engine/TextManager.hpp"
 #include "GamePlay.h"
 
 #include "../StateComponents/GridSystem.h"
@@ -24,6 +25,8 @@ Created:    November 5, 2025
 #include "Game/DragonicTactics/Objects/Components/StatsComponent.h"
 #include "Game/MainMenu.h" 
 #include "Game/DragonicTactics/Singletons/DiceManager.h"
+#include "Game/DragonicTactics/Singletons/EventBus.h"
+#include "Game/DragonicTactics/Singletons/CombatSystem.h"
 
 #include <imgui.h>
 #include "./Engine/Input.hpp"
@@ -76,6 +79,38 @@ void GamePlay::Load(){
 	GetGSComponent<TurnManager>()->InitializeTurnOrder({ dragon, fighter });
 	GetGSComponent<TurnManager>()->StartCombat();
 
+    Engine::GetEventBus().Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& event) {
+		this->OnCharacterDamaged(event);
+	});
+}
+
+void GamePlay::OnCharacterDamaged(const CharacterDamagedEvent& event)
+{
+    Engine::GetLogger().LogDebug("Damage Event! " + std::to_string(event.damageAmount));
+    
+    Math::vec2 size = { 1.0f, 1.0f }; // Default size
+    if (event.target != nullptr)
+    {
+        const StatsComponent* stats = event.target->GetStatsComponent();
+        if (stats != nullptr && stats->GetMaxHP() > 0)
+        {
+            float damage_ratio = static_cast<float>(event.damageAmount) / static_cast<float>(stats->GetMaxHP());
+
+            if (damage_ratio >= 0.5) {
+                size = { 2.5, 2.5 };
+            } else if (damage_ratio >= 0.33) {
+                size = { 2.0, 2.0 };
+            } else if (damage_ratio >= 0.2) {
+                size = { 1.5, 1.5 };
+            } else if (damage_ratio >= 0.1) {
+                size = { 1.2, 1.2 };
+            }
+        }
+    }
+
+    Math::vec2 text_position = event.target->GetGridPosition()->Get();
+    text_position *= GridSystem::TILE_SIZE; // Appear above the character
+    damage_texts.push_back({ std::to_string(event.damageAmount), text_position, size, 1.0 });
 }
 
 Math::ivec2 ConvertScreenToGrid(Math::vec2 world_pos)
@@ -142,14 +177,7 @@ void GamePlay::Update(double dt){
 
 								if (target != nullptr && target != dragon)
 								{
-									if (dragon->GetActionPoints() > 0)
-									{
-										dragon->PerformAttack(fighter);
-									}
-									else
-									{
-										Engine::GetLogger().LogDebug("Dragon has no Action Points to attack!");
-									}
+									Engine::GetCombatSystem().ExecuteAttack(dragon, target);
 									currentPlayerState = PlayerActionState::None;
 								}
 								else
@@ -241,11 +269,20 @@ void GamePlay::Update(double dt){
         Engine::GetGameStateManager().PushState<MainMenu>();
     }
 
+    for (auto& damage_text : damage_texts)
+    {
+        damage_text.lifetime -= dt;
+    }
+    std::erase_if(damage_texts, [](const DamageText& damage_text) {
+		return damage_text.lifetime <= 0.0;
+	});
+
     GetGSComponent<CS230::GameObjectManager>()->UpdateAll(dt);
 }
 
 void GamePlay::Unload(){
-    GetGSComponent<CS230::GameObjectManager>()->Unload(); 
+    GetGSComponent<CS230::GameObjectManager>()->Unload();
+    damage_texts.clear();
     fighter = nullptr;
     dragon  = nullptr;
 }
@@ -254,6 +291,7 @@ void GamePlay::Draw(){
 
     Engine::GetWindow().Clear(0x1a1a1aff);
     auto& renderer_2d = Engine::GetRenderer2D();
+	auto& text_manager = Engine::GetTextManager();
     
     renderer_2d.BeginScene(CS200::build_ndc_matrix(Engine::GetWindow().GetSize()));
     
@@ -263,6 +301,10 @@ void GamePlay::Draw(){
         grid_system->Draw(); 
     }
 
+    for (const auto& damage_text : damage_texts)
+    {
+        text_manager.DrawText(damage_text.text, damage_text.position, Fonts::Outlined, damage_text.size, CS200::VIOLET);
+    }
 
     renderer_2d.EndScene();
 }

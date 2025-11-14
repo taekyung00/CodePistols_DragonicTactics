@@ -14,6 +14,7 @@ Created:    November 5, 2025
 #include "../../../Engine/Texture.hpp"
 #include "../../../CS200/RGBA.hpp"
 #include "../StateComponents/GridSystem.h"
+#include "../Types/Events.h"
 
 class Dragon;
 class Fighter;
@@ -38,6 +39,17 @@ private:
         TargetingForSpell
     };
     PlayerActionState currentPlayerState = PlayerActionState::None;
+
+    struct DamageText
+    {
+        std::string text;
+        Math::vec2  position = {0,0};
+        Math::vec2  size = {0,0};
+        double      lifetime;
+    };
+    std::vector<DamageText> damage_texts;
+
+    void OnCharacterDamaged(const CharacterDamagedEvent& event);
 
     Fighter* fighter;
     Dragon* dragon;
