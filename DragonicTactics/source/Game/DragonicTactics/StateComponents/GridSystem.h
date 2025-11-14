@@ -72,6 +72,8 @@ public:
 	int						ManhattanDistance(Math::ivec2 a, Math::ivec2 b) const;
 	std::vector<Math::ivec2> GetNeighbors(Math::ivec2 position) const;
 
+	std::vector<Character*> GetAllCharacters();
+
 	void Draw() const;
 
 	void Update(double dt) override;

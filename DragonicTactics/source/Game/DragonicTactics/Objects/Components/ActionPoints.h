@@ -17,6 +17,7 @@ public:
 	bool Consume(int amount = 1);
 	int GetCurrentPoints() const;
 	int GetMaxPoints() const;
+	void SetPoints(int new_point);
 	bool HasEnough(int amount) const;
 	void Update([[maybe_unused]] double dt) override{}
 private:

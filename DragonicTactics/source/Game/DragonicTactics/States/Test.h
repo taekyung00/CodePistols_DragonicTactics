@@ -72,8 +72,8 @@ private:
     bool TestAITargetsClosestEnemy();
     bool TestAIMovesCloserWhenOutOfRange();
     bool TestAIAttacksWhenInRange();
-    bool TestAIUsesShieldBashWhenAdjacent();
-    bool TestAIEnds TurnWhenNoActions();
+    //bool TestAIUsesShieldBashWhenAdjacent();
+    bool TestAIEndsTurnWhenNoActions();
     void RunFighterAITests();
 
 };

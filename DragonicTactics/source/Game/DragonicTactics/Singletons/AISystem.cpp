@@ -1,9 +1,11 @@
 // File: CS230/Game/Singletons/AISystem.cpp
 #include "AISystem.h"
 #include "../StateComponents/GridSystem.h"
+#include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
 #include "CombatSystem.h"
 #include "EventBus.h"
-#include "../../Engine/Engine.h"
+#include "Engine/Engine.hpp"
+#include "./Engine/GameStateManager.hpp"
 
 AISystem& AISystem::GetInstance() {
     static AISystem instance;
@@ -42,15 +44,15 @@ AIDecision AISystem::MakeDecision(Character* actor) {
     // Step 4: Move closer to target
     if (ShouldMoveCloser(actor, target)) {
         // Calculate path to target
-        GridSystem& grid = GridSystem::GetInstance();
-        Math::ivec2 actorPos = actor->GetGridPosition();
-        Math::ivec2 targetPos = target->GetGridPosition();
+        GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+        Math::ivec2 actorPos = actor->GetGridPosition()->Get();
+        Math::ivec2 targetPos = target->GetGridPosition()->Get();
 
-        std::vector<Math::ivec2> path = grid.FindPath(actorPos, targetPos);
+        std::vector<Math::ivec2> path = grid->FindPath(actorPos, targetPos);
 
         if (path.size() > 1) {
             // Move as far as action points allow
-            int maxMove = actor->GetActionPoints() / actor->GetMovementCost();
+            int maxMove = actor->GetActionPoints() / actor->GetMovementRange();
             int moveIndex = std::min((int)path.size() - 1, maxMove);
 
             decision.type = AIDecisionType::Move;
@@ -70,8 +72,8 @@ Character* AISystem::AssessThreats(Character* actor) {
     // For Week 4: Simple - target the Dragon (only enemy)
     // Week 16+: More sophisticated (highest threat score)
 
-    GridSystem& grid = GridSystem::GetInstance();
-    std::vector<Character*> allCharacters = grid.GetAllCharacters();
+    GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    std::vector<Character*> allCharacters = grid->GetAllCharacters();
 
     Character* highestThreat = nullptr;
     int highestThreatScore = -1;
@@ -79,7 +81,10 @@ Character* AISystem::AssessThreats(Character* actor) {
     for (Character* potential : allCharacters) {
         // Skip self, allies, and dead characters
         if (potential == actor || !potential->IsAlive()) continue;
-        if (potential->GetTeam() == actor->GetTeam()) continue;
+        if (potential->GetCharacterType() == CharacterTypes::Dragon &&
+            actor->GetCharacterType() == CharacterTypes::Dragon) continue;
+        if (potential->GetCharacterType() != CharacterTypes::Dragon &&
+            actor->GetCharacterType() != CharacterTypes::Dragon) continue;
 
         int threatScore = CalculateThreatScore(actor, potential);
 
@@ -94,9 +99,9 @@ Character* AISystem::AssessThreats(Character* actor) {
 
 int AISystem::CalculateThreatScore(Character* actor, Character* target) {
     // Basic threat formula: Closer = higher threat
-    GridSystem& grid = GridSystem::GetInstance();
+    GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
 
-    int distance = grid.GetDistance(actor->GetGridPosition(), target->GetGridPosition());
+    int distance = grid->ManhattanDistance(actor->GetGridPosition()->Get(), target->GetGridPosition()->Get());
 
     // Threat decreases with distance
     int threatScore = 1000 - distance;
@@ -110,8 +115,8 @@ int AISystem::CalculateThreatScore(Character* actor, Character* target) {
 bool AISystem::ShouldMoveCloser(Character* actor, Character* target) {
     if (!actor || !target) return false;
 
-    GridSystem& grid = GridSystem::GetInstance();
-    int distance = grid.GetDistance(actor->GetGridPosition(), target->GetGridPosition());
+    GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    int distance = grid->ManhattanDistance(actor->GetGridPosition()->Get(), target->GetGridPosition()->Get());
     int attackRange = actor->GetAttackRange();
 
     // Move if target is out of attack range
@@ -122,8 +127,8 @@ bool AISystem::ShouldAttack(Character* actor, Character* target) {
     if (!actor || !target) return false;
 
     // Check range
-    CombatSystem& combat = CombatSystem::GetInstance();
-    if (!combat.IsInRange(actor, target)) return false;
+    CombatSystem& combat = Engine::GetCombatSystem();
+    if (!combat.IsInRange(actor, target, 5)) return false;  //range ???????
 
     // Check action points
     if (actor->GetActionPoints() < actor->GetAttackCost()) return false;
@@ -136,8 +141,8 @@ bool AISystem::ShouldUseAbility(Character* actor, Character* target) {
 
     // Week 4: Fighter has Shield Bash (stun adjacent enemy)
     // Check if adjacent
-    GridSystem& grid = GridSystem::GetInstance();
-    int distance = grid.GetDistance(actor->GetGridPosition(), target->GetGridPosition());
+    GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    int distance = grid->ManhattanDistance(actor->GetGridPosition()->Get(), target->GetGridPosition()->Get());
 
     if (distance != 1) return false; // Shield Bash requires adjacency
 
@@ -178,8 +183,9 @@ void AISystem::ExecuteDecision(Character* actor, const AIDecision& decision) {
             break;
     }
 
+    auto& eventbus = Engine::GetEventBus();
     // Publish AI decision event for debugging
-    EventBus::GetInstance().Publish(AIDecisionEvent{
-        actor, decision.type, decision.target, decision.reasoning
+    eventbus.Publish(AIDecisionEvent{
+        reinterpret_cast<Character*>(actor), decision.type, decision.target, decision.reasoning
     });
 }

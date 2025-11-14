@@ -25,6 +25,11 @@ int ActionPoints::GetMaxPoints() const {
     return max_points;
 }
 
+void ActionPoints::SetPoints(int new_points) {
+    if(new_points > max_points) return;
+    current_points = new_points;
+}
+
 bool ActionPoints::HasEnough(int amount) const {
     return current_points >= amount;
 }

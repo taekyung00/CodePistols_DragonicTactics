@@ -190,6 +190,19 @@ StatsComponent* Character::GetStatsComponent()
     return GetGOComponent<StatsComponent>();
 }
 
+int Character::GetHP()
+{
+    return GetGOComponent<StatsComponent>()->GetCurrentHP();
+}
+
+int Character::GetMaxHP()
+{
+    return GetGOComponent<StatsComponent>()->GetMaxHP();
+}
+
+int Character::GetAttackRange() {
+    return GetGOComponent<StatsComponent>()->GetAttackRange();
+}
 // void Character::SetHp()
 // {
 //     GetGOComponent<StatsComponent>()
@@ -229,3 +242,15 @@ void Character::ConsumeSpell(int level) {    // REALLY? WHAT THE FUCK? WHERE IS 
 // {
     
 // }
+
+void Character::SetGridPosition(Math::ivec2 new_coordinates) {
+    GetGOComponent<GridPosition>()->Set(new_coordinates);
+}
+
+void Character::SetHP(int HP) {
+    GetGOComponent<StatsComponent>()->SetHP(HP);
+}
+
+void Character::SetAttackRange(int new_range) {
+    GetGOComponent<StatsComponent>()->SetAttackRange(new_range);
+}
