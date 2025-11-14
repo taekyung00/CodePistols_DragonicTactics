@@ -8,6 +8,7 @@
 #include "./Engine/Window.hpp"
 
 #include "./Game/DragonicTactics/Test/Week1TestMocks.h"
+#include "./Game/DragonicTactics/Test/TestAssert.h"
 #include "./Game/DragonicTactics/Types/Events.h"
 
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
@@ -104,6 +105,8 @@ void Test::Update([[maybe_unused]] double dt)
     if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::P))
     { // junyoung
         test_spellsystem_all();
+        test_turnmanager_all();
+        
         //test_turnmanager_all();
     }
 

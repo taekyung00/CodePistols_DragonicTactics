@@ -20,7 +20,7 @@ int CombatSystem::CalculateDamage(Character* attacker, Character* defender,
     }
 
     // Roll attack dice
-    int diceRoll = DiceManager::Instance().RollDiceFromString(damageDice);
+    int diceRoll = Engine::GetDiceManager().RollDiceFromString(damageDice);
     int totalDamage = diceRoll + baseDamage;
 
     Engine::GetLogger().LogEvent("CombatSystem: " + attacker->TypeName() +
@@ -112,7 +112,7 @@ bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender) {
 }
 
 int CombatSystem::RollAttackDamage(const std::string& damageDice, int baseDamage) {
-    int diceRoll = DiceManager::Instance().RollDiceFromString(damageDice);
+    int diceRoll = Engine::GetDiceManager().RollDiceFromString(damageDice);
     return diceRoll + baseDamage;
 }
 

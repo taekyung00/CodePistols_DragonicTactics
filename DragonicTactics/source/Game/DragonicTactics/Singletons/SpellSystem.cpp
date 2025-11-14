@@ -71,13 +71,10 @@
 
 
 // Step 1.9: Singleton implementation
-SpellSystem& SpellSystem::GetInstance() {
-    static SpellSystem instance;
-    return instance;
-}
+
 
 SpellSystem::SpellSystem() {
-    Engine::GetLogger().LogEvent("SpellSystem initialized");
+    //Engine::GetLogger().LogEvent("SpellSystem initialized");
 }
 
 SpellSystem::~SpellSystem() {
@@ -207,7 +204,7 @@ MockSpellResult SpellSystem::CastSpell(
         std::to_string((int)targetTile.y) + ")" +
         (upcastLevel > 0 ? " (upcast to level " + std::to_string(upcastLevel) + ")" : "")
     );
-    ///////////////////////////////////////////////////caster->ConsumeSpell(level);//////////////////////////////////////////////
+	caster->ConsumeSpell(spell->GetLevel());
     // Step 4.1d: Execute the spell
     // Reason: Delegate to the spell's own Cast() method
     result = spell->Cast(caster, targetTile/*, upcastLevel*/);
@@ -215,7 +212,7 @@ MockSpellResult SpellSystem::CastSpell(
     // Step 4.1e: Publish system-level event
     // Reason: Other systems may need to react to spell casts
     if (result.success) {
-        EventBus::GetInstance().Publish(SpellCastEventForSpell{
+        Engine::GetEventBus().Publish(SpellCastEventForSpell{
             caster,
             spellName,
             targetTile,

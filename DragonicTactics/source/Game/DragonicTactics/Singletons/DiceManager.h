@@ -6,7 +6,9 @@
 
 class DiceManager {
 public:
-    static DiceManager& Instance();
+    DiceManager();
+    ~DiceManager() = default;
+
     int  RollDice(int count, int sides);
     int  RollDiceFromString(const std::string& notation);  // TODO NdS +-M 굴리기. RollDice사용, ParseDiceString를 사용해서
                                                            // 정확한 형태인지 확인하기. if(!ParseDiceString)
@@ -16,10 +18,8 @@ public:
     const std::vector<int>& GetLastRolls() const;          // TODO
 
 private:
-    DiceManager();
-    ~DiceManager() = default;
-    DiceManager(const DiceManager&) = delete;              // 복사 금지 (싱글톤 보장)
-    DiceManager& operator=(const DiceManager&) = delete;   // 대입 금지
+    DiceManager(const DiceManager&) = delete;              
+    DiceManager& operator=(const DiceManager&) = delete;   
     DiceManager(DiceManager&&) = delete;
     DiceManager& operator=(DiceManager&&) = delete;
 

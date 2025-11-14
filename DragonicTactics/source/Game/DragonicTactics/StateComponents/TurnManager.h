@@ -6,15 +6,52 @@
 #include <vector>
 #include <queue>
 
-class TurnManager {
+// ===== Week 4: Initiative System (NEW) =====
+// Initiative tracking structure
+struct InitiativeEntry {
+    Character* character;
+    MockCharacter* mockCharacter;  // For testing
+    int roll;              // 1d20 result
+    int speedModifier;     // (speed - 10) / 2
+    int totalInitiative;   // roll + modifier
+
+    // Constructor for real characters
+    InitiativeEntry(Character* ch, int r, int mod)
+        : character(ch), mockCharacter(nullptr), roll(r), speedModifier(mod), totalInitiative(r + mod) {}
+
+    // Constructor for mock characters (testing)
+    InitiativeEntry(MockCharacter* ch, int r, int mod)
+        : character(nullptr), mockCharacter(ch), roll(r), speedModifier(mod), totalInitiative(r + mod) {}
+};
+
+// Initiative mode options
+enum class InitiativeMode {
+    RollOnce,      // Roll at combat start (D&D 5e default)
+    RollEachRound  // Re-roll each round (variant rule)
+};
+// ===== End Sangyun Initiative System =====
+
+class TurnManager : public CS230::Component
+{
 public:
-    static TurnManager& Instance();
+    TurnManager();
 
     // Turn management
     void InitializeTurnOrder(const std::vector<Character*>& characters);
     void InitializeTurnOrder(const std::vector<MockCharacter*>& characters);
     void StartNextTurn();
     void EndCurrentTurn();
+
+    // ===== Sangyun: Initiative System (NEW) =====
+    void RollInitiative(const std::vector<Character*>& characters);
+    void ResetInitiative();
+    int GetInitiativeValue(Character* character) const;
+    void SetInitiativeMode(InitiativeMode mode) { initiativeMode = mode; }
+
+    // Test support (MockCharacter overloads)
+    void RollInitiativeMock(const std::vector<MockCharacter*>& characters);
+    int GetInitiativeValueMock(MockCharacter* character) const;
+    // ===== End Sangyun Initiative System =====
 
     // Turn state
     Character* GetCurrentCharacter() const;
@@ -32,7 +69,6 @@ public:
     void Reset();
 
 private:
-    TurnManager() = default;
     TurnManager(const TurnManager&) = delete;
     TurnManager& operator=(const TurnManager&) = delete;
 
@@ -42,6 +78,16 @@ private:
     int roundNumber;
     bool combatActive;
 
+    // ===== Sangyun: Initiative System (NEW) =====
+    std::vector<InitiativeEntry> initiativeOrder;
+    InitiativeMode initiativeMode;
+    // ===== End Sangyun Initiative System =====
+
     void PublishTurnStartEvent();
     void PublishTurnEndEvent();
+
+    // ===== Sangyun: Initiative Helper Methods (NEW) =====
+    int CalculateSpeedModifier(int speed) const;
+    void SortInitiativeOrder();
+    // ===== End Sangyun Initiative System =====
 };

@@ -35,8 +35,11 @@ int SpellSlots::GetSpellSlotCount(int level) {
     return current_slots[level];
 }
 
-void SpellSlots::SetSpellSlots(std::map<int, int> spellSlot) {
-    current_slots = spellSlot;
+void SpellSlots::SetSpellSlots(std::map<int, int> spellSlots) {
+	for (const auto& pair : spellSlots)
+	{
+		current_slots[pair.first] = pair.second;
+	}
 }
 ///////////////////
 

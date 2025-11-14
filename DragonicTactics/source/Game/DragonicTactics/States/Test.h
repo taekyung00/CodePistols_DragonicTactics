@@ -1,6 +1,11 @@
 #pragma once
 #include "../../../Engine/GameState.hpp"
+#include "../../../Engine/Fonts.h"
+#include "../../../Engine/Engine.hpp"
+#include "../../../Engine/Texture.hpp"
+#include "../../../CS200/RGBA.hpp"
 #include "../StateComponents/GridSystem.h"
+
 class Dragon;
 class Fighter;
 
@@ -37,6 +42,8 @@ private:
     bool Test_TurnManager_AllCharactersDead();
     bool Test_TurnManager_GetCharacterTurnIndex();
 
+    void test_dice_manager();
+    void test_turnmanager_all();
     bool TestSpellRegistration();
     bool TestSpellCasting();
     bool TestSpellUpcast();
@@ -44,8 +51,7 @@ private:
     bool TestPreviewSpellArea();
     void RunSpellSystemTests();
 
-    void test_dice_manager();
-    void test_turnmanager_all();
+
     void test_spellsystem_all();
     void test_json();
     void test_json_reload();
@@ -76,13 +82,14 @@ public:
     gsl::czstring GetName() const override;
 
 private:
-    void     Test2_subscribe_publish_singleSubscriber();
-    void     Test2_multiple_subscribers_sameEvent();
-    void     Test2_multiple_different_events();
-    void     Test2_EventData_CompleteTransfer();
-    void     Test2_EventData_MultiplePublishes();
     Fighter* fighter;
     Dragon*  dragon;
     void     LogFighterStatus();
     void     LogDragonStatus();
+
+        // Ginam: Week3 Developer B - Grid-based Ability Tests
+	void test_MeleeAttack_WithGrid(); // Ginam: test melee attack on grid
+	void test_ShieldBash_WithGrid();  // Ginam: test shield bash knockback on grid
+	void test_ShieldBash_IntoWall();  // Ginam: test shield bash blocked by wall
+	//void test_Ability_VisualTest();	  // Ginam: visual test with arrow keys
 };

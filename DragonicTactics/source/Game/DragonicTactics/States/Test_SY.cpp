@@ -1,4 +1,5 @@
 #include "Test.h"
+#include "./Game/DragonicTactics/Test/TestAssert.h"
 #include "./Game/DragonicTactics/Singletons/CombatSystem.h"
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
 #include "./Game/DragonicTactics/Objects/Dragon.h"
@@ -21,7 +22,7 @@ bool Test::Test_CombatSystem_CalculateDamage() {
 }
 
 bool Test::Test_CombatSystem_CalculateDamage_MinRoll() {
-    DiceManager::Instance().SetSeed(1000);
+    Engine::GetDiceManager().SetSeed(1000);
 
     int minDamage = 999;
     for (int i = 0; i < 100; ++i) {

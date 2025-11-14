@@ -25,6 +25,7 @@ public:
     void          Unload() override;
     void          Draw() override;
     void          DrawImGui() override;
+    void          SelecetOption();
     gsl::czstring GetName() const override;
     static constexpr CS200::RGBA  title_color       = 0x9A2EFEFF;
     static constexpr CS200::RGBA  non_seleted_color = 0xFFFFFFFF;
@@ -33,20 +34,25 @@ public:
 private:
 enum class Option
     {
-        cs230_final,
-        dragonic_tactics,
-        test2,
-        exit
-    }current_option;
-    // Option& operator++(){
-    //     curret
-    // }
-    // Option current_option;
+        DragonicTactics,
+        ConsoleTest,
+        RenderingTest,
+        Exit,
+        COUNT
+    };
+    Option current_option;
 
-    CS200::RGBA cs230_final_color ;
     CS200::RGBA dragonic_tactics_color ;
-    CS200::RGBA test2_color ;
+    CS200::RGBA console_test_color ;
+    CS200::RGBA rendering_test_color ;
     CS200::RGBA exit_color;
+
+    Math::vec2 title_pos;
+    Math::vec2 title_scale;
+
+    Math::vec2 menu_start_pos_bl;   
+    Math::vec2 menu_item_size;      
+    double     menu_item_total_height; 
 
     void update_colors();
 
