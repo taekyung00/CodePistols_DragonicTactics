@@ -247,7 +247,7 @@ void TurnManager::RollInitiative(const std::vector<Character*>& characters) {
 
     Engine::GetLogger().LogEvent("=== ROLLING INITIATIVE ===");
 
-    DiceManager& dice = DiceManager::Instance();
+    DiceManager& dice = Engine::GetDiceManager();
 
     // Roll 1d20 + speed modifier for each character
     for (Character* character : characters) {
@@ -348,7 +348,7 @@ void TurnManager::RollInitiativeMock(const std::vector<MockCharacter*>& characte
 
     Engine::GetLogger().LogEvent("=== ROLLING INITIATIVE (MOCK) ===");
 
-    DiceManager& dice = DiceManager::Instance();
+    DiceManager& dice = Engine::GetDiceManager();
 
     // Roll 1d20 + speed modifier for each mock character
     for (MockCharacter* character : characters) {

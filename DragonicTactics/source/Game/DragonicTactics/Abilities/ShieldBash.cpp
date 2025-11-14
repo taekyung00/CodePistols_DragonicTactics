@@ -65,7 +65,7 @@ AbilityResult ShieldBash::Use(Character* user, Character* target) {
         return result;
     }
 
-    DiceManager& dice = DiceManager::Instance();
+    DiceManager& dice = Engine::GetDiceManager();
     int attackModifier = user->GetStatsComponent()->GetBaseAttack();
     int damage = dice.RollDiceFromString(baseDamage) + attackModifier;
 

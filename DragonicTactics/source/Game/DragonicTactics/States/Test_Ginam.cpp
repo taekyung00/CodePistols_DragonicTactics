@@ -222,7 +222,8 @@ void Test::test_json_log()
 
 void Test::test_dice_manager()
 {
-    DiceManager& dice = DiceManager::Instance();
+    DiceManager& dice = Engine::GetDiceManager();
+    
     dice.SetSeed(42);
     dice.RollDiceFromString("4d8+2");
 }

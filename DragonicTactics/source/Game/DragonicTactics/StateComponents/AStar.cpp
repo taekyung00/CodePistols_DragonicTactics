@@ -6,26 +6,26 @@
 #include <cassert>
 #include <algorithm>
 
-int GridSystem::ManhattanDistance(Math::vec2 a, Math::vec2 b) const
+int GridSystem::ManhattanDistance(Math::ivec2 a, Math::ivec2 b) const
 {
 	return static_cast<int>(std::abs(a.x - b.x) + std::abs(a.y - b.y));
 }
 
-std::vector<Math::vec2> GridSystem::GetNeighbors(Math::vec2 position) const
+std::vector<Math::ivec2> GridSystem::GetNeighbors(Math::ivec2 position) const
 {
-	std::vector<Math::vec2> neighbors;
+	std::vector<Math::ivec2> neighbors;
 
 	// 4-directional movement(up,down,left,right)
-	const Math::vec2 directionals[] = {
+	const Math::ivec2 directionals[] = {
 		{  0,	 1 }, //  up
 		{  0,   -1 }, //  down
 		{ -1,    0 }, //  left
 		{  1,	 0 }  //  right
 	};
 
-	for (const Math::vec2& dir : directionals)
+	for (const Math::ivec2& dir : directionals)
 	{
-		Math::vec2 neighbor = position + dir;
+		Math::ivec2 neighbor = position + dir;
 		if (IsValidTile(neighbor))
 		{
 			neighbors.push_back(neighbor);
@@ -34,7 +34,7 @@ std::vector<Math::vec2> GridSystem::GetNeighbors(Math::vec2 position) const
 	return neighbors;
 }
 
-std::vector<Math::vec2> GridSystem::FindPath(Math::vec2 start, Math::vec2 goal)
+std::vector<Math::ivec2> GridSystem::FindPath(Math::ivec2 start, Math::ivec2 goal)
 {
 	// edge cases
 	if (!IsValidTile(start) || !IsValidTile(goal))
@@ -57,7 +57,7 @@ std::vector<Math::vec2> GridSystem::FindPath(Math::vec2 start, Math::vec2 goal)
 
 	if (start == goal)
 	{
-		return { start };
+		return {};
 	}
 
 	// A* algorithm
@@ -89,8 +89,8 @@ std::vector<Math::vec2> GridSystem::FindPath(Math::vec2 start, Math::vec2 goal)
 		}
 
 		//check neighbors
-		std::vector<Math::vec2> neighbors = GetNeighbors(current->position);
-		for (const Math::vec2& neighborPos : neighbors)
+		std::vector<Math::ivec2> neighbors = GetNeighbors(current->position);
+		for (const Math::ivec2& neighborPos : neighbors)
 		{
 			//skip if not walkable or in closed set
 			if (!IsWalkable(neighborPos))
@@ -129,13 +129,16 @@ std::vector<Math::vec2> GridSystem::FindPath(Math::vec2 start, Math::vec2 goal)
 	}
 
 	//reconstruct path
-	std::vector<Math::vec2> path;
+	std::vector<Math::ivec2> path;
 	 
 	if(goalNode != nullptr){
 		Node* current = goalNode;
 		while (current != nullptr)
 		{
-			path.push_back(current->position);
+			if (current->position != start)
+			{
+				path.push_back(current->position);
+			}			
 			current = current->parent;
 		}
 		std::reverse(path.begin(), path.end());
@@ -156,43 +159,43 @@ std::vector<Math::vec2> GridSystem::FindPath(Math::vec2 start, Math::vec2 goal)
 	return path;
 }
 
-int GridSystem::GetPathLength(Math::vec2 start, Math::vec2 goal)
-{
-	std::vector<Math::vec2> path = FindPath(start, goal);
-	return path.empty() ? -1 : (int)path.size() - 1; // -1 because start tile doesn't count
-}
-
-std::vector<Math::vec2> GridSystem::GetReachableTiles(Math::vec2 start, int maxDistance)
-{
-	std::vector<Math::vec2> reachable;
-
-	// Check all tiles on the grid
-	for (int y = 0; y < MAP_HEIGHT; ++y)
-	{
-		for (int x = 0; x < MAP_WIDTH; ++x)
-		{
-			Math::vec2 tile{ (double)x, (double)y };
-
-			// Skip start tile
-			if (tile.x == start.x && tile.y == start.y)
-				continue;
-
-			// Skip if not walkable
-			if (!IsWalkable(tile))
-				continue;
-
-			// Skip if occupied
-			if (IsOccupied(tile))
-				continue;
-
-			// Check path length
-			int pathLength = GetPathLength(start, tile);
-			if (pathLength > 0 && pathLength <= maxDistance)
-			{
-				reachable.push_back(tile);
-			}
-		}
-	}
-
-	return reachable;
-}
+//int GridSystem::GetPathLength(Math::ivec2 start, Math::ivec2 goal)
+//{
+//	std::vector<Math::ivec2> path = FindPath(start, goal);
+//	return path.empty() ? -1 : (int)path.size() - 1; // -1 because start tile doesn't count
+//}
+//
+//std::vector<Math::ivec2> GridSystem::GetReachableTiles(Math::ivec2 start, int maxDistance)
+//{
+//	std::vector<Math::ivec2> reachable;
+//
+//	// Check all tiles on the grid
+//	for (int y = 0; y < MAP_HEIGHT; ++y)
+//	{
+//		for (int x = 0; x < MAP_WIDTH; ++x)
+//		{
+//			Math::ivec2 tile{ x, y };
+//
+//			// Skip start tile
+//			if (tile.x == start.x && tile.y == start.y)
+//				continue;
+//
+//			// Skip if not walkable
+//			if (!IsWalkable(tile))
+//				continue;
+//
+//			// Skip if occupied
+//			if (IsOccupied(tile))
+//				continue;
+//
+//			// Check path length
+//			int pathLength = GetPathLength(start, tile);
+//			if (pathLength > 0 && pathLength <= maxDistance)
+//			{
+//				reachable.push_back(tile);
+//			}
+//		}
+//	}
+//
+//	return reachable;
+//}

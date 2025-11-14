@@ -71,13 +71,10 @@
 
 
 // Step 1.9: Singleton implementation
-SpellSystem& SpellSystem::GetInstance() {
-    static SpellSystem instance;
-    return instance;
-}
+
 
 SpellSystem::SpellSystem() {
-    Engine::GetLogger().LogEvent("SpellSystem initialized");
+    //Engine::GetLogger().LogEvent("SpellSystem initialized");
 }
 
 SpellSystem::~SpellSystem() {
@@ -215,7 +212,7 @@ MockSpellResult SpellSystem::CastSpell(
     // Step 4.1e: Publish system-level event
     // Reason: Other systems may need to react to spell casts
     if (result.success) {
-        EventBus::GetInstance().Publish(SpellCastEventForSpell{
+        Engine::GetEventBus().Publish(SpellCastEventForSpell{
             caster,
             spellName,
             targetTile,

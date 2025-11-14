@@ -8,10 +8,7 @@ DiceManager::DiceManager() {
     rng.seed(rand());
 }
 
-DiceManager& DiceManager::Instance() {
-    static DiceManager instance;
-    return instance;
-}
+
 
 void DiceManager::SetSeed(int seed) {
     rng.seed(static_cast<unsigned int>(seed));

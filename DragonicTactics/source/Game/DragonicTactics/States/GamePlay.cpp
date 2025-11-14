@@ -18,11 +18,12 @@ Created:    November 5, 2025
 
 #include "../StateComponents/GridSystem.h"
 #include "../StateComponents/TurnManager.h" 
-#include "./Game/DragonicTactics/Objects/Actions/ActionAttack.h"
-#include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
-#include "./Game/DragonicTactics/Objects/Components/SpellSlots.h"
-#include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
-#include "./Game/MainMenu.h" 
+#include "Game/DragonicTactics/Objects/Actions/ActionAttack.h"
+#include "Game/DragonicTactics/Objects/Components/ActionPoints.h"
+#include "Game/DragonicTactics/Objects/Components/SpellSlots.h"
+#include "Game/DragonicTactics/Objects/Components/StatsComponent.h"
+#include "Game/MainMenu.h" 
+#include "Game/DragonicTactics/Singletons/DiceManager.h"
 
 #include <imgui.h>
 #include "./Engine/Input.hpp"
@@ -30,65 +31,10 @@ Created:    November 5, 2025
 #include "./Game/DragonicTactics/Objects/Fighter.h"
 #include "./Game/DragonicTactics/Objects/Dragon.h"
 
-std::vector<Math::ivec2> GamePlay::CalculateSimplePath(Math::ivec2 start, Math::ivec2 end)
-{
-    std::vector<Math::ivec2> path;
-    Math::ivec2 current = start;
-
-
-    GridSystem* grid = GetGSComponent<GridSystem>();
-    if (grid == nullptr)
-    {
-        Engine::GetLogger().LogError("CalculateSimplePath: GridSystem is null!");
-        return path;
-    }
-
-
-    int safety_break = 0; 
-    while (current != end && safety_break < 500)
-    {
-        safety_break++;
-        Math::ivec2 next_step = current;
-
-
-        if (current.x < end.x) {
-            next_step.x++;
-        } else if (current.x > end.x) {
-            next_step.x--;
-        }
-
-        else if (current.y < end.y) {
-            next_step.y++;
-        } else if (current.y > end.y) {
-            next_step.y--;
-        }
-
-
-        if (grid->IsWalkable(next_step))
-        {
-            path.push_back(next_step);
-            current = next_step;
-        }
-        else
-        {
-
-            Engine::GetLogger().LogError("Simple path blocked at (" + 
-                std::to_string(next_step.x) + ", " + std::to_string(next_step.y) + "). Stopping path.");
-            return path;
-        }
-    }
-    
-    if (safety_break >= 500) {
-        Engine::GetLogger().LogError("CalculateSimplePath: Hit safety break, possible infinite loop!");
-    }
-
-
-    return path;
-}
-
 GamePlay::GamePlay():fighter(nullptr), dragon(nullptr){}
 
 void GamePlay::Load(){
+	Engine::GetDiceManager().SetSeed(100);
     AddGSComponent(new CS230::GameObjectManager());
     
     AddGSComponent(new GridSystem());
@@ -125,9 +71,11 @@ void GamePlay::Load(){
             }
         }
     }
-    
+
     AddGSComponent(new TurnManager());
-    GetGSComponent<TurnManager>()->InitializeTurnOrder({fighter, dragon});
+	GetGSComponent<TurnManager>()->InitializeTurnOrder({ dragon, fighter });
+	GetGSComponent<TurnManager>()->StartCombat();
+
 }
 
 Math::ivec2 ConvertScreenToGrid(Math::vec2 world_pos)
@@ -139,144 +87,153 @@ Math::ivec2 ConvertScreenToGrid(Math::vec2 world_pos)
 
 void GamePlay::Update(double dt){
 
+	TurnManager* turnMgr = GetGSComponent<TurnManager>();
+	Character*	 currentCharacter;
+    //업데이트 시작
+
     CS230::Input& input = Engine::GetInput();
     bool is_clicking_ui = ImGui::GetIO().WantCaptureMouse;
 
-    TurnManager* turnMgr = GetGSComponent<TurnManager>();
-    bool isPlayerTurn = false;
-    if (turnMgr && turnMgr->IsCombatActive()) {
-        Character* current = turnMgr->GetCurrentCharacter();
-        isPlayerTurn = (current == dragon);
+	if (turnMgr && turnMgr->IsCombatActive())
+	{
+		currentCharacter = turnMgr->GetCurrentCharacter();
+	}
+	else
+	{
+		currentCharacter = nullptr;
     }
 
-    if(!isPlayerTurn){
-        if (Engine::GetInput().KeyJustReleased(CS230::Input::Keys::Escape))
-        {
-            Engine::GetGameStateManager().PopState();
-            Engine::GetGameStateManager().PushState<MainMenu>();
-        }
+    switch (currentCharacter->GetCharacterType())
+	{
+		case CharacterTypes::Dragon: //추후에 밑 로직을 함수로 만들기
+            if (input.MouseJustPressed(0)) // 좌클
+			{
+				Engine::GetLogger().LogEvent("Map clicked at (" + std::to_string(input.GetMousePos().x) + ", " + std::to_string(input.GetMousePos().y) + ")");
 
-        GetGSComponent<CS230::GameObjectManager>()->UpdateAll(dt);
-        return;
-    }
+				if (!is_clicking_ui) // ui를 클릭한게 아님
+				{
+					Math::vec2	mouse_pos = input.GetMousePos();
+					Math::ivec2 grid_pos  = ConvertScreenToGrid(mouse_pos);
 
-    if (input.MouseJustPressed(0))
-    {
-        Engine::GetLogger().LogEvent("Map clicked at (" + std::to_string(input.GetMousePos().x) + ", " + std::to_string(input.GetMousePos().y) + ")");
+					GridSystem* grid_system = GetGSComponent<GridSystem>();
+					switch (currentPlayerState)
+					{
+						case PlayerActionState::SelectingMove:
+							Engine::GetLogger().LogEvent("Map clicked while in SelectingMove state.");
+							// player->MoveTo(grid_pos);
+							// currentPlayerState = PlayerActionState::None;
+							if (grid_system->IsWalkable(grid_pos))
+							{
+								std::vector<Math::ivec2> new_path =
+									grid_system->FindPath(dragon->GetGridPosition()->Get(), grid_pos); // CalculateSimplePath(dragon->GetGridPosition()->Get(), grid_pos);
+								dragon->SetPath(std::move(new_path));
+							}
+							currentPlayerState = PlayerActionState::None;
+							break;
+						case PlayerActionState::SelectingAction:
+							Engine::GetLogger().LogEvent("Map clicked while in SelectingAction state.");
+							// player->PerformAction(grid_pos);
+							// currentPlayerState = PlayerActionState::None;
+							break;
+						case PlayerActionState::TargetingForAttack:
+							{
+								Engine::GetLogger().LogEvent("Map clicked for Attack at (" + std::to_string(grid_pos.x) + ", " + std::to_string(grid_pos.y) + ")");
+								Character* target = grid_system->GetCharacterAt(grid_pos);
 
-        if (!is_clicking_ui)
-        {
-            Math::vec2 mouse_pos = input.GetMousePos();
-            Math::ivec2 grid_pos = ConvertScreenToGrid(mouse_pos);
-            
-            GridSystem* grid_system = GetGSComponent<GridSystem>();
-            switch (currentPlayerState)
-            {
-                case PlayerActionState::SelectingMove:
-                    Engine::GetLogger().LogEvent("Map clicked while in SelectingMove state.");
-                    // player->MoveTo(grid_pos);
-                    // currentPlayerState = PlayerActionState::None; 
-                    if (grid_system->IsWalkable(grid_pos))
-                    {
-                        std::vector<Math::ivec2> new_path = CalculateSimplePath(dragon->GetGridPosition()->Get(), grid_pos);
-                        dragon->SetPath(std::move(new_path));
-                    }
-                    currentPlayerState = PlayerActionState::None;
-                    break;
-                case PlayerActionState::SelectingAction:
-                    Engine::GetLogger().LogEvent("Map clicked while in SelectingAction state.");
-                    // player->PerformAction(grid_pos);
-                    // currentPlayerState = PlayerActionState::None; 
-                    break;
-                case PlayerActionState::TargetingForAttack:
-                {
-                    Engine::GetLogger().LogEvent("Map clicked for Attack at (" + std::to_string(grid_pos.x) + ", " + std::to_string(grid_pos.y) + ")");
-                    Character* target = grid_system->GetCharacterAt(grid_pos);
+								if (target != nullptr && target != dragon)
+								{
+									if (dragon->GetActionPoints() > 0)
+									{
+										dragon->PerformAttack(fighter);
+									}
+									else
+									{
+										Engine::GetLogger().LogDebug("Dragon has no Action Points to attack!");
+									}
+									currentPlayerState = PlayerActionState::None;
+								}
+								else
+								{
+									Engine::GetLogger().LogEvent("Attack FAILED. Invalid target.");
+								}
+								break;
+							}
 
-                    if (target != nullptr && target != dragon)
-                    {
-                        if (dragon->GetActionPoints() > 0)
-                        {
-                            dragon->PerformAttack(fighter);
-                        }
-                        else
-                        {
-                            Engine::GetLogger().LogDebug("Dragon has no Action Points to attack!");
-                        }
-                        currentPlayerState = PlayerActionState::None; 
-                    }
-                    else
-                    {
-                        Engine::GetLogger().LogEvent("Attack FAILED. Invalid target.");
-                    }
-                    break;
-                }
+						case PlayerActionState::TargetingForSpell:
+							{
+								Engine::GetLogger().LogEvent("Map clicked for Spell at (" + std::to_string(grid_pos.x) + ", " + std::to_string(grid_pos.y) + ")");
 
-                case PlayerActionState::TargetingForSpell:
-                {
-                    Engine::GetLogger().LogEvent("Map clicked for Spell at (" + std::to_string(grid_pos.x) + ", " + std::to_string(grid_pos.y) + ")");
-                    
-                    if (grid_system->IsWalkable(grid_pos)) 
-                    {
-                        Engine::GetLogger().LogEvent("Spell CAST! On tile.");
-                     
-                        // grid_system->ApplyEffectToTile(grid_pos, "Fire");
+								if (grid_system->IsWalkable(grid_pos))
+								{
+									Engine::GetLogger().LogEvent("Spell CAST! On tile.");
 
-                        currentPlayerState = PlayerActionState::None; 
-                    }
-                    else
-                    {
-                        Engine::GetLogger().LogEvent("Spell FAILED. Invalid tile.");
-                    }
-                    break;
-                }
-                case PlayerActionState::None:
-                    break;
-            }
-        }
-    }
-    
-    if (input.MouseJustPressed(1)) 
-    {
-        if (currentPlayerState != PlayerActionState::None)
-        {
-            Engine::GetLogger().LogEvent("Action cancelled via Right Click.");
-            currentPlayerState = PlayerActionState::None;
-        }
-    }
+									// grid_system->ApplyEffectToTile(grid_pos, "Fire");
 
-    if (dragon != nullptr && dragon->IsAlive()) {
-        Math::ivec2 current_pos    = dragon->GetGridPosition()->Get();
-        Math::ivec2 target_pos     = current_pos;
-        bool        move_requested = false;
+									currentPlayerState = PlayerActionState::None;
+								}
+								else
+								{
+									Engine::GetLogger().LogEvent("Spell FAILED. Invalid tile.");
+								}
+								break;
+							}
+						case PlayerActionState::None: break;
+					}
+				}
+			}
 
-        if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Up)) {
-            target_pos.y++; move_requested = true;
-        }
-        else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Down)) {
-            target_pos.y--; move_requested = true;
-        }
-        else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Left)) {
-            target_pos.x--; move_requested = true;
-        }
-        else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Right)) {
-            target_pos.x++; move_requested = true;
-        }
+			if (input.MouseJustPressed(2))
+			{
+				if (currentPlayerState != PlayerActionState::None)
+				{
+					Engine::GetLogger().LogEvent("Action cancelled via Right Click.");
+					currentPlayerState = PlayerActionState::None;
+				}
+			}
 
-        if (move_requested) {
-            GridSystem* grid = GetGSComponent<GridSystem>();
-            if (grid != nullptr && grid->IsWalkable(target_pos)) {
-                grid->MoveCharacter(current_pos, target_pos);
-                dragon->GetGridPosition()->Set(target_pos);
-                dragon->SetPosition({ static_cast<double>(target_pos.x * GridSystem::TILE_SIZE), static_cast<double>(target_pos.y * GridSystem::TILE_SIZE) });
-                Engine::GetLogger().LogEvent("Dragon moved to (" + std::to_string(target_pos.x) + ", " + std::to_string(target_pos.y) + ")");
-               
-            }
-            else {
-                Engine::GetLogger().LogEvent("Dragon cannot move there! (Wall or Occupied)");
-            }
-        }
-    }
+            break;
+		case CharacterTypes::Fighter: 
+            turnMgr->EndCurrentTurn();
+            break;
+		case CharacterTypes::Wizard: break;
+		case CharacterTypes::Rogue: break;
+		case CharacterTypes::Cleric: break;
+	} // 캐릭터 행동 끝남의 유무 반환함수
+
+
+
+    //if (dragon != nullptr && dragon->IsAlive()) {
+    //    Math::ivec2 current_pos    = dragon->GetGridPosition()->Get();
+    //    Math::ivec2 target_pos     = current_pos;
+    //    bool        move_requested = false;
+
+    //    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Up)) {
+    //        target_pos.y++; move_requested = true;
+    //    }
+    //    else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Down)) {
+    //        target_pos.y--; move_requested = true;
+    //    }
+    //    else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Left)) {
+    //        target_pos.x--; move_requested = true;
+    //    }
+    //    else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Right)) {
+    //        target_pos.x++; move_requested = true;
+    //    }
+
+    //    if (move_requested) {
+    //        GridSystem* grid = GetGSComponent<GridSystem>();
+    //        if (grid != nullptr && grid->IsWalkable(target_pos)) {
+    //            grid->MoveCharacter(current_pos, target_pos);
+    //            dragon->GetGridPosition()->Set(target_pos);
+    //            dragon->SetPosition({ static_cast<double>(target_pos.x * GridSystem::TILE_SIZE), static_cast<double>(target_pos.y * GridSystem::TILE_SIZE) });
+    //            Engine::GetLogger().LogEvent("Dragon moved to (" + std::to_string(target_pos.x) + ", " + std::to_string(target_pos.y) + ")");
+    //           
+    //        }
+    //        else {
+    //            Engine::GetLogger().LogEvent("Dragon cannot move there! (Wall or Occupied)");
+    //        }
+    //    }
+    //}
 
     if (Engine::GetInput().KeyJustReleased(CS230::Input::Keys::Escape))
     {
@@ -311,23 +268,20 @@ void GamePlay::Draw(){
 }
 
 void GamePlay::DrawImGui(){
-    TurnManager* turnMgr = GetGSComponent<TurnManager>();
-    if (turnMgr && turnMgr->IsCombatActive()) {
-        ImGui::Begin("Combat Status");
-        Character* current = turnMgr->GetCurrentCharacter();
-        if (current) {
-            ImGui::Text("Current Turn: %s", current->TypeName().c_str());
-            ImGui::Text("Turn #%d | Round #%d", 
-                       turnMgr->GetCurrentTurnNumber(), 
-                       turnMgr->GetRoundNumber());
-            ImGui::Text("Initiative: %d", 
-                       turnMgr->GetInitiativeValue(current));
-        }
-        ImGui::End();
-    }
-
     ImGui::Begin("Player Actions");
-
+	TurnManager* turnMgr = GetGSComponent<TurnManager>();
+	if (turnMgr && turnMgr->IsCombatActive())
+	{
+		ImGui::Begin("Combat Status");
+		Character* current = turnMgr->GetCurrentCharacter();
+		if (current)
+		{
+			ImGui::Text("Current Turn: %s", current->TypeName().c_str());
+			ImGui::Text("Turn #%d | Round #%d", turnMgr->GetCurrentTurnNumber(), turnMgr->GetRoundNumber());
+			ImGui::Text("Initiative: %d", turnMgr->GetInitiativeValue(current));
+		}
+		ImGui::End();
+	}
     const char* move_text = (currentPlayerState == PlayerActionState::SelectingMove) ? "Cancel Move" : "Move";
     bool is_move_disabled = (currentPlayerState != PlayerActionState::None && 
                              currentPlayerState != PlayerActionState::SelectingMove); 
@@ -362,9 +316,10 @@ void GamePlay::DrawImGui(){
     if (is_end_turn_disabled) ImGui::BeginDisabled();
     if (ImGui::Button("End Turn")) {
         Engine::GetLogger().LogEvent("UI: 'End Turn' button clicked.");
-        if (turnMgr && turnMgr->IsCombatActive()) {
-            turnMgr->EndCurrentTurn();
-        }
+		if (turnMgr && turnMgr->IsCombatActive())
+		{
+			turnMgr->EndCurrentTurn();
+		}
     }
     if (is_end_turn_disabled) ImGui::EndDisabled();
 

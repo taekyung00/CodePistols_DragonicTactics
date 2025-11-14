@@ -273,7 +273,7 @@ bool Test::Test_TurnManager_GetCharacterTurnIndex()
 
 
 bool Test::TestSpellRegistration() {
-    SpellSystem& spellSys = SpellSystem::GetInstance();
+    SpellSystem& spellSys = Engine::GetSpellSystem();
 
     // Test: Register a spell
     MockFireball* fireball = new MockFireball();
@@ -290,7 +290,7 @@ bool Test::TestSpellRegistration() {
 bool Test::TestSpellCasting() {
 	GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
 
-    SpellSystem& spellSys = SpellSystem::GetInstance();
+    SpellSystem& spellSys = Engine::GetSpellSystem();
 
     // Register Fireball
     spellSys.RegisterSpell("Fireball", new MockFireball());
@@ -323,7 +323,7 @@ bool Test::TestSpellUpcast() {
     caster->SetSpellSlots({{1, 2}}); // 1 level 2 slot
     caster->SetSpellSlots({{2, 3}}); // 2 level 3 slots
 
-    SpellSystem& spellSys = SpellSystem::GetInstance();
+    SpellSystem& spellSys = Engine::GetSpellSystem();
     spellSys.RegisterSpell("Fireball", new MockFireball());
 
     // Test: Upcast Fireball to level 3
@@ -344,7 +344,7 @@ bool Test::TestGetAvailableSpells() {
     caster->SetSpellSlots({{2, 1}});
     caster->SetSpellSlots({{3, 2}});
 
-    SpellSystem& spellSys = SpellSystem::GetInstance();
+    SpellSystem& spellSys = Engine::GetSpellSystem();
     spellSys.RegisterSpell("Fireball", new MockFireball());  // Level 2
     spellSys.RegisterSpell("CreateWall", new MockCreateWall());  // Level 1
 
@@ -360,7 +360,7 @@ bool Test::TestGetAvailableSpells() {
 }
 
 bool Test::TestPreviewSpellArea() {
-    SpellSystem& spellSys = SpellSystem::GetInstance();
+    SpellSystem& spellSys = Engine::GetSpellSystem();
     spellSys.RegisterSpell("Fireball", new MockFireball());
 
     // Test: Preview Fireball area
