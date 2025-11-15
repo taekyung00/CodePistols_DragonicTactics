@@ -42,9 +42,9 @@ int DiceManager::RollDice(int count, int sides) {
 
 int DiceManager::RollDiceFromString(const std::string& notation) {
     std::string NdS = notation;
-    NdS.erase(std::remove_if(NdS.begin(), NdS.end(), ::isspace), NdS.end());    //°ø¹éÁ¦°Å
+    NdS.erase(std::remove_if(NdS.begin(), NdS.end(), ::isspace), NdS.end());    //ê³µë°±ì œê±°
     
-    size_t dD = NdS.find_first_of("dD");    //d¶Ç´Â DÀÇ À§Ä¡ Ã£±â.
+    size_t dD = NdS.find_first_of("dD");    //dë˜ëŠ” Dì˜ ìœ„ì¹˜ ì°¾ê¸°.
     if (dD == std::string::npos) {
         lastRolls.clear();
         LogRoll(notation, 0);
@@ -56,22 +56,22 @@ int DiceManager::RollDiceFromString(const std::string& notation) {
     int mod = 0;
     
     try {
-        count = std::stoi(NdS.substr(0, dD));   // stoi= string -> int·Î º¯È¯½ÃÅ°±â. ÁÖ»çÀ§ °¹¼ö. NdS¿¡¼­ NºÎºÐ°ú dÀÌÈÄ µÚ¿¡ºÎºÐ ºÐ¸®.
+        count = std::stoi(NdS.substr(0, dD));   // stoi= string -> intë¡œ ë³€í™˜ì‹œí‚¤ê¸°. ì£¼ì‚¬ìœ„ ê°¯ìˆ˜. NdSì—ì„œ Në¶€ë¶„ê³¼ dì´í›„ ë’¤ì—ë¶€ë¶„ ë¶„ë¦¬.
         if (count <= 0) {
             throw;
         }
 
-        //NdSµÚ¿¡ ¿À´Â ºÎÈ£°¡ ¹ºÁö Ã£±â.
+        //NdSë’¤ì— ì˜¤ëŠ” ë¶€í˜¸ê°€ ë­”ì§€ ì°¾ê¸°.
         size_t sign = NdS.find('+', dD + 1);
         if (sign == std::string::npos)
             sign = NdS.find('-', dD + 1);
 
         if (sign == std::string::npos) {
-            //µû·Î ºÎÈ£ ¾ø´Â °æ¿ì. ex) 3d6
+            //ë”°ë¡œ ë¶€í˜¸ ì—†ëŠ” ê²½ìš°. ex) 3d6
             sides = std::stoi(NdS.substr(dD + 1));
         }
         else {
-            //ºÎÈ£ ÀÖ´Â °æ¿ì 3d6 + 2
+            //ë¶€í˜¸ ìžˆëŠ” ê²½ìš° 3d6 + 2
             sides = std::stoi(NdS.substr(dD + 1, sign - (dD + 1)));
             mod = std::stoi(NdS.substr(sign));
         }
@@ -83,7 +83,7 @@ int DiceManager::RollDiceFromString(const std::string& notation) {
     }
 
     catch (...) {
-        //¸¸¾à ÀÔ·Â¿¡ ¿À·ù°¡ ³µÀ» °æ¿ì.
+        //ë§Œì•½ ìž…ë ¥ì— ì˜¤ë¥˜ê°€ ë‚¬ì„ ê²½ìš°.
         lastRolls.clear();
         LogRoll(notation, 0);
         return 0;

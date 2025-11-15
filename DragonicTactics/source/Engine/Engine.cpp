@@ -11,6 +11,7 @@
 #include "./Game/DragonicTactics/Singletons/EventBus.h"
 #include "./Game/DragonicTactics/Singletons/DiceManager.h"
 #include "Game/DragonicTactics/Singletons/SpellSystem.h"
+#include "Game/DragonicTactics/Debugger/DebugManager.h"
 #include "CS200/ImGuiHelper.hpp"
 #include "CS200/ImmediateRenderer2D.hpp"
 #include "CS200/NDC.hpp"
@@ -105,6 +106,7 @@ public:
     CombatSystem               combatsystem{};
 	DiceManager				   dicemanager{};
 	SpellSystem				   spellsystem{};
+	DebugManager			   debugmanager{};
 };
 
 
@@ -172,6 +174,11 @@ SpellSystem& Engine::GetSpellSystem()
 	return Instance().impl->spellsystem;
 }
 
+DebugManager& Engine::GetDebugManager()
+{
+	return Instance().impl->debugmanager;
+}
+
 void Engine::OnEvent(const SDL_Event& event)
 {
     ImGuiHelper::FeedEvent(event);
@@ -232,6 +239,7 @@ void Engine::Start(std::string_view window_title)
     impl->renderer2D.Init();
     impl->timer.ResetTimeStamp();
     impl->textManager.Init();
+    impl->debugmanager.Init();
 }
 
 void Engine::Stop()

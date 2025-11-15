@@ -37,6 +37,7 @@ class EventBus;
 class CombatSystem;
 class DiceManager;
 class SpellSystem;
+class DebugManager;
 
 /**
  * \brief Runtime information about the window and application state
@@ -255,6 +256,8 @@ public:
     static DiceManager& GetDiceManager();
 
     static SpellSystem& GetSpellSystem();
+
+    static DebugManager& GetDebugManager();
 
 public:
     /**

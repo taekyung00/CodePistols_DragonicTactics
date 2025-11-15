@@ -19,6 +19,7 @@ Created:    November 5, 2025
 
 #include "../StateComponents/GridSystem.h"
 #include "../StateComponents/TurnManager.h" 
+#include "../Debugger/DebugManager.h"
 #include "Game/DragonicTactics/Objects/Actions/ActionAttack.h"
 #include "Game/DragonicTactics/Objects/Components/ActionPoints.h"
 #include "Game/DragonicTactics/Objects/Components/SpellSlots.h"
@@ -79,6 +80,8 @@ void GamePlay::Load(){
 	GetGSComponent<TurnManager>()->InitializeTurnOrder({ dragon, fighter });
 	GetGSComponent<TurnManager>()->StartCombat();
 
+    Engine::GetDebugManager().Init();
+
     Engine::GetEventBus().Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& event) {
 		this->OnCharacterDamaged(event);
 	});
@@ -125,6 +128,8 @@ void GamePlay::Update(double dt){
 	TurnManager* turnMgr = GetGSComponent<TurnManager>();
 	Character*	 currentCharacter;
     //업데이트 시작
+
+    Engine::GetDebugManager().Update(dt);
 
     CS230::Input& input = Engine::GetInput();
     bool is_clicking_ui = ImGui::GetIO().WantCaptureMouse;
@@ -305,10 +310,15 @@ void GamePlay::Draw(){
         text_manager.DrawText(damage_text.text, damage_text.position, Fonts::Outlined, damage_text.size, CS200::VIOLET);
     }
 
+    Engine::GetDebugManager().Draw(grid_system);
+
     renderer_2d.EndScene();
 }
 
 void GamePlay::DrawImGui(){
+    GridSystem* grid_system = GetGSComponent<GridSystem>();
+    Engine::GetDebugManager().DrawImGui(grid_system);
+
     ImGui::Begin("Player Actions");
 	TurnManager* turnMgr = GetGSComponent<TurnManager>();
 	if (turnMgr && turnMgr->IsCombatActive())
