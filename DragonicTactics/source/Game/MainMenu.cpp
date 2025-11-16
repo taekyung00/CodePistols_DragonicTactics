@@ -20,6 +20,7 @@ Created:    May 6, 2025
 #include "./Game/DragonicTactics/States/Test.h"
 #include "./Game/DragonicTactics/States/RenderingTest.h"
 #include "./Game/DragonicTactics/States/ConsoleTest.h"
+#include "./Game/DragonicTactics/States/AITest.h"
 #include "./OpenGL/Environment.hpp"
 #include "States.h"
 #include <imgui.h>
@@ -51,11 +52,12 @@ void MainMenu::DrawImGui()
 
 void MainMenu::SelecetOption()
 {
+	
 	switch (current_option)
 	{
 		case MainMenu::Option::DragonicTactics:
 			Engine::GetGameStateManager().PopState();
-			Engine::GetGameStateManager().PushState<GamePlay>();
+			Engine::GetGameStateManager().PushState<AITest>();
 			break;
 
 		case MainMenu::Option::ConsoleTest:
@@ -106,7 +108,7 @@ void MainMenu::Update([[maybe_unused]] double dt)
 	CS230::Input& input		  = Engine::GetInput();
 	Math::vec2	  mouse_pos	  = input.GetMousePos();
 	auto		  window_size = Engine::GetWindow().GetSize();
-
+	
 	if (input.KeyJustReleased(CS230::Input::Keys::Up))
 	{
 		int current_index = static_cast<int>(current_option);

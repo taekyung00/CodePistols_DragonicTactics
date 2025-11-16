@@ -254,3 +254,11 @@ void Character::SetHP(int HP) {
 void Character::SetAttackRange(int new_range) {
     GetGOComponent<StatsComponent>()->SetAttackRange(new_range);
 }
+
+bool Character::HasSpell(std::string spell_name) {
+    return true;  //TODO modify it to return actual spell name(type)
+}
+
+void Character::SetActionPoints(int new_points) {
+    return GetGOComponent<ActionPoints>()->SetPoints(new_points);
+}

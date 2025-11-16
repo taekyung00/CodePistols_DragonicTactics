@@ -5,7 +5,7 @@
 #include "../../../Engine/Texture.hpp"
 #include "../../../CS200/RGBA.hpp"
 #include "../StateComponents/GridSystem.h"
-
+#include "AITest.h"
 class Dragon;
 class Fighter;
 
@@ -19,7 +19,7 @@ public:
     void          Draw() override;
     void          DrawImGui() override;
     gsl::czstring GetName() const override;
-
+    
 private:
     void     test_subscribe_publish_singleSubscriber();
     void     test_multiple_subscribers_sameEvent();
@@ -69,13 +69,7 @@ private:
     bool Test_CombatSystem_IsInRange_TooFar();
     bool Test_CombatSystem_GetDistance();
 
-    bool TestAITargetsClosestEnemy();
-    bool TestAIMovesCloserWhenOutOfRange();
-    bool TestAIAttacksWhenInRange();
-    //bool TestAIUsesShieldBashWhenAdjacent();
-    bool TestAIEndsTurnWhenNoActions();
-    void RunFighterAITests();
-
+    
 };
 
 class Test2 : public CS230::GameState

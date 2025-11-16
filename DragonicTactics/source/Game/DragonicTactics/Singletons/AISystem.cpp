@@ -3,7 +3,9 @@
 #include "../StateComponents/GridSystem.h"
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
 #include "CombatSystem.h"
+#include "SpellSystem.h"
 #include "EventBus.h"
+#include "Game/DragonicTactics/Types/Events.h"
 #include "Engine/Engine.hpp"
 #include "./Engine/GameStateManager.hpp"
 
@@ -45,10 +47,37 @@ AIDecision AISystem::MakeDecision(Character* actor) {
     if (ShouldMoveCloser(actor, target)) {
         // Calculate path to target
         GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
-        Math::ivec2 actorPos = actor->GetGridPosition()->Get();
         Math::ivec2 targetPos = target->GetGridPosition()->Get();
+        Math::ivec2 actorPos = actor->GetGridPosition()->Get();
+        // grid->Reset();
 
-        std::vector<Math::ivec2> path = grid->FindPath(actorPos, targetPos);
+        std::vector<Math::ivec2> bestPath;
+        int bestCost = INT_MAX;
+
+        static const Math::ivec2 offsets[8] =
+        {
+            {  1,  0 }, { -1,  0 }, {  0,  1 }, {  0, -1 },
+            {  1,  1 }, {  1, -1 }, { -1,  1 }, { -1, -1 }
+        };
+
+        for (const Math::ivec2& off : offsets)
+        {
+            Math::ivec2 candidate = targetPos + off;
+
+            // FindPath
+            auto path = grid->FindPath(actorPos, candidate);
+
+            if (path.empty()) 
+                continue; 
+
+            if ((int)path.size() < bestCost)
+            {
+                bestCost = (int)path.size();
+                bestPath = path;
+            }
+        }
+
+        std::vector<Math::ivec2> path = bestPath;
 
         if (path.size() > 1) {
             // Move as far as action points allow
@@ -80,6 +109,7 @@ Character* AISystem::AssessThreats(Character* actor) {
 
     for (Character* potential : allCharacters) {
         // Skip self, allies, and dead characters
+        if (potential == nullptr) continue; 
         if (potential == actor || !potential->IsAlive()) continue;
         if (potential->GetCharacterType() == CharacterTypes::Dragon &&
             actor->GetCharacterType() == CharacterTypes::Dragon) continue;
@@ -131,7 +161,7 @@ bool AISystem::ShouldAttack(Character* actor, Character* target) {
     if (!combat.IsInRange(actor, target, 5)) return false;  //range ???????
 
     // Check action points
-    if (actor->GetActionPoints() < actor->GetAttackCost()) return false;
+    if (actor->GetActionPoints() == 0) return false;
 
     return true;
 }
@@ -147,7 +177,8 @@ bool AISystem::ShouldUseAbility(Character* actor, Character* target) {
     if (distance != 1) return false; // Shield Bash requires adjacency
 
     // Check if ability available (cooldown)
-    if (!actor->HasAbility("Shield Bash")) return false;
+    //if (!actor->HasAbility("Shield Bash")) return false;
+    if (!actor->HasSpell("Shield Bash")) return false;
 
     // Check if ability is more valuable than attack
     // Use Shield Bash if target is healthy (stun > damage)
@@ -161,9 +192,17 @@ void AISystem::ExecuteDecision(Character* actor, const AIDecision& decision) {
         actor->TypeName() + " AI Decision: " + decision.reasoning
     );
 
+    GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    SpellSystem* spell_system = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
+
     switch (decision.type) {
         case AIDecisionType::Move:
-            actor->MoveTo(decision.destination);
+            if (grid->IsWalkable(decision.destination))
+				{
+					std::vector<Math::ivec2> new_path =
+					grid->FindPath(actor->GetGridPosition()->Get(), decision.destination); // CalculateSimplePath(dragon->GetGridPosition()->Get(), grid_pos);
+					actor->SetPath(std::move(new_path));
+				}
             break;
 
         case AIDecisionType::Attack:
@@ -171,7 +210,8 @@ void AISystem::ExecuteDecision(Character* actor, const AIDecision& decision) {
             break;
 
         case AIDecisionType::UseAbility:
-            actor->UseAbility(decision.abilityName, decision.target);
+            //actor->UseSpell(decision.abilityName, decision.target);
+            spell_system->CastSpell(actor, decision.abilityName, decision.target->GetGridPosition()->Get());
             break;
 
         case AIDecisionType::EndTurn:

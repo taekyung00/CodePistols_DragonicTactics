@@ -77,6 +77,7 @@ public:
     int GetAttackRange();
     void SetAttackRange(int new_range);
     void SetHP(int HP);
+    bool HasSpell(std::string spell_name);
 
 protected:
     Character(CharacterTypes charType, Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level);
