@@ -57,7 +57,7 @@ void MainMenu::SelecetOption()
 	{
 		case MainMenu::Option::DragonicTactics:
 			Engine::GetGameStateManager().PopState();
-			Engine::GetGameStateManager().PushState<AITest>();
+			Engine::GetGameStateManager().PushState<GamePlay>();
 			break;
 
 		case MainMenu::Option::ConsoleTest:
