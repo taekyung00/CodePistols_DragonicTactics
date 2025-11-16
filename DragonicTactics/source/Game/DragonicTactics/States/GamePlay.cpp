@@ -38,6 +38,8 @@ Created:    November 5, 2025
 GamePlay::GamePlay():fighter(nullptr), dragon(nullptr){}
 
 void GamePlay::Load(){
+    Engine::GetEventBus().Clear();
+
 	Engine::GetDiceManager().SetSeed(100);
     AddGSComponent(new CS230::GameObjectManager());
     
@@ -113,7 +115,8 @@ void GamePlay::OnCharacterDamaged(const CharacterDamagedEvent& event)
 
     Math::vec2 text_position = event.target->GetGridPosition()->Get();
     text_position *= GridSystem::TILE_SIZE; // Appear above the character
-    damage_texts.push_back({ std::to_string(event.damageAmount), text_position, size, 1.0 });
+    DamageText temp = { std::to_string(event.damageAmount), text_position, size, 1.0 };
+    damage_texts.push_back(temp);
 }
 
 Math::ivec2 ConvertScreenToGrid(Math::vec2 world_pos)
