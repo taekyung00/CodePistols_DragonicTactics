@@ -1,5 +1,4 @@
 #pragma once
-
 // Individual CombatSystem test functions
 bool Test_CombatSystem_CalculateDamage();
 bool Test_CombatSystem_CalculateDamage_MinRoll();
@@ -12,15 +11,3 @@ bool Test_CombatSystem_ExecuteAttack_NotEnoughAP();
 bool Test_CombatSystem_IsInRange_Adjacent();
 bool Test_CombatSystem_IsInRange_TooFar();
 bool Test_CombatSystem_GetDistance();
-
-// Individual TurnManager test functions
-bool TestInitiativeBasicRoll();
-bool TestInitiativeTurnOrder();
-bool TestInitiativeSpeedModifier();
-bool TestInitiativeDeadCharacterSkipped();
-bool TestInitiativeReRoll();
-bool TestInitiativeModeRollOnce();
-bool TestInitiativeReset();
-
-// Run all initiative tests
-void RunTurnManagerInitiativeTests();

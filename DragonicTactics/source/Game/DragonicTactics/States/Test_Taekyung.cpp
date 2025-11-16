@@ -25,7 +25,9 @@
 #include "./Game/DragonicTactics/Objects/Components/SpellSlots.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
 
-#include "../Test/Test_SY.h"
+
+#include "Game/DragonicTactics/Test/TestTurnInit.h"
+#include "Game/DragonicTactics/Test/TestCombatSystem.h"
 
 
 
