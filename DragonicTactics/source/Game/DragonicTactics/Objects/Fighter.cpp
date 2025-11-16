@@ -6,6 +6,7 @@
 #include "./Engine/GameStateManager.hpp"
 #include "./Engine/GameObjectManager.h"
 
+
 Fighter::Fighter(Math::ivec2 start_coordinates)
     : Character(
         CharacterTypes::Fighter,
@@ -34,6 +35,19 @@ void Fighter::OnTurnStart() {
         ap->Refresh();
     }
     DecideAction();
+
+    // If AI-controlled, make decisions
+    if (IsAIControlled()) {
+        AISystem& ai = AISystem::GetInstance();
+        AIDecision decision = ai.MakeDecision(this);
+        ai.ExecuteDecision(this, decision);
+    }
+}
+
+bool Fighter::IsAIControlled() const {
+    // For Week 4: Fighter is always AI-controlled
+    // Week 5+: Player can control via manual mode
+    return true;
 }
 
 void Fighter::OnTurnEnd() {

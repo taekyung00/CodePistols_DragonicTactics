@@ -4,6 +4,7 @@
 #include "../../../Engine/Vec2.hpp"
 
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
+#include "./Game/DragonicTactics/Singletons/AISystem.h"
 class Character;
 
 // BattleEvents.h - High-level battle events
@@ -204,4 +205,13 @@ struct AbilityUsedEvent
 	Character*	target;		 // who is target
 	std::string abilityName; // ability name like "Melee Attack", "Shield Bash"
 	int			damageDealt; // total damage
+};
+
+//junyoung
+struct AIDecisionEvent
+{
+    Character* actor;
+    AIDecisionType decision_type;
+    Character* decision_target;
+    std::string decision_reasoning;
 };

@@ -13,7 +13,7 @@ public:
     int GetCurrentHP() const;
     int GetMaxHP() const;
     float GetHealthPercentage() const;
-
+    void SetHP(int HP);
 
     int GetBaseAttack() const;
     const std::string& GetAttackDice() const;
@@ -21,6 +21,7 @@ public:
     const std::string& GetDefendDice() const;
     int GetSpeed() const;
     int GetAttackRange() const;
+    void SetAttackRange(int new_range);
 
     const CharacterStats& GetAllStats() const { return stats; }
 

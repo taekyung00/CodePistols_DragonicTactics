@@ -70,3 +70,11 @@ int StatsComponent::GetSpeed() const {
 int StatsComponent::GetAttackRange() const {
     return stats.attack_range;
 }
+
+void StatsComponent::SetAttackRange(int new_range) {
+    stats.attack_range = new_range;
+}
+
+void StatsComponent::SetHP(int HP) {
+    stats.current_hp = HP;
+}

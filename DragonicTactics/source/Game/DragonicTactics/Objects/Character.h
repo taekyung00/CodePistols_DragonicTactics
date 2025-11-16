@@ -64,11 +64,20 @@ public:
     StatsComponent* GetStatsComponent() ;
     ActionPoints* GetActionPointsComponent() ;
     SpellSlots* GetSpellSlots() ;
+    void SetActionPoints(int new_points);
     //StatusEffects* GetStatusEffects() const;
     //GridFootprint* GetGridFootprint() const;
     int GetSpellSlotCount(int level);
     void SetSpellSlots(std::map<int, int> spellSlot);
     void ConsumeSpell(int level);
+
+    void SetGridPosition(Math::ivec2 new_coordinates);
+    int GetHP();
+    int GetMaxHP();
+    int GetAttackRange();
+    void SetAttackRange(int new_range);
+    void SetHP(int HP);
+    bool HasSpell(std::string spell_name);
 
 protected:
     Character(CharacterTypes charType, Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level);

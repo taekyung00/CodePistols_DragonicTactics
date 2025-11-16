@@ -44,6 +44,7 @@ set(SOURCE_CODE
     Game/DragonicTactics/Objects/Dragon.h Game/DragonicTactics/Objects/Dragon.cpp
     Game/DragonicTactics/Objects/Fighter.h Game/DragonicTactics/Objects/Fighter.cpp
 
+    Game/DragonicTactics/Singletons/AISystem.h Game/DragonicTactics/Singletons/AISystem.cpp
     Game/DragonicTactics/Singletons/EventBus.h Game/DragonicTactics/Singletons/EventBus.cpp
     Game/DragonicTactics/Singletons/DiceManager.h Game/DragonicTactics/Singletons/DiceManager.cpp
     Game/DragonicTactics/Singletons/DataRegistry.cpp Game/DragonicTactics/Singletons/DataRegistry.h
@@ -66,6 +67,7 @@ set(SOURCE_CODE
     Game/DragonicTactics/Test/TestAssert.h Game/DragonicTactics/Test/TestAssert.cpp Game/DragonicTactics/Test/TestAssert.ini
     Game/DragonicTactics/Test/TestTurnInit.h Game/DragonicTactics/Test/TestTurnInit.cpp 
     Game/DragonicTactics/Test/TestCombatSystem.h Game/DragonicTactics/Test/TestCombatSystem.cpp 
+    Game/DragonicTactics/Test/AITest.h Game/DragonicTactics/Test/AITest.cpp 
 
 
     Game/DragonicTactics/Types/CharacterTypes.h
