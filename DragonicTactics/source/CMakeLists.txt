@@ -67,7 +67,11 @@ set(SOURCE_CODE
     Game/DragonicTactics/Test/TestAssert.h Game/DragonicTactics/Test/TestAssert.cpp Game/DragonicTactics/Test/TestAssert.ini
     Game/DragonicTactics/Test/TestTurnInit.h Game/DragonicTactics/Test/TestTurnInit.cpp 
     Game/DragonicTactics/Test/TestCombatSystem.h Game/DragonicTactics/Test/TestCombatSystem.cpp 
+    Game/DragonicTactics/Test/TestEventBus.h Game/DragonicTactics/Test/TestEventBus.cpp 
+    Game/DragonicTactics/Test/TestSpellSystem.h Game/DragonicTactics/Test/TestSpellSystem.cpp 
     Game/DragonicTactics/Test/AITest.h Game/DragonicTactics/Test/AITest.cpp 
+    Game/DragonicTactics/Test/TestDataRegistry.h Game/DragonicTactics/Test/TestDataRegistry.cpp 
+    Game/DragonicTactics/Test/TestDiceManager.h Game/DragonicTactics/Test/TestDiceManager.cpp 
 
 
     Game/DragonicTactics/Types/CharacterTypes.h

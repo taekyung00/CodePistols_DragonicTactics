@@ -38,6 +38,7 @@ class CombatSystem;
 class DiceManager;
 class SpellSystem;
 class DebugManager;
+class DataRegistry;
 
 /**
  * \brief Runtime information about the window and application state
@@ -258,6 +259,8 @@ public:
     static SpellSystem& GetSpellSystem();
 
     static DebugManager& GetDebugManager();
+
+    static DataRegistry& GetDataRegistry();
 
 public:
     /**

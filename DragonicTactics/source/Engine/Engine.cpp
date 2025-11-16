@@ -12,6 +12,7 @@
 #include "./Game/DragonicTactics/Singletons/DiceManager.h"
 #include "Game/DragonicTactics/Singletons/SpellSystem.h"
 #include "Game/DragonicTactics/Debugger/DebugManager.h"
+#include "./Game/DragonicTactics/Singletons/DataRegistry.h"
 #include "CS200/ImGuiHelper.hpp"
 #include "CS200/ImmediateRenderer2D.hpp"
 #include "CS200/NDC.hpp"
@@ -107,6 +108,7 @@ public:
 	DiceManager				   dicemanager{};
 	SpellSystem				   spellsystem{};
 	DebugManager			   debugmanager{};
+    DataRegistry			   dataregistry{};
 };
 
 
@@ -177,6 +179,11 @@ SpellSystem& Engine::GetSpellSystem()
 DebugManager& Engine::GetDebugManager()
 {
 	return Instance().impl->debugmanager;
+}
+
+DataRegistry& Engine::GetDataRegistry()
+{
+	return Instance().impl->dataregistry;
 }
 
 void Engine::OnEvent(const SDL_Event& event)

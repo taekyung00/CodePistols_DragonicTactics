@@ -21,11 +21,7 @@ public:
     gsl::czstring GetName() const override;
 
 private:
-    void     test_subscribe_publish_singleSubscriber();
-    void     test_multiple_subscribers_sameEvent();
-    void     test_multiple_different_events();
-    void     test_EventData_CompleteTransfer();
-    void     test_EventData_MultiplePublishes();
+    
     Fighter* fighter;
     Dragon*  dragon;
     void     LogFighterStatus();
@@ -41,21 +37,8 @@ private:
     bool Test_TurnManager_SkipDeadCharacter();
     bool Test_TurnManager_AllCharactersDead();
     bool Test_TurnManager_GetCharacterTurnIndex();
-
-    void test_dice_manager();
     void test_turnmanager_all();
-    bool TestSpellRegistration();
-    bool TestSpellCasting();
-    bool TestSpellUpcast();
-    bool TestGetAvailableSpells();
-    bool TestPreviewSpellArea();
-    void RunSpellSystemTests();
 
-
-    void test_spellsystem_all();
-    void test_json();
-    void test_json_reload();
-    void test_json_log();
 
 };
 

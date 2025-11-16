@@ -34,7 +34,7 @@ Test::Test() : fighter(nullptr), dragon(nullptr)
 void Test::Load()
 {
 	AddGSComponent(new GridSystem());
-    DataRegistry::Instance().LoadFromFile("Assets/Data/characters.json");
+    Engine::GetDataRegistry().LoadFromFile("Assets/Data/characters.json");
     AddGSComponent(new CS230::GameObjectManager());
     fighter = new Fighter({ 5, 5 });
     GetGSComponent<CS230::GameObjectManager>()->Add(fighter);
@@ -192,60 +192,9 @@ void Test2::Load()
     }
 }
 
-void Test::test_json()
-{
-    Engine::GetLogger().LogEvent("========== JSON Test ==========");
 
-    DataRegistry& registry = DataRegistry::Instance();
 
-    int dragonHP  = registry.GetValue<int>("Dragon.maxHP", 0);
-    int fighterHP = registry.GetValue<int>("Fighter.maxHP", 0);
 
-    Engine::GetLogger().LogDebug("Dragon HP: " + std::to_string(dragonHP));
-    Engine::GetLogger().LogDebug("Fighter HP: " + std::to_string(fighterHP));
-
-    bool hasRogue = registry.HasKey("Rogue.maxHP");
-    Engine::GetLogger().LogDebug("Has Rogue: " + std::string(hasRogue ? "Yes" : "No"));
-}
-
-void Test::test_json_reload()
-{
-    Engine::GetLogger().LogEvent("--- Reloading characters.json ---");
-    DataRegistry::Instance().ReloadFile("Assets/Data/characters.json");
-    Engine::GetLogger().LogEvent("Reload complete!");
-}
-
-void Test::test_json_log()
-{
-    DataRegistry::Instance().LogAllKeys();
-}
-
-void Test::test_dice_manager()
-{
-    DiceManager& dice = Engine::GetDiceManager();
-    
-    dice.SetSeed(42);
-    dice.RollDiceFromString("4d8+2");
-}
-
-void Test::test_EventData_MultiplePublishes()
-{
-    auto& eventbus = Engine::GetEventBus();
-    eventbus.Clear();
-
-    std::vector<int> damages;
-    eventbus.Subscribe<CharacterDamagedEvent>([&](const CharacterDamagedEvent& e) { damages.push_back(e.damageAmount); });
-
-    MockCharacter character("TestChar");
-    eventbus.Publish(CharacterDamagedEvent{ reinterpret_cast<Character*>(&character), 10, 90, nullptr, false });
-    eventbus.Publish(CharacterDamagedEvent{ reinterpret_cast<Character*>(&character), 20, 70, nullptr, false });
-    eventbus.Publish(CharacterDamagedEvent{ reinterpret_cast<Character*>(&character), 30, 40, nullptr, true });
-
-    ASSERT_EQ(static_cast<int>(damages.size()), 3);
-    ASSERT_EQ(damages[0], 10);
-    ASSERT_EQ(damages[1], 20);
-    ASSERT_EQ(damages[2], 30);
-}
 
 // Ginam
 void Test2::test_MeleeAttack_WithGrid()
