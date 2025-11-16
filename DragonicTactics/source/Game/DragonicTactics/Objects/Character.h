@@ -11,6 +11,7 @@ Updated:    Oct 09, 2025
 
 #pragma once
 #include <map>
+#include <vector>
 #include "./Engine/GameObject.h"
 #include "./Engine/GameObjectManager.h"
 #include "./Engine/Matrix.hpp"
@@ -19,7 +20,7 @@ Updated:    Oct 09, 2025
 #include "./Game/DragonicTactics/Types/CharacterTypes.h"
 #include "./Game/DragonicTactics/Objects/Actions/Action.h"
 
-
+class GridSystem;
 class GridPosition;
 class ActionPoints;
 class SpellSlots;
@@ -43,12 +44,13 @@ public:
     virtual void OnTurnStart() = 0;
     virtual void OnTurnEnd() = 0;
 
-    virtual void PerformAttack(Character* target);
+    // virtual void PerformAttack(Character* target);
     virtual void PerformAction(Action* action, Character* target, Math::ivec2 tile_position);
     virtual void TakeDamage(int damage, Character* attacker);
     virtual void ReceiveHeal(int amount);
 
-    void SetPathTo(Math::ivec2 destination);
+    void SetPath(std::vector<Math::ivec2> path);
+    void SetGridSystem(GridSystem* grid);
 
     CharacterTypes GetCharacterType() const { return m_character_type; }
     bool IsAlive();
@@ -73,16 +75,20 @@ protected:
 
 
     void InitializeComponents(Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level);
-    virtual void DecideAction() = 0;
-    void UpdateMovement(double dt);
+    
+    
+    virtual void                DecideAction()              = 0;
+    CharacterTypes              m_character_type;
+    GameObject*                 m_turn_target               = nullptr;
+    TurnGoal                    m_turn_goal                 = TurnGoal::None;
+    
 
-    CharacterTypes m_character_type;
-
-    GameObject* m_turn_target = nullptr;
-    TurnGoal m_turn_goal = TurnGoal::None;
-
-    std::vector<Math::ivec2> m_current_path;
-    bool m_is_moving = false;
+    void                        UpdateMovement(double dt);
+    GridSystem*                 m_gridSystem                = nullptr;
+    std::vector<Math::ivec2>    m_current_path;
+    double                      m_moveTimer                 = 0.0;
+    static constexpr double     MOVE_TIME_PER_TILE          = 0.2;
+   
 
     std::vector<Action*> m_action_list;
 

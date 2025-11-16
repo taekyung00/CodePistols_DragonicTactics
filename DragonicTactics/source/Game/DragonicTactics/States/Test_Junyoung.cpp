@@ -9,6 +9,7 @@
 
 #include "./Game/DragonicTactics/Test/Week1TestMocks.h"
 #include "./Game/DragonicTactics/Test/Week3TestMocks.h"
+#include "./Game/DragonicTactics/Test/TestAssert.h"
 #include "./Game/DragonicTactics/Types/Events.h"
 
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
@@ -32,21 +33,22 @@
 bool Test::Test_TurnManager_Initialize()
 {
     // Setup
-    TurnManager::Instance().Reset();
+    TurnManager* turnMgr = GetGSComponent<TurnManager>();
+    turnMgr->Reset();
     Dragon  TestDragon({ 0, 0 });
     Fighter TestFighter({ 1, 1 });
 
     std::vector<Character*> characters = { &TestDragon, &TestFighter };
 
     // Action
-    TurnManager::Instance().InitializeTurnOrder(characters);
+    turnMgr->InitializeTurnOrder(characters);
 
     // Assertions
-    std::vector<Character*> turnOrder = TurnManager::Instance().GetTurnOrder();
+    std::vector<Character*> turnOrder = turnMgr->GetTurnOrder();
     ASSERT_EQ(turnOrder.size(), static_cast<size_t>(2));
     ASSERT_EQ(turnOrder[0], static_cast<Character*>(&TestDragon));
     ASSERT_EQ(turnOrder[1], static_cast<Character*>(&TestFighter));
-    ASSERT_FALSE(TurnManager::Instance().IsCombatActive());
+    ASSERT_FALSE(turnMgr->IsCombatActive());
 
     std::cout << "Test_TurnManager_Initialize passed" << std::endl;
     return true;
@@ -55,14 +57,15 @@ bool Test::Test_TurnManager_Initialize()
 bool Test::Test_TurnManager_Initialize_Empty()
 {
     // Setup
-    TurnManager::Instance().Reset();
+    TurnManager* turnMgr = GetGSComponent<TurnManager>();
+    turnMgr->Reset();
     std::vector<Character*> characters = {};
 
     // Action
-    TurnManager::Instance().InitializeTurnOrder(characters);
+    turnMgr->InitializeTurnOrder(characters);
 
     // Assertions - Should handle gracefully
-    std::vector<Character*> turnOrder = TurnManager::Instance().GetTurnOrder();
+    std::vector<Character*> turnOrder = turnMgr->GetTurnOrder();
     ASSERT_EQ(turnOrder.size(), static_cast<size_t>(0));
 
     std::cout << "Test_TurnManager_Initialize_Empty passed" << std::endl;
@@ -72,25 +75,19 @@ bool Test::Test_TurnManager_Initialize_Empty()
 bool Test::Test_TurnManager_Initialize_DeadCharacters()
 {
     // Setup
-    TurnManager::Instance().Reset();
+    TurnManager* turnMgr = GetGSComponent<TurnManager>();
+    turnMgr->Reset();
     Dragon  TestDragon({ 0, 0 });
     Fighter TestFighter({ 1, 1 });
-    // auto& eventbus = Engine::GetEventBus();
-    // eventbus.Subscribe<CharacterDeathEvent>([]([[maybe_unused]] const CharacterDeathEvent& e) {
-    //     e.character->TakeDamage(e.character->GetStats().current_hp, e.killer);
-    // });
-    // //fighter.SetHP(0);  // Fighter is dead
-    // CharacterDeathEvent event{&TestFighter, &TestDragon};
-    // eventbus.Publish(event);
     TestFighter.TakeDamage(TestFighter.GetStats().current_hp, nullptr);
 
     std::vector<Character*> characters = { &TestDragon, &TestFighter };
 
     // Action
-    TurnManager::Instance().InitializeTurnOrder(characters);
+    turnMgr->InitializeTurnOrder(characters);
 
     // Assertions - Dead characters should be removed
-    std::vector<Character*> turnOrder = TurnManager::Instance().GetTurnOrder();
+    std::vector<Character*> turnOrder = turnMgr->GetTurnOrder();
     ASSERT_EQ(turnOrder.size(), static_cast<size_t>(1));
     ASSERT_EQ(turnOrder[0], reinterpret_cast<Character*>(&TestDragon));
 
@@ -101,21 +98,22 @@ bool Test::Test_TurnManager_Initialize_DeadCharacters()
 bool Test::Test_TurnManager_StartCombat()
 {
     // Setup
-    TurnManager::Instance().Reset();
+    TurnManager* turnMgr = GetGSComponent<TurnManager>();
+    turnMgr->Reset();
     Dragon  TestDragon({ 0, 0 });
     Fighter TestFighter({ 1, 1 });
 
     std::vector<Character*> characters = { &TestDragon, &TestFighter };
-    TurnManager::Instance().InitializeTurnOrder(characters);
+    turnMgr->InitializeTurnOrder(characters);
 
     // Action
-    TurnManager::Instance().StartCombat();
+    turnMgr->StartCombat();
 
     // Assertions
-    ASSERT_TRUE(TurnManager::Instance().IsCombatActive());
-    ASSERT_EQ(TurnManager::Instance().GetCurrentTurnNumber(), 1);
-    ASSERT_EQ(TurnManager::Instance().GetRoundNumber(), 1);
-    ASSERT_EQ(TurnManager::Instance().GetCurrentCharacter(), reinterpret_cast<Character*>(&TestDragon));
+    ASSERT_TRUE(turnMgr->IsCombatActive());
+    ASSERT_EQ(turnMgr->GetCurrentTurnNumber(), 1);
+    ASSERT_EQ(turnMgr->GetRoundNumber(), 1);
+    ASSERT_EQ(turnMgr->GetCurrentCharacter(), reinterpret_cast<Character*>(&TestDragon));
 
     std::cout << "Test_TurnManager_StartCombat passed" << std::endl;
     return true;
@@ -124,23 +122,24 @@ bool Test::Test_TurnManager_StartCombat()
 bool Test::Test_TurnManager_EndCurrentTurn()
 {
     // Setup
-    TurnManager::Instance().Reset();
+    TurnManager* turnMgr = GetGSComponent<TurnManager>();
+    turnMgr->Reset();
     Dragon  TestDragon({ 0, 0 });
     Fighter TestFighter({ 1, 1 });
 
     std::vector<Character*> characters = { &TestDragon, &TestFighter };
-    TurnManager::Instance().InitializeTurnOrder(characters);
-    TurnManager::Instance().StartCombat();
+    turnMgr->InitializeTurnOrder(characters);
+    turnMgr->StartCombat();
 
-    ASSERT_EQ(TurnManager::Instance().GetCurrentCharacter(), reinterpret_cast<Character*>(&TestDragon));
+    ASSERT_EQ(turnMgr->GetCurrentCharacter(), reinterpret_cast<Character*>(&TestDragon));
 
     // Action - End Dragon's turn
-    TurnManager::Instance().EndCurrentTurn();
+    turnMgr->EndCurrentTurn();
 
     // Assertions - Should be Fighter's turn now
-    ASSERT_EQ(TurnManager::Instance().GetCurrentCharacter(), reinterpret_cast<Character*>(&TestFighter));
-    ASSERT_EQ(TurnManager::Instance().GetCurrentTurnNumber(), 2);
-    ASSERT_EQ(TurnManager::Instance().GetRoundNumber(), 1); // Still round 1
+    ASSERT_EQ(turnMgr->GetCurrentCharacter(), reinterpret_cast<Character*>(&TestFighter));
+    ASSERT_EQ(turnMgr->GetCurrentTurnNumber(), 2);
+    ASSERT_EQ(turnMgr->GetRoundNumber(), 1); // Still round 1
 
     std::cout << "Test_TurnManager_EndCurrentTurn passed" << std::endl;
     return true;
@@ -149,43 +148,45 @@ bool Test::Test_TurnManager_EndCurrentTurn()
 bool Test::Test_TurnManager_RoundProgression()
 {
     // Setup
-    TurnManager::Instance().Reset();
+    TurnManager* turnMgr = GetGSComponent<TurnManager>();
+    turnMgr->Reset();
     Dragon  TestDragon({ 0, 0 });
     Fighter TestFighter({ 1, 1 });
 
     std::vector<Character*> characters = { &TestDragon, &TestFighter };
-    TurnManager::Instance().InitializeTurnOrder(characters);
-    TurnManager::Instance().StartCombat();
+    turnMgr->InitializeTurnOrder(characters);
+    turnMgr->StartCombat();
 
     // Action - Complete one full round
-    ASSERT_EQ(TurnManager::Instance().GetRoundNumber(), 1);
+    ASSERT_EQ(turnMgr->GetRoundNumber(), 1);
 
-    TurnManager::Instance().EndCurrentTurn(); // Dragon -> Fighter (still round 1)
-    ASSERT_EQ(TurnManager::Instance().GetRoundNumber(), 1);
+    turnMgr->EndCurrentTurn(); // Dragon -> Fighter (still round 1)
+    ASSERT_EQ(turnMgr->GetRoundNumber(), 1);
 
-    TurnManager::Instance().EndCurrentTurn(); // Fighter -> Dragon (round 2)
-    ASSERT_EQ(TurnManager::Instance().GetRoundNumber(), 2);
-    ASSERT_EQ(TurnManager::Instance().GetCurrentCharacter(), reinterpret_cast<Character*>(&TestDragon));
+    turnMgr->EndCurrentTurn(); // Fighter -> Dragon (round 2)
+    ASSERT_EQ(turnMgr->GetRoundNumber(), 2);
+    ASSERT_EQ(turnMgr->GetCurrentCharacter(), reinterpret_cast<Character*>(&TestDragon));
 
     std::cout << "Test_TurnManager_RoundProgression passed" << std::endl;
     return true;
 }
 
 bool Test::Test_TurnManager_ActionPointRefresh()
-{ ////!!!!!!!!!!!!1111
+{
     // Setup
-    TurnManager::Instance().Reset();
+    TurnManager* turnMgr = GetGSComponent<TurnManager>();
+    turnMgr->Reset();
     Dragon TestDragon({ 0, 0 });
 
     std::vector<Character*> characters = { &TestDragon };
-    TurnManager::Instance().InitializeTurnOrder(characters);
+    turnMgr->InitializeTurnOrder(characters);
 
     // Consume some AP
     TestDragon.GetActionPointsComponent()->Consume(2);
-    ASSERT_EQ(TestDragon.GetActionPoints(), 1); // 5 - 3 = 2
+    ASSERT_EQ(TestDragon.GetActionPoints(), 1); // 3 - 2 = 1
 
     // Action - Start combat (should refresh AP)
-    TurnManager::Instance().StartCombat();
+    turnMgr->StartCombat();
 
     // Assertions - AP should be refreshed
     ASSERT_EQ(TestDragon.GetActionPoints(), 3); // Refreshed to max
@@ -197,22 +198,23 @@ bool Test::Test_TurnManager_ActionPointRefresh()
 bool Test::Test_TurnManager_SkipDeadCharacter()
 {
     // Setup
-    TurnManager::Instance().Reset();
+    TurnManager* turnMgr = GetGSComponent<TurnManager>();
+    turnMgr->Reset();
     Dragon                  TestDragon({ 0, 0 });
     Fighter                 TestFighter1({ 1, 1 });
     Fighter                 TestFighter2({ 2, 2 });
     std::vector<Character*> characters = { &TestDragon, &TestFighter1, &TestFighter2 };
-    TurnManager::Instance().InitializeTurnOrder(characters);
-    TurnManager::Instance().StartCombat();
+    turnMgr->InitializeTurnOrder(characters);
+    turnMgr->StartCombat();
 
     // Kill fighter1 during Dragon's turn
     TestFighter1.TakeDamage(TestFighter1.GetStats().current_hp, nullptr);
-    //
+
     // Action - End Dragon's turn
-    TurnManager::Instance().EndCurrentTurn();
+    turnMgr->EndCurrentTurn();
 
     // Assertions - Should skip fighter1 (dead) and go to fighter2
-    ASSERT_EQ(TurnManager::Instance().GetCurrentCharacter(), reinterpret_cast<Character*>(&TestFighter2));
+    ASSERT_EQ(turnMgr->GetCurrentCharacter(), reinterpret_cast<Character*>(&TestFighter2));
 
     std::cout << "Test_TurnManager_SkipDeadCharacter passed" << std::endl;
     return true;
@@ -221,27 +223,24 @@ bool Test::Test_TurnManager_SkipDeadCharacter()
 bool Test::Test_TurnManager_AllCharactersDead()
 {
     // Setup
-    TurnManager::Instance().Reset();
+    TurnManager* turnMgr = GetGSComponent<TurnManager>();
+    turnMgr->Reset();
     Dragon  TestDragon({ 0, 0 });
     Fighter TestFighter({ 1, 1 });
 
     std::vector<Character*> characters = { &TestDragon, &TestFighter };
-    TurnManager::Instance().InitializeTurnOrder(characters);
-    TurnManager::Instance().StartCombat();
+    turnMgr->InitializeTurnOrder(characters);
+    turnMgr->StartCombat();
 
     // Kill both characters
-    // auto& eventbus = Engine::GetEventBus();
-    // eventbus.Subscribe<CharacterDeathEvent>([]([[maybe_unused]] const CharacterDeathEvent& e) {
-    //     e.character->TakeDamage(e.character->GetStats().current_hp, e.killer);
-    // });
     TestDragon.TakeDamage(TestDragon.GetStats().current_hp, nullptr);
     TestFighter.TakeDamage(TestFighter.GetStats().current_hp, nullptr);
 
     // Action - Try to end turn
-    TurnManager::Instance().EndCurrentTurn();
+    turnMgr->EndCurrentTurn();
 
     // Assertions - Combat should end
-    ASSERT_FALSE(TurnManager::Instance().IsCombatActive());
+    ASSERT_FALSE(turnMgr->IsCombatActive());
 
     std::cout << "Test_TurnManager_AllCharactersDead passed" << std::endl;
     return true;
@@ -250,16 +249,17 @@ bool Test::Test_TurnManager_AllCharactersDead()
 bool Test::Test_TurnManager_GetCharacterTurnIndex()
 {
     // Setup
-    TurnManager::Instance().Reset();
+    TurnManager* turnMgr = GetGSComponent<TurnManager>();
+    turnMgr->Reset();
     Dragon  TestDragon({ 0, 0 });
     Fighter TestFighter({ 1, 1 });
 
     std::vector<Character*> characters = { &TestDragon, &TestFighter };
-    TurnManager::Instance().InitializeTurnOrder(characters);
+    turnMgr->InitializeTurnOrder(characters);
 
     // Action
-    int dragonIndex  = TurnManager::Instance().GetCharacterTurnIndex(&TestDragon);
-    int fighterIndex = TurnManager::Instance().GetCharacterTurnIndex(&TestFighter);
+    int dragonIndex  = turnMgr->GetCharacterTurnIndex(&TestDragon);
+    int fighterIndex = turnMgr->GetCharacterTurnIndex(&TestFighter);
 
     // Assertions
     ASSERT_EQ(dragonIndex, 0);
@@ -272,9 +272,8 @@ bool Test::Test_TurnManager_GetCharacterTurnIndex()
 
 
 
-
 bool Test::TestSpellRegistration() {
-    SpellSystem& spellSys = SpellSystem::GetInstance();
+    SpellSystem& spellSys = Engine::GetSpellSystem();
 
     // Test: Register a spell
     MockFireball* fireball = new MockFireball();
@@ -291,7 +290,7 @@ bool Test::TestSpellRegistration() {
 bool Test::TestSpellCasting() {
 	GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
 
-    SpellSystem& spellSys = SpellSystem::GetInstance();
+    SpellSystem& spellSys = Engine::GetSpellSystem();
 
     // Register Fireball
     spellSys.RegisterSpell("Fireball", new MockFireball());
@@ -324,7 +323,7 @@ bool Test::TestSpellUpcast() {
     caster->SetSpellSlots({{1, 2}}); // 1 level 2 slot
     caster->SetSpellSlots({{2, 3}}); // 2 level 3 slots
 
-    SpellSystem& spellSys = SpellSystem::GetInstance();
+    SpellSystem& spellSys = Engine::GetSpellSystem();
     spellSys.RegisterSpell("Fireball", new MockFireball());
 
     // Test: Upcast Fireball to level 3
@@ -345,7 +344,7 @@ bool Test::TestGetAvailableSpells() {
     caster->SetSpellSlots({{2, 1}});
     caster->SetSpellSlots({{3, 2}});
 
-    SpellSystem& spellSys = SpellSystem::GetInstance();
+    SpellSystem& spellSys = Engine::GetSpellSystem();
     spellSys.RegisterSpell("Fireball", new MockFireball());  // Level 2
     spellSys.RegisterSpell("CreateWall", new MockCreateWall());  // Level 1
 
@@ -361,7 +360,7 @@ bool Test::TestGetAvailableSpells() {
 }
 
 bool Test::TestPreviewSpellArea() {
-    SpellSystem& spellSys = SpellSystem::GetInstance();
+    SpellSystem& spellSys = Engine::GetSpellSystem();
     spellSys.RegisterSpell("Fireball", new MockFireball());
 
     // Test: Preview Fireball area
@@ -387,11 +386,11 @@ void Test::test_turnmanager_all()
 {
     Test_TurnManager_Initialize();
     Test_TurnManager_Initialize_Empty();
-    Test_TurnManager_Initialize_DeadCharacters(); ///////////////////
+    Test_TurnManager_Initialize_DeadCharacters();
     Test_TurnManager_StartCombat();
     Test_TurnManager_EndCurrentTurn();
     Test_TurnManager_RoundProgression();
-    Test_TurnManager_ActionPointRefresh(); ///////
+    Test_TurnManager_ActionPointRefresh();
     Test_TurnManager_SkipDeadCharacter();
     Test_TurnManager_AllCharactersDead();
     Test_TurnManager_GetCharacterTurnIndex();

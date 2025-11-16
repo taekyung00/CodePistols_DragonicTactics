@@ -10,6 +10,7 @@ Created:    April 25, 2025
 
 #pragma once
 #include <list>
+#include <memory>
 #include "GameObject.h"
 #include "Matrix.hpp"
 #include "Component.h"
@@ -28,8 +29,10 @@ namespace CS230 {
 
         void CollisionTest();
 
-        const std::list<GameObject*>& GetAll() const { return objects; }
+        const std::vector<std::unique_ptr<GameObject>>& GetAll() const { 
+            return objects; 
+        }
     private:
-        std::list<GameObject*> objects;
+       std::vector<std::unique_ptr<GameObject>> objects;
     };
 }

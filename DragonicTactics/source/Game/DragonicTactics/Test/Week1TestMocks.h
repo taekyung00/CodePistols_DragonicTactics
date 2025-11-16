@@ -6,12 +6,25 @@
 #include <string>
 #include <vector>
 
+// Mock StatsComponent for Initiative testing (defined BEFORE MockCharacter)
+class MockStatsComponent
+{
+public:
+    MockStatsComponent(int initialSpeed = 10) : speed(initialSpeed) {}
+    
+    int GetSpeed() const { return speed; }
+    void SetSpeed(int newSpeed) { speed = newSpeed; }
+
+private:
+    int speed;
+};
+
 // Mock Character for EventBus and GridSystem testing
 class MockCharacter
 {
 public:
     MockCharacter(const std::string& _name = "MockChar");
-
+    ~MockCharacter();
 
     // EventBus interface
     std::string TypeName() const;
@@ -24,10 +37,23 @@ public:
     Math::vec2 GetGridPosition() const;
     void       SetGridPosition(Math::vec2 pos);
 
+    // Initiative system interface (Week 4)
+    bool IsAlive() const { return hp > 0; }
+    int GetSpeed() const { return speed; }
+    void SetSpeed(int newSpeed) { 
+        speed = newSpeed; 
+        if (statsComp) {
+            statsComp->SetSpeed(newSpeed);
+        }
+    }
+    MockStatsComponent* GetStatsComponent() { return statsComp; }
+
 private:
     std::string name;
     int         hp, maxHP;
     Math::vec2  gridPos;
+    int         speed = 10;  // Default speed
+    MockStatsComponent* statsComp;
 };
 
 // Mock Logger for DebugConsole testing
@@ -45,23 +71,3 @@ public:
 private:
     std::vector<std::string> events, errors, debug;
 };
-
-// Test assertion macros (lightweight)
-bool ASSERT_TRUE(bool condition);
-
-
-bool ASSERT_FALSE(bool condition);
-
-template <typename T>
-bool ASSERT_EQ(T actual, T expected);
-
-template <typename T>
-bool ASSERT_NE(T actual, T expected);
-
-template <typename T>
-bool ASSERT_GE(T actual, T minimum);
-
-template <typename T>
-bool ASSERT_LE(T actual, T maximum);
-
-#include "Week1TestMocks.ini"

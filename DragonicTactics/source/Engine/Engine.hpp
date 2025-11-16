@@ -13,6 +13,7 @@
 #include <gsl/gsl>
 #include <memory>
 #include <string_view>
+#include <SDL.h>
 
 namespace CS230
 {
@@ -34,6 +35,10 @@ namespace CS200
 class TextManager;
 class EventBus;
 class CombatSystem;
+class DiceManager;
+class SpellSystem;
+class DebugManager;
+class DataRegistry;
 
 /**
  * \brief Runtime information about the window and application state
@@ -249,6 +254,13 @@ public:
 
     static CombatSystem& GetCombatSystem();
 
+    static DiceManager& GetDiceManager();
+
+    static SpellSystem& GetSpellSystem();
+
+    static DebugManager& GetDebugManager();
+
+    static DataRegistry& GetDataRegistry();
 
 public:
     /**
@@ -341,6 +353,8 @@ public:
      * without requiring direct access to window or state management internals.
      */
     bool HasGameEnded();
+
+    void OnEvent(const SDL_Event& event);
 
 private:
     // Forward declaration for Pimpl (Pointer to Implementation) idiom

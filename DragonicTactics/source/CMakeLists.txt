@@ -16,15 +16,6 @@ set(SOURCE_CODE
     CS200/RenderingAPI.hpp CS200/RenderingAPI.cpp
     CS200/RGBA.hpp
 
-    Demo/DemoShapes.hpp Demo/DemoShapes.cpp
-    Demo/DemoFramebuffer.hpp Demo/DemoFramebuffer.cpp
-    Demo/DemoText.hpp Demo/DemoText.cpp
-    Demo/DemoVAO.hpp Demo/DemoVAO.cpp
-    Demo/DemoBufferTypes.hpp Demo/DemoBufferTypes.cpp
-    Demo/DemoTexturing.hpp Demo/DemoTexturing.cpp
-    Demo/DemoCS230Textures.hpp Demo/DemoCS230Textures.cpp
-
-
     Game/Background.h Game/Background.cpp
     Game/GameObjectTypes.h
     Game/MainMenu.h Game/MainMenu.cpp
@@ -33,31 +24,13 @@ set(SOURCE_CODE
     Game/Splash.h Game/Splash.cpp
     Game/States.h
 
-    Game/CS230_Final/Components/Bounce.h Game/CS230_Final/Components/Bounce.cpp
-    Game/CS230_Final/Components/Grid.h Game/CS230_Final/Components/Grid.cpp
-    Game/CS230_Final/Components/Random.h Game/CS230_Final/Components/Random.cpp
-    Game/CS230_Final/Components/Ziggle.h Game/CS230_Final/Components/Ziggle.cpp
-
-    Game/CS230_Final/Objects/Bus.h Game/CS230_Final/Objects/Bus.cpp
-    Game/CS230_Final/Objects/BusLine.h
-    Game/CS230_Final/Objects/Constants.h
-    Game/CS230_Final/Objects/Bus.h Game/CS230_Final/Objects/Bus.cpp
-    Game/CS230_Final/Objects/Food.h Game/CS230_Final/Objects/Food.cpp
-    Game/CS230_Final/Objects/Obstacle.h Game/CS230_Final/Objects/Obstacle.cpp
-    Game/CS230_Final/Objects/Passenger.h Game/CS230_Final/Objects/Passenger.cpp
-    Game/CS230_Final/Objects/Player.h Game/CS230_Final/Objects/Player.cpp
-
-    Game/CS230_Final/States/BadSandwich.h Game/CS230_Final/States/BadSandwich.cpp
-    Game/CS230_Final/States/GoodSandwich.h Game/CS230_Final/States/GoodSandwich.cpp
-    Game/CS230_Final/States/NormalSandwich.h Game/CS230_Final/States/NormalSandwich.cpp
-    Game/CS230_Final/States/Project.h Game/CS230_Final/States/Project.cpp
-
     Game/DragonicTactics/Abilities/AbilityBase.h
     Game/DragonicTactics/Abilities/MeleeAttack.h Game/DragonicTactics/Abilities/MeleeAttack.cpp
     Game/DragonicTactics/Abilities/ShieldBash.h Game/DragonicTactics/Abilities/ShieldBash.cpp
-    
+
     Game/DragonicTactics/Debugger/DebugConsole.h Game/DragonicTactics/Debugger/DebugConsole.cpp
     Game/DragonicTactics/Debugger/DebugManager.h Game/DragonicTactics/Debugger/DebugManager.cpp
+    Game/DragonicTactics/Debugger/DebugVisualizer.h Game/DragonicTactics/Debugger/DebugVisualizer.cpp
     
     Game/DragonicTactics/Objects/Actions/Action.h Game/DragonicTactics/Objects/Actions/Action.cpp
     Game/DragonicTactics/Objects/Actions/ActionAttack.h Game/DragonicTactics/Objects/Actions/ActionAttack.cpp
@@ -77,25 +50,27 @@ set(SOURCE_CODE
     Game/DragonicTactics/Singletons/CombatSystem.h Game/DragonicTactics/Singletons/CombatSystem.cpp
     Game/DragonicTactics/Singletons/SpellSystem.h Game/DragonicTactics/Singletons/SpellSystem.cpp
 
-    Game/DragonicTactics/StateComponents/GridSystem.h Game/DragonicTactics/StateComponents/GridSystem.cpp
+    Game/DragonicTactics/StateComponents/GridSystem.h Game/DragonicTactics/StateComponents/GridSystem.cpp Game/DragonicTactics/StateComponents/AStar.cpp
     Game/DragonicTactics/StateComponents/TurnManager.h Game/DragonicTactics/StateComponents/TurnManager.cpp
 
     Game/DragonicTactics/States/Test.h 
     Game/DragonicTactics/States/Test_Seungju.cpp Game/DragonicTactics/States/Test_Taekyung.cpp
     Game/DragonicTactics/States/Test_Junyoung.cpp Game/DragonicTactics/States/Test_Ginam.cpp
-    Game/DragonicTactics/States/Test_SY.cpp
+    Game/DragonicTactics/States/GamePlay.h Game/DragonicTactics/States/GamePlay.cpp
+    Game/DragonicTactics/States/RenderingTest.h Game/DragonicTactics/States/RenderingTest.cpp
+    Game/DragonicTactics/States/ConsoleTest.h Game/DragonicTactics/States/ConsoleTest.cpp
 
-    Game/DragonicTactics/States/BattleState.h Game/DragonicTactics/States/BattleState.cpp
-
-    Game/DragonicTactics/Test/Week1TestMocks.h Game/DragonicTactics/Test/Week1TestMocks.cpp Game/DragonicTactics/Test/Week1TestMocks.ini
+    Game/DragonicTactics/Test/Week1TestMocks.h Game/DragonicTactics/Test/Week1TestMocks.cpp
     Game/DragonicTactics/Test/Week3TestMocks.h Game/DragonicTactics/Test/Week3TestMocks.cpp
+    Game/DragonicTactics/Test/TestAStar.h Game/DragonicTactics/Test/TestAStar.cpp 
+    Game/DragonicTactics/Test/TestAssert.h Game/DragonicTactics/Test/TestAssert.cpp Game/DragonicTactics/Test/TestAssert.ini
+    Game/DragonicTactics/Test/TestTurnInit.h Game/DragonicTactics/Test/TestTurnInit.cpp
+    Game/DragonicTactics/Test/TestCombatSystem.h Game/DragonicTactics/Test/TestCombatSystem.cpp
 
     Game/DragonicTactics/Types/CharacterTypes.h
     Game/DragonicTactics/Types/Events.h
     Game/DragonicTactics/Types/GameObjectTypes.h
     Game/DragonicTactics/Types/GameTypes.h
-
-
 
     Engine/Engine.hpp Engine/Engine.cpp
     Engine/Error.hpp

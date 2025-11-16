@@ -8,7 +8,9 @@
 #include "Test.h"
 
 #include "./Game/DragonicTactics/Test/Week1TestMocks.h"
+#include "./Game/DragonicTactics/Test/TestAssert.h"
 #include "./Game/DragonicTactics/Types/Events.h"
+#include "./Game/DragonicTactics/Singletons/DataRegistry.h"
 
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
 #include "./Game/DragonicTactics/Objects/Dragon.h"
@@ -33,7 +35,7 @@ Test::Test() : fighter(nullptr), dragon(nullptr)
 void Test::Load()
 {
 	AddGSComponent(new GridSystem());
-    DataRegistry::Instance().LoadFromFile("Assets/Data/characters.json");
+    Engine::GetDataRegistry().LoadFromFile("Assets/Data/characters.json");
     AddGSComponent(new CS230::GameObjectManager());
     fighter = new Fighter({ 5, 5 });
     GetGSComponent<CS230::GameObjectManager>()->Add(fighter);
@@ -195,7 +197,7 @@ void Test::test_json()
 {
     Engine::GetLogger().LogEvent("========== JSON Test ==========");
 
-    DataRegistry& registry = DataRegistry::Instance();
+    DataRegistry& registry = Engine::GetDataRegistry();
 
     int dragonHP  = registry.GetValue<int>("Dragon.maxHP", 0);
     int fighterHP = registry.GetValue<int>("Fighter.maxHP", 0);
@@ -210,18 +212,19 @@ void Test::test_json()
 void Test::test_json_reload()
 {
     Engine::GetLogger().LogEvent("--- Reloading characters.json ---");
-    DataRegistry::Instance().ReloadFile("Assets/Data/characters.json");
+    // Engine::GetDataRegistry().ReloadFile("Assets/Data/characters.json");
     Engine::GetLogger().LogEvent("Reload complete!");
 }
 
 void Test::test_json_log()
 {
-    DataRegistry::Instance().LogAllKeys();
+    Engine::GetDataRegistry().LogAllKeys();
 }
 
 void Test::test_dice_manager()
 {
-    DiceManager& dice = DiceManager::Instance();
+    DiceManager& dice = Engine::GetDiceManager();
+    
     dice.SetSeed(42);
     dice.RollDiceFromString("4d8+2");
 }

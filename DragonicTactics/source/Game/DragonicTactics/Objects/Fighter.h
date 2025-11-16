@@ -9,6 +9,7 @@ public:
     std::string TypeName() override { return "Fighter"; }
     void OnTurnStart() override;
     void OnTurnEnd() override;
+    void Update(double dt) override;
     void TakeDamage(int damage, Character* attacker) override;
 
         // Ginam: Fighter ability methods (Week3 Developer B)

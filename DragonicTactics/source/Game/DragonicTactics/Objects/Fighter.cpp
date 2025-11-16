@@ -1,6 +1,7 @@
 #include "Fighter.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
 #include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
+#include "./Game/DragonicTactics/Objects/Components/SpellSlots.h"
 #include "./Game/DragonicTactics/Objects/Actions/ActionAttack.h"
 #include "./Engine/Engine.hpp"
 #include "./Engine/GameStateManager.hpp"
@@ -10,8 +11,8 @@ Fighter::Fighter(Math::ivec2 start_coordinates)
     : Character(
         CharacterTypes::Fighter,
         start_coordinates,
-        2,
-        { {1, 2}, {2, 2} }
+        0,
+        {}
     )
 {
     CharacterStats fighter_stats;
@@ -39,6 +40,10 @@ void Fighter::OnTurnStart() {
 void Fighter::OnTurnEnd() {
 }
 
+void Fighter::Update(double dt){
+    Character::Update(dt);
+}
+
 void Fighter::TakeDamage(int damage, Character* attacker) {
     Character::TakeDamage(damage, attacker);
 }
@@ -50,7 +55,8 @@ void Fighter::DecideAction() {
     CS230::GameObjectManager* gom = Engine::GetGameStateManager().GetGSComponent<CS230::GameObjectManager>();
 
     if (gom != nullptr) {
-        for (CS230::GameObject* obj : gom->GetAll()) {
+        for (const auto& obj_smart_ptr : gom->GetAll()) {
+            CS230::GameObject* obj = obj_smart_ptr.get();
             if (obj->Type() == GameObjectTypes::Character) {
                 Character* character = static_cast<Character*>(obj);
                 if (character->GetCharacterType() == CharacterTypes::Dragon) {

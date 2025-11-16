@@ -40,6 +40,10 @@ void Dragon::OnTurnStart() {
 void Dragon::OnTurnEnd() {
 }
 
+void Dragon::Update(double dt){
+    Character::Update(dt);
+}
+
 void Dragon::TakeDamage(int damage, Character* attacker) {
     Character::TakeDamage(damage, attacker);
 }

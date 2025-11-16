@@ -8,83 +8,148 @@ Author:     Taekyung Ho
 Created:    May 6, 2025
 */
 #include "MainMenu.h"
-#include "./OpenGL/Environment.hpp"
 #include "../CS200/IRenderer2D.hpp"
 #include "../CS200/NDC.hpp"
 #include "../CS200/RenderingAPI.hpp"
-#include "../Demo/DemoBufferTypes.hpp"
-#include "../Demo/DemoCS230Textures.hpp"
-#include "../Demo/DemoFramebuffer.hpp"
-#include "../Demo/DemoShapes.hpp"
-#include "../Demo/DemoText.hpp"
-#include "../Demo/DemoTexturing.hpp"
-#include "../Demo/DemoVAO.hpp"
+#include "../Engine/Engine.hpp"
 #include "../Engine/GameStateManager.hpp"
 #include "../Engine/Input.hpp"
 #include "../Engine/TextManager.hpp"
 #include "../Engine/Window.hpp"
-#include "../Game/CS230_Final/States/Project.h"
+#include "./Game/DragonicTactics/States/GamePlay.h"
 #include "./Game/DragonicTactics/States/Test.h"
+#include "./Game/DragonicTactics/States/RenderingTest.h"
+#include "./Game/DragonicTactics/States/ConsoleTest.h"
+#include "./OpenGL/Environment.hpp"
 #include "States.h"
 #include <imgui.h>
 
-MainMenu::MainMenu() : current_option(Option::cs230_final)
+
+
+// (0.0 = 0%, 1.0 = 100%)
+namespace
 {
+	// --- Menu UI Ratio ---
+	const double TITLE_X_RATIO			   = 0.25;
+	const double TITLE_Y_RATIO_FROM_BOTTOM = 0.8;
+	const double TITLE_SCALE_VAL		   = 1.5;
+
+	const double MENU_CENTER_X_RATIO	 = 0.5;
+	const double MENU_WIDTH_RATIO		 = 0.4;
+	const double MENU_ITEM_HEIGHT_RATIO	 = 0.05;
+	const double MENU_ITEM_SPACING_RATIO = 0.03;
+	const double MENU_START_Y_RATIO		 = 0.4;
+}
+
+MainMenu::MainMenu() : current_option(Option::DragonicTactics)
+{
+}
+
+void MainMenu::DrawImGui()
+{
+}
+
+void MainMenu::SelecetOption()
+{
+	switch (current_option)
+	{
+		case MainMenu::Option::DragonicTactics:
+			Engine::GetGameStateManager().PopState();
+			Engine::GetGameStateManager().PushState<GamePlay>();
+			break;
+
+		case MainMenu::Option::ConsoleTest:
+			Engine::GetGameStateManager().PopState();
+			Engine::GetGameStateManager().PushState<ConsoleTest>();
+			break;
+
+		case MainMenu::Option::RenderingTest:
+			Engine::GetGameStateManager().PopState();
+			Engine::GetGameStateManager().PushState<RenderingTest>();
+			break;
+
+		case MainMenu::Option::Exit: Engine::GetGameStateManager().PopState(); break;
+	}
 }
 
 void MainMenu::Load()
 {
-    CS200::RenderingAPI::SetClearColor(0x000000FF);
-    if(!OpenGL::IsWebGL){
-		Engine::GetWindow().ForceResize(default_window_size.x,default_window_size.y);
-		Engine::GetWindow().SetWindowPosition(SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED);
+	CS200::RenderingAPI::SetClearColor(0x000000FF);
+	if (!OpenGL::IsWebGL)
+	{
+		Engine::GetWindow().ForceResize(default_window_size.x, default_window_size.y);
+		Engine::GetWindow().SetWindowPosition(SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 	}
-    update_colors();
+	update_colors();
+
+	const auto window_size = default_window_size;
+
+	title_pos.x = window_size.x * TITLE_X_RATIO;
+	title_pos.y = window_size.y * TITLE_Y_RATIO_FROM_BOTTOM;
+	title_scale = Math::vec2{ TITLE_SCALE_VAL, TITLE_SCALE_VAL };
+
+	const double text_width		  = window_size.x * MENU_WIDTH_RATIO;
+	const double text_x			  = (window_size.x * MENU_CENTER_X_RATIO) - (text_width / 2.0);
+	const double text_height	  = window_size.y * MENU_ITEM_HEIGHT_RATIO;
+	const double start_y_from_top = window_size.y * MENU_START_Y_RATIO;
+
+	const double item_bottom_y_from_top	   = start_y_from_top + text_height;
+	const double item_bottom_y_from_bottom = window_size.y - item_bottom_y_from_top;
+
+	menu_start_pos_bl	   = Math::vec2{ text_x, item_bottom_y_from_bottom };
+	menu_item_size		   = Math::vec2{ text_width, text_height };
+	menu_item_total_height = text_height + (window_size.y * MENU_ITEM_SPACING_RATIO);
 }
 
 void MainMenu::Update([[maybe_unused]] double dt)
 {
-    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Down))
-    {
-        switch (current_option)
-        {
-            case MainMenu::Option::cs230_final: current_option = Option::dragonic_tactics; break;
-            case MainMenu::Option::dragonic_tactics: current_option = Option::test2; break;
-            case MainMenu::Option::test2: current_option = Option::exit; break;
-            case MainMenu::Option::exit: current_option = Option::cs230_final; break;
-        }
-    }
+	CS230::Input& input		  = Engine::GetInput();
+	Math::vec2	  mouse_pos	  = input.GetMousePos();
+	auto		  window_size = Engine::GetWindow().GetSize();
 
-    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Up))
-    {
-        switch (current_option)
-        {
-            case MainMenu::Option::cs230_final: current_option = Option::exit; break;
-            case MainMenu::Option::dragonic_tactics: current_option = Option::cs230_final; break;
-            case MainMenu::Option::test2: current_option = Option::dragonic_tactics; break;
-            case MainMenu::Option::exit: current_option = Option::test2; break;
-        }
-    }
-    update_colors();
-    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Enter))
-    {
-        switch (current_option)
-        {
-            case MainMenu::Option::cs230_final:
-                Engine::GetGameStateManager().PopState();
-                Engine::GetGameStateManager().PushState<Project>();
-                break;
-            case MainMenu::Option::dragonic_tactics:
-                Engine::GetGameStateManager().PopState();
-                Engine::GetGameStateManager().PushState<Test>();
-                break;
-            case MainMenu::Option::test2:
-                Engine::GetGameStateManager().PopState();
-                Engine::GetGameStateManager().PushState<Test2>();
-                break;
-            case MainMenu::Option::exit: Engine::GetGameStateManager().PopState(); break;
-        }
-    }
+	if (input.KeyJustReleased(CS230::Input::Keys::Up))
+	{
+		int current_index = static_cast<int>(current_option);
+		int total_options = static_cast<int>(Option::COUNT);
+		current_index	  = (current_index - 1 + total_options) % total_options;
+		current_option	  = static_cast<Option>(current_index);
+	}
+	else if (input.KeyJustReleased(CS230::Input::Keys::Down))
+	{
+		int current_index = static_cast<int>(current_option);
+		int total_options = static_cast<int>(Option::COUNT);
+		current_index	  = (current_index + 1) % total_options;
+		current_option	  = static_cast<Option>(current_index);
+	}
+	else if (input.KeyJustReleased(CS230::Input::Keys::Enter))
+	{
+		SelecetOption();
+	}
+
+
+	bool mouse_is_hovering = false;
+	int	 total_options	   = static_cast<int>(Option::COUNT);
+	for (int i = 0; i < total_options; ++i)
+	{
+		double item_bottom_y = menu_start_pos_bl.y - (i * menu_item_total_height);
+
+		Math::vec2 rect_pos{ menu_start_pos_bl.x, item_bottom_y };
+		Math::vec2 rect_size = menu_item_size;
+
+		if (IsPointInRect(mouse_pos, rect_pos, rect_size))
+		{
+			current_option	  = static_cast<Option>(i);
+			mouse_is_hovering = true;
+			break;
+		}
+	}
+
+	if (input.MouseJustPressed(0) && mouse_is_hovering)
+	{
+		SelecetOption();
+	}
+
+	update_colors();
 }
 
 void MainMenu::Unload()
@@ -93,108 +158,75 @@ void MainMenu::Unload()
 
 void MainMenu::Draw()
 {
-    CS200::RenderingAPI::Clear();
-    auto& renderer_2d = Engine::GetRenderer2D();
-    renderer_2d.BeginScene(CS200::build_ndc_matrix(Engine::GetWindow().GetSize()));
+	CS200::RenderingAPI::Clear();
+	auto& renderer_2d = Engine::GetRenderer2D();
+	renderer_2d.BeginScene(CS200::build_ndc_matrix(Engine::GetWindow().GetSize()));
 
-    auto& text_manager = Engine::GetTextManager();
-    auto  window_size  = Engine::GetWindow().GetSize();
-    text_manager.DrawText(
-        "Game Porting", Math::vec2{ static_cast<double>(window_size.x / 2 - 300 / 2 - 100), static_cast<double>(Engine::GetWindow().GetSize().y - 69 - 100) }, Fonts::Outlined, { 1.5, 1.5 },
-        title_color);
-    text_manager.DrawText(
-        "CS230 Final", Math::vec2{ static_cast<double>(window_size.x / 2 - 300 / 2), static_cast<double>(window_size.y - 68 * 2 - 150) }, Fonts::Outlined, { 1.0, 1.0 }, cs230_final_color);
+	auto& text_manager = Engine::GetTextManager();
 
-    text_manager.DrawText(
-        "Dragonic Tactics", Math::vec2{ static_cast<double>(window_size.x / 2 - 300 / 2), static_cast<double>(window_size.y - 68 * 3 - 200) }, Fonts::Outlined, { 1.0, 1.0 }, dragonic_tactics_color);
-    
-    text_manager.DrawText(
-        "Test2", Math::vec2{ static_cast<double>(window_size.x / 2 - 300 / 2), static_cast<double>(window_size.y - 68 * 4 - 250) }, Fonts::Outlined, { 1.0, 1.0 }, test2_color);
-    
-    
-    text_manager.DrawText("Exit", Math::vec2{ static_cast<double>(window_size.x / 2 - 300 / 2), static_cast<double>(window_size.y - 68 * 4 - 300) }, Fonts::Outlined, { 1.0, 1.0 }, exit_color);
+	text_manager.DrawText("Dragonic Tactics", title_pos, Fonts::Outlined, title_scale, title_color);
 
-    renderer_2d.EndScene();
-}
+	double current_item_y = 0;
+	int	   i			  = 0;
 
-void MainMenu::DrawImGui()
-{
-    if (ImGui::Begin("Demo Controls"))
-    {
-        if (ImGui::Button("Switch to Demo DemoBufferTypes"))
-        {
-            Engine::GetGameStateManager().PopState();
-            Engine::GetGameStateManager().PushState<DemoBufferTypes>();
-        }
-        if (ImGui::Button("Switch to Demo DemoCS230Textures"))
-        {
-            Engine::GetGameStateManager().PopState();
-            Engine::GetGameStateManager().PushState<DemoCS230Textures>();
-        }
-        if (ImGui::Button("Switch to Demo DemoFramebuffer"))
-        {
-            Engine::GetGameStateManager().PopState();
-            Engine::GetGameStateManager().PushState<DemoFramebuffer>();
-        }
-        if (ImGui::Button("Switch to Demo DemoShapes"))
-        {
-            Engine::GetGameStateManager().PopState();
-            Engine::GetGameStateManager().PushState<DemoShapes>();
-        }
-        if (ImGui::Button("Switch to Demo DemoText"))
-        {
-            Engine::GetGameStateManager().PopState();
-            Engine::GetGameStateManager().PushState<DemoText>();
-        }
-        if (ImGui::Button("Switch to Demo DemoTexturing"))
-        {
-            Engine::GetGameStateManager().PopState();
-            Engine::GetGameStateManager().PushState<DemoTexturing>();
-        }
-        if (ImGui::Button("Switch to Demo DemoVAO"))
-        {
-            Engine::GetGameStateManager().PopState();
-            Engine::GetGameStateManager().PushState<DemoVAO>();
-        }
-    }
-    ImGui::End();
+	// Option: dragonic_tactics
+	i			   = static_cast<int>(Option::DragonicTactics);
+	current_item_y = menu_start_pos_bl.y - (i * menu_item_total_height);
+	text_manager.DrawText("Dragonic Tactics", Math::vec2{ menu_start_pos_bl.x, current_item_y }, Fonts::Outlined, { 1.0, 1.0 }, dragonic_tactics_color);
+
+	// Option: console test
+	i			   = static_cast<int>(Option::ConsoleTest);
+	current_item_y = menu_start_pos_bl.y - (i * menu_item_total_height);
+	text_manager.DrawText("Console test", Math::vec2{ menu_start_pos_bl.x, current_item_y }, Fonts::Outlined, { 1.0, 1.0 }, console_test_color);
+
+	// Option: rendering test
+	i			   = static_cast<int>(Option::RenderingTest);
+	current_item_y = menu_start_pos_bl.y - (i * menu_item_total_height);
+	text_manager.DrawText("Rendering test", Math::vec2{ menu_start_pos_bl.x, current_item_y }, Fonts::Outlined, { 1.0, 1.0 }, rendering_test_color);
+
+	// Option: exit
+	i			   = static_cast<int>(Option::Exit);
+	current_item_y = menu_start_pos_bl.y - (i * menu_item_total_height);
+	text_manager.DrawText("Exit", Math::vec2{ menu_start_pos_bl.x, current_item_y }, Fonts::Outlined, { 1.0, 1.0 }, exit_color);
+
+	renderer_2d.EndScene();
 }
 
 gsl::czstring MainMenu::GetName() const
 {
-    return "MainMenu";
+	return "MainMenu";
 }
 
 void MainMenu::update_colors()
 {
-    switch (current_option)
-    {
-        case MainMenu::Option::cs230_final:
-            cs230_final_color      = seleted_color;
-            dragonic_tactics_color = non_seleted_color;
-            test2_color            = non_seleted_color;
-            exit_color             = non_seleted_color;
-            break;
+	switch (current_option)
+	{
+		case MainMenu::Option::DragonicTactics:
+			dragonic_tactics_color = seleted_color;
+			console_test_color	   = non_seleted_color;
+			rendering_test_color   = non_seleted_color;
+			exit_color			   = non_seleted_color;
+			break;
 
-        case MainMenu::Option::dragonic_tactics:
-            cs230_final_color      = non_seleted_color;
-            dragonic_tactics_color = seleted_color;
-            test2_color            = non_seleted_color;
-            exit_color             = non_seleted_color;
-            break;
+		case MainMenu::Option::ConsoleTest:
+			dragonic_tactics_color = non_seleted_color;
+			console_test_color	   = seleted_color;
+			rendering_test_color   = non_seleted_color;
+			exit_color			   = non_seleted_color;
+			break;
 
-       case MainMenu::Option::test2:
-            cs230_final_color      = non_seleted_color;
-            dragonic_tactics_color = non_seleted_color;
-            test2_color            = seleted_color;
-            exit_color             = non_seleted_color;
-            break;
+		case MainMenu::Option::RenderingTest:
+			dragonic_tactics_color = non_seleted_color;
+			console_test_color	   = non_seleted_color;
+			rendering_test_color   = seleted_color;
+			exit_color			   = non_seleted_color;
+			break;
 
-        case MainMenu::Option::exit:
-            cs230_final_color      = non_seleted_color;
-            dragonic_tactics_color = non_seleted_color;
-            test2_color            = non_seleted_color;
-            exit_color             = seleted_color;
-            break;
-    }
+		case MainMenu::Option::Exit:
+			dragonic_tactics_color = non_seleted_color;
+			console_test_color	   = non_seleted_color;
+			rendering_test_color   = non_seleted_color;
+			exit_color			   = seleted_color;
+			break;
+	}
 }
