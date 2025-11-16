@@ -19,12 +19,14 @@
 #include "../Singletons/DiceManager.h"
 #include "../Singletons/EventBus.h"
 #include "../Singletons/DataRegistry.h"
+#include "Game/DragonicTactics/Singletons/CombatSystem.h"
 #include "./Game/DragonicTactics/Objects/Actions/ActionAttack.h"
 #include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
 #include "./Game/DragonicTactics/Objects/Components/SpellSlots.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
 
-
+#include "Game/DragonicTactics/Test/TestTurnInit.h"
+#include "Game/DragonicTactics/Test/TestCombatSystem.h"
 
 
 
@@ -64,14 +66,7 @@ void Test::Update([[maybe_unused]] double dt)
     if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::D))
     {
         Engine::GetLogger().LogEvent("--- Player presses 'D': Testing PerformAttack ---");
-        if (dragon->GetActionPoints() > 0)
-        {
-            dragon->PerformAttack(fighter);
-        }
-        else
-        {
-            Engine::GetLogger().LogDebug("Dragon has no Action Points to attack!");
-        }
+        Engine::GetCombatSystem().ExecuteAttack(dragon, fighter);
         LogFighterStatus();
         LogDragonStatus();
     }
@@ -137,6 +132,9 @@ void Test::Update([[maybe_unused]] double dt)
         Test_CombatSystem_IsInRange_Adjacent();
         Test_CombatSystem_IsInRange_TooFar();
         Test_CombatSystem_GetDistance();
+
+        // Run all initiative tests
+        RunTurnManagerInitiativeTests();
     }
     GetGSComponent<CS230::GameObjectManager>()->UpdateAll(dt);
 }

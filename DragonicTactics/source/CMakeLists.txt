@@ -30,6 +30,7 @@ set(SOURCE_CODE
 
     Game/DragonicTactics/Debugger/DebugConsole.h Game/DragonicTactics/Debugger/DebugConsole.cpp
     Game/DragonicTactics/Debugger/DebugManager.h Game/DragonicTactics/Debugger/DebugManager.cpp
+    Game/DragonicTactics/Debugger/DebugVisualizer.h Game/DragonicTactics/Debugger/DebugVisualizer.cpp
     
     Game/DragonicTactics/Objects/Actions/Action.h Game/DragonicTactics/Objects/Actions/Action.cpp
     Game/DragonicTactics/Objects/Actions/ActionAttack.h Game/DragonicTactics/Objects/Actions/ActionAttack.cpp
@@ -55,7 +56,6 @@ set(SOURCE_CODE
     Game/DragonicTactics/States/Test.h 
     Game/DragonicTactics/States/Test_Seungju.cpp Game/DragonicTactics/States/Test_Taekyung.cpp
     Game/DragonicTactics/States/Test_Junyoung.cpp Game/DragonicTactics/States/Test_Ginam.cpp
-    Game/DragonicTactics/States/Test_SY.cpp
     Game/DragonicTactics/States/GamePlay.h Game/DragonicTactics/States/GamePlay.cpp
     Game/DragonicTactics/States/RenderingTest.h Game/DragonicTactics/States/RenderingTest.cpp
     Game/DragonicTactics/States/ConsoleTest.h Game/DragonicTactics/States/ConsoleTest.cpp
@@ -64,6 +64,9 @@ set(SOURCE_CODE
     Game/DragonicTactics/Test/Week3TestMocks.h Game/DragonicTactics/Test/Week3TestMocks.cpp
     Game/DragonicTactics/Test/TestAStar.h Game/DragonicTactics/Test/TestAStar.cpp 
     Game/DragonicTactics/Test/TestAssert.h Game/DragonicTactics/Test/TestAssert.cpp Game/DragonicTactics/Test/TestAssert.ini
+    Game/DragonicTactics/Test/TestTurnInit.h Game/DragonicTactics/Test/TestTurnInit.cpp 
+    Game/DragonicTactics/Test/TestCombatSystem.h Game/DragonicTactics/Test/TestCombatSystem.cpp 
+
 
     Game/DragonicTactics/Types/CharacterTypes.h
     Game/DragonicTactics/Types/Events.h

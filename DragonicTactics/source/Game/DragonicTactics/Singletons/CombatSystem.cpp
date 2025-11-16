@@ -15,7 +15,7 @@ int CombatSystem::CalculateDamage(Character* attacker, Character* defender,
     const std::string& damageDice, int baseDamage)
 {
     if (attacker == nullptr || defender == nullptr) {
-        Engine::GetLogger().LogError("CombatSystem: Null attacker or defender");
+        Engine::GetLogger().LogError("CombatSystem: Null " + attacker->TypeName() + " or " + defender->TypeName());
         return 0;
     }
 
@@ -32,7 +32,7 @@ int CombatSystem::CalculateDamage(Character* attacker, Character* defender,
 
 void CombatSystem::ApplyDamage(Character* attacker, Character* defender, int damage) {
     if (defender == nullptr) {
-        Engine::GetLogger().LogError("CombatSystem: Null defender");
+        Engine::GetLogger().LogError("CombatSystem: Null " + defender->TypeName());
         return;
     }
 
@@ -69,7 +69,7 @@ void CombatSystem::ApplyDamage(Character* attacker, Character* defender, int dam
 
 bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender) {
     if (attacker == nullptr || defender == nullptr) {
-        Engine::GetLogger().LogError("CombatSystem: Null attacker or defender");
+        Engine::GetLogger().LogError("CombatSystem: Null " + attacker->TypeName() + " or " + defender->TypeName());
         return false;
     }
 
@@ -79,7 +79,7 @@ bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender) {
     }
 
     if (!defender->IsAlive()) {
-        Engine::GetLogger().LogError("CombatSystem: Cannot attack dead defender");
+        Engine::GetLogger().LogError("CombatSystem: Cannot attack dead " + defender->TypeName());
         return false;
     }
 
@@ -89,10 +89,10 @@ bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender) {
         return false;
     }
 
-    // Check AP (attack costs 2 AP)
-    int attackCost = 2;
+    // Check AP (attack costs 1 AP)
+    int attackCost = 1;
     if (attacker->GetActionPoints() < attackCost) {
-        Engine::GetLogger().LogError("CombatSystem: Not enough AP");
+        Engine::GetLogger().LogError("CombatSystem: " + attacker->TypeName() + " has no Action Points to attack!");
         return false;
     }
 
@@ -106,7 +106,7 @@ bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender) {
     attacker->GetActionPointsComponent()->Consume(attackCost);
 
     // Publish attack event
-    // Engine::Instance().GetEventBus().Publish(CharacterAttackedEvent{ attacker, defender, damage });
+    Engine::Instance().GetEventBus().Publish(CharacterAttackedEvent{ attacker, defender, damage });
 
     return true;
 }

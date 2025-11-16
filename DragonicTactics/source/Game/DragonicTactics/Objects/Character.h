@@ -44,7 +44,7 @@ public:
     virtual void OnTurnStart() = 0;
     virtual void OnTurnEnd() = 0;
 
-    virtual void PerformAttack(Character* target);
+    // virtual void PerformAttack(Character* target);
     virtual void PerformAction(Action* action, Character* target, Math::ivec2 tile_position);
     virtual void TakeDamage(int damage, Character* attacker);
     virtual void ReceiveHeal(int amount);
