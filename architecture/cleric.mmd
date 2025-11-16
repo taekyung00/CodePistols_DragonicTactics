@@ -1,0 +1,52 @@
+flowchart TD
+%% Nodes for cleric
+SettingTarget("목표 설정")
+SettingTarget                                               --> AreWeInDanger("도망쳐야하는 상황인가?")
+
+AreWeInDanger                           -- "Yes"            --> TargetExit("목표 = 출구")
+AreWeInDanger                           -- "No"             --> IsAllianceInDanger("아군의 체력이 30% 이하인가?")
+
+IsAllianceInDanger                      -- "Yes"            --> TargetAllianceHeal("목표 = 아군치유")
+IsAllianceInDanger                      -- "No"             --> DoIHaveSpellSlot("주문 슬롯이 있는가?") 
+
+DoIHaveSpellSlot                        -- "Yes"            --> IsDragonGettingDebuff("드래곤이 디버프를 받고있나?")
+DoIHaveSpellSlot                        -- "No"             --> TargetDragonAttack("목표 = 드래곤 공격")
+
+IsDragonGettingDebuff                   -- "Yes"            --> IsPriorityAllyBuffed("우선순위 아군(파이터>로그>위저드)이<br>버프를 받고 있는가?")
+IsDragonGettingDebuff                   -- "No"             --> TargetDragonDebuff("목표 = 드래곤 디버프")
+
+IsPriorityAllyBuffed                    -- "No"             --> TargetPriorityAllyBuff("목표 = 우선순위 아군에게 버프")
+IsPriorityAllyBuffed                    -- "Yes"            --> TargetDragonAttack("목표 = 드래곤 공격")
+
+TargetPriorityAllyBuff                                      --> MoveStart("행동시작")
+TargetAllianceHeal                                          --> MoveStart("행동 시작")
+TargetDragonAttack                                          --> MoveStart("행동 시작")
+TargetDragonDebuff                                          --> MoveStart("행동 시작")
+TargetExit                                                  --> MoveStart("행동 시작")
+
+MoveStart                                                   --> AmIOnTarget("목표에 도달했나?")
+
+AmIOnTarget                             -- "Yes"            --> CanIAct("행동력이 1 이상인가?")
+AmIOnTarget                             -- "No"             --> CanIMove("이동력이 1 이상인가?")
+
+CanIMove                                -- "Yes"            --> MoveToTarget("목표로 1칸 이동")
+CanIMove                                -- "No"             --> TurnEnd("턴 종료")
+
+MoveToTarget                                                --> DecreaseMovePoint("이동력을 1 소모")
+
+DecreaseMovePoint                                           --> AmIOnTarget("목표에 도달했나?")
+CanIAct                                 --      "No"        --> TurnEnd("턴 종료")
+CanIAct                                 --      "Yes"       --> WhatIsTarget("목표가 뭔가")
+WhatIsTarget                            --"목표==드래곤 공격"           --> AttackDragon("드래곤을 공격한다")
+WhatIsTarget                            --"목표==드래곤 디버프"         --> DebuffDragon("드래곤에게 디버프를 쓴다")
+WhatIsTarget                            --"목표==아군 치유"             --> HealAlliance("아군을 치유한다")
+WhatIsTarget                            --"목표==우선순위 아군에게 버프"  --> BuffAlliacne("아군에게 버프를 쓴다")
+
+DebuffDragon                                                --> DecreaseSpellSlot("주문 슬롯을 소모")
+BuffAlliacne                                                --> DecreaseSpellSlot("주문 슬롯을 소모")
+
+DecreaseSpellSlot                                           --> DecreaseActionPoints("행동력을 1 소모")
+AttackDragon                                                --> DecreaseActionPoints("행동력을 1 소모")
+HealAlliance                                                --> DecreaseActionPoints("행동력을 1 소모")
+
+DecreaseActionPoints                                        --> SettingTarget("목표 설정")

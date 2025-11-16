@@ -1,4 +1,0 @@
-language,filename,blank,comment,code,"http://cloc.sourceforge.net v 1.64  T=0.04 s (83.5 files/s, 7456.2 lines/s)"
-C++,DataRegistry.cpp,30,16,94
-C++,DiceManager.cpp,21,6,87
-C++,EventBus.cpp,4,0,10

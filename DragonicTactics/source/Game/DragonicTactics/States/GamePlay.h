@@ -1,0 +1,47 @@
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  GamePlay.h
+Project:    CS230 Engine
+Author:     Seungju Song
+Created:    November 5, 2025
+*/
+#pragma once
+#include "../../../Engine/GameState.hpp"
+#include "../../../Engine/Fonts.h"
+#include "../../../Engine/Engine.hpp"
+#include "../../../Engine/Texture.hpp"
+#include "../../../CS200/RGBA.hpp"
+#include "../StateComponents/GridSystem.h"
+
+class Dragon;
+class Fighter;
+
+class GamePlay : public CS230::GameState
+{
+public:
+    GamePlay();
+    void          Load() override;
+    void          Update(double dt) override;
+    void          Unload() override;
+    void          Draw() override;
+    void          DrawImGui() override;
+    gsl::czstring GetName() const override;
+private:
+    enum class PlayerActionState
+    {
+        None,          
+        SelectingMove,  
+        SelectingAction, 
+        TargetingForAttack,
+        TargetingForSpell
+    };
+    PlayerActionState currentPlayerState = PlayerActionState::None;
+
+    Fighter* fighter;
+    Dragon* dragon;
+
+    std::vector<Math::ivec2> CalculateSimplePath(Math::ivec2 start, Math::ivec2 end);
+    
+};
