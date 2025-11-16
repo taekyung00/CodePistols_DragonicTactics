@@ -14,16 +14,19 @@ public:
     int GetMaxHP() const;
     float GetHealthPercentage() const;
 
-
+    void RefreshSpeed();
+    void ReduceSpeed();
+    int GetSpeed() const;
+    
     int GetBaseAttack() const;
     const std::string& GetAttackDice() const;
     int GetBaseDefend() const;
     const std::string& GetDefendDice() const;
-    int GetSpeed() const;
     int GetAttackRange() const;
 
     const CharacterStats& GetAllStats() const { return stats; }
 
 private:
     CharacterStats stats;
+    int m_current_speed;
 };

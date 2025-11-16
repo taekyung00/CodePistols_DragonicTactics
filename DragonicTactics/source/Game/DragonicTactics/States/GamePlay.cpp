@@ -22,6 +22,7 @@ Created:    November 5, 2025
 #include "Game/DragonicTactics/Objects/Components/ActionPoints.h"
 #include "Game/DragonicTactics/Objects/Components/SpellSlots.h"
 #include "Game/DragonicTactics/Objects/Components/StatsComponent.h"
+#include "Game/DragonicTactics/Objects/Components/MovementComponent.h"
 #include "Game/MainMenu.h" 
 #include "Game/DragonicTactics/Singletons/DiceManager.h"
 
@@ -105,12 +106,40 @@ void GamePlay::Update(double dt){
 
     switch (currentCharacter->GetCharacterType())
 	{
-		case CharacterTypes::Dragon: //추후에 밑 로직을 함수로 만들기
-            if (input.MouseJustPressed(0)) // 좌클
+		case CharacterTypes::Dragon: 
+        if (input.MouseJustPressed(2)) 
+            {
+                if (currentPlayerState != PlayerActionState::None)
+                {
+                    Engine::GetLogger().LogEvent("Action cancelled via Right Click.");
+
+                    if (currentPlayerState == PlayerActionState::Moving)
+                    {
+                        MovementComponent* move_comp = dragon->GetGOComponent<MovementComponent>();
+                        if (move_comp != nullptr)
+                        {
+                            move_comp->ClearPath(); 
+                        }
+                    }
+                    currentPlayerState = PlayerActionState::None;
+                }
+            }
+            if (currentPlayerState == PlayerActionState::Moving)
+            {
+                MovementComponent* move_comp = dragon->GetGOComponent<MovementComponent>();
+                if (move_comp != nullptr && !move_comp->IsMoving())
+                {
+                    Engine::GetLogger().LogEvent("Movement finished. State returning to None.");
+                    currentPlayerState = PlayerActionState::None;
+                }
+                
+                break; 
+            }
+            if (input.MouseJustPressed(0)) 
 			{
 				Engine::GetLogger().LogEvent("Map clicked at (" + std::to_string(input.GetMousePos().x) + ", " + std::to_string(input.GetMousePos().y) + ")");
 
-				if (!is_clicking_ui) // ui를 클릭한게 아님
+				if (!is_clicking_ui) 
 				{
 					Math::vec2	mouse_pos = input.GetMousePos();
 					Math::ivec2 grid_pos  = ConvertScreenToGrid(mouse_pos);
@@ -118,18 +147,31 @@ void GamePlay::Update(double dt){
 					GridSystem* grid_system = GetGSComponent<GridSystem>();
 					switch (currentPlayerState)
 					{
-						case PlayerActionState::SelectingMove:
-							Engine::GetLogger().LogEvent("Map clicked while in SelectingMove state.");
-							// player->MoveTo(grid_pos);
-							// currentPlayerState = PlayerActionState::None;
-							if (grid_system->IsWalkable(grid_pos))
-							{
-								std::vector<Math::ivec2> new_path =
-									grid_system->FindPath(dragon->GetGridPosition()->Get(), grid_pos); // CalculateSimplePath(dragon->GetGridPosition()->Get(), grid_pos);
-								dragon->SetPath(std::move(new_path));
-							}
-							currentPlayerState = PlayerActionState::None;
-							break;
+                        case PlayerActionState::SelectingMove:
+                        Engine::GetLogger().LogEvent("Map clicked while in SelectingMove state.");
+                        
+                        if (grid_system->IsWalkable(grid_pos))
+                        {
+                            std::vector<Math::ivec2> new_path =
+                                grid_system->FindPath(dragon->GetGridPosition()->Get(), grid_pos);
+
+                            MovementComponent* move_comp = dragon->GetGOComponent<MovementComponent>();
+                            
+                            if (move_comp != nullptr)
+                            {
+                                move_comp->SetPath(std::move(new_path));
+                                
+                                currentPlayerState = PlayerActionState::Moving;
+                                Engine::GetLogger().LogEvent("Path set. State changing to Moving.");
+                            }
+                            else
+                            {
+                                Engine::GetLogger().LogError("Dragon is missing MovementComponent!");
+                                currentPlayerState = PlayerActionState::None; 
+                            }
+                        }
+
+                        break;
 						case PlayerActionState::SelectingAction:
 							Engine::GetLogger().LogEvent("Map clicked while in SelectingAction state.");
 							// player->PerformAction(grid_pos);
@@ -198,7 +240,7 @@ void GamePlay::Update(double dt){
 		case CharacterTypes::Wizard: break;
 		case CharacterTypes::Rogue: break;
 		case CharacterTypes::Cleric: break;
-	} // 캐릭터 행동 끝남의 유무 반환함수
+	} 
 
 
 

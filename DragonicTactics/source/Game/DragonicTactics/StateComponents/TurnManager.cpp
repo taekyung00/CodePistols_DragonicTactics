@@ -93,7 +93,10 @@ void TurnManager::StartNextTurn() {
 
     // Refresh character's action points
     currentChar->RefreshActionPoints();
-
+    StatsComponent* stats = currentChar->GetStatsComponent();
+    if (stats) {
+        stats->RefreshSpeed();
+    }
     // Publish turn start event
     PublishTurnStartEvent();
 

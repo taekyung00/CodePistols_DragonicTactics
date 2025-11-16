@@ -15,7 +15,7 @@ Created:    Oct 10, 2025
 StatsComponent::StatsComponent(const CharacterStats& initial_stats)
     : stats(initial_stats)
 {
-  
+    m_current_speed = stats.speed;
 }
 
 void StatsComponent::TakeDamage(int damage) {
@@ -47,6 +47,18 @@ float StatsComponent::GetHealthPercentage() const {
     return static_cast<float>(stats.current_hp) / static_cast<float>(stats.max_hp);
 }
 
+void StatsComponent::RefreshSpeed() {
+    m_current_speed = stats.speed;
+}
+
+void StatsComponent::ReduceSpeed() {
+   --m_current_speed;
+    if (m_current_speed < 0)
+    {
+        m_current_speed = 0;
+    }
+}
+
 int StatsComponent::GetBaseAttack() const {
     return stats.base_attack;
 }
@@ -64,7 +76,7 @@ const std::string& StatsComponent::GetDefendDice() const {
 }
 
 int StatsComponent::GetSpeed() const {
-    return stats.speed;
+    return m_current_speed;
 }
 
 int StatsComponent::GetAttackRange() const {
