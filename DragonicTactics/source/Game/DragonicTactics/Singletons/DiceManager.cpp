@@ -1,4 +1,4 @@
-#include "DiceManager.h"
+﻿#include "DiceManager.h"
 #include "./Engine/Logger.hpp"
 #include <cctype>
 #include <sstream>
