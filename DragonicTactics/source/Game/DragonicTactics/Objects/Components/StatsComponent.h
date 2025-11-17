@@ -17,7 +17,7 @@ public:
 
 
     void RefreshSpeed();
-    void ReduceSpeed();
+    void ReduceSpeed(int i = 1);
     int GetSpeed() const;
     
     int GetBaseAttack() const;

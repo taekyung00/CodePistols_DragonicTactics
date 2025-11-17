@@ -27,8 +27,7 @@ class MovementComponent : public CS230::Component {
 public:
     MovementComponent(CS230::GameObject* object);
     
-    void Update(double dt) override;
-    
+    void Update(double dt) override; //>>change to MoveTo, 
 
     void SetPath(std::vector<Math::ivec2> path);
 

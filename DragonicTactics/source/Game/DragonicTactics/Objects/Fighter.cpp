@@ -41,11 +41,9 @@ void Fighter::OnTurnStart()
 	if (IsAIControlled())
 	{
 		AISystem& ai = Engine::GetAISystem();
-		while (GetActionPoints())
-		{
-			AIDecision decision = ai.MakeDecision(this);
-			ai.ExecuteDecision(this, decision);
-		}
+
+		AIDecision decision = ai.MakeDecision(this);
+		ai.ExecuteDecision(this, decision);
 	}
 }
 

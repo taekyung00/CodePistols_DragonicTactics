@@ -207,6 +207,7 @@ void AISystem::ExecuteDecision(Character* actor, const AIDecision& decision) {
 					std::vector<Math::ivec2> new_path =
 					grid->FindPath(actor->GetGridPosition()->Get(), decision.destination); // CalculateSimplePath(dragon->GetGridPosition()->Get(), grid_pos);
 					actor->SetPath(std::move(new_path));
+					//actor->GetGOComponent<MovementComponent>()->MoveTo(new_path);
 				}
             break;
 

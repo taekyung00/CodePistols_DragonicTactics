@@ -51,8 +51,8 @@ void StatsComponent::RefreshSpeed() {
     m_current_speed = stats.speed;
 }
 
-void StatsComponent::ReduceSpeed() {
-   --m_current_speed;
+void StatsComponent::ReduceSpeed(int i) {
+   m_current_speed -= i;
     if (m_current_speed < 0)
     {
         m_current_speed = 0;
