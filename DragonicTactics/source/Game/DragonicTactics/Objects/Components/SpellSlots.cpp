@@ -30,6 +30,11 @@ void SpellSlots::Recover(int max_level_to_recover) {
     }
 }
 
+//int SpellSlots::GetMaxLevel() const
+//{
+//	return static_cast<int>(max_slots.size());
+//}
+
 ////////ADD////////
 int SpellSlots::GetSpellSlotCount(int level) {
     return current_slots[level];

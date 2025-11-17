@@ -19,10 +19,10 @@ struct AIDecision {
     std::string reasoning;    // Debug: Why this decision?
 };
 
-class AISystem {
+class AISystem{
 public:
-    static AISystem& GetInstance();
 
+    AISystem() = default;
     // Main AI entry point
     AIDecision MakeDecision(Character* actor);
 
@@ -36,7 +36,6 @@ public:
     void ExecuteDecision(Character* actor, const AIDecision& decision);
 
 private:
-    AISystem() = default;
 
     // Threat assessment
     int CalculateThreatScore(Character* actor, Character* target);

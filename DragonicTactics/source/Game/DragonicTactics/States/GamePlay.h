@@ -8,11 +8,11 @@ Author:     Seungju Song
 Created:    November 5, 2025
 */
 #pragma once
-#include "../../../Engine/GameState.hpp"
-#include "../../../Engine/Fonts.h"
-#include "../../../Engine/Engine.hpp"
-#include "../../../Engine/Texture.hpp"
 #include "../../../CS200/RGBA.hpp"
+#include "../../../Engine/Engine.hpp"
+#include "../../../Engine/Fonts.h"
+#include "../../../Engine/GameState.hpp"
+#include "../../../Engine/Texture.hpp"
 #include "../StateComponents/GridSystem.h"
 #include "../Types/Events.h"
 
@@ -22,38 +22,40 @@ class Fighter;
 class GamePlay : public CS230::GameState
 {
 public:
-    GamePlay();
-    void          Load() override;
-    void          Update(double dt) override;
-    void          Unload() override;
-    void          Draw() override;
-    void          DrawImGui() override;
-    gsl::czstring GetName() const override;
+	GamePlay();
+	void		  Load() override;
+	void		  Update(double dt) override;
+	void		  Unload() override;
+	void		  Draw() override;
+	void		  DrawImGui() override;
+	gsl::czstring GetName() const override;
+
 private:
-    enum class PlayerActionState
-    {
-        None,          
-        SelectingMove,  
-        SelectingAction, 
-        TargetingForAttack,
-        TargetingForSpell
-    };
-    PlayerActionState currentPlayerState = PlayerActionState::None;
+	enum class PlayerActionState
+	{
+		None,
+		SelectingMove,
+		SelectingAction,
+		TargetingForAttack,
+		TargetingForSpell
+	};
+	PlayerActionState currentPlayerState = PlayerActionState::None;
 
-    struct DamageText
-    {
-        std::string text;
-        Math::vec2  position = {0,0};
-        Math::vec2  size = {0,0};
-        double      lifetime;
-    };
-    std::vector<DamageText> damage_texts;
+	struct DamageText
+	{
+		std::string text;
+		Math::vec2	position = { 0, 0 };
+		Math::vec2	size	 = { 0, 0 };
+		double		lifetime;
+	};
 
-    void OnCharacterDamaged(const CharacterDamagedEvent& event);
+	std::vector<DamageText> damage_texts;
 
-    Fighter* fighter;
-    Dragon* dragon;
+	void OnCharacterDamaged(const CharacterDamagedEvent& event);
 
-    std::vector<Math::ivec2> CalculateSimplePath(Math::ivec2 start, Math::ivec2 end);
-    
+	Fighter* fighter;
+	Dragon*	 dragon;
+	bool	 game_end;
+
+	std::vector<Math::ivec2> CalculateSimplePath(Math::ivec2 start, Math::ivec2 end);
 };

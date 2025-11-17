@@ -34,6 +34,7 @@ Created:    November 5, 2025
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
 #include "./Game/DragonicTactics/Objects/Fighter.h"
 #include "./Game/DragonicTactics/Objects/Dragon.h"
+#include "Game/DragonicTactics/Singletons/SpellSystem.h"
 
 GamePlay::GamePlay():fighter(nullptr), dragon(nullptr){}
 
@@ -129,7 +130,7 @@ Math::ivec2 ConvertScreenToGrid(Math::vec2 world_pos)
 void GamePlay::Update(double dt){
 
 	TurnManager* turnMgr = GetGSComponent<TurnManager>();
-	Character*	 currentCharacter;
+	Character*	 currentCharacter = nullptr;
     //업데이트 시작
 
     Engine::GetDebugManager().Update(dt);
@@ -143,7 +144,11 @@ void GamePlay::Update(double dt){
 	}
 	else
 	{
-		currentCharacter = nullptr;
+		//currentCharacter = nullptr;
+		turnMgr->EndCombat();
+		Engine::GetGameStateManager().PopState();
+		Engine::GetGameStateManager().PushState<MainMenu>();
+		return;
     }
 
     switch (currentCharacter->GetCharacterType())
@@ -229,6 +234,7 @@ void GamePlay::Update(double dt){
 
             break;
 		case CharacterTypes::Fighter: 
+            fighter->OnTurnStart();
             turnMgr->EndCurrentTurn();
             break;
 		case CharacterTypes::Wizard: break;
@@ -332,7 +338,7 @@ void GamePlay::DrawImGui(){
 		{
 			ImGui::Text("Current Turn: %s", current->TypeName().c_str());
 			ImGui::Text("Turn #%d | Round #%d", turnMgr->GetCurrentTurnNumber(), turnMgr->GetRoundNumber());
-			ImGui::Text("Initiative: %d", turnMgr->GetInitiativeValue(current));
+			//ImGui::Text("Initiative: %d", turnMgr->GetInitiativeValue(current));
 		}
 		ImGui::End();
 	}

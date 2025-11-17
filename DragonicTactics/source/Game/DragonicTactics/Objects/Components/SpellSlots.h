@@ -8,6 +8,7 @@ public:
     bool HasSlot(int level) const;
     void Recover(int max_level_to_recover);
     void Update([[maybe_unused]] double dt) override {}
+	//int	 GetMaxLevel() const;
     int GetSpellSlotCount(int level);
     void SetSpellSlots(std::map<int, int> spellSlots);
 private:

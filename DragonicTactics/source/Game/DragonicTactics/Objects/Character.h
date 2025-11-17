@@ -86,7 +86,7 @@ protected:
     void InitializeComponents(Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level);
     
     
-    virtual void                DecideAction()              = 0;
+    //virtual void                DecideAction()              = 0;
     CharacterTypes              m_character_type;
     GameObject*                 m_turn_target               = nullptr;
     TurnGoal                    m_turn_goal                 = TurnGoal::None;

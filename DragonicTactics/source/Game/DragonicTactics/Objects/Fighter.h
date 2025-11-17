@@ -18,7 +18,7 @@ public:
     AbilityResult PerformMeleeAttack(Character* target);  // Ginam: basic melee attack
     AbilityResult PerformShieldBash(Character* target);   // Ginam: special ability with knockback
 protected:
-    void DecideAction() override;
+    //void DecideAction() override;
     
 private:
     // Ginam: Fighter abilities (Week3 Developer B)

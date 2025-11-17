@@ -39,6 +39,7 @@ class DiceManager;
 class SpellSystem;
 class DebugManager;
 class DataRegistry;
+class AISystem;
 
 /**
  * \brief Runtime information about the window and application state
@@ -261,6 +262,8 @@ public:
     static DebugManager& GetDebugManager();
 
     static DataRegistry& GetDataRegistry();
+
+    static AISystem& GetAISystem();
 
 public:
     /**

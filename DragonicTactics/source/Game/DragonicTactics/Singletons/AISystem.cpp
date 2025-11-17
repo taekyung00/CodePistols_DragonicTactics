@@ -9,10 +9,7 @@
 #include "Engine/Engine.hpp"
 #include "./Engine/GameStateManager.hpp"
 
-AISystem& AISystem::GetInstance() {
-    static AISystem instance;
-    return instance;
-}
+
 
 AIDecision AISystem::MakeDecision(Character* actor) {
     AIDecision decision;
@@ -27,9 +24,9 @@ AIDecision AISystem::MakeDecision(Character* actor) {
     }
 
     decision.target = target;
-
+	//while (actor)
     // Step 2: Check if we should use ability
-    if (ShouldUseAbility(actor, target)) {
+    if (ShouldUseAbility(actor, target)) { //fighter should false
         decision.type = AIDecisionType::UseAbility;
         decision.abilityName = "Shield Bash"; // Fighter only has one ability in Week 4
         decision.reasoning = "Target adjacent, Shield Bash available";
@@ -56,8 +53,8 @@ AIDecision AISystem::MakeDecision(Character* actor) {
 
         static const Math::ivec2 offsets[8] =
         {
-            {  1,  0 }, { -1,  0 }, {  0,  1 }, {  0, -1 },
-            {  1,  1 }, {  1, -1 }, { -1,  1 }, { -1, -1 }
+            {  1,  0 }, { -1,  0 }, {  0,  1 }, {  0, -1 }//,
+            //{  1,  1 }, {  1, -1 }, { -1,  1 }, { -1, -1 } for spell
         };
 
         for (const Math::ivec2& off : offsets)
@@ -79,10 +76,10 @@ AIDecision AISystem::MakeDecision(Character* actor) {
 
         std::vector<Math::ivec2> path = bestPath;
 
-        if (path.size() > 1) {
+        if (path.size() > 0) {
             // Move as far as action points allow
-            int maxMove = actor->GetActionPoints() / actor->GetMovementRange();
-            int moveIndex = std::min((int)path.size() - 1, maxMove);
+            int maxMove = actor->GetMovementRange();
+            int moveIndex = std::min((int)path.size() - 1, maxMove - 1);
 
             decision.type = AIDecisionType::Move;
             decision.destination = path[moveIndex];
@@ -144,7 +141,7 @@ int AISystem::CalculateThreatScore(Character* actor, Character* target) {
 
 bool AISystem::ShouldMoveCloser(Character* actor, Character* target) {
     if (!actor || !target) return false;
-
+	if (actor->GetMovementRange() == 0) return false;
     GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
     int distance = grid->ManhattanDistance(actor->GetGridPosition()->Get(), target->GetGridPosition()->Get());
     int attackRange = actor->GetAttackRange();
@@ -158,7 +155,9 @@ bool AISystem::ShouldAttack(Character* actor, Character* target) {
 
     // Check range
     CombatSystem& combat = Engine::GetCombatSystem();
-    if (!combat.IsInRange(actor, target, 5)) return false;  //range ???????
+	int			  actor_range = actor->GetAttackRange();
+	if (!combat.IsInRange(actor, target, actor_range))
+		return false; // range ???????
 
     // Check action points
     if (actor->GetActionPoints() == 0) return false;
@@ -166,8 +165,14 @@ bool AISystem::ShouldAttack(Character* actor, Character* target) {
     return true;
 }
 
+//if actor and target are not nullptr
+//find strongest spell
+
 bool AISystem::ShouldUseAbility(Character* actor, Character* target) {
     if (!actor || !target) return false;
+    //check all level's slot
+	//if (actor->GetSpellSlotCount() == 0)
+	 
 
     // Week 4: Fighter has Shield Bash (stun adjacent enemy)
     // Check if adjacent
@@ -193,7 +198,7 @@ void AISystem::ExecuteDecision(Character* actor, const AIDecision& decision) {
     );
 
     GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
-    SpellSystem* spell_system = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
+    SpellSystem& spell_system = Engine::GetSpellSystem();
 
     switch (decision.type) {
         case AIDecisionType::Move:
@@ -211,7 +216,7 @@ void AISystem::ExecuteDecision(Character* actor, const AIDecision& decision) {
 
         case AIDecisionType::UseAbility:
             //actor->UseSpell(decision.abilityName, decision.target);
-            spell_system->CastSpell(actor, decision.abilityName, decision.target->GetGridPosition()->Get());
+            spell_system.CastSpell(actor, decision.abilityName, decision.target->GetGridPosition()->Get());
             break;
 
         case AIDecisionType::EndTurn:

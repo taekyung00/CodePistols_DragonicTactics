@@ -253,7 +253,7 @@ void Character::SetAttackRange(int new_range) {
 }
 
 bool Character::HasSpell([[maybe_unused]] std::string spell_name) {
-    return true;  //TODO modify it to return actual spell name(type)
+    return false;  //TODO modify it to return actual spell name(type)
 }
 
 void Character::SetActionPoints(int new_points) {

@@ -141,12 +141,10 @@ struct TurnEndedEvent
 };
 
 // ===== SangYun: Initiative System Events (NEW) =====
-struct InitiativeRolledEvent
+struct InitiativeEvent
 {
     Character* character;
-    int        roll;             // 1d20 result
-    int        speedModifier;    // (speed - 10) / 2
-    int        totalInitiative;  // roll + modifier
+	int		   speed;
 };
 
 struct TurnOrderEstablishedEvent

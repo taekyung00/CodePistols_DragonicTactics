@@ -17,6 +17,7 @@
 #include "Game/DragonicTactics/Test/TestDiceManager.h"
 #include "Game/DragonicTactics/Test/TestTurnInit.h"
 #include "Game/DragonicTactics/Test/TestTurnManager.h"
+#include "Game/DragonicTactics/Test/TestAI.h"
 #include "Game/MainMenu.h"
 
 #include <imgui.h>
@@ -28,6 +29,7 @@ bool TestDataRegistry = false;
 bool TestDiceManager = false;
 bool TestCombatSystem = false;
 bool TestTrunManager = false;
+bool TestAI = false;
 
 ConsoleTest::ConsoleTest()
 {
@@ -156,7 +158,7 @@ void ConsoleTest::Update([[maybe_unused]] double dt)
         Test_CombatSystem_GetDistance();
 
         // Run all initiative tests
-        RunTurnManagerInitiativeTests();
+        //RunTurnManagerInitiativeTests();
 
 		TestCombatSystem = false;
     }
@@ -165,6 +167,14 @@ void ConsoleTest::Update([[maybe_unused]] double dt)
 		test_turnmanager_all();
 		TestTrunManager = false;
 	}
+
+	if(TestAI) {
+        AddGSComponent(new GridSystem());
+        //AddGSComponent(new AISystem());
+        RunFighterAITests();
+        TestAI = false;
+        RemoveGSComponent<GridSystem>();
+    }
 }
 
 void ConsoleTest::Draw()
@@ -210,6 +220,11 @@ void ConsoleTest::DrawImGui()
 	if (ImGui::Button("TestTrunManager"))
 	{
 		TestTrunManager = true;
+	}
+
+	if (ImGui::Button("TestAI"))
+	{
+		TestAI = true;
 	}
 	ImGui::End();
 }
