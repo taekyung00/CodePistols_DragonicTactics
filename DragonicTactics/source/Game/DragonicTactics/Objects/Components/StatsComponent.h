@@ -15,11 +15,15 @@ public:
     float GetHealthPercentage() const;
     void SetHP(int HP);
 
+
+    void RefreshSpeed();
+    void ReduceSpeed();
+    int GetSpeed() const;
+    
     int GetBaseAttack() const;
     const std::string& GetAttackDice() const;
     int GetBaseDefend() const;
     const std::string& GetDefendDice() const;
-    int GetSpeed() const;
     int GetAttackRange() const;
     void SetAttackRange(int new_range);
 
@@ -27,4 +31,5 @@ public:
 
 private:
     CharacterStats stats;
+    int m_current_speed;
 };

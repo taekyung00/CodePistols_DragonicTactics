@@ -1,6 +1,7 @@
 #include "Dragon.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
 #include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
+#include "./Game/DragonicTactics/Objects/Components/MovementComponent.h"
 #include "./Game/DragonicTactics/Objects/Actions/ActionAttack.h"
 #include "./Engine/Engine.hpp"
 #include "./Engine/Logger.hpp"
@@ -24,7 +25,7 @@ Dragon::Dragon(Math::ivec2 start_coordinates)
     dragon_stats.attack_range = 2;
 
     *GetStatsComponent() = StatsComponent(dragon_stats);
-
+    
     m_action_list.push_back(new ActionAttack());
 }
 

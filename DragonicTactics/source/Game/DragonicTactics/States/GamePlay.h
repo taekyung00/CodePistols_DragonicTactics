@@ -31,15 +31,16 @@ public:
 	gsl::czstring GetName() const override;
 
 private:
-	enum class PlayerActionState
-	{
-		None,
-		SelectingMove,
-		SelectingAction,
-		TargetingForAttack,
-		TargetingForSpell
-	};
-	PlayerActionState currentPlayerState = PlayerActionState::None;
+    enum class PlayerActionState
+    {
+        None,          
+        SelectingMove,  
+        Moving,
+        SelectingAction, 
+        TargetingForAttack,
+        TargetingForSpell
+    };
+    PlayerActionState currentPlayerState = PlayerActionState::None;
 
 	struct DamageText
 	{
@@ -57,5 +58,5 @@ private:
 	Dragon*	 dragon;
 	bool	 game_end;
 
-	std::vector<Math::ivec2> CalculateSimplePath(Math::ivec2 start, Math::ivec2 end);
+	// std::vector<Math::ivec2> CalculateSimplePath(Math::ivec2 start, Math::ivec2 end);
 };

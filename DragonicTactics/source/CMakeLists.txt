@@ -39,6 +39,7 @@ set(SOURCE_CODE
     Game/DragonicTactics/Objects/Components/GridPosition.h Game/DragonicTactics/Objects/Components/GridPosition.cpp
     Game/DragonicTactics/Objects/Components/SpellSlots.h Game/DragonicTactics/Objects/Components/SpellSlots.cpp
     Game/DragonicTactics/Objects/Components/StatsComponent.h Game/DragonicTactics/Objects/Components/StatsComponent.cpp
+    Game/DragonicTactics/Objects/Components/MovementComponent.h Game/DragonicTactics/Objects/Components/MovementComponent.cpp
 
     Game/DragonicTactics/Objects/Character.h Game/DragonicTactics/Objects/Character.cpp
     Game/DragonicTactics/Objects/Dragon.h Game/DragonicTactics/Objects/Dragon.cpp

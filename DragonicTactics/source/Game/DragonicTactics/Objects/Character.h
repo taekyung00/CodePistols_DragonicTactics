@@ -31,6 +31,7 @@ class AIMemory;
 class GridFootprint;
 class Action;
 class StatsComponent;
+class MovementComponent;
 
 class Character : public CS230::GameObject {
 public:
@@ -92,13 +93,13 @@ protected:
     TurnGoal                    m_turn_goal                 = TurnGoal::None;
     
 
-    void                        UpdateMovement(double dt);
     GridSystem*                 m_gridSystem                = nullptr;
-    std::vector<Math::ivec2>    m_current_path;
-    double                      m_moveTimer                 = 0.0;
-    static constexpr double     MOVE_TIME_PER_TILE          = 0.2;
+    // void                        UpdateMovement(double dt);
+    // std::vector<Math::ivec2>    m_current_path;
+    // double                      m_moveTimer                 = 0.0;
+    // static constexpr double     MOVE_TIME_PER_TILE          = 0.2;
    
-
+    MovementComponent*          m_movement_component        = nullptr;
     std::vector<Action*> m_action_list;
 
 private:

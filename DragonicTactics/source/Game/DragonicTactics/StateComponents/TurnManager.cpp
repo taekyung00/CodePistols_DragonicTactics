@@ -97,11 +97,14 @@ void TurnManager::StartNextTurn()
 		}
 	}
 
-	// Refresh character's action points
-	currentChar->RefreshActionPoints();
-
-	// Publish turn start event
-	PublishTurnStartEvent();
+    // Refresh character's action points
+    currentChar->RefreshActionPoints();
+    StatsComponent* stats = currentChar->GetStatsComponent();
+    if (stats) {
+        stats->RefreshSpeed();
+    }
+    // Publish turn start event
+    PublishTurnStartEvent();
 
 	Engine::GetLogger().LogEvent("TurnManager: Turn " + std::to_string(turnNumber) + " - " + currentChar->TypeName() + "'s turn");
 }
