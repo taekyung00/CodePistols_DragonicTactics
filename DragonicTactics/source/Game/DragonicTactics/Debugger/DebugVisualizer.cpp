@@ -270,7 +270,7 @@ void DebugVisualizer::DrawImGuiCharacterStats(const GridSystem* grid)
                 ImGui::Indent();
                 
                 ImGui::Text("Position: (%d, %d)", grid_pos.x, grid_pos.y);
-                ImGui::Text("Status: %s", character->IsAlive() ? "Alive" : "Dead");
+                ImGui::Text("Status: %s", character->IsAlive() ? "Alive" : "Retired");
                 
                 StatsComponent* stats = character->GetStatsComponent();
                 if (stats != nullptr) {
