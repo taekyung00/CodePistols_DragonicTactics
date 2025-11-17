@@ -90,6 +90,7 @@ void GamePlay::Load()
 	Engine::GetDebugManager().Init();
 
 	Engine::GetEventBus().Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& event) { this->OnCharacterDamaged(event); });
+	Engine::GetEventBus().Subscribe<CharacterDeathEvent>([this]([[maybe_unused]]const CharacterDeathEvent& event) { this->game_end = true;});
 }
 
 void GamePlay::OnCharacterDamaged(const CharacterDamagedEvent& event)
@@ -151,7 +152,8 @@ void GamePlay::Update(double dt)
 	{
 		currentCharacter = turnMgr->GetCurrentCharacter();
 	}
-	else
+
+	if(game_end)
 	{
 		// currentCharacter = nullptr;
 		turnMgr->EndCombat();
@@ -160,7 +162,12 @@ void GamePlay::Update(double dt)
 		return;
 	}
 
-	int ap, sp = 0;
+	if(turnMgr->GetRoundNumber() != pre_round){
+		fighter->OnTurnStart();
+		pre_round = turnMgr->GetRoundNumber();
+	}
+
+
 	switch (currentCharacter->GetCharacterType())
 	{
 		case CharacterTypes::Dragon:
@@ -284,10 +291,8 @@ void GamePlay::Update(double dt)
 
 			break;
 		case CharacterTypes::Fighter:
-			fighter->OnTurnStart();
-			ap = fighter->GetActionPoints();
-			sp = fighter->GetStats().speed;
-			if (!ap && !sp)
+			fighter->Action();
+			if (!Engine::GetAISystem().ShouldAttack(fighter,dragon) && !Engine::GetAISystem().ShouldMoveCloser(fighter,dragon) /* && !Engine::GetAISystem().ShouldUseAbility(fighter,dragon) */)
 			{
 				turnMgr->EndCurrentTurn();
 			}

@@ -10,6 +10,7 @@ public:
     Fighter(Math::ivec2 start_coordinates);
     std::string TypeName() override { return "Fighter"; }
     void OnTurnStart() override;
+    void Action();
     void OnTurnEnd() override;
     void Update(double dt) override;
     void TakeDamage(int damage, Character* attacker) override;

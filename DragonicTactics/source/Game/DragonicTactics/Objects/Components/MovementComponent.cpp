@@ -37,9 +37,12 @@ void MovementComponent::SetGridSystem(GridSystem* grid)
 
 void MovementComponent::SetPath(std::vector<Math::ivec2> path)
 {
-	m_current_path = std::move(path);
-	m_stats->ReduceSpeed(static_cast<int>(path.size()));
-	m_moveTimer = 0.0;
+	if(m_current_path != path)
+	{
+		m_current_path = std::move(path);
+		// m_stats->ReduceSpeed(static_cast<int>(m_current_path.size()));
+		m_moveTimer = 0.0;
+	}
 }
 
 bool MovementComponent::IsMoving() const
@@ -106,7 +109,8 @@ void MovementComponent::Update(double dt)
 
 			m_owner->SetPosition({ static_cast<double>(next_pos.x * GridSystem::TILE_SIZE), static_cast<double>(next_pos.y * GridSystem::TILE_SIZE) });
 
-
+			m_stats->ReduceSpeed();
+			
 			Engine::GetLogger().LogEvent(m_owner->TypeName() + " moved. Speed remaining: " + std::to_string(m_stats->GetSpeed()));
 		}
 		else

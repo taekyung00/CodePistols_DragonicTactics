@@ -37,11 +37,15 @@ void Fighter::OnTurnStart()
 	}
 	// DecideAction();
 
+}
+
+void Fighter::Action()
+{
 	// If AI-controlled, make decisions
 	if (IsAIControlled())
 	{
 		AISystem& ai = Engine::GetAISystem();
-
+	
 		AIDecision decision = ai.MakeDecision(this);
 		ai.ExecuteDecision(this, decision);
 	}

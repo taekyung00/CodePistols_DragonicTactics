@@ -2,6 +2,7 @@
 #include "AISystem.h"
 #include "../StateComponents/GridSystem.h"
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
+#include "./Game/DragonicTactics/Objects/Components/MovementComponent.h"
 #include "CombatSystem.h"
 #include "SpellSystem.h"
 #include "EventBus.h"
@@ -141,7 +142,7 @@ int AISystem::CalculateThreatScore(Character* actor, Character* target) {
 
 bool AISystem::ShouldMoveCloser(Character* actor, Character* target) {
     if (!actor || !target) return false;
-	if (actor->GetMovementRange() == 0) return false;
+	if (actor->GetMovementRange() == 0) return false; //speed check
     GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
     int distance = grid->ManhattanDistance(actor->GetGridPosition()->Get(), target->GetGridPosition()->Get());
     int attackRange = actor->GetAttackRange();
@@ -160,7 +161,7 @@ bool AISystem::ShouldAttack(Character* actor, Character* target) {
 		return false; // range ???????
 
     // Check action points
-    if (actor->GetActionPoints() == 0) return false;
+    if (actor->GetActionPoints() == 0) return false; 
 
     return true;
 }
@@ -206,7 +207,11 @@ void AISystem::ExecuteDecision(Character* actor, const AIDecision& decision) {
 				{
 					std::vector<Math::ivec2> new_path =
 					grid->FindPath(actor->GetGridPosition()->Get(), decision.destination); // CalculateSimplePath(dragon->GetGridPosition()->Get(), grid_pos);
-					actor->SetPath(std::move(new_path));
+					MovementComponent* move_comp = actor->GetGOComponent<MovementComponent>();
+                    if(move_comp != nullptr){
+                        move_comp->SetPath(std::move(new_path));
+                        //Engine::GetLogger().LogEvent("Path set. State changing to Moving.");
+                    }
 					//actor->GetGOComponent<MovementComponent>()->MoveTo(new_path);
 				}
             break;

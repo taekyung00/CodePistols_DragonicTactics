@@ -56,7 +56,8 @@ private:
 
 	Fighter* fighter;
 	Dragon*	 dragon;
-	bool	 game_end;
+	bool	 game_end = false;
+	int pre_round = 0;
 
 	// std::vector<Math::ivec2> CalculateSimplePath(Math::ivec2 start, Math::ivec2 end);
 };
