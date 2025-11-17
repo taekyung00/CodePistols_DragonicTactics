@@ -52,5 +52,3 @@ Thumbs.db
 #cloc
 cloc-1.64.exe
 *.exe
-
-!CMakeLists.txt

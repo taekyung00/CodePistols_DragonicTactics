@@ -31,6 +31,7 @@ class AIMemory;
 class GridFootprint;
 class Action;
 class StatsComponent;
+class MovementComponent;
 
 class Character : public CS230::GameObject {
 public:
@@ -64,11 +65,20 @@ public:
     StatsComponent* GetStatsComponent() ;
     ActionPoints* GetActionPointsComponent() ;
     SpellSlots* GetSpellSlots() ;
+    void SetActionPoints(int new_points);
     //StatusEffects* GetStatusEffects() const;
     //GridFootprint* GetGridFootprint() const;
     int GetSpellSlotCount(int level);
     void SetSpellSlots(std::map<int, int> spellSlot);
     void ConsumeSpell(int level);
+
+    void SetGridPosition(Math::ivec2 new_coordinates);
+    int GetHP();
+    int GetMaxHP();
+    int GetAttackRange();
+    void SetAttackRange(int new_range);
+    void SetHP(int HP);
+    bool HasSpell(std::string spell_name);
 
 protected:
     Character(CharacterTypes charType, Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level);
@@ -77,19 +87,19 @@ protected:
     void InitializeComponents(Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level);
     
     
-    virtual void                DecideAction()              = 0;
+    //virtual void                DecideAction()              = 0;
     CharacterTypes              m_character_type;
     GameObject*                 m_turn_target               = nullptr;
     TurnGoal                    m_turn_goal                 = TurnGoal::None;
     
 
-    void                        UpdateMovement(double dt);
     GridSystem*                 m_gridSystem                = nullptr;
-    std::vector<Math::ivec2>    m_current_path;
-    double                      m_moveTimer                 = 0.0;
-    static constexpr double     MOVE_TIME_PER_TILE          = 0.2;
+    // void                        UpdateMovement(double dt);
+    // std::vector<Math::ivec2>    m_current_path;
+    // double                      m_moveTimer                 = 0.0;
+    // static constexpr double     MOVE_TIME_PER_TILE          = 0.2;
    
-
+    MovementComponent*          m_movement_component        = nullptr;
     std::vector<Action*> m_action_list;
 
 private:

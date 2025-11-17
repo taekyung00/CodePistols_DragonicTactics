@@ -1,5 +1,5 @@
 #pragma once
-#include "../../../Engine/GameState.hpp"
+#include "Engine/GameState.hpp"
 class ConsoleTest : public CS230::GameState
 {
 public:

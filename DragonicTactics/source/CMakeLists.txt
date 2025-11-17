@@ -39,11 +39,13 @@ set(SOURCE_CODE
     Game/DragonicTactics/Objects/Components/GridPosition.h Game/DragonicTactics/Objects/Components/GridPosition.cpp
     Game/DragonicTactics/Objects/Components/SpellSlots.h Game/DragonicTactics/Objects/Components/SpellSlots.cpp
     Game/DragonicTactics/Objects/Components/StatsComponent.h Game/DragonicTactics/Objects/Components/StatsComponent.cpp
+    Game/DragonicTactics/Objects/Components/MovementComponent.h Game/DragonicTactics/Objects/Components/MovementComponent.cpp
 
     Game/DragonicTactics/Objects/Character.h Game/DragonicTactics/Objects/Character.cpp
     Game/DragonicTactics/Objects/Dragon.h Game/DragonicTactics/Objects/Dragon.cpp
     Game/DragonicTactics/Objects/Fighter.h Game/DragonicTactics/Objects/Fighter.cpp
 
+    Game/DragonicTactics/Singletons/AISystem.h Game/DragonicTactics/Singletons/AISystem.cpp
     Game/DragonicTactics/Singletons/EventBus.h Game/DragonicTactics/Singletons/EventBus.cpp
     Game/DragonicTactics/Singletons/DiceManager.h Game/DragonicTactics/Singletons/DiceManager.cpp
     Game/DragonicTactics/Singletons/DataRegistry.cpp Game/DragonicTactics/Singletons/DataRegistry.h
@@ -53,9 +55,6 @@ set(SOURCE_CODE
     Game/DragonicTactics/StateComponents/GridSystem.h Game/DragonicTactics/StateComponents/GridSystem.cpp Game/DragonicTactics/StateComponents/AStar.cpp
     Game/DragonicTactics/StateComponents/TurnManager.h Game/DragonicTactics/StateComponents/TurnManager.cpp
 
-    Game/DragonicTactics/States/Test.h 
-    Game/DragonicTactics/States/Test_Seungju.cpp Game/DragonicTactics/States/Test_Taekyung.cpp
-    Game/DragonicTactics/States/Test_Junyoung.cpp Game/DragonicTactics/States/Test_Ginam.cpp
     Game/DragonicTactics/States/GamePlay.h Game/DragonicTactics/States/GamePlay.cpp
     Game/DragonicTactics/States/RenderingTest.h Game/DragonicTactics/States/RenderingTest.cpp
     Game/DragonicTactics/States/ConsoleTest.h Game/DragonicTactics/States/ConsoleTest.cpp
@@ -64,8 +63,14 @@ set(SOURCE_CODE
     Game/DragonicTactics/Test/Week3TestMocks.h Game/DragonicTactics/Test/Week3TestMocks.cpp
     Game/DragonicTactics/Test/TestAStar.h Game/DragonicTactics/Test/TestAStar.cpp 
     Game/DragonicTactics/Test/TestAssert.h Game/DragonicTactics/Test/TestAssert.cpp Game/DragonicTactics/Test/TestAssert.ini
-    Game/DragonicTactics/Test/TestTurnInit.h Game/DragonicTactics/Test/TestTurnInit.cpp
-    Game/DragonicTactics/Test/TestCombatSystem.h Game/DragonicTactics/Test/TestCombatSystem.cpp
+    Game/DragonicTactics/Test/TestTurnInit.h Game/DragonicTactics/Test/TestTurnInit.cpp 
+    Game/DragonicTactics/Test/TestCombatSystem.h Game/DragonicTactics/Test/TestCombatSystem.cpp 
+    Game/DragonicTactics/Test/TestEventBus.h Game/DragonicTactics/Test/TestEventBus.cpp 
+    Game/DragonicTactics/Test/TestSpellSystem.h Game/DragonicTactics/Test/TestSpellSystem.cpp 
+    Game/DragonicTactics/Test/TestDataRegistry.h Game/DragonicTactics/Test/TestDataRegistry.cpp 
+    Game/DragonicTactics/Test/TestDiceManager.h Game/DragonicTactics/Test/TestDiceManager.cpp 
+    Game/DragonicTactics/Test/TestTurnManager.h Game/DragonicTactics/Test/TestTurnManager.cpp 
+    Game/DragonicTactics/Test/TestAI.h Game/DragonicTactics/Test/TestAI.cpp 
 
     Game/DragonicTactics/Types/CharacterTypes.h
     Game/DragonicTactics/Types/Events.h

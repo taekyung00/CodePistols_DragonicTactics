@@ -1,4 +1,4 @@
-ï»¿#pragma once
+#pragma once
 #include <random>
 #include <string>
 #include "./Engine/Engine.hpp"
@@ -10,10 +10,10 @@ public:
     ~DiceManager() = default;
 
     int  RollDice(int count, int sides);
-    int  RollDiceFromString(const std::string& notation);  // TODO NdS +-M êµ´ë¦¬ê¸°. RollDiceì‚¬ìš©, ParseDiceStringë¥¼ ì‚¬ìš©í•´ì„œ
-                                                           // ì •í™•í•œ í˜•íƒœì¸ì§€ í™•ì¸í•˜ê¸°. if(!ParseDiceString)
-                                                           // ë‚˜ì¤‘ì—ëŠ” RollDiceFromStringì„ ì‚¬ìš©í•˜ì§€ ì•Šì„ ê°€ëŠ¥ì„±ë„ ìˆë‹¤. ê·¸ë˜ë„ í•´ì•¼í•¨.ã…‡ã…‡
-    //string í•„ìš”í•œ ë¶€ë¶„ë§Œ ë¹¼ì˜¤ê¸° --> 
+    int  RollDiceFromString(const std::string& notation);  // TODO NdS +-M ±¼¸®±â. RollDice»ç¿ë, ParseDiceString¸¦ »ç¿ëÇØ¼­
+                                                           // Á¤È®ÇÑ ÇüÅÂÀÎÁö È®ÀÎÇÏ±â. if(!ParseDiceString)
+                                                           // ³ªÁß¿¡´Â RollDiceFromStringÀ» »ç¿ëÇÏÁö ¾ÊÀ» °¡´É¼ºµµ ÀÖ´Ù. ±×·¡µµ ÇØ¾ßÇÔ.¤·¤·
+    //string ÇÊ¿äÇÑ ºÎºĞ¸¸ »©¿À±â --> 
     void SetSeed(int seed);
     const std::vector<int>& GetLastRolls() const;          // TODO
 
@@ -23,8 +23,8 @@ private:
     DiceManager(DiceManager&&) = delete;
     DiceManager& operator=(DiceManager&&) = delete;
 
-    //static bool ParseDiceString(const std::string& s,int& count, int& sides, int& mod); ì—†ì–´ë„ ë˜ì§€ì•Šì„ê¹Œ? ë¼ëŠ” ì˜ê²¬...
-    void LogRoll(const std::string& notation, int total) const; // TODO ì£¼ì‚¬ìœ„ ê²°ê³¼ê°’ ë¡œê·¸ì— ì¶œë ¥í•˜ê¸°. Engine::LOGGERì‚¬ìš©.
+    //static bool ParseDiceString(const std::string& s,int& count, int& sides, int& mod); ¾ø¾îµµ µÇÁö¾ÊÀ»±î? ¶ó´Â ÀÇ°ß...
+    void LogRoll(const std::string& notation, int total) const; // TODO ÁÖ»çÀ§ °á°ú°ª ·Î±×¿¡ Ãâ·ÂÇÏ±â. Engine::LOGGER»ç¿ë.
 
 private:
     std::mt19937       rng;
