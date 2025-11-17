@@ -8,6 +8,7 @@
 #include "./CS200/NDC.hpp"
 
 #include "./Game/MainMenu.h"
+#include "Game/DragonicTactics/StateComponents/GridSystem.h"
 
 bool testAi = true;
 
