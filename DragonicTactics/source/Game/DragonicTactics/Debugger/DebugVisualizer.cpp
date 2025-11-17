@@ -275,7 +275,8 @@ void DebugVisualizer::DrawImGuiCharacterStats(const GridSystem* grid)
                 StatsComponent* stats = character->GetStatsComponent();
                 if (stats != nullptr) {
                     ImGui::Text("HP: %d / %d", stats->GetCurrentHP(), stats->GetMaxHP());
-                    ImGui::Text("Attack: %d", stats->GetBaseAttack());
+					ImGui::Text("Attack: %d", stats->GetBaseAttack());
+					ImGui::Text("Speed: %d", stats->GetSpeed());
                     ImGui::Text("Attack Range: %d", stats->GetAttackRange());
                     ImGui::Text("Dice: %s", stats->GetAttackDice().c_str());
                 }
