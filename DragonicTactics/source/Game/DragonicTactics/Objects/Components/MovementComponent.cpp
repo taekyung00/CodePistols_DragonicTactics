@@ -38,7 +38,7 @@ void MovementComponent::SetGridSystem(GridSystem* grid)
 void MovementComponent::SetPath(std::vector<Math::ivec2> path)
 {
 	m_current_path = std::move(path);
-	m_stats->ReduceSpeed(path.size());
+	m_stats->ReduceSpeed(static_cast<int>(path.size()));
 	m_moveTimer = 0.0;
 }
 
