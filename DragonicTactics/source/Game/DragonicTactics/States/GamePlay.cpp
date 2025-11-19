@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
 prior written consent is prohibited
@@ -30,10 +30,10 @@ Created:    November 5, 2025
 #include "Game/DragonicTactics/Singletons/EventBus.h"
 #include "Game/MainMenu.h"
 
-#include "./Engine/Input.hpp"
-#include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
-#include "./Game/DragonicTactics/Objects/Dragon.h"
-#include "./Game/DragonicTactics/Objects/Fighter.h"
+#include "Engine/Input.hpp"
+#include "Game/DragonicTactics/Objects/Components/GridPosition.h"
+#include "Game/DragonicTactics/Objects/Dragon.h"
+#include "Game/DragonicTactics/Objects/Fighter.h"
 #include "Game/DragonicTactics/Singletons/SpellSystem.h"
 #include <imgui.h>
 
