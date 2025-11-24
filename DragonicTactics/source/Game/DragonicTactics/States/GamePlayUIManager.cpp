@@ -25,16 +25,16 @@ Created:    November 24, 2025
 #include "Game/DragonicTactics/Objects/Components/MovementComponent.h"
 #include "Game/DragonicTactics/Objects/Components/SpellSlots.h"
 #include "Game/DragonicTactics/Objects/Components/StatsComponent.h"
-#include "Game/DragonicTactics/Singletons/CombatSystem.h"
-#include "Game/DragonicTactics/Singletons/DiceManager.h"
-#include "Game/DragonicTactics/Singletons/EventBus.h"
+#include "Game/DragonicTactics/StateComponents/CombatSystem.h"
+#include "Game/DragonicTactics/StateComponents/DiceManager.h"
+#include "Game/DragonicTactics/StateComponents/EventBus.h"
 #include "Game/MainMenu.h"
 
 #include "Engine/Input.hpp"
 #include "Game/DragonicTactics/Objects/Components/GridPosition.h"
 #include "Game/DragonicTactics/Objects/Dragon.h"
 #include "Game/DragonicTactics/Objects/Fighter.h"
-#include "Game/DragonicTactics/Singletons/SpellSystem.h"
+#include "Game/DragonicTactics/StateComponents/SpellSystem.h"
 #include <imgui.h>
 #include "GamePlayUIManager.h"
 
@@ -61,8 +61,8 @@ void GamePlayUIManager::Update(double dt) {
     );
 }
 
-void GamePlayUIManager::Draw(Math::TransformationMatrix camera_matrix) {
+void GamePlayUIManager::Draw([[maybe_unused]]Math::TransformationMatrix camera_matrix) {
     for (const auto& text : m_damage_texts) {
-        Engine::GetTextManager().Draw(text.text, text.position, text.size);
+        Engine::GetTextManager().DrawText(text.text, text.position,Fonts::Outlined, text.size, CS200::VIOLET);
     }
 }

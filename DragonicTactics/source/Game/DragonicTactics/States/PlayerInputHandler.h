@@ -14,6 +14,7 @@ Created:    November 24, 2025
 class Character;
 class Dragon;
 class GridSystem;
+class CombatSystem;
 
 class PlayerInputHandler {
 public:
@@ -29,15 +30,17 @@ public:
     PlayerInputHandler();
     ~PlayerInputHandler() = default;
 
-    void Update(double dt, Character* current_character, GridSystem* grid);
+    void Update(double dt, Character* current_character, GridSystem* grid, CombatSystem* combat_system);
+    
     void CancelCurrentAction();
-    void SetState(ActionState new_state) { m_state = new_state; }
     ActionState GetCurrentState() const { return m_state; }
+
+    void SetState(ActionState new_state) { m_state = new_state; }
 
 private:
     ActionState m_state = ActionState::None;
 
-    void HandleDragonInput(double dt, Dragon* dragon, GridSystem* grid);
-    void HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, GridSystem* grid);
+    void HandleDragonInput(double dt, Dragon* dragon, GridSystem* grid, CombatSystem* combat_system);
+    void HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, GridSystem* grid, CombatSystem* combat_system);
     void HandleRightClick(Dragon* dragon);
 };

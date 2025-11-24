@@ -8,17 +8,11 @@ Author:     Seungju Song
 Created:    November 24, 2025
 */
 
-//#include "pch.h"
+#include "pch.h"
 #include "PlayerInputHandler.h"
 #include "GamePlay.h"
 #include "./CS200/IRenderer2D.hpp"
 #include "./CS200/NDC.hpp"
-#include "./Engine/Engine.hpp"
-#include "./Engine/GameObjectManager.h"
-#include "./Engine/GameStateManager.hpp"
-#include "./Engine/Logger.hpp"
-#include "./Engine/TextManager.hpp"
-#include "./Engine/Window.hpp"
 
 #include "../Debugger/DebugManager.h"
 #include "../StateComponents/GridSystem.h"
@@ -28,17 +22,16 @@ Created:    November 24, 2025
 #include "Game/DragonicTactics/Objects/Components/MovementComponent.h"
 #include "Game/DragonicTactics/Objects/Components/SpellSlots.h"
 #include "Game/DragonicTactics/Objects/Components/StatsComponent.h"
-#include "Game/DragonicTactics/Singletons/CombatSystem.h"
-#include "Game/DragonicTactics/Singletons/DiceManager.h"
-#include "Game/DragonicTactics/Singletons/EventBus.h"
+#include "Game/DragonicTactics/StateComponents/CombatSystem.h"
+#include "Game/DragonicTactics/StateComponents/DiceManager.h"
+#include "Game/DragonicTactics/StateComponents/EventBus.h"
 #include "Game/MainMenu.h"
 
-#include "Engine/Input.hpp"
 #include "Game/DragonicTactics/Objects/Components/GridPosition.h"
 #include "Game/DragonicTactics/Objects/Dragon.h"
 #include "Game/DragonicTactics/Objects/Fighter.h"
-#include "Game/DragonicTactics/Singletons/SpellSystem.h"
-#include <imgui.h>
+#include "Game/DragonicTactics/StateComponents/SpellSystem.h"
+
 
 Math::ivec2 ConvertScreenToGrid(Math::vec2 world_pos)
 {
@@ -49,17 +42,16 @@ Math::ivec2 ConvertScreenToGrid(Math::vec2 world_pos)
 
 PlayerInputHandler::PlayerInputHandler() : m_state(ActionState::None) {}
 
-void PlayerInputHandler::Update(double dt, Character* current_character, GridSystem* grid) {
+void PlayerInputHandler::Update(double dt, Character* current_character, GridSystem* grid, CombatSystem* combat_system) {
     if (current_character->GetCharacterType() != CharacterTypes::Dragon) {
         return; 
     }
 
     Dragon* dragon = static_cast<Dragon*>(current_character);
-    HandleDragonInput(dt, dragon, grid);
+    HandleDragonInput(dt, dragon, grid, combat_system);
 }
 
-void PlayerInputHandler::HandleDragonInput(double dt, Dragon* dragon, GridSystem* grid) {
-    auto& input = Engine::GetInput();
+void PlayerInputHandler::HandleDragonInput([[maybe_unused]]double dt, Dragon* dragon, GridSystem* grid, CombatSystem* combat_system) {auto& input = Engine::GetInput();
     bool is_clicking_ui = ImGui::GetIO().WantCaptureMouse;
 
     if (input.MouseJustPressed(2)) {
@@ -78,11 +70,11 @@ void PlayerInputHandler::HandleDragonInput(double dt, Dragon* dragon, GridSystem
 
     if (input.MouseJustPressed(0) && !is_clicking_ui) {
         Math::vec2 mouse_pos = input.GetMousePos();
-        HandleMouseClick(mouse_pos, dragon, grid);
+        HandleMouseClick(mouse_pos, dragon, grid, combat_system);
     }
 }
 
-void PlayerInputHandler::HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, GridSystem* grid) {
+void PlayerInputHandler::HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, GridSystem* grid, CombatSystem* combat_system) {
     Math::ivec2 grid_pos = ConvertScreenToGrid(mouse_pos);
 
     switch (m_state) {
@@ -95,33 +87,19 @@ void PlayerInputHandler::HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, 
             break;
 
         case ActionState::TargetingForAttack:
+        {  
             Character* target = grid->GetCharacterAt(grid_pos);
             if (target && target != dragon) {
-                auto* combat = GetGSComponent<CombatSystem>();
-                combat->ExecuteAttack(dragon, target);
+                if (combat_system) {
+                    combat_system->ExecuteAttack(dragon, target);
+                }
                 m_state = ActionState::None;
             }
+        } 
+        break;
+
+        case ActionState::None:
             break;
-
-        case PlayerActionState::TargetingForSpell:
-							{
-								Engine::GetLogger().LogEvent("Map clicked for Spell at (" + std::to_string(grid_pos.x) + ", " + std::to_string(grid_pos.y) + ")");
-
-								if (grid_system->IsWalkable(grid_pos))
-								{
-									Engine::GetLogger().LogEvent("Spell CAST! On tile.");
-
-									// grid_system->ApplyEffectToTile(grid_pos, "Fire");
-
-									currentPlayerState = PlayerActionState::None;
-								}
-								else
-								{
-									Engine::GetLogger().LogEvent("Spell FAILED. Invalid tile.");
-								}
-								break;
-							}
-						case PlayerActionState::None: break;
     }
 }
 

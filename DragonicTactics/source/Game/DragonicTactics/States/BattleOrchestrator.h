@@ -11,13 +11,15 @@ Created:    November 24, 2025
 #pragma once
 class TurnManager;
 class Character;
+class AISystem;
+namespace CS230 { class GameObjectManager; }
 
 class BattleOrchestrator {
 public:
-    void Update(double dt, TurnManager* turn_manager);
-    void HandleAITurn(Character* ai_character);
+    void Update(double dt, TurnManager* turn_manager, AISystem* ai_system, CS230::GameObjectManager* go_manager);
     bool CheckVictoryCondition();
-
 private:
+    void HandleAITurn(Character* ai_character, TurnManager* turn_manager, AISystem* ai_system, CS230::GameObjectManager* go_manager);
+    bool ShouldContinueTurn(Character* current_character, AISystem* ai_system, CS230::GameObjectManager* go_manager);
     int m_previous_round = 0;
 };
