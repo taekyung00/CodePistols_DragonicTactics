@@ -7,13 +7,6 @@
  * \copyright DigiPen Institute of Technology
  */
 #include "Engine.hpp"
-#include "Game/DragonicTactics/Singletons/CombatSystem.h"
-#include "Game/DragonicTactics/Singletons/EventBus.h"
-#include "Game/DragonicTactics/Singletons/DiceManager.h"
-#include "Game/DragonicTactics/Singletons/SpellSystem.h"
-#include "Game/DragonicTactics/Debugger/DebugManager.h"
-#include "Game/DragonicTactics/Singletons/DataRegistry.h"
-#include "Game/DragonicTactics/Singletons/AISystem.h"
 
 #include "CS200/ImGuiHelper.hpp"
 #include "CS200/ImmediateRenderer2D.hpp"
@@ -105,15 +98,6 @@ public:
     CS200::ImmediateRenderer2D renderer2D{};
     CS230::TextureManager      textureManager{};
     TextManager                textManager{};
-
-    /*=====================================================================*/
-    EventBus                   eventbus{};
-    CombatSystem               combatsystem{};
-	DiceManager				   dicemanager{};
-	SpellSystem				   spellsystem{};
-	DebugManager			   debugmanager{};
-    DataRegistry			   dataregistry{};
-	AISystem				   AIsystem{};
 };
 
 
@@ -161,39 +145,6 @@ CS230::TextureManager& Engine::GetTextureManager()
 TextManager& Engine::GetTextManager()
 {
     return Instance().impl->textManager;
-}
-
-EventBus& Engine::GetEventBus()
-{
-    return Instance().impl->eventbus;
-}
-CombatSystem& Engine::GetCombatSystem(){
-    return Instance().impl->combatsystem;
-}
-
-DiceManager& Engine::GetDiceManager()
-{
-	return Instance().impl->dicemanager;
-}
-
-SpellSystem& Engine::GetSpellSystem()
-{
-	return Instance().impl->spellsystem;
-}
-
-DebugManager& Engine::GetDebugManager()
-{
-	return Instance().impl->debugmanager;
-}
-
-DataRegistry& Engine::GetDataRegistry()
-{
-	return Instance().impl->dataregistry;
-}
-
-AISystem& Engine::GetAISystem()
-{
-	return Instance().impl->AIsystem;
 }
 
 void Engine::OnEvent(const SDL_Event& event)
@@ -256,7 +207,6 @@ void Engine::Start(std::string_view window_title)
     impl->renderer2D.Init();
     impl->timer.ResetTimeStamp();
     impl->textManager.Init();
-    impl->debugmanager.Init();
 }
 
 void Engine::Stop()

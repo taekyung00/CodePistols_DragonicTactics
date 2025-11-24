@@ -1,6 +1,6 @@
 #include "Week3TestMocks.h"
 #include "../../../Engine/Engine.hpp"
-#include "../Singletons/DiceManager.h"
+#include "../StateComponents/DiceManager.h"
 #include <map>
 #include "../StateComponents/GridSystem.h"
 #include "./Engine/GameStateManager.hpp"

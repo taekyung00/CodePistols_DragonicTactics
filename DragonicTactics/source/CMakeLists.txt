@@ -45,12 +45,12 @@ set(SOURCE_CODE
     Game/DragonicTactics/Objects/Dragon.h Game/DragonicTactics/Objects/Dragon.cpp
     Game/DragonicTactics/Objects/Fighter.h Game/DragonicTactics/Objects/Fighter.cpp
 
-    Game/DragonicTactics/Singletons/AISystem.h Game/DragonicTactics/Singletons/AISystem.cpp
-    Game/DragonicTactics/Singletons/EventBus.h Game/DragonicTactics/Singletons/EventBus.cpp
-    Game/DragonicTactics/Singletons/DiceManager.h Game/DragonicTactics/Singletons/DiceManager.cpp
-    Game/DragonicTactics/Singletons/DataRegistry.cpp Game/DragonicTactics/Singletons/DataRegistry.h
-    Game/DragonicTactics/Singletons/CombatSystem.h Game/DragonicTactics/Singletons/CombatSystem.cpp
-    Game/DragonicTactics/Singletons/SpellSystem.h Game/DragonicTactics/Singletons/SpellSystem.cpp
+    Game/DragonicTactics/StateComponents/AISystem.h Game/DragonicTactics/StateComponents/AISystem.cpp
+    Game/DragonicTactics/StateComponents/EventBus.h Game/DragonicTactics/StateComponents/EventBus.cpp
+    Game/DragonicTactics/StateComponents/DiceManager.h Game/DragonicTactics/StateComponents/DiceManager.cpp
+    Game/DragonicTactics/StateComponents/DataRegistry.cpp Game/DragonicTactics/StateComponents/DataRegistry.h
+    Game/DragonicTactics/StateComponents/CombatSystem.h Game/DragonicTactics/StateComponents/CombatSystem.cpp
+    Game/DragonicTactics/StateComponents/SpellSystem.h Game/DragonicTactics/StateComponents/SpellSystem.cpp
 
     Game/DragonicTactics/StateComponents/GridSystem.h Game/DragonicTactics/StateComponents/GridSystem.cpp Game/DragonicTactics/StateComponents/AStar.cpp
     Game/DragonicTactics/StateComponents/TurnManager.h Game/DragonicTactics/StateComponents/TurnManager.cpp

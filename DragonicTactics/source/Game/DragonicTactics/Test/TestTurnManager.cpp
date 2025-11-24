@@ -2,6 +2,7 @@
 #include "Engine/GameStateManager.hpp"
 #include "Engine/Engine.hpp"
 #include "Game/DragonicTactics/StateComponents/TurnManager.h"
+#include "Game/DragonicTactics/StateComponents/EventBus.h"
 #include "Game/DragonicTactics/Objects/Dragon.h"
 #include "Game/DragonicTactics/Objects/Character.h"
 #include "Game/DragonicTactics/Objects/Fighter.h"
@@ -10,7 +11,9 @@
 bool Test_TurnManager_Initialize()
 {
     // Setup
+    EventBus eventBus;
     TurnManager turnMgr;
+    turnMgr.SetEventBus(&eventBus);
     turnMgr.Reset();
     Dragon  TestDragon({ 0, 0 });
     Fighter TestFighter({ 1, 1 });
@@ -34,7 +37,9 @@ bool Test_TurnManager_Initialize()
 bool Test_TurnManager_Initialize_Empty()
 {
     // Setup
+    EventBus eventBus;
     TurnManager turnMgr;
+    turnMgr.SetEventBus(&eventBus);
     turnMgr.Reset();
     std::vector<Character*> characters = {};
 
@@ -52,7 +57,9 @@ bool Test_TurnManager_Initialize_Empty()
 bool Test_TurnManager_Initialize_DeadCharacters()
 {
     // Setup
+    EventBus eventBus;
     TurnManager turnMgr;
+    turnMgr.SetEventBus(&eventBus);
     turnMgr.Reset();
     Dragon  TestDragon({ 0, 0 });
     Fighter TestFighter({ 1, 1 });
@@ -75,7 +82,9 @@ bool Test_TurnManager_Initialize_DeadCharacters()
 bool Test_TurnManager_StartCombat()
 {
     // Setup
+    EventBus eventBus;
     TurnManager turnMgr;
+    turnMgr.SetEventBus(&eventBus);
     turnMgr.Reset();
     Dragon  TestDragon({ 0, 0 });
     Fighter TestFighter({ 1, 1 });
@@ -99,7 +108,9 @@ bool Test_TurnManager_StartCombat()
 bool Test_TurnManager_EndCurrentTurn()
 {
     // Setup
+    EventBus eventBus;
     TurnManager turnMgr;
+    turnMgr.SetEventBus(&eventBus);
     turnMgr.Reset();
     Dragon  TestDragon({ 0, 0 });
     Fighter TestFighter({ 1, 1 });
@@ -125,7 +136,9 @@ bool Test_TurnManager_EndCurrentTurn()
 bool Test_TurnManager_RoundProgression()
 {
     // Setup
+    EventBus eventBus;
     TurnManager turnMgr;
+    turnMgr.SetEventBus(&eventBus);
     turnMgr.Reset();
     Dragon  TestDragon({ 0, 0 });
     Fighter TestFighter({ 1, 1 });
@@ -151,7 +164,9 @@ bool Test_TurnManager_RoundProgression()
 bool Test_TurnManager_ActionPointRefresh()
 {
     // Setup
+    EventBus eventBus;
     TurnManager turnMgr;
+    turnMgr.SetEventBus(&eventBus);
     turnMgr.Reset();
     Dragon TestDragon({ 0, 0 });
 
@@ -175,7 +190,9 @@ bool Test_TurnManager_ActionPointRefresh()
 bool Test_TurnManager_SkipDeadCharacter()
 {
     // Setup
+    EventBus eventBus;
     TurnManager turnMgr;
+    turnMgr.SetEventBus(&eventBus);
     turnMgr.Reset();
     Dragon                  TestDragon({ 0, 0 });
     Fighter                 TestFighter1({ 1, 1 });
@@ -200,7 +217,9 @@ bool Test_TurnManager_SkipDeadCharacter()
 bool Test_TurnManager_AllCharactersDead()
 {
     // Setup
+    EventBus eventBus;
     TurnManager turnMgr;
+    turnMgr.SetEventBus(&eventBus);
     turnMgr.Reset();
     Dragon  TestDragon({ 0, 0 });
     Fighter TestFighter({ 1, 1 });
@@ -226,7 +245,9 @@ bool Test_TurnManager_AllCharactersDead()
 bool Test_TurnManager_GetCharacterTurnIndex()
 {
     // Setup
+    EventBus eventBus;
     TurnManager turnMgr;
+    turnMgr.SetEventBus(&eventBus);
     turnMgr.Reset();
     Dragon  TestDragon({ 0, 0 });
     Fighter TestFighter({ 1, 1 });
@@ -259,3 +280,4 @@ void test_turnmanager_all()
     Test_TurnManager_AllCharactersDead();
     Test_TurnManager_GetCharacterTurnIndex();
 }
+

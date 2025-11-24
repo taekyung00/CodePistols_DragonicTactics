@@ -2,14 +2,15 @@
 #include "DebugManager.h"
 #include "./Engine/Logger.hpp"
 #include "./Engine/Engine.hpp"
+#include "./Engine/GameStateManager.hpp"
 #include "./CS200/IRenderer2D.hpp"
 #include "./Game/DragonicTactics/StateComponents/GridSystem.h"
 #include "./Game/DragonicTactics/Objects/Character.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
 #include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
-#include "./Game/DragonicTactics/Singletons/EventBus.h"
-#include "./Game/DragonicTactics/Singletons/DiceManager.h"
+#include "./Game/DragonicTactics/StateComponents/EventBus.h"
+#include "./Game/DragonicTactics/StateComponents/DiceManager.h"
 #include "./Game/DragonicTactics/Types/Events.h"
 #include <algorithm>
 #include <imgui.h>
@@ -18,29 +19,29 @@ void DebugVisualizer::Init()
 {
     Engine::GetLogger().LogEvent("DebugVisualizer: Subscribing to events");
     
-    auto& event_bus = Engine::Instance().GetEventBus();
+    auto* event_bus = Engine::GetGameStateManager().GetGSComponent<EventBus>();
     
     // Subscribe to combat events
-    event_bus.Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& e) {
+    event_bus->Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& e) {
         OnCharacterDamaged(e);
     });
     
-    event_bus.Subscribe<CharacterDeathEvent>([this](const CharacterDeathEvent& e) {
+    event_bus->Subscribe<CharacterDeathEvent>([this](const CharacterDeathEvent& e) {
         OnCharacterDeath(e);
     });
     
     // Subscribe to movement events
-    event_bus.Subscribe<CharacterMovedEvent>([this](const CharacterMovedEvent& e) {
+    event_bus->Subscribe<CharacterMovedEvent>([this](const CharacterMovedEvent& e) {
         OnCharacterMoved(e);
     });
     
     // Subscribe to spell events
-    event_bus.Subscribe<SpellCastEvent>([this](const SpellCastEvent& e) {
+    event_bus->Subscribe<SpellCastEvent>([this](const SpellCastEvent& e) {
         OnSpellCast(e);
     });
     
     // Subscribe to turn events
-    event_bus.Subscribe<TurnStartedEvent>([this](const TurnStartedEvent& e) {
+    event_bus->Subscribe<TurnStartedEvent>([this](const TurnStartedEvent& e) {
         OnTurnStarted(e);
     });
     
@@ -73,8 +74,10 @@ void DebugVisualizer::Update(double dt)
     }
     
     // Track dice rolls from DiceManager
-    const auto& last_rolls = Engine::GetDiceManager().GetLastRolls();
-    if (!last_rolls.empty() && (dice_history_.empty() || dice_history_.back().rolls != last_rolls)) {
+    auto* dice_mgr = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
+    if (dice_mgr) {
+        const auto& last_rolls = dice_mgr->GetLastRolls();
+        if (!last_rolls.empty() && (dice_history_.empty() || dice_history_.back().rolls != last_rolls)) {
         // New roll detected - store it
         DiceRollInfo roll_info;
         roll_info.rolls = last_rolls;
@@ -90,11 +93,13 @@ void DebugVisualizer::Update(double dt)
             dice_history_.pop_front();
         }
     }
+    }
 }
 
 void DebugVisualizer::DrawGridOverlay(const GridSystem* grid)
 {
-    if (!enabled_ || !Engine::GetDebugManager().IsGridOverlayEnabled() || grid == nullptr) {
+    auto* debug_mgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
+    if (!enabled_ || !debug_mgr || !debug_mgr->IsGridOverlayEnabled() || grid == nullptr) {
         return;
     }
     
@@ -360,7 +365,8 @@ void DebugVisualizer::OnCharacterDamaged(const CharacterDamagedEvent& event)
     log.timestamp = game_time_;
     event_log_.push_back(log);
     
-    if (Engine::GetDebugManager().IsEventTracerEnabled()) {
+    auto* debug_mgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
+    if (debug_mgr && debug_mgr->IsEventTracerEnabled()) {
         Engine::GetLogger().LogDebug("[EVENT] " + details);
     }
 }
@@ -377,7 +383,8 @@ void DebugVisualizer::OnCharacterMoved(const CharacterMovedEvent& event)
     
     recent_moves_.push_back(move);
     
-    if (Engine::GetDebugManager().IsEventTracerEnabled()) {
+    auto* debug_mgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
+    if (debug_mgr && debug_mgr->IsEventTracerEnabled()) {
         std::string details = event.character->TypeName() + " moved from (" +
             std::to_string(event.fromGrid.x) + "," + std::to_string(event.fromGrid.y) + ") to (" +
             std::to_string(event.toGrid.x) + "," + std::to_string(event.toGrid.y) + ")";
@@ -398,7 +405,8 @@ void DebugVisualizer::OnCharacterDeath(const CharacterDeathEvent& event)
     log.timestamp = game_time_;
     event_log_.push_back(log);
     
-    if (Engine::GetDebugManager().IsEventTracerEnabled()) {
+    auto* debug_mgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
+    if (debug_mgr && debug_mgr->IsEventTracerEnabled()) {
         Engine::GetLogger().LogDebug("[EVENT] " + details);
     }
 }
@@ -416,7 +424,8 @@ void DebugVisualizer::OnSpellCast(const SpellCastEvent& event)
     log.timestamp = game_time_;
     event_log_.push_back(log);
     
-    if (Engine::GetDebugManager().IsEventTracerEnabled()) {
+    auto* debug_mgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
+    if (debug_mgr && debug_mgr->IsEventTracerEnabled()) {
         Engine::GetLogger().LogDebug("[EVENT] " + details);
     }
 }
@@ -435,7 +444,8 @@ void DebugVisualizer::OnTurnStarted(const TurnStartedEvent& event)
     log.timestamp = game_time_;
     event_log_.push_back(log);
     
-    if (Engine::GetDebugManager().IsEventTracerEnabled()) {
+    auto* debug_mgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
+    if (debug_mgr && debug_mgr->IsEventTracerEnabled()) {
         Engine::GetLogger().LogDebug("[EVENT] " + details);
     }
 }

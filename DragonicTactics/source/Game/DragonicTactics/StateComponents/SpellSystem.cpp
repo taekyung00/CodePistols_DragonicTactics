@@ -1,8 +1,9 @@
 // File: CS230/Game/System/SpellSystem.cpp
 #include "SpellSystem.h"
 #include "../Objects/Character.h"
-#include "../Singletons/EventBus.h"
+#include "../StateComponents/EventBus.h"
 #include "./Engine/Engine.hpp"
+#include "./Engine/GameStateManager.hpp"
 #include "./Engine/Logger.hpp"
 #include "../Types/Events.h"
 
@@ -212,13 +213,27 @@ MockSpellResult SpellSystem::CastSpell(
     // Step 4.1e: Publish system-level event
     // Reason: Other systems may need to react to spell casts
     if (result.success) {
-        Engine::GetEventBus().Publish(SpellCastEventForSpell{
-            caster,
-            spellName,
-            targetTile,
-            result.affected_targets,
-            result.total_damage
-        });
+        if (eventBus) {
+            eventBus->Publish(SpellCastEventForSpell{
+                caster,
+                spellName,
+                targetTile,
+                result.affected_targets,
+                result.total_damage
+            });
+        } else {
+            // Fallback to GameStateManager if no EventBus was set
+            auto* bus = Engine::GetGameStateManager().GetGSComponent<EventBus>();
+            if (bus) {
+                bus->Publish(SpellCastEventForSpell{
+                    caster,
+                    spellName,
+                    targetTile,
+                    result.affected_targets,
+                    result.total_damage
+                });
+            }
+        }
     }
 
     return result;

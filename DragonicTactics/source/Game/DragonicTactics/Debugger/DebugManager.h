@@ -2,12 +2,13 @@
 #include <functional>
 #include <string>
 #include <memory>
+#include "./Engine/Component.h"
 
 class DebugConsole;
 class DebugVisualizer;
 class GridSystem;
 
-class DebugManager {
+class DebugManager : public CS230::Component {
 public:
     DebugManager();
     ~DebugManager();
@@ -60,11 +61,6 @@ public:
     DebugVisualizer* GetVisualizer();
 
 private:
-    DebugManager(const DebugManager&) = delete;
-    DebugManager& operator=(const DebugManager&) = delete;
-    DebugManager(DebugManager&&) = delete;
-    DebugManager& operator=(DebugManager&&) = delete;
-    
     void DrawDebugControlPanel();
 
     bool debug_mode{false};

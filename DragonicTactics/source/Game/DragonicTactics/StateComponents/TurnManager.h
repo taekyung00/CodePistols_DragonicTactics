@@ -1,10 +1,13 @@
 #pragma once
 #include "../Objects/Character.h"
 #include "../Types/Events.h"
-#include "../Singletons/EventBus.h"
+#include "./EventBus.h"
 #include "../Test/Week1TestMocks.h"
 #include <vector>
 #include <queue>
+
+// Forward declarations
+class EventBus;
 
 // ===== Week 4: Initiative System (NEW) =====
 // Initiative tracking structure
@@ -33,6 +36,9 @@ class TurnManager : public CS230::Component
 {
 public:
     TurnManager();
+
+    // Dependency injection for testing
+    void SetEventBus(EventBus* bus) { eventBus = bus; }
 
     // Turn management
     void InitializeTurnOrder(const std::vector<Character*>& characters);
@@ -74,6 +80,9 @@ private:
     int turnNumber;
     int roundNumber;
     bool combatActive;
+
+    // Dependency injection
+    EventBus* eventBus = nullptr;
 
     // ===== Sangyun: Initiative System (NEW) =====
     std::vector<InitiativeEntry> initiativeOrder;

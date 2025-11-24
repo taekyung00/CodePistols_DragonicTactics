@@ -2,8 +2,8 @@
 #include "./Engine/Engine.hpp"
 #include "./Engine/Logger.hpp"
 #include "./Engine/GameStateManager.hpp"
-#include "../Singletons/DiceManager.h"
-#include "../Singletons/EventBus.h"
+#include "../StateComponents/DiceManager.h"
+#include "../StateComponents/EventBus.h"
 #include "./Game/DragonicTactics/StateComponents/GridSystem.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h" 
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
@@ -17,13 +17,20 @@ int CombatSystem::CalculateDamage(Character* attacker, Character* defender,
     if (attacker == nullptr || defender == nullptr) {
         Engine::GetLogger().LogError("CombatSystem: Null " + attacker->TypeName() + " or " + defender->TypeName());
         return 0;
-    }
+	}
 
-    // Roll attack dice
-    int diceRoll = Engine::GetDiceManager().RollDiceFromString(damageDice);
-    int totalDamage = diceRoll + baseDamage;
-
-    Engine::GetLogger().LogEvent("CombatSystem: " + attacker->TypeName() +
+	// Roll attack dice
+	int diceRoll = 0;
+	if (diceManager) {
+		diceRoll = diceManager->RollDiceFromString(damageDice);
+	} else {
+		// Fallback to GameStateManager if no DiceManager was set
+		auto* dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
+		if (dice) {
+			diceRoll = dice->RollDiceFromString(damageDice);
+		}
+	}
+	int totalDamage = diceRoll + baseDamage;    Engine::GetLogger().LogEvent("CombatSystem: " + attacker->TypeName() +
         " rolled " + damageDice + " = " + std::to_string(diceRoll) +
         " + " + std::to_string(baseDamage) + " = " + std::to_string(totalDamage) + " damage");
 
@@ -51,19 +58,25 @@ void CombatSystem::ApplyDamage(Character* attacker, Character* defender, int dam
         std::to_string(hpBefore) + " -> " + std::to_string(hpAfter) + " HP)");
 
     // Publish damage event
-    Engine::Instance().GetEventBus().Publish(
-        CharacterDamagedEvent{
-        defender,
-        damage,
-        hpAfter,
-        attacker,
-        !defender->IsAlive()
-        });
+    auto* eventBus = Engine::GetGameStateManager().GetGSComponent<EventBus>();
+    if (eventBus) {
+        eventBus->Publish(
+            CharacterDamagedEvent{
+            defender,
+            damage,
+            hpAfter,
+            attacker,
+            !defender->IsAlive()
+            });
+    }
 
     // Check if defender died
     if (!defender->IsAlive()) {
         Engine::GetLogger().LogEvent("CombatSystem: " + defender->TypeName() + " died!");
-        Engine::Instance().GetEventBus().Publish(CharacterDeathEvent{ defender, attacker });
+        auto* eventBus2 = Engine::GetGameStateManager().GetGSComponent<EventBus>();
+        if (eventBus2) {
+            eventBus2->Publish(CharacterDeathEvent{ defender, attacker });
+        }
     }
 }
 
@@ -106,17 +119,18 @@ bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender) {
     attacker->GetActionPointsComponent()->Consume(attackCost);
 
     // Publish attack event
-    Engine::Instance().GetEventBus().Publish(CharacterAttackedEvent{ attacker, defender, damage });
+    auto* eventBus = Engine::GetGameStateManager().GetGSComponent<EventBus>();
+    if (eventBus) {
+        eventBus->Publish(CharacterAttackedEvent{ attacker, defender, damage });
+    }
 
     return true;
 }
 
 int CombatSystem::RollAttackDamage(const std::string& damageDice, int baseDamage) {
-    int diceRoll = Engine::GetDiceManager().RollDiceFromString(damageDice);
-    return diceRoll + baseDamage;
-}
-
-bool CombatSystem::IsCriticalHit() {
+	int diceRoll = Engine::GetGameStateManager().GetGSComponent<DiceManager>()->RollDiceFromString(damageDice);
+	return diceRoll + baseDamage;
+}bool CombatSystem::IsCriticalHit() {
     return false;
 }
 

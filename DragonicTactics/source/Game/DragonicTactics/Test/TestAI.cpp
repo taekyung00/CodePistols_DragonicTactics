@@ -8,17 +8,17 @@
 #include "Game/DragonicTactics/Objects/Fighter.h"
 bool TestAITargetsClosestEnemy() {
     // Test: AI should target closest enemy
-    GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
-    grid->Reset();
+    GridSystem grid;
+    grid.Reset();
 
     Fighter testfighter({ 1, 1 });
     testfighter.SetGridPosition({1, 1});
-    grid->AddCharacter(&testfighter, Math::vec2{1, 1});
+    grid.AddCharacter(&testfighter, Math::vec2{1, 1});
     Dragon testdragon({ 3, 3 });
     testdragon.SetGridPosition({3, 3}); // Distance = 4
-     grid->AddCharacter(&testdragon, Math::vec2{3, 3});
+     grid.AddCharacter(&testdragon, Math::vec2{3, 3});
 
-    AISystem& ai = Engine::GetAISystem();
+    AISystem ai;
     Character* target = ai.AssessThreats(&testfighter);
 
     bool passed = (target == &testdragon);
@@ -32,19 +32,19 @@ bool TestAITargetsClosestEnemy() {
 
 bool TestAIMovesCloserWhenOutOfRange() {
     // Test: AI should move closer if target out of range
-    GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
-    grid->Reset();
+    GridSystem grid;
+    grid.Reset();
 
     Fighter testfighter({1,1});
     testfighter.SetGridPosition({1, 1});
-    grid->AddCharacter(&testfighter, Math::vec2{1, 1});
+    grid.AddCharacter(&testfighter, Math::vec2{1, 1});
     testfighter.SetAttackRange(1); // Melee
 
     Dragon testdragon({2,2});
     testdragon.SetGridPosition({6, 6}); // Far away
-    grid->AddCharacter(&testdragon, Math::vec2{6, 6});
+    grid.AddCharacter(&testdragon, Math::vec2{6, 6});
 
-    AISystem& ai = Engine::GetAISystem();
+    AISystem ai;
     AIDecision decision = ai.MakeDecision(&testfighter);
 
     bool passed = (decision.type == AIDecisionType::Move);
@@ -59,20 +59,20 @@ bool TestAIMovesCloserWhenOutOfRange() {
 
 bool TestAIAttacksWhenInRange() {
     // Test: AI should attack if target in range
-    GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
-    grid->Reset();
+    GridSystem grid;
+    grid.Reset();
 
     Fighter testfighter({1,1});
     testfighter.SetGridPosition({4, 4});
-    grid->AddCharacter(&testfighter, Math::vec2{4, 4});
+    grid.AddCharacter(&testfighter, Math::vec2{4, 4});
     testfighter.SetActionPoints(10); // Enough for attack
     testfighter.SetAttackRange(1);
 
     Dragon testdragon({2,2});
     testdragon.SetGridPosition({4, 5}); // Adjacent (distance = 1)
-    grid->AddCharacter(&testdragon, Math::vec2{4, 5});
+    grid.AddCharacter(&testdragon, Math::vec2{4, 5});
 
-    AISystem& ai = Engine::GetAISystem();
+    AISystem ai;
     AIDecision decision = ai.MakeDecision(&testfighter);
 
     bool passed = (decision.type == AIDecisionType::Attack ||
@@ -87,21 +87,21 @@ bool TestAIAttacksWhenInRange() {
 
 bool TestAIUsesShieldBashWhenAdjacent() {
     // Test: AI should use Shield Bash when adjacent to healthy target
-    GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
-    grid->Reset();
+    GridSystem grid;
+    grid.Reset();
 
     Fighter testfighter({1,1});
     testfighter.SetGridPosition({4, 4});
-    grid->AddCharacter(&testfighter, Math::vec2{4, 4});
+    grid.AddCharacter(&testfighter, Math::vec2{4, 4});
     testfighter.SetActionPoints(10);
     //fighter.EnableAbility("Shield Bash"); // Ability available
 
     Dragon testdragon({2,2});
     testdragon.SetGridPosition({4, 5}); // Adjacent
-    grid->AddCharacter(&testdragon, Math::vec2{4, 5});
+    grid.AddCharacter(&testdragon, Math::vec2{4, 5});
     testdragon.SetHP(testdragon.GetMaxHP()); // Full HP
 
-    AISystem& ai = Engine::GetAISystem();
+    AISystem ai;
     bool shouldUse = ai.ShouldUseAbility(&testfighter, &testdragon);
 
     bool passed = shouldUse;
@@ -115,19 +115,19 @@ bool TestAIUsesShieldBashWhenAdjacent() {
 
 bool TestAIEndsTurnWhenNoActions() {
     // Test: AI should end turn if no valid actions
-    GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
-    grid->Reset();
+    GridSystem grid;
+    grid.Reset();
 
     Fighter testfighter({1,1});
     testfighter.SetGridPosition({1, 1});
-    grid->AddCharacter(&testfighter, Math::vec2{1, 1});
+    grid.AddCharacter(&testfighter, Math::vec2{1, 1});
     testfighter.SetActionPoints(0); // No action points
 
     Dragon testdragon({2,2});
     testdragon.SetGridPosition({2, 2}); // Far away
-    grid->AddCharacter(&testdragon, Math::vec2{2, 2});
+    grid.AddCharacter(&testdragon, Math::vec2{2, 2});
 
-    AISystem& ai = Engine::GetAISystem();
+    AISystem ai;
     AIDecision decision = ai.MakeDecision(&testfighter);
 
     bool passed = (decision.type == AIDecisionType::EndTurn);

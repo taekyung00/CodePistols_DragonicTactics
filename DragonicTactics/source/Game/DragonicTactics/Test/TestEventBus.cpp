@@ -1,14 +1,15 @@
 #include "TestEventBus.h"
 
 #include "Engine/Engine.hpp"
+#include "Engine/GameStateManager.hpp"
 
-#include "Game/DragonicTactics/Singletons/EventBus.h"
+#include "Game/DragonicTactics/StateComponents/EventBus.h"
 #include "Game/DragonicTactics/Test/Week1TestMocks.h"
 #include "Game/DragonicTactics/Test/TestAssert.h"
 #include "Game/DragonicTactics/Types/Events.h"
 void test_multiple_different_events()
 {
-    auto& eventbus = Engine::GetEventBus();
+    EventBus eventbus;
     eventbus.Clear();
 
     bool damageCalled = false;
@@ -35,7 +36,7 @@ void test_multiple_different_events()
 
 void test_EventData_CompleteTransfer()
 {
-    auto& eventbus = Engine::GetEventBus();
+    EventBus eventbus;
     eventbus.Clear();
 
     MockCharacter         victim("Victim"), attacker("Attacker");
@@ -55,7 +56,7 @@ void test_EventData_CompleteTransfer()
 
 void test_subscribe_publish_singleSubscriber()
 {
-    auto& eventbus = Engine::GetEventBus();
+    EventBus eventbus;
     eventbus.Clear();
 
     bool           callbackInvoked = false;
@@ -82,7 +83,7 @@ void test_subscribe_publish_singleSubscriber()
 
 void test_multiple_subscribers_sameEvent()
 {
-    auto& eventbus = Engine::GetEventBus();
+    EventBus eventbus;
     eventbus.Clear();
 
     int callback1Count = 0;
@@ -103,7 +104,7 @@ void test_multiple_subscribers_sameEvent()
 
 void test_EventData_MultiplePublishes()
 {
-    auto& eventbus = Engine::GetEventBus();
+    EventBus eventbus;
     eventbus.Clear();
 
     std::vector<int> damages;

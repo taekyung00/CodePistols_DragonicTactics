@@ -1,9 +1,10 @@
 #include "TestDataRegistry.h"
 
 #include "./Engine/Engine.hpp"
+#include "./Engine/GameStateManager.hpp"
 #include "./Engine/Logger.hpp"
 
-#include "./Game/DragonicTactics/Singletons/DataRegistry.h"
+#include "./Game/DragonicTactics/StateComponents/DataRegistry.h"
 #include "./Game/DragonicTactics/Types/CharacterTypes.h"
 #include "./Game/DragonicTactics/Test/TestAssert.h"
 
@@ -15,7 +16,7 @@ bool TestDataRegistry_LoadJSON()
 {
     Engine::GetLogger().LogEvent("=== Test: LoadJSON ===");
     
-    DataRegistry& registry = Engine::GetDataRegistry();
+    DataRegistry registry;
     
     // Load characters.json
     registry.LoadFromFile("Assets/Data/characters.json");
@@ -32,7 +33,7 @@ bool TestDataRegistry_GetValue()
 {
     Engine::GetLogger().LogEvent("=== Test: GetValue ===");
     
-    DataRegistry& registry = Engine::GetDataRegistry();
+    DataRegistry registry;
     
     // Test getting Dragon HP
     int dragonHP = registry.GetValue<int>("Dragon.max_hp", 0);
@@ -58,7 +59,7 @@ bool TestDataRegistry_HasKey()
 {
     Engine::GetLogger().LogEvent("=== Test: HasKey ===");
     
-    DataRegistry& registry = Engine::GetDataRegistry();
+    DataRegistry registry;
     
     // Test existing keys
     ASSERT_TRUE(registry.HasKey("Dragon.max_hp"));
@@ -76,7 +77,7 @@ bool TestDataRegistry_GetArray()
 {
     Engine::GetLogger().LogEvent("=== Test: GetArray ===");
     
-    DataRegistry& registry = Engine::GetDataRegistry();
+    DataRegistry registry;
     
     // First load character data to populate characterDatabase
     CharacterData dragon = registry.GetCharacterData("Fighter");
@@ -111,7 +112,7 @@ bool TestDataRegistry_GetCharacterData()
 {
     Engine::GetLogger().LogEvent("=== Test: GetCharacterData ===");
     
-    DataRegistry& registry = Engine::GetDataRegistry();
+    DataRegistry registry;
     
     // Ensure data is loaded first
     registry.LoadAllCharacterData("Assets/Data/characters.json");;
@@ -132,7 +133,7 @@ bool TestDataRegistry_DragonStats()
 {
     Engine::GetLogger().LogEvent("=== Test: Dragon Stats ===");
     
-    DataRegistry& registry = Engine::GetDataRegistry();
+    DataRegistry registry;
     registry.LoadAllCharacterData("Assets/Data/characters.json");
     CharacterData dragon = registry.GetCharacterData("Dragon");
     
@@ -162,7 +163,7 @@ bool TestDataRegistry_FighterStats()
 {
     Engine::GetLogger().LogEvent("=== Test: Fighter Stats ===");
     
-    DataRegistry& registry = Engine::GetDataRegistry();
+    DataRegistry registry;
     registry.LoadAllCharacterData("Assets/Data/characters.json");
     CharacterData fighter = registry.GetCharacterData("Fighter");
     
@@ -193,7 +194,7 @@ bool TestDataRegistry_ReloadAll()
 {
     Engine::GetLogger().LogEvent("=== Test: ReloadAll ===");
     
-    DataRegistry& registry = Engine::GetDataRegistry();
+    DataRegistry registry;
     
     // Initial load
     registry.LoadFromFile("Assets/Data/characters.json");
@@ -214,7 +215,7 @@ bool TestDataRegistry_FileModificationDetection()
 {
     Engine::GetLogger().LogEvent("=== Test: File Modification Detection ===");
     
-    DataRegistry& registry = Engine::GetDataRegistry();
+    DataRegistry registry;
     
     // Load file
     registry.LoadFromFile("Assets/Data/characters.json");
@@ -235,7 +236,7 @@ bool TestDataRegistry_ValidateCharacterJSON()
 {
     Engine::GetLogger().LogEvent("=== Test: ValidateCharacterJSON ===");
     
-    DataRegistry& registry = Engine::GetDataRegistry();
+    DataRegistry registry;
     
     // Validate existing file
     bool valid = registry.ValidateCharacterJSON("Assets/Data/characters.json");
@@ -249,7 +250,7 @@ bool TestDataRegistry_InvalidJSONHandling()
 {
     Engine::GetLogger().LogEvent("=== Test: Invalid JSON Handling ===");
     
-    DataRegistry& registry = Engine::GetDataRegistry();
+    DataRegistry registry;
     
     // Try to load non-existent file (should not crash)
     //registry.LoadFromFile("Data/nonexistent.json");
