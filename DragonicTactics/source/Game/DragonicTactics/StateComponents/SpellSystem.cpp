@@ -1,3 +1,5 @@
+#include "pch.h"
+
 // File: CS230/Game/System/SpellSystem.cpp
 #include "SpellSystem.h"
 #include "../Objects/Character.h"

@@ -122,11 +122,11 @@ set(SOURCE_CODE
 )
 
 add_executable(dragonic_tactics ${SOURCE_CODE})
-# target_precompile_headers(dragonic_tactics PRIVATE pch.h)
-# set_source_files_properties(
-#     main.cpp
-#     PROPERTIES SKIP_PRECOMPILE_HEADERS ON
-# )
+target_precompile_headers(dragonic_tactics PRIVATE pch.h)
+set_source_files_properties(
+    main.cpp
+    PROPERTIES SKIP_PRECOMPILE_HEADERS ON
+)
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_CODE})
 
 target_link_libraries(dragonic_tactics PRIVATE project_options dependencies)

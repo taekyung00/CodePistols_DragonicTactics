@@ -8,14 +8,14 @@ Author:     Taekyung Ho
 Created:    May 20, 2025
 */
 #pragma once
-enum class GameObjectTypes {
-    //Score,
-    Bus,
-    Food,
-    Obstacle,
-    Player,
-    Passenger,
-    Particle,
-    Character,
-    Count
-};
+// enum class GameObjectTypes {
+//     //Score,
+//     Bus,
+//     Food,
+//     Obstacle,
+//     Player,
+//     Passenger,
+//     Particle,
+//     Character,
+//     Count
+// };

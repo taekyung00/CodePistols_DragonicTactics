@@ -1,12 +1,10 @@
+#include "pch.h"
 #include "MeleeAttack.h"
+
 #include "../Objects/Character.h"
 #include "../StateComponents/DiceManager.h"
 #include "../StateComponents/EventBus.h"
-#include "./Engine/Engine.hpp"
-#include "./Engine/GameStateManager.hpp"
-#include "../Types/Events.h"
-#include "../../../Engine/Engine.hpp"
-#include "../../../Engine/Logger.hpp"
+
 #include "../Objects/Components/GridPosition.h"
 #include "../Objects/Components/StatsComponent.h"
 #include "../Objects/Components/ActionPoints.h"

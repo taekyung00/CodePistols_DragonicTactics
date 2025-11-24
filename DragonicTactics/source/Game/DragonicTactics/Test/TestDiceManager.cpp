@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "TestDiceManager.h"
 
 #include "./Engine/Engine.hpp"
@@ -7,7 +9,6 @@
 #include "./Game/DragonicTactics/StateComponents/DiceManager.h"
 #include "./Game/DragonicTactics/Test/TestAssert.h"
 
-#include <iostream>
 
 // ===== Basic Dice Rolling Tests =====
 

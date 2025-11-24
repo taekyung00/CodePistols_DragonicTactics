@@ -1,6 +1,6 @@
+#include "pch.h"
+
 #include "TestTurnManager.h"
-#include "Engine/GameStateManager.hpp"
-#include "Engine/Engine.hpp"
 #include "Game/DragonicTactics/StateComponents/TurnManager.h"
 #include "Game/DragonicTactics/StateComponents/EventBus.h"
 #include "Game/DragonicTactics/Objects/Dragon.h"
@@ -11,13 +11,9 @@
 bool Test_TurnManager_Initialize()
 {
     // Setup
-<<<<<<< HEAD
     EventBus eventBus;
     TurnManager turnMgr;
     turnMgr.SetEventBus(&eventBus);
-=======
-    TurnManager turnMgr;
->>>>>>> 61da4f8967dea2ff00ef3ca7d85a5a562ebdc8e2
     turnMgr.Reset();
     Dragon  TestDragon({ 0, 0 });
     Fighter TestFighter({ 1, 1 });
@@ -41,13 +37,9 @@ bool Test_TurnManager_Initialize()
 bool Test_TurnManager_Initialize_Empty()
 {
     // Setup
-<<<<<<< HEAD
     EventBus eventBus;
     TurnManager turnMgr;
     turnMgr.SetEventBus(&eventBus);
-=======
-    TurnManager turnMgr;
->>>>>>> 61da4f8967dea2ff00ef3ca7d85a5a562ebdc8e2
     turnMgr.Reset();
     std::vector<Character*> characters = {};
 
@@ -65,13 +57,9 @@ bool Test_TurnManager_Initialize_Empty()
 bool Test_TurnManager_Initialize_DeadCharacters()
 {
     // Setup
-<<<<<<< HEAD
     EventBus eventBus;
     TurnManager turnMgr;
     turnMgr.SetEventBus(&eventBus);
-=======
-    TurnManager turnMgr;
->>>>>>> 61da4f8967dea2ff00ef3ca7d85a5a562ebdc8e2
     turnMgr.Reset();
     Dragon  TestDragon({ 0, 0 });
     Fighter TestFighter({ 1, 1 });
@@ -94,13 +82,9 @@ bool Test_TurnManager_Initialize_DeadCharacters()
 bool Test_TurnManager_StartCombat()
 {
     // Setup
-<<<<<<< HEAD
     EventBus eventBus;
     TurnManager turnMgr;
     turnMgr.SetEventBus(&eventBus);
-=======
-    TurnManager turnMgr;
->>>>>>> 61da4f8967dea2ff00ef3ca7d85a5a562ebdc8e2
     turnMgr.Reset();
     Dragon  TestDragon({ 0, 0 });
     Fighter TestFighter({ 1, 1 });
@@ -124,13 +108,9 @@ bool Test_TurnManager_StartCombat()
 bool Test_TurnManager_EndCurrentTurn()
 {
     // Setup
-<<<<<<< HEAD
     EventBus eventBus;
     TurnManager turnMgr;
     turnMgr.SetEventBus(&eventBus);
-=======
-    TurnManager turnMgr;
->>>>>>> 61da4f8967dea2ff00ef3ca7d85a5a562ebdc8e2
     turnMgr.Reset();
     Dragon  TestDragon({ 0, 0 });
     Fighter TestFighter({ 1, 1 });
@@ -156,13 +136,9 @@ bool Test_TurnManager_EndCurrentTurn()
 bool Test_TurnManager_RoundProgression()
 {
     // Setup
-<<<<<<< HEAD
     EventBus eventBus;
     TurnManager turnMgr;
     turnMgr.SetEventBus(&eventBus);
-=======
-    TurnManager turnMgr;
->>>>>>> 61da4f8967dea2ff00ef3ca7d85a5a562ebdc8e2
     turnMgr.Reset();
     Dragon  TestDragon({ 0, 0 });
     Fighter TestFighter({ 1, 1 });
@@ -188,13 +164,9 @@ bool Test_TurnManager_RoundProgression()
 bool Test_TurnManager_ActionPointRefresh()
 {
     // Setup
-<<<<<<< HEAD
     EventBus eventBus;
     TurnManager turnMgr;
     turnMgr.SetEventBus(&eventBus);
-=======
-    TurnManager turnMgr;
->>>>>>> 61da4f8967dea2ff00ef3ca7d85a5a562ebdc8e2
     turnMgr.Reset();
     Dragon TestDragon({ 0, 0 });
 
@@ -218,13 +190,9 @@ bool Test_TurnManager_ActionPointRefresh()
 bool Test_TurnManager_SkipDeadCharacter()
 {
     // Setup
-<<<<<<< HEAD
     EventBus eventBus;
     TurnManager turnMgr;
     turnMgr.SetEventBus(&eventBus);
-=======
-    TurnManager turnMgr;
->>>>>>> 61da4f8967dea2ff00ef3ca7d85a5a562ebdc8e2
     turnMgr.Reset();
     Dragon                  TestDragon({ 0, 0 });
     Fighter                 TestFighter1({ 1, 1 });
@@ -249,13 +217,9 @@ bool Test_TurnManager_SkipDeadCharacter()
 bool Test_TurnManager_AllCharactersDead()
 {
     // Setup
-<<<<<<< HEAD
     EventBus eventBus;
     TurnManager turnMgr;
     turnMgr.SetEventBus(&eventBus);
-=======
-    TurnManager turnMgr;
->>>>>>> 61da4f8967dea2ff00ef3ca7d85a5a562ebdc8e2
     turnMgr.Reset();
     Dragon  TestDragon({ 0, 0 });
     Fighter TestFighter({ 1, 1 });
@@ -281,13 +245,9 @@ bool Test_TurnManager_AllCharactersDead()
 bool Test_TurnManager_GetCharacterTurnIndex()
 {
     // Setup
-<<<<<<< HEAD
     EventBus eventBus;
     TurnManager turnMgr;
     turnMgr.SetEventBus(&eventBus);
-=======
-    TurnManager turnMgr;
->>>>>>> 61da4f8967dea2ff00ef3ca7d85a5a562ebdc8e2
     turnMgr.Reset();
     Dragon  TestDragon({ 0, 0 });
     Fighter TestFighter({ 1, 1 });

@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /**
  * \file
  * \author Rudy Castan
@@ -7,7 +9,6 @@
  */
 #include "Path.hpp"
 
-#include <SDL.h>
 #include <optional>
 
 namespace

@@ -1,12 +1,11 @@
+#include "pch.h"
+
 #include "TestEventBus.h"
 
-#include "Engine/Engine.hpp"
-#include "Engine/GameStateManager.hpp"
 
 #include "Game/DragonicTactics/StateComponents/EventBus.h"
 #include "Game/DragonicTactics/Test/Week1TestMocks.h"
 #include "Game/DragonicTactics/Test/TestAssert.h"
-#include "Game/DragonicTactics/Types/Events.h"
 void test_multiple_different_events()
 {
     EventBus eventbus;

@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /**
  * \file
  * \author Rudy Castan
@@ -16,7 +18,6 @@
 #include "Matrix.hpp"
 #include "Path.hpp"
 #include "TextureManager.hpp"
-#include <algorithm>
 #include <stb_image.h>
 
 /*

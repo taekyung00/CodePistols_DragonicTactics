@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /*
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
@@ -13,7 +15,6 @@ Created:    March 19, 2025
 #include "TextureManager.hpp"
 #include "Logger.hpp"
 #include "Path.hpp"
-#include <fstream>
 
 CS230::Sprite::Sprite(const std::filesystem::path& sprite_file, GameObject* _given_object) {
     Load(sprite_file, _given_object);

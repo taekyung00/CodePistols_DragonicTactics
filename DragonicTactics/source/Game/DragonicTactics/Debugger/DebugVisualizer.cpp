@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "DebugVisualizer.h"
 #include "DebugManager.h"
 #include "./Engine/Logger.hpp"
@@ -12,8 +14,6 @@
 #include "./Game/DragonicTactics/StateComponents/EventBus.h"
 #include "./Game/DragonicTactics/StateComponents/DiceManager.h"
 #include "./Game/DragonicTactics/Types/Events.h"
-#include <algorithm>
-#include <imgui.h>
 
 void DebugVisualizer::Init()
 {

@@ -1,10 +1,11 @@
+#include "pch.h"
+
 #include "TurnManager.h"
 #include "../Objects/Components/StatsComponent.h"
 #include "./DiceManager.h"
 #include "./Engine/Engine.hpp"
 #include "./Engine/GameStateManager.hpp"
 #include "./Engine/Logger.hpp"
-#include <algorithm>
 
 TurnManager::TurnManager() : currentTurnIndex{}, turnNumber{}, roundNumber{}, combatActive{}, initiativeMode{ InitiativeMode::RollOnce }
 {

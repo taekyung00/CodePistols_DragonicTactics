@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "Dragon.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
 #include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"

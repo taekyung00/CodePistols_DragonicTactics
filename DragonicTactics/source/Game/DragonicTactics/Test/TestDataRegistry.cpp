@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "TestDataRegistry.h"
 
 #include "./Engine/Engine.hpp"
@@ -8,7 +10,6 @@
 #include "./Game/DragonicTactics/Types/CharacterTypes.h"
 #include "./Game/DragonicTactics/Test/TestAssert.h"
 
-#include <iostream>
 
 // ===== Basic JSON Loading Tests =====
 

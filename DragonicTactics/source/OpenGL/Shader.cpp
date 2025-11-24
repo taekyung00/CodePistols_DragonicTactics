@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /**
  * \file
  * \author Rudy Castan
@@ -7,11 +9,8 @@
  */
 #include "Shader.hpp"
 
-#include "Engine/Engine.hpp"
-#include "Engine/Logger.hpp"
 #include "Engine/Path.hpp"
 #include "GL.hpp"
-#include <algorithm>
 
 namespace
 {

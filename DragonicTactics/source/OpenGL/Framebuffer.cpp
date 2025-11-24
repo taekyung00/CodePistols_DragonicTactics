@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /**
  * \file
  * \author Rudy Castan
@@ -7,8 +9,6 @@
  * \copyright DigiPen Institute of Technology
  */
 #include "Framebuffer.hpp"
-#include "Engine/Engine.hpp"
-#include "Engine/Logger.hpp"
 #include "GL.hpp"
 #include "Texture.hpp"
 

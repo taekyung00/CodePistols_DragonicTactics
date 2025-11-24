@@ -1,8 +1,6 @@
+#include "pch.h"
+
 #include "ConsoleTest.h"
-#include "Engine/Engine.hpp"
-#include "Engine/GameStateManager.hpp"
-#include "Engine/Input.hpp"
-#include "Engine/Window.hpp"
 
 
 #include "CS200/IRenderer2D.hpp"
@@ -20,7 +18,6 @@
 #include "Game/DragonicTactics/Test/TestAI.h"
 #include "Game/MainMenu.h"
 
-#include <imgui.h>
 
 bool TestAStar	  = false;
 bool TestEventBus = false;

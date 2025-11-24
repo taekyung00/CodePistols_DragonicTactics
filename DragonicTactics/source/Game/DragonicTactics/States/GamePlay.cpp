@@ -1,4 +1,6 @@
-Ôªø/*
+#include "pch.h"
+
+/*
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
 prior written consent is prohibited
@@ -30,12 +32,10 @@ Created:    November 5, 2025
 #include "Game/DragonicTactics/StateComponents/EventBus.h"
 #include "Game/MainMenu.h"
 
-#include "Engine/Input.hpp"
 #include "Game/DragonicTactics/Objects/Components/GridPosition.h"
 #include "Game/DragonicTactics/Objects/Dragon.h"
 #include "Game/DragonicTactics/Objects/Fighter.h"
 #include "Game/DragonicTactics/StateComponents/SpellSystem.h"
-#include <imgui.h>
 
 GamePlay::GamePlay() : fighter(nullptr), dragon(nullptr)
 {
@@ -153,7 +153,7 @@ void GamePlay::Update(double dt)
 {
 	TurnManager* turnMgr		  = GetGSComponent<TurnManager>();
 	Character*	 currentCharacter = nullptr;
-	// ÏóÖÎç∞Ïù¥Ìä∏ ÏãúÏûë
+	// æ˜µ•¿Ã∆Æ Ω√¿€
 
 	GetGSComponent<DebugManager>()->Update(dt);
 

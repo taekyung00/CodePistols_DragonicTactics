@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "GridPosition.h"
 
 GridPosition::GridPosition(Math::ivec2 start_coordinates)

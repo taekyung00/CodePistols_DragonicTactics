@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "../StateComponents/DiceManager.h"
 #include "../StateComponents/TurnManager.h"
 #include "./Engine/Engine.hpp"
@@ -12,8 +14,6 @@
 #include "./Game/DragonicTactics/StateComponents/CombatSystem.h"
 #include "./Game/DragonicTactics/Test/TestAssert.h"
 #include "Week1TestMocks.h"
-#include <iostream>
-#include <vector>
 #include "TestCombatSystem.h"
 
 

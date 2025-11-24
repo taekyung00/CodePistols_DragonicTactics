@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /**
  * \file
  * \author Jonathan Holmes
@@ -8,7 +10,6 @@
  */
 
 #include "Vec2.hpp"
-#include <cmath>
 
 namespace Math
 {
