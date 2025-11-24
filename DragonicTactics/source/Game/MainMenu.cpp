@@ -16,6 +16,7 @@ Created:    May 6, 2025
 #include "../Engine/Input.hpp"
 #include "../Engine/TextManager.hpp"
 #include "../Engine/Window.hpp"
+#include "../Engine/Matrix.hpp"
 #include "./Game/DragonicTactics/States/GamePlay.h"
 // #include "./Game/DragonicTactics/States/Test.h"
 #include "./Game/DragonicTactics/States/RenderingTest.h"
@@ -80,7 +81,12 @@ void MainMenu::Load()
 		Engine::GetWindow().ForceResize(default_window_size.x, default_window_size.y);
 		Engine::GetWindow().SetWindowPosition(SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 	}
-	update_colors();
+	
+    menu_items.push_back({ "Dragonic Tactics", Option::DragonicTactics });
+    menu_items.push_back({ "Console test", Option::ConsoleTest });
+    menu_items.push_back({ "Rendering test", Option::RenderingTest });
+    menu_items.push_back({ "Exit", Option::Exit });
+
 
 	const auto window_size = default_window_size;
 
@@ -149,7 +155,6 @@ void MainMenu::Update([[maybe_unused]] double dt)
 		SelecetOption();
 	}
 
-	update_colors();
 }
 
 void MainMenu::Unload()
@@ -166,28 +171,42 @@ void MainMenu::Draw()
 
 	text_manager.DrawText("Dragonic Tactics", title_pos, Fonts::Outlined, title_scale, title_color);
 
-	double current_item_y = 0;
-	int	   i			  = 0;
+	static constexpr CS200::RGBA DEBUG_FILL_COLOR = 0xFFFF0030; 
+	static constexpr CS200::RGBA DEBUG_LINE_COLOR = 0xFFFF00FF; 
+	static constexpr double      DEBUG_LINE_WIDTH = 1.5;      
 
-	// Option: dragonic_tactics
-	i			   = static_cast<int>(Option::DragonicTactics);
-	current_item_y = menu_start_pos_bl.y - (i * menu_item_total_height);
-	text_manager.DrawText("Dragonic Tactics", Math::vec2{ menu_start_pos_bl.x, current_item_y }, Fonts::Outlined, { 1.0, 1.0 }, dragonic_tactics_color);
+	for (size_t i = 0; i < menu_items.size(); ++i)
+	{
+		const auto& item = menu_items[i];
 
-	// Option: console test
-	i			   = static_cast<int>(Option::ConsoleTest);
-	current_item_y = menu_start_pos_bl.y - (i * menu_item_total_height);
-	text_manager.DrawText("Console test", Math::vec2{ menu_start_pos_bl.x, current_item_y }, Fonts::Outlined, { 1.0, 1.0 }, console_test_color);
+		double current_item_y = menu_start_pos_bl.y - (i * menu_item_total_height);
+		Math::vec2 item_pos = { menu_start_pos_bl.x, current_item_y }; 
+		Math::vec2 item_size = menu_item_size;
 
-	// Option: rendering test
-	i			   = static_cast<int>(Option::RenderingTest);
-	current_item_y = menu_start_pos_bl.y - (i * menu_item_total_height);
-	text_manager.DrawText("Rendering test", Math::vec2{ menu_start_pos_bl.x, current_item_y }, Fonts::Outlined, { 1.0, 1.0 }, rendering_test_color);
+		CS200::RGBA item_color = (item.option == current_option) ? seleted_color : non_seleted_color;
 
-	// Option: exit
-	i			   = static_cast<int>(Option::Exit);
-	current_item_y = menu_start_pos_bl.y - (i * menu_item_total_height);
-	text_manager.DrawText("Exit", Math::vec2{ menu_start_pos_bl.x, current_item_y }, Fonts::Outlined, { 1.0, 1.0 }, exit_color);
+        static constexpr double Y_OFFSET_RATIO = 0.5;
+        double y_offset = item_size.y * Y_OFFSET_RATIO;
+
+        Math::vec2 text_draw_pos = item_pos;
+        text_draw_pos.y -= y_offset;
+
+
+		text_manager.DrawText(item.text, text_draw_pos, Fonts::Outlined, { 1.0, 1.0 }, item_color);
+
+		Math::vec2 center_pos = item_pos + (item_size * 0.5);
+
+		Math::ScaleMatrix     scale_matrix(item_size);
+		Math::TranslationMatrix trans_matrix(center_pos);
+		Math::TransformationMatrix transform = trans_matrix * scale_matrix;
+
+		// renderer_2d.DrawRectangle(
+		// 	transform,
+		// 	DEBUG_FILL_COLOR,
+		// 	DEBUG_LINE_COLOR,
+		// 	DEBUG_LINE_WIDTH
+		// );
+	}
 
 	renderer_2d.EndScene();
 }
@@ -195,38 +214,4 @@ void MainMenu::Draw()
 gsl::czstring MainMenu::GetName() const
 {
 	return "MainMenu";
-}
-
-void MainMenu::update_colors()
-{
-	switch (current_option)
-	{
-		case MainMenu::Option::DragonicTactics:
-			dragonic_tactics_color = seleted_color;
-			console_test_color	   = non_seleted_color;
-			rendering_test_color   = non_seleted_color;
-			exit_color			   = non_seleted_color;
-			break;
-
-		case MainMenu::Option::ConsoleTest:
-			dragonic_tactics_color = non_seleted_color;
-			console_test_color	   = seleted_color;
-			rendering_test_color   = non_seleted_color;
-			exit_color			   = non_seleted_color;
-			break;
-
-		case MainMenu::Option::RenderingTest:
-			dragonic_tactics_color = non_seleted_color;
-			console_test_color	   = non_seleted_color;
-			rendering_test_color   = seleted_color;
-			exit_color			   = non_seleted_color;
-			break;
-
-		case MainMenu::Option::Exit:
-			dragonic_tactics_color = non_seleted_color;
-			console_test_color	   = non_seleted_color;
-			rendering_test_color   = non_seleted_color;
-			exit_color			   = seleted_color;
-			break;
-	}
 }
