@@ -54,11 +54,14 @@ set(SOURCE_CODE
 
     Game/DragonicTactics/StateComponents/GridSystem.h Game/DragonicTactics/StateComponents/GridSystem.cpp Game/DragonicTactics/StateComponents/AStar.cpp
     Game/DragonicTactics/StateComponents/TurnManager.h Game/DragonicTactics/StateComponents/TurnManager.cpp
-
-    Game/DragonicTactics/States/GamePlay.h Game/DragonicTactics/States/GamePlay.cpp
-    Game/DragonicTactics/States/RenderingTest.h Game/DragonicTactics/States/RenderingTest.cpp
+    
+    Game/DragonicTactics/States/BattleOrchestrator.h Game/DragonicTactics/States/BattleOrchestrator.cpp
     Game/DragonicTactics/States/ConsoleTest.h Game/DragonicTactics/States/ConsoleTest.cpp
-
+    Game/DragonicTactics/States/GamePlay.h Game/DragonicTactics/States/GamePlay.cpp
+    Game/DragonicTactics/States/GamePlayUIManager.h Game/DragonicTactics/States/GamePlayUIManager.cpp
+    Game/DragonicTactics/States/PlayerInputHandler.h Game/DragonicTactics/States/PlayerInputHandler.cpp
+    Game/DragonicTactics/States/RenderingTest.h Game/DragonicTactics/States/RenderingTest.cpp
+    
     Game/DragonicTactics/Test/Week1TestMocks.h Game/DragonicTactics/Test/Week1TestMocks.cpp
     Game/DragonicTactics/Test/Week3TestMocks.h Game/DragonicTactics/Test/Week3TestMocks.cpp
     Game/DragonicTactics/Test/TestAStar.h Game/DragonicTactics/Test/TestAStar.cpp 
