@@ -2,7 +2,6 @@
 
 #include "ConsoleTest.h"
 
-
 #include "CS200/IRenderer2D.hpp"
 #include "CS200/NDC.hpp"
 
@@ -235,7 +234,7 @@ void ConsoleTest::DrawImGui()
 	{
 		TestNewFile = true;
 	}
-	
+
 	ImGui::End();
 }
 

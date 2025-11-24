@@ -139,18 +139,18 @@ file(GLOB_RECURSE OPENGL_SOURCES CONFIGURE_DEPENDS
 )
 
 file(GLOB_RECURSE GAME_SOURCES CONFIGURE_DEPENDS
-    "Game/*.cpp"           # Game 폴더 전체 검색
+    "Game/*.cpp"           
     "Game/*.h"
     "Game/*.hpp"
 )
 
-# ========== 실행 파일 생성 ==========
+
 set(SOURCE_CODE
-    ${ENGINE_SOURCES}      # Engine 폴더의 모든 파일
-    ${CS200_SOURCES}       # CS200 폴더의 모든 파일
-    ${OPENGL_SOURCES}      # OpenGL 폴더의 모든 파일
-    ${GAME_SOURCES}        # Game 폴더의 모든 파일
-    main.cpp               # main.cpp는 별도 추가
+    ${ENGINE_SOURCES}      
+    ${CS200_SOURCES}       
+    ${OPENGL_SOURCES}      
+    ${GAME_SOURCES}        
+    main.cpp               
 )
 
 
