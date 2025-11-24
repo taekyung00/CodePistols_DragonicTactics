@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /**
  * \file
  * \author Rudy Castan
@@ -8,9 +10,7 @@
  */
 #include "RenderingAPI.hpp"
 
-#include "Engine/Engine.hpp"
 #include "Engine/Error.hpp"
-#include "Engine/Logger.hpp"
 #include "OpenGL/Environment.hpp"
 #include <GL/glew.h>
 #include <cassert>

@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "Particle.h"
 /*
 Copyright (C) 2023 DigiPen Institute of Technology

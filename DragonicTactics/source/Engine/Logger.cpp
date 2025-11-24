@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /**
  * \file
  * \author Rudy Castan
@@ -9,7 +11,6 @@
  */
 
 #include "Logger.hpp"
-#include <iostream>
 
 namespace CS230
 {

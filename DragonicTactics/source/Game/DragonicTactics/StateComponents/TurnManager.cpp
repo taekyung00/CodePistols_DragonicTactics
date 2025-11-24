@@ -1,9 +1,11 @@
+#include "pch.h"
+
 #include "TurnManager.h"
 #include "../Objects/Components/StatsComponent.h"
-#include "../Singletons/DiceManager.h"
+#include "./DiceManager.h"
 #include "./Engine/Engine.hpp"
+#include "./Engine/GameStateManager.hpp"
 #include "./Engine/Logger.hpp"
-#include <algorithm>
 
 TurnManager::TurnManager() : currentTurnIndex{}, turnNumber{}, roundNumber{}, combatActive{}, initiativeMode{ InitiativeMode::RollOnce }
 {
@@ -172,7 +174,12 @@ void TurnManager::EndCombat()
 	Engine::GetLogger().LogEvent("TurnManager: Combat ended after " + std::to_string(turnNumber) + " turns (" + std::to_string(roundNumber) + " rounds)");
 
 	// Publish combat end event
-	Engine::GetEventBus().Publish(CombatEndedEvent{});
+	if (eventBus) {
+		eventBus->Publish(CombatEndedEvent{});
+	} else {
+		auto* bus = Engine::GetGameStateManager().GetGSComponent<EventBus>();
+		if (bus) bus->Publish(CombatEndedEvent{});
+	}
 }
 
 void TurnManager::Reset()
@@ -251,7 +258,12 @@ void TurnManager::PublishTurnStartEvent()
 		return;
 
 	TurnStartedEvent event{ currentChar, turnNumber, roundNumber };
-	Engine::GetEventBus().Publish(event);
+	if (eventBus) {
+		eventBus->Publish(event);
+	} else {
+		auto* bus = Engine::GetGameStateManager().GetGSComponent<EventBus>();
+		if (bus) bus->Publish(event);
+	}
 }
 
 void TurnManager::PublishTurnEndEvent()
@@ -261,7 +273,12 @@ void TurnManager::PublishTurnEndEvent()
 		return;
 
 	TurnEndedEvent event{ currentChar, turnNumber };
-	Engine::GetEventBus().Publish(event);
+	if (eventBus) {
+		eventBus->Publish(event);
+	} else {
+		auto* bus = Engine::GetGameStateManager().GetGSComponent<EventBus>();
+		if (bus) bus->Publish(event);
+	}
 }
 
 // ==========Sangyun: INITIATIVE SYSTEM IMPLEMENTATION (NEW) ==========
@@ -306,7 +323,12 @@ void TurnManager::RollInitiative(const std::vector<Character*>& characters)
 
 		// Publish individual initiative rolled event
 		InitiativeEvent event{ character,  speed };
-		Engine::GetEventBus().Publish(event);
+		if (eventBus) {
+			eventBus->Publish(event);
+		} else {
+			auto* bus = Engine::GetGameStateManager().GetGSComponent<EventBus>();
+			if (bus) bus->Publish(event);
+		}
 	}
 
 	// Sort by initiative (highest first)
@@ -319,7 +341,12 @@ void TurnManager::RollInitiative(const std::vector<Character*>& characters)
 		sortedChars.push_back(entry.character);
 	}
 
-	Engine::GetEventBus().Publish(TurnOrderEstablishedEvent{ sortedChars });
+	if (eventBus) {
+		eventBus->Publish(TurnOrderEstablishedEvent{ sortedChars });
+	} else {
+		auto* bus = Engine::GetGameStateManager().GetGSComponent<EventBus>();
+		if (bus) bus->Publish(TurnOrderEstablishedEvent{ sortedChars });
+	}
 
 	Engine::GetLogger().LogEvent("=== TURN ORDER ESTABLISHED ===");
 	for (const auto& entry : initiativeOrder)

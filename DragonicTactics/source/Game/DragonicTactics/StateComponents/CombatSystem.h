@@ -1,6 +1,9 @@
 #pragma once
+#include "./Engine/Component.h"
 #include "../Objects/Character.h"
 #include <string>
+
+class DiceManager;
 
 enum class DamageType {
     Physical,
@@ -10,9 +13,13 @@ enum class DamageType {
     Poison
 };
 
-class CombatSystem {
+class CombatSystem : public CS230::Component{
 public:
     CombatSystem() = default;
+    ~CombatSystem() = default;
+
+    // Set DiceManager for testing or runtime use
+    void SetDiceManager(DiceManager* dice) { diceManager = dice; }
 
     // Core combat methods
     int CalculateDamage(Character* attacker, Character* defender, const std::string& damageDice, int baseDamage);
@@ -30,6 +37,5 @@ public:
     int GetDistance(Character* char1, Character* char2);
 
 private:
-    CombatSystem(const CombatSystem&) = delete;
-    CombatSystem& operator=(const CombatSystem&) = delete;
+    DiceManager* diceManager = nullptr;
 };

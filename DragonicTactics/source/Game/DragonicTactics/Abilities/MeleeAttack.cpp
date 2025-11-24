@@ -1,10 +1,10 @@
+#include "pch.h"
 #include "MeleeAttack.h"
+
 #include "../Objects/Character.h"
-#include "../Singletons/DiceManager.h"
-#include "../Singletons/EventBus.h"
-#include "../Types/Events.h"
-#include "../../../Engine/Engine.hpp"
-#include "../../../Engine/Logger.hpp"
+#include "../StateComponents/DiceManager.h"
+#include "../StateComponents/EventBus.h"
+
 #include "../Objects/Components/GridPosition.h"
 #include "../Objects/Components/StatsComponent.h"
 #include "../Objects/Components/ActionPoints.h"
@@ -61,9 +61,9 @@ AbilityResult MeleeAttack::Use(Character* user, Character* target) {
     }
     
     //rolldice
-    DiceManager& dice = Engine::GetDiceManager();
+    DiceManager* dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
     std::string attackRoll = user->GetStatsComponent()->GetAttackDice(); // "2d6"
-    int baseDamage = dice.RollDiceFromString(attackRoll);                // 2~12
+    int baseDamage = dice->RollDiceFromString(attackRoll);                // 2~12
     int attackModifier = user->GetStatsComponent()->GetBaseAttack();     // ex) +3
     int totalDamage = baseDamage + attackModifier;                       // 5~15
 
@@ -74,7 +74,7 @@ AbilityResult MeleeAttack::Use(Character* user, Character* target) {
 
     //event
 
-    Engine::GetEventBus().Publish(AbilityUsedEvent{
+    Engine::GetGameStateManager().GetGSComponent<EventBus>()->Publish(AbilityUsedEvent{
         user,
         target,
         GetName(),

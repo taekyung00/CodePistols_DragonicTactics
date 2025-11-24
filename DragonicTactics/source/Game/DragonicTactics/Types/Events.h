@@ -4,7 +4,7 @@
 #include "../../../Engine/Vec2.hpp"
 
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
-#include "./Game/DragonicTactics/Singletons/AISystem.h"
+#include "./Game/DragonicTactics/StateComponents/AISystem.h"
 class Character;
 
 // BattleEvents.h - High-level battle events

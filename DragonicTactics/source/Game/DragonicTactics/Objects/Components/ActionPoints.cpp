@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "ActionPoints.h"
 
 ActionPoints::ActionPoints(int _max_points)

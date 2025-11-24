@@ -3,7 +3,7 @@
 // Ginam: Week3 Developer B - Fighter combat abilities
 #include "../Abilities/MeleeAttack.h"
 #include "../Abilities/ShieldBash.h"
-#include "./Game/DragonicTactics/Singletons/AISystem.h"
+#include "./Game/DragonicTactics/StateComponents/AISystem.h"
 
 class Fighter : public Character {
 public:

@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "Fighter.h"
 #include "./Engine/Engine.hpp"
 #include "./Engine/GameObjectManager.h"
@@ -44,10 +46,10 @@ void Fighter::Action()
 	// If AI-controlled, make decisions
 	if (IsAIControlled())
 	{
-		AISystem& ai = Engine::GetAISystem();
+		AISystem* ai = Engine::GetGameStateManager().GetGSComponent<AISystem>();
 	
-		AIDecision decision = ai.MakeDecision(this);
-		ai.ExecuteDecision(this, decision);
+		AIDecision decision = ai->MakeDecision(this);
+		ai->ExecuteDecision(this, decision);
 	}
 }
 

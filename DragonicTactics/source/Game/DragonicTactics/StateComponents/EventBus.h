@@ -4,8 +4,9 @@
 #include <typeindex>
 #include <vector>
 #include <string>
+#include "./Engine/Component.h"
 
-class EventBus {
+class EventBus : public CS230::Component {
 public:
     EventBus() = default;
     ~EventBus() = default;
@@ -44,10 +45,6 @@ public:
     void SetLogging(bool enabled) { loggingEnabled = enabled; }
 
 private:
-    
-    EventBus(const EventBus&) = delete;
-    EventBus& operator=(const EventBus&) = delete;
-
     // Type-erased callback wrapper
     using CallbackWrapper = std::function<void(const void*)>;
 

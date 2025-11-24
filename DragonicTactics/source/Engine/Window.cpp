@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /**
  * \file Window.cpp
  * \author Rudy Castan
@@ -15,9 +17,6 @@
 #include "Error.hpp"
 #include "Logger.hpp"
 #include <GL/glew.h>
-#include <SDL.h>
-#include <functional>
-#include <sstream>
 
 namespace
 {

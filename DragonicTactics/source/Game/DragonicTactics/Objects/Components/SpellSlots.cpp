@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "SpellSlots.h"
 
 SpellSlots::SpellSlots(const std::map<int, int>& max_slots_per_level)

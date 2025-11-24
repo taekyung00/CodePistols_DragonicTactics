@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /*
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
@@ -23,7 +25,6 @@ Created:    May 6, 2025
 #include "./Game/DragonicTactics/States/ConsoleTest.h"
 #include "./OpenGL/Environment.hpp"
 #include "States.h"
-#include <imgui.h>
 
 
 

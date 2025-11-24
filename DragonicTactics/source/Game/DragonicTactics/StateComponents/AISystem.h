@@ -1,5 +1,6 @@
 // File: CS230/Game/Singletons/AISystem.h
 #pragma once
+#include "./Engine/Component.h"
 #include "../Objects/Character.h"
 #include <vector>
 
@@ -19,10 +20,11 @@ struct AIDecision {
     std::string reasoning;    // Debug: Why this decision?
 };
 
-class AISystem{
+class AISystem : public CS230::Component{
 public:
-
     AISystem() = default;
+    ~AISystem() = default;
+
     // Main AI entry point
     AIDecision MakeDecision(Character* actor);
 
