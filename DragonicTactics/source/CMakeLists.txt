@@ -5,121 +5,154 @@
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-set(SOURCE_CODE 
+# set(SOURCE_CODE 
 
-    CS200/Image.hpp CS200/Image.cpp
-    CS200/ImGuiHelper.hpp CS200/ImGuiHelper.cpp
-    CS200/ImmediateRenderer2D.hpp CS200/ImmediateRenderer2D.cpp
-    CS200/IRenderer2D.hpp
-    CS200/NDC.hpp
-    CS200/Renderer2DUtils.hpp CS200/Renderer2DUtils.cpp
-    CS200/RenderingAPI.hpp CS200/RenderingAPI.cpp
-    CS200/RGBA.hpp
+#     CS200/Image.hpp CS200/Image.cpp
+#     CS200/ImGuiHelper.hpp CS200/ImGuiHelper.cpp
+#     CS200/ImmediateRenderer2D.hpp CS200/ImmediateRenderer2D.cpp
+#     CS200/IRenderer2D.hpp
+#     CS200/NDC.hpp
+#     CS200/Renderer2DUtils.hpp CS200/Renderer2DUtils.cpp
+#     CS200/RenderingAPI.hpp CS200/RenderingAPI.cpp
+#     CS200/RGBA.hpp
 
-    Game/Background.h Game/Background.cpp
-    Game/GameObjectTypes.h
-    Game/MainMenu.h Game/MainMenu.cpp
-    Game/Particles.h
-    Game/Score.h Game/Score.cpp
-    Game/Splash.h Game/Splash.cpp
-    Game/States.h
+#     Game/Background.h Game/Background.cpp
+#     Game/GameObjectTypes.h
+#     Game/MainMenu.h Game/MainMenu.cpp
+#     Game/Particles.h
+#     Game/Score.h Game/Score.cpp
+#     Game/Splash.h Game/Splash.cpp
+#     Game/States.h
 
-    Game/DragonicTactics/Abilities/AbilityBase.h
-    Game/DragonicTactics/Abilities/MeleeAttack.h Game/DragonicTactics/Abilities/MeleeAttack.cpp
-    Game/DragonicTactics/Abilities/ShieldBash.h Game/DragonicTactics/Abilities/ShieldBash.cpp
+#     Game/DragonicTactics/Abilities/AbilityBase.h
+#     Game/DragonicTactics/Abilities/MeleeAttack.h Game/DragonicTactics/Abilities/MeleeAttack.cpp
+#     Game/DragonicTactics/Abilities/ShieldBash.h Game/DragonicTactics/Abilities/ShieldBash.cpp
 
-    Game/DragonicTactics/Debugger/DebugConsole.h Game/DragonicTactics/Debugger/DebugConsole.cpp
-    Game/DragonicTactics/Debugger/DebugManager.h Game/DragonicTactics/Debugger/DebugManager.cpp
-    Game/DragonicTactics/Debugger/DebugVisualizer.h Game/DragonicTactics/Debugger/DebugVisualizer.cpp
+#     Game/DragonicTactics/Debugger/DebugConsole.h Game/DragonicTactics/Debugger/DebugConsole.cpp
+#     Game/DragonicTactics/Debugger/DebugManager.h Game/DragonicTactics/Debugger/DebugManager.cpp
+#     Game/DragonicTactics/Debugger/DebugVisualizer.h Game/DragonicTactics/Debugger/DebugVisualizer.cpp
     
-    Game/DragonicTactics/Objects/Actions/Action.h Game/DragonicTactics/Objects/Actions/Action.cpp
-    Game/DragonicTactics/Objects/Actions/ActionAttack.h Game/DragonicTactics/Objects/Actions/ActionAttack.cpp
+#     Game/DragonicTactics/Objects/Actions/Action.h Game/DragonicTactics/Objects/Actions/Action.cpp
+#     Game/DragonicTactics/Objects/Actions/ActionAttack.h Game/DragonicTactics/Objects/Actions/ActionAttack.cpp
 
-    Game/DragonicTactics/Objects/Components/ActionPoints.h Game/DragonicTactics/Objects/Components/ActionPoints.cpp
-    Game/DragonicTactics/Objects/Components/GridPosition.h Game/DragonicTactics/Objects/Components/GridPosition.cpp
-    Game/DragonicTactics/Objects/Components/SpellSlots.h Game/DragonicTactics/Objects/Components/SpellSlots.cpp
-    Game/DragonicTactics/Objects/Components/StatsComponent.h Game/DragonicTactics/Objects/Components/StatsComponent.cpp
-    Game/DragonicTactics/Objects/Components/MovementComponent.h Game/DragonicTactics/Objects/Components/MovementComponent.cpp
+#     Game/DragonicTactics/Objects/Components/ActionPoints.h Game/DragonicTactics/Objects/Components/ActionPoints.cpp
+#     Game/DragonicTactics/Objects/Components/GridPosition.h Game/DragonicTactics/Objects/Components/GridPosition.cpp
+#     Game/DragonicTactics/Objects/Components/SpellSlots.h Game/DragonicTactics/Objects/Components/SpellSlots.cpp
+#     Game/DragonicTactics/Objects/Components/StatsComponent.h Game/DragonicTactics/Objects/Components/StatsComponent.cpp
+#     Game/DragonicTactics/Objects/Components/MovementComponent.h Game/DragonicTactics/Objects/Components/MovementComponent.cpp
 
-    Game/DragonicTactics/Objects/Character.h Game/DragonicTactics/Objects/Character.cpp
-    Game/DragonicTactics/Objects/Dragon.h Game/DragonicTactics/Objects/Dragon.cpp
-    Game/DragonicTactics/Objects/Fighter.h Game/DragonicTactics/Objects/Fighter.cpp
+#     Game/DragonicTactics/Objects/Character.h Game/DragonicTactics/Objects/Character.cpp
+#     Game/DragonicTactics/Objects/Dragon.h Game/DragonicTactics/Objects/Dragon.cpp
+#     Game/DragonicTactics/Objects/Fighter.h Game/DragonicTactics/Objects/Fighter.cpp
 
-    Game/DragonicTactics/StateComponents/AISystem.h Game/DragonicTactics/StateComponents/AISystem.cpp
-    Game/DragonicTactics/StateComponents/EventBus.h Game/DragonicTactics/StateComponents/EventBus.cpp
-    Game/DragonicTactics/StateComponents/DiceManager.h Game/DragonicTactics/StateComponents/DiceManager.cpp
-    Game/DragonicTactics/StateComponents/DataRegistry.cpp Game/DragonicTactics/StateComponents/DataRegistry.h
-    Game/DragonicTactics/StateComponents/CombatSystem.h Game/DragonicTactics/StateComponents/CombatSystem.cpp
-    Game/DragonicTactics/StateComponents/SpellSystem.h Game/DragonicTactics/StateComponents/SpellSystem.cpp
+#     Game/DragonicTactics/StateComponents/AISystem.h Game/DragonicTactics/StateComponents/AISystem.cpp
+#     Game/DragonicTactics/StateComponents/EventBus.h Game/DragonicTactics/StateComponents/EventBus.cpp
+#     Game/DragonicTactics/StateComponents/DiceManager.h Game/DragonicTactics/StateComponents/DiceManager.cpp
+#     Game/DragonicTactics/StateComponents/DataRegistry.cpp Game/DragonicTactics/StateComponents/DataRegistry.h
+#     Game/DragonicTactics/StateComponents/CombatSystem.h Game/DragonicTactics/StateComponents/CombatSystem.cpp
+#     Game/DragonicTactics/StateComponents/SpellSystem.h Game/DragonicTactics/StateComponents/SpellSystem.cpp
 
-    Game/DragonicTactics/StateComponents/GridSystem.h Game/DragonicTactics/StateComponents/GridSystem.cpp Game/DragonicTactics/StateComponents/AStar.cpp
-    Game/DragonicTactics/StateComponents/TurnManager.h Game/DragonicTactics/StateComponents/TurnManager.cpp
+#     Game/DragonicTactics/StateComponents/GridSystem.h Game/DragonicTactics/StateComponents/GridSystem.cpp Game/DragonicTactics/StateComponents/AStar.cpp
+#     Game/DragonicTactics/StateComponents/TurnManager.h Game/DragonicTactics/StateComponents/TurnManager.cpp
 
-    Game/DragonicTactics/States/GamePlay.h Game/DragonicTactics/States/GamePlay.cpp
-    Game/DragonicTactics/States/RenderingTest.h Game/DragonicTactics/States/RenderingTest.cpp
-    Game/DragonicTactics/States/ConsoleTest.h Game/DragonicTactics/States/ConsoleTest.cpp
+#     Game/DragonicTactics/States/GamePlay.h Game/DragonicTactics/States/GamePlay.cpp
+#     Game/DragonicTactics/States/RenderingTest.h Game/DragonicTactics/States/RenderingTest.cpp
+#     Game/DragonicTactics/States/ConsoleTest.h Game/DragonicTactics/States/ConsoleTest.cpp
 
-    Game/DragonicTactics/Test/Week1TestMocks.h Game/DragonicTactics/Test/Week1TestMocks.cpp
-    Game/DragonicTactics/Test/Week3TestMocks.h Game/DragonicTactics/Test/Week3TestMocks.cpp
-    Game/DragonicTactics/Test/TestAStar.h Game/DragonicTactics/Test/TestAStar.cpp 
-    Game/DragonicTactics/Test/TestAssert.h Game/DragonicTactics/Test/TestAssert.cpp Game/DragonicTactics/Test/TestAssert.ini
-    Game/DragonicTactics/Test/TestTurnInit.h Game/DragonicTactics/Test/TestTurnInit.cpp 
-    Game/DragonicTactics/Test/TestCombatSystem.h Game/DragonicTactics/Test/TestCombatSystem.cpp 
-    Game/DragonicTactics/Test/TestEventBus.h Game/DragonicTactics/Test/TestEventBus.cpp 
-    Game/DragonicTactics/Test/TestSpellSystem.h Game/DragonicTactics/Test/TestSpellSystem.cpp 
-    Game/DragonicTactics/Test/TestDataRegistry.h Game/DragonicTactics/Test/TestDataRegistry.cpp 
-    Game/DragonicTactics/Test/TestDiceManager.h Game/DragonicTactics/Test/TestDiceManager.cpp 
-    Game/DragonicTactics/Test/TestTurnManager.h Game/DragonicTactics/Test/TestTurnManager.cpp 
-    Game/DragonicTactics/Test/TestAI.h Game/DragonicTactics/Test/TestAI.cpp 
+#     Game/DragonicTactics/Test/Week1TestMocks.h Game/DragonicTactics/Test/Week1TestMocks.cpp
+#     Game/DragonicTactics/Test/Week3TestMocks.h Game/DragonicTactics/Test/Week3TestMocks.cpp
+#     Game/DragonicTactics/Test/TestAStar.h Game/DragonicTactics/Test/TestAStar.cpp 
+#     Game/DragonicTactics/Test/TestAssert.h Game/DragonicTactics/Test/TestAssert.cpp Game/DragonicTactics/Test/TestAssert.ini
+#     Game/DragonicTactics/Test/TestTurnInit.h Game/DragonicTactics/Test/TestTurnInit.cpp 
+#     Game/DragonicTactics/Test/TestCombatSystem.h Game/DragonicTactics/Test/TestCombatSystem.cpp 
+#     Game/DragonicTactics/Test/TestEventBus.h Game/DragonicTactics/Test/TestEventBus.cpp 
+#     Game/DragonicTactics/Test/TestSpellSystem.h Game/DragonicTactics/Test/TestSpellSystem.cpp 
+#     Game/DragonicTactics/Test/TestDataRegistry.h Game/DragonicTactics/Test/TestDataRegistry.cpp 
+#     Game/DragonicTactics/Test/TestDiceManager.h Game/DragonicTactics/Test/TestDiceManager.cpp 
+#     Game/DragonicTactics/Test/TestTurnManager.h Game/DragonicTactics/Test/TestTurnManager.cpp 
+#     Game/DragonicTactics/Test/TestAI.h Game/DragonicTactics/Test/TestAI.cpp 
 
-    Game/DragonicTactics/Types/CharacterTypes.h
-    Game/DragonicTactics/Types/Events.h
-    Game/DragonicTactics/Types/GameObjectTypes.h
-    Game/DragonicTactics/Types/GameTypes.h
+#     Game/DragonicTactics/Types/CharacterTypes.h
+#     Game/DragonicTactics/Types/Events.h
+#     Game/DragonicTactics/Types/GameObjectTypes.h
+#     Game/DragonicTactics/Types/GameTypes.h
 
-    Engine/Engine.hpp Engine/Engine.cpp
-    Engine/Error.hpp
-    Engine/Font.hpp Engine/Font.cpp
-    Engine/Fonts.h
-    Engine/FPS.hpp
-    Engine/GameState.hpp
-    Engine/GameStateManager.hpp Engine/GameStateManager.cpp
-    Engine/Input.hpp Engine/Input.cpp
-    Engine/Logger.hpp Engine/Logger.cpp
-    Engine/Matrix.hpp Engine/Matrix.cpp
-    Engine/Path.hpp Engine/Path.cpp
-    Engine/Random.hpp Engine/Random.cpp
-    Engine/Rect.hpp
-    Engine/Texture.hpp Engine/Texture.cpp
-    Engine/TextureManager.hpp Engine/TextureManager.cpp
-    Engine/TextManager.hpp Engine/TextManager.cpp
-    Engine/Timer.hpp
-    Engine/Vec2.hpp Engine/Vec2.cpp
-    Engine/Window.hpp Engine/Window.cpp
-    Engine/Animation.cpp Engine/Animation.h
-    Engine/Camera.cpp Engine/Camera.h
-    Engine/Collision.cpp Engine/Collision.h
-    Engine/Component.h
-    Engine/ComponentManager.h
-    Engine/GameObject.cpp Engine/GameObject.h
-    Engine/GameObjectManager.cpp Engine/GameObjectManager.h
-    Engine/Particle.cpp Engine/Particle.h
-    Engine/ShowCollision.cpp Engine/ShowCollision.h
-    Engine/Sprite.cpp Engine/Sprite.h
+#     Engine/Engine.hpp Engine/Engine.cpp
+#     Engine/Error.hpp
+#     Engine/Font.hpp Engine/Font.cpp
+#     Engine/Fonts.h
+#     Engine/FPS.hpp
+#     Engine/GameState.hpp
+#     Engine/GameStateManager.hpp Engine/GameStateManager.cpp
+#     Engine/Input.hpp Engine/Input.cpp
+#     Engine/Logger.hpp Engine/Logger.cpp
+#     Engine/Matrix.hpp Engine/Matrix.cpp
+#     Engine/Path.hpp Engine/Path.cpp
+#     Engine/Random.hpp Engine/Random.cpp
+#     Engine/Rect.hpp
+#     Engine/Texture.hpp Engine/Texture.cpp
+#     Engine/TextureManager.hpp Engine/TextureManager.cpp
+#     Engine/TextManager.hpp Engine/TextManager.cpp
+#     Engine/Timer.hpp
+#     Engine/Vec2.hpp Engine/Vec2.cpp
+#     Engine/Window.hpp Engine/Window.cpp
+#     Engine/Animation.cpp Engine/Animation.h
+#     Engine/Camera.cpp Engine/Camera.h
+#     Engine/Collision.cpp Engine/Collision.h
+#     Engine/Component.h
+#     Engine/ComponentManager.h
+#     Engine/GameObject.cpp Engine/GameObject.h
+#     Engine/GameObjectManager.cpp Engine/GameObjectManager.h
+#     Engine/Particle.cpp Engine/Particle.h
+#     Engine/ShowCollision.cpp Engine/ShowCollision.h
+#     Engine/Sprite.cpp Engine/Sprite.h
 
-    OpenGL/Buffer.hpp OpenGL/Buffer.cpp
-    OpenGL/Environment.hpp
-    OpenGL/Framebuffer.hpp OpenGL/Framebuffer.cpp
-    OpenGL/GL.cpp OpenGL/GL.hpp
-    OpenGL/GLConstants.hpp
-    OpenGL/GLTypes.hpp
-    OpenGL/Handle.hpp
-    OpenGL/Shader.cpp OpenGL/Shader.hpp
-    OpenGL/Texture.hpp OpenGL/Texture.cpp
-    OpenGL/VertexArray.cpp OpenGL/VertexArray.hpp
+#     OpenGL/Buffer.hpp OpenGL/Buffer.cpp
+#     OpenGL/Environment.hpp
+#     OpenGL/Framebuffer.hpp OpenGL/Framebuffer.cpp
+#     OpenGL/GL.cpp OpenGL/GL.hpp
+#     OpenGL/GLConstants.hpp
+#     OpenGL/GLTypes.hpp
+#     OpenGL/Handle.hpp
+#     OpenGL/Shader.cpp OpenGL/Shader.hpp
+#     OpenGL/Texture.hpp OpenGL/Texture.cpp
+#     OpenGL/VertexArray.cpp OpenGL/VertexArray.hpp
 
-    main.cpp
+#     main.cpp
+# )
+file(GLOB_RECURSE ENGINE_SOURCES CONFIGURE_DEPENDS
+    "Engine/*.cpp"
+    "Engine/*.h"
+    "Engine/*.hpp"
 )
+
+file(GLOB_RECURSE CS200_SOURCES CONFIGURE_DEPENDS
+    "CS200/*.cpp"
+    "CS200/*.hpp"
+    "CS200/*.h"
+)
+
+file(GLOB_RECURSE OPENGL_SOURCES CONFIGURE_DEPENDS
+    "OpenGL/*.cpp"
+    "OpenGL/*.hpp"
+    "OpenGL/*.h"
+)
+
+file(GLOB_RECURSE GAME_SOURCES CONFIGURE_DEPENDS
+    "Game/*.cpp"           # Game 폴더 전체 검색
+    "Game/*.h"
+    "Game/*.hpp"
+)
+
+# ========== 실행 파일 생성 ==========
+set(SOURCE_CODE
+    ${ENGINE_SOURCES}      # Engine 폴더의 모든 파일
+    ${CS200_SOURCES}       # CS200 폴더의 모든 파일
+    ${OPENGL_SOURCES}      # OpenGL 폴더의 모든 파일
+    ${GAME_SOURCES}        # Game 폴더의 모든 파일
+    main.cpp               # main.cpp는 별도 추가
+)
+
 
 add_executable(dragonic_tactics ${SOURCE_CODE})
 target_precompile_headers(dragonic_tactics PRIVATE pch.h)

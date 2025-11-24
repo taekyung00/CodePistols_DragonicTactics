@@ -16,6 +16,7 @@
 #include "Game/DragonicTactics/Test/TestTurnInit.h"
 #include "Game/DragonicTactics/Test/TestTurnManager.h"
 #include "Game/DragonicTactics/Test/TestAI.h"
+#include "Game/DragonicTactics/Test/TestNew.h"
 #include "Game/MainMenu.h"
 
 
@@ -27,6 +28,7 @@ bool TestDiceManager = false;
 bool TestCombatSystem = false;
 bool TestTrunManager = false;
 bool TestAI = false;
+bool TestNewFile = false;
 
 ConsoleTest::ConsoleTest()
 {
@@ -172,6 +174,12 @@ void ConsoleTest::Update([[maybe_unused]] double dt)
         TestAI = false;
         RemoveGSComponent<GridSystem>();
     }
+
+	if(TestNewFile)
+	{
+		TestNewFunction();
+		TestNewFile = false;
+	}
 }
 
 void ConsoleTest::Draw()
@@ -223,6 +231,11 @@ void ConsoleTest::DrawImGui()
 	{
 		TestAI = true;
 	}
+	if (ImGui::Button("TestNewFile"))
+	{
+		TestNewFile = true;
+	}
+	
 	ImGui::End();
 }
 
