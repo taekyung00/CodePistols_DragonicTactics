@@ -1,6 +1,7 @@
-#include "../Singletons/DiceManager.h"
+#include "../StateComponents/DiceManager.h"
 #include "../StateComponents/TurnManager.h"
 #include "./Engine/GameStateManager.hpp"
+#include "./Engine/Engine.hpp"
 #include "./Game/DragonicTactics/Objects/Actions/ActionAttack.h"
 #include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
@@ -8,7 +9,7 @@
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
 #include "./Game/DragonicTactics/Objects/Dragon.h"
 #include "./Game/DragonicTactics/Objects/Fighter.h"
-#include "./Game/DragonicTactics/Singletons/CombatSystem.h"
+#include "./Game/DragonicTactics/StateComponents/CombatSystem.h"
 #include "./Game/DragonicTactics/Test/TestAssert.h"
 #include "Week1TestMocks.h"
 #include <iostream>
@@ -23,7 +24,7 @@ bool TestInitiativeBasicRoll()
 	std::cout << "\n=== Test: Initiative Basic Roll ===\n";
 
 	// Set deterministic seed for testing
-	Engine::GetDiceManager().SetSeed(12345);
+	DiceManager dice; dice.SetSeed(12345);
 
 	TurnManager turnMgr;
 	turnMgr.ResetInitiative();
@@ -67,7 +68,7 @@ bool TestInitiativeTurnOrder()
 {
 	std::cout << "\n=== Test: Initiative Turn Order ===\n";
 
-	Engine::GetDiceManager().SetSeed(99999);
+	DiceManager dice; dice.SetSeed(99999);
 
 	TurnManager turnMgr;
 	turnMgr.ResetInitiative();
@@ -123,7 +124,7 @@ bool TestInitiativeSpeedModifier()
 	characters.push_back(&char3);
 
 	// Use same seed to get same rolls
-	Engine::GetDiceManager().SetSeed(42);
+	DiceManager dice; dice.SetSeed(42);
 	turnMgr.RollInitiative(characters);
 
 	StatsComponent* stats1 = char1.GetStatsComponent();
@@ -207,15 +208,16 @@ bool TestInitiativeReRoll()
 	characters.push_back(&dragon);
 
 	// First roll
-	Engine::GetDiceManager().SetSeed(12345);
+	DiceManager dice;
+	dice.SetSeed(12345);
 	turnMgr.RollInitiative(characters);
 	std::vector<Character*> firstOrder = turnMgr.GetTurnOrder();
 
-	std::cout << "First roll - turn order size: " << firstOrder.size() << "\n";
+	std::cout << "First roll - turn order size: " << firstOrder.size() << "\\n";
 
 	// Reset and second roll
 	turnMgr.ResetInitiative();
-	Engine::GetDiceManager().SetSeed(54321);
+	dice.SetSeed(54321);
 	turnMgr.RollInitiative(characters);
 	std::vector<Character*> secondOrder = turnMgr.GetTurnOrder();
 

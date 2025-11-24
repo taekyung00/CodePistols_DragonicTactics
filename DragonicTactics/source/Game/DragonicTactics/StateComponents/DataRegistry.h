@@ -2,19 +2,14 @@
 #include <string>
 #include <map>
 #include <ctime>
+#include "./Engine/Component.h"
 #include "./Game/DragonicTactics/External/json.hpp"
 #include "./Game/DragonicTactics/Types/CharacterTypes.h"
 
-class DataRegistry {
+class DataRegistry : public CS230::Component{
 public:
-
     DataRegistry() = default;
     ~DataRegistry() = default;
-
-    DataRegistry(const DataRegistry&) = delete;
-    DataRegistry& operator=(const DataRegistry&) = delete;
-    DataRegistry(DataRegistry&&) = delete;
-    DataRegistry& operator=(DataRegistry&&) = delete;
 
     // ===== Basic Loading =====
     

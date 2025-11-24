@@ -1,8 +1,8 @@
 #include "ShieldBash.h"
 #include "../Objects/Character.h"
 #include "../StateComponents/GridSystem.h"
-#include "../Singletons/DiceManager.h"
-#include "../Singletons/EventBus.h"
+#include "../StateComponents/DiceManager.h"
+#include "../StateComponents/EventBus.h"
 #include "../Types/Events.h"
 #include "../../../Engine/Engine.hpp"
 #include "../../../Engine/GameStateManager.hpp"
@@ -65,9 +65,9 @@ AbilityResult ShieldBash::Use(Character* user, Character* target) {
         return result;
     }
 
-    DiceManager& dice = Engine::GetDiceManager();
+    DiceManager* dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
     int attackModifier = user->GetStatsComponent()->GetBaseAttack();
-    int damage = dice.RollDiceFromString(baseDamage) + attackModifier;
+    int damage = dice->RollDiceFromString(baseDamage) + attackModifier;
 
     target->TakeDamage(damage, user);
     result.affectedTargets.push_back(target);
@@ -83,14 +83,14 @@ AbilityResult ShieldBash::Use(Character* user, Character* target) {
     grid->MoveCharacter(targetPos, newPos); //moving at grid
     target->GetGridPosition()->Set(newPos); //charector position
 
-    Engine::GetEventBus().Publish(AbilityUsedEvent{
+    Engine::GetGameStateManager().GetGSComponent<EventBus>()->Publish(AbilityUsedEvent{
         user, 
         target, 
         GetName(), 
         damage
     });
 
-    Engine::GetEventBus().Publish(CharacterMovedEvent{
+    Engine::GetGameStateManager().GetGSComponent<EventBus>()->Publish(CharacterMovedEvent{
         target,
         targetPos,
         newPos,

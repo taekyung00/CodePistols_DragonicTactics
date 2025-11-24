@@ -17,7 +17,7 @@ Updated:    Oct 10, 2025
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
 #include "./Game/DragonicTactics/Objects/Components/MovementComponent.h"
 #include "./Game/DragonicTactics/StateComponents/GridSystem.h"
-#include "./Game/DragonicTactics/Singletons/DiceManager.h"
+#include "./Game/DragonicTactics/StateComponents/DiceManager.h"
 #include "Components/GridPosition.h"
 #include "./Engine/Engine.hpp"
 

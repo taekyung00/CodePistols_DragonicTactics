@@ -2,13 +2,14 @@
 #include "Engine/Engine.hpp"
 #include "Engine/GameStateManager.hpp"
 #include "Game/DragonicTactics/Objects/Dragon.h"
-#include "Game/DragonicTactics/Singletons/SpellSystem.h"
+#include "Game/DragonicTactics/StateComponents/SpellSystem.h"
+#include "Game/DragonicTactics/StateComponents/EventBus.h"
 #include "Game/DragonicTactics/StateComponents/GridSystem.h"
 #include "Game/DragonicTactics/Test/TestAssert.h"
 
 bool TestSpellRegistration()
 {
-	SpellSystem& spellSys = Engine::GetSpellSystem();
+	SpellSystem spellSys;
 
 	// Test: Register a spell
 	MockFireball* fireball = new MockFireball();
@@ -24,9 +25,11 @@ bool TestSpellRegistration()
 
 bool TestSpellCasting()
 {
-	GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+	GridSystem grid;
+	EventBus eventBus;
 
-	SpellSystem& spellSys = Engine::GetSpellSystem();
+	SpellSystem spellSys;
+	spellSys.SetEventBus(&eventBus);
 
 	// Register Fireball
 	spellSys.RegisterSpell("Fireball", new MockFireball());
@@ -40,7 +43,7 @@ bool TestSpellCasting()
 
 	// Create target
 	Character* target = new Dragon(Math::vec2{ 3, 3 });
-	grid->AddCharacter(target, Math::vec2{ 3, 3 });
+	grid.AddCharacter(target, Math::vec2{ 3, 3 });
 
 	// Test: Cast spell through SpellSystem
 	MockSpellResult result = spellSys.CastSpell(caster, "Fireball", Math::vec2{ 3, 3 });
@@ -52,7 +55,7 @@ bool TestSpellCasting()
 
 	delete caster;
 	delete target;
-	grid->Reset();
+	grid.Reset();
 	return true;
 }
 
@@ -69,7 +72,10 @@ bool TestSpellUpcast()
 			{ 2, 3 }
 	 }); // 2 level 3 slots
 
-	SpellSystem& spellSys = Engine::GetSpellSystem();
+	EventBus eventBus;
+
+	SpellSystem spellSys;
+	spellSys.SetEventBus(&eventBus);
 	spellSys.RegisterSpell("Fireball", new MockFireball());
 
 	// Test: Upcast Fireball to level 3
@@ -97,7 +103,7 @@ bool TestGetAvailableSpells()
 			{ 3, 2 }
 	 });
 
-	SpellSystem& spellSys = Engine::GetSpellSystem();
+	SpellSystem spellSys;
 	spellSys.RegisterSpell("Fireball", new MockFireball());		// Level 2
 	spellSys.RegisterSpell("CreateWall", new MockCreateWall()); // Level 1
 
@@ -114,7 +120,7 @@ bool TestGetAvailableSpells()
 
 bool TestPreviewSpellArea()
 {
-	SpellSystem& spellSys = Engine::GetSpellSystem();
+	SpellSystem spellSys;
 	spellSys.RegisterSpell("Fireball", new MockFireball());
 
 	// Test: Preview Fireball area

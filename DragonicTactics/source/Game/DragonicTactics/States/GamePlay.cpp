@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
 prior written consent is prohibited
@@ -25,16 +25,16 @@ Created:    November 5, 2025
 #include "Game/DragonicTactics/Objects/Components/MovementComponent.h"
 #include "Game/DragonicTactics/Objects/Components/SpellSlots.h"
 #include "Game/DragonicTactics/Objects/Components/StatsComponent.h"
-#include "Game/DragonicTactics/Singletons/CombatSystem.h"
-#include "Game/DragonicTactics/Singletons/DiceManager.h"
-#include "Game/DragonicTactics/Singletons/EventBus.h"
+#include "Game/DragonicTactics/StateComponents/CombatSystem.h"
+#include "Game/DragonicTactics/StateComponents/DiceManager.h"
+#include "Game/DragonicTactics/StateComponents/EventBus.h"
 #include "Game/MainMenu.h"
 
 #include "Engine/Input.hpp"
 #include "Game/DragonicTactics/Objects/Components/GridPosition.h"
 #include "Game/DragonicTactics/Objects/Dragon.h"
 #include "Game/DragonicTactics/Objects/Fighter.h"
-#include "Game/DragonicTactics/Singletons/SpellSystem.h"
+#include "Game/DragonicTactics/StateComponents/SpellSystem.h"
 #include <imgui.h>
 
 GamePlay::GamePlay() : fighter(nullptr), dragon(nullptr)
@@ -43,10 +43,20 @@ GamePlay::GamePlay() : fighter(nullptr), dragon(nullptr)
 
 void GamePlay::Load()
 {
-	Engine::GetEventBus().Clear();
+	AddGSComponent(new EventBus());
+	GetGSComponent<EventBus>()->Clear();
 
-	Engine::GetDiceManager().SetSeed(100);
+	AddGSComponent(new DiceManager());
+	GetGSComponent<DiceManager>()->SetSeed(100);
+	
+	AddGSComponent(new CombatSystem());
+	AddGSComponent(new AISystem());
+	AddGSComponent(new SpellSystem());
 	AddGSComponent(new CS230::GameObjectManager());
+
+	// Inject dependencies for runtime
+	GetGSComponent<CombatSystem>()->SetDiceManager(GetGSComponent<DiceManager>());
+	GetGSComponent<SpellSystem>()->SetEventBus(GetGSComponent<EventBus>());
 
 	AddGSComponent(new GridSystem());
 	CS230::GameObjectManager* go_manager = GetGSComponent<CS230::GameObjectManager>();
@@ -84,13 +94,15 @@ void GamePlay::Load()
 	}
 
 	AddGSComponent(new TurnManager());
+	GetGSComponent<TurnManager>()->SetEventBus(GetGSComponent<EventBus>());
 	GetGSComponent<TurnManager>()->InitializeTurnOrder({ dragon, fighter });
 	GetGSComponent<TurnManager>()->StartCombat();
 
-	Engine::GetDebugManager().Init();
+	AddGSComponent(new DebugManager());
+	GetGSComponent<DebugManager>()->Init();
 
-	Engine::GetEventBus().Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& event) { this->OnCharacterDamaged(event); });
-	Engine::GetEventBus().Subscribe<CharacterDeathEvent>([this]([[maybe_unused]]const CharacterDeathEvent& event) { this->game_end = true;});
+	GetGSComponent<EventBus>()->Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& event) { this->OnCharacterDamaged(event); });
+	GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>([this]([[maybe_unused]]const CharacterDeathEvent& event) { this->game_end = true;});
 }
 
 void GamePlay::OnCharacterDamaged(const CharacterDamagedEvent& event)
@@ -143,7 +155,7 @@ void GamePlay::Update(double dt)
 	Character*	 currentCharacter = nullptr;
 	// 업데이트 시작
 
-	Engine::GetDebugManager().Update(dt);
+	GetGSComponent<DebugManager>()->Update(dt);
 
 	CS230::Input& input			 = Engine::GetInput();
 	bool		  is_clicking_ui = ImGui::GetIO().WantCaptureMouse;
@@ -247,7 +259,7 @@ void GamePlay::Update(double dt)
 
 								if (target != nullptr && target != dragon)
 								{
-									Engine::GetCombatSystem().ExecuteAttack(dragon, target);
+									GetGSComponent<CombatSystem>()->ExecuteAttack(dragon, target);
 									currentPlayerState = PlayerActionState::None;
 								}
 								else
@@ -292,7 +304,7 @@ void GamePlay::Update(double dt)
 			break;
 		case CharacterTypes::Fighter:
 			fighter->Action();
-			if (!Engine::GetAISystem().ShouldAttack(fighter,dragon) && !Engine::GetAISystem().ShouldMoveCloser(fighter,dragon) /* && !Engine::GetAISystem().ShouldUseAbility(fighter,dragon) */)
+			if (!GetGSComponent<AISystem>()->ShouldAttack(fighter,dragon) && !GetGSComponent<AISystem>()->ShouldMoveCloser(fighter,dragon) /* && !GetGSComponent<AISystem>()->ShouldUseAbility(fighter,dragon) */)
 			{
 				turnMgr->EndCurrentTurn();
 			}
@@ -377,7 +389,7 @@ void GamePlay::Draw()
 		text_manager.DrawText(damage_text.text, damage_text.position, Fonts::Outlined, damage_text.size, CS200::VIOLET);
 	}
 
-	Engine::GetDebugManager().Draw(grid_system);
+	GetGSComponent<DebugManager>()->Draw(grid_system);
 
 	renderer_2d.EndScene();
 }
@@ -385,7 +397,7 @@ void GamePlay::Draw()
 void GamePlay::DrawImGui()
 {
 	GridSystem* grid_system = GetGSComponent<GridSystem>();
-	Engine::GetDebugManager().DrawImGui(grid_system);
+	GetGSComponent<DebugManager>()->DrawImGui(grid_system);
 
 	ImGui::Begin("Player Actions");
 	TurnManager* turnMgr = GetGSComponent<TurnManager>();

@@ -1,9 +1,10 @@
 #include "TestDiceManager.h"
 
 #include "./Engine/Engine.hpp"
+#include "./Engine/GameStateManager.hpp"
 #include "./Engine/Logger.hpp"
 
-#include "./Game/DragonicTactics/Singletons/DiceManager.h"
+#include "./Game/DragonicTactics/StateComponents/DiceManager.h"
 #include "./Game/DragonicTactics/Test/TestAssert.h"
 
 #include <iostream>
@@ -14,7 +15,7 @@ bool TestDiceManager_RollDice()
 {
     Engine::GetLogger().LogEvent("=== Test: RollDice ===");
     
-    DiceManager& dice = Engine::GetDiceManager();
+    DiceManager dice;
     
     // Roll 1d6
     int result = dice.RollDice(1, 6);
@@ -29,9 +30,9 @@ bool TestDiceManager_RollDice()
 
 bool TestDiceManager_RollMultipleDice()
 {
-    Engine::GetLogger().LogEvent("=== Test: Roll Multiple Dice ===");
+    Engine::GetLogger().LogEvent("=== Test: RollMultipleDice ===");
     
-    DiceManager& dice = Engine::GetDiceManager();
+    DiceManager dice;
     
     // Roll 3d6
     int result = dice.RollDice(3, 6);
@@ -48,7 +49,7 @@ bool TestDiceManager_RollFromString()
 {
     Engine::GetLogger().LogEvent("=== Test: RollFromString ===");
     
-    DiceManager& dice = Engine::GetDiceManager();
+    DiceManager dice;
     
     // Test "2d8" format
     int result = dice.RollDiceFromString("2d8");
@@ -67,7 +68,7 @@ bool TestDiceManager_ParseSimpleDice()
 {
     Engine::GetLogger().LogEvent("=== Test: Parse Simple Dice ===");
     
-    DiceManager& dice = Engine::GetDiceManager();
+    DiceManager dice;
     
     // Test "1d20"
     int result = dice.RollDiceFromString("1d20");
@@ -83,7 +84,7 @@ bool TestDiceManager_ParseDiceWithModifier()
 {
     Engine::GetLogger().LogEvent("=== Test: Parse Dice With Modifier ===");
     
-    DiceManager& dice = Engine::GetDiceManager();
+    DiceManager dice;
     
     // Test "2d6+3" format
     int result = dice.RollDiceFromString("2d6+3");
@@ -100,7 +101,7 @@ bool TestDiceManager_ParseInvalidString()
 {
     Engine::GetLogger().LogEvent("=== Test: Parse Invalid String ===");
     
-    DiceManager& dice = Engine::GetDiceManager();
+    DiceManager dice;
     
     // Test invalid format (should return 0 or handle gracefully)
     int result = dice.RollDiceFromString("invalid");
@@ -118,7 +119,7 @@ bool TestDiceManager_SetSeed()
 {
     Engine::GetLogger().LogEvent("=== Test: SetSeed ===");
     
-    DiceManager& dice = Engine::GetDiceManager();
+    DiceManager dice;
     
     // Set seed
     dice.SetSeed(12345);
@@ -140,7 +141,7 @@ bool TestDiceManager_DeterministicRolls()
 {
     Engine::GetLogger().LogEvent("=== Test: Deterministic Rolls ===");
     
-    DiceManager& dice = Engine::GetDiceManager();
+    DiceManager dice;
     
     // Set seed and roll sequence
     dice.SetSeed(42);
@@ -167,7 +168,7 @@ bool TestDiceManager_DifferentSeeds()
 {
     Engine::GetLogger().LogEvent("=== Test: Different Seeds ===");
     
-    DiceManager& dice = Engine::GetDiceManager();
+    DiceManager dice;
     
     // Roll with seed 1
     dice.SetSeed(1);
@@ -204,7 +205,7 @@ bool TestDiceManager_RollRange()
 {
     Engine::GetLogger().LogEvent("=== Test: Roll Range ===");
     
-    DiceManager& dice = Engine::GetDiceManager();
+    DiceManager dice;
     
     // Roll 100 times and check all are in range
     for (int i = 0; i < 100; ++i) {
@@ -221,7 +222,7 @@ bool TestDiceManager_MaxRoll()
 {
     Engine::GetLogger().LogEvent("=== Test: Max Roll ===");
     
-    DiceManager& dice = Engine::GetDiceManager();
+    DiceManager dice;
     
     // Roll many times, should eventually hit max
     bool hitMax = false;
@@ -243,7 +244,7 @@ bool TestDiceManager_MinRoll()
 {
     Engine::GetLogger().LogEvent("=== Test: Min Roll ===");
     
-    DiceManager& dice = Engine::GetDiceManager();
+    DiceManager dice;
     
     // Roll many times, should eventually hit min
     bool hitMin = false;

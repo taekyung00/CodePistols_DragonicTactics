@@ -2,6 +2,7 @@
 // File: CS230/Game/System/SpellSystem.h
 #pragma once
 // #include "../Spells/SpellBase.h"
+#include "./Engine/Component.h"
 #include "../../../Engine/Vec2.hpp"
 #include "./Game/DragonicTactics/Test/Week3TestMocks.h"
 #include <map>
@@ -10,19 +11,18 @@
 #include <vector>
 
 class Character;
+class EventBus;
 
 // Step 1.1: SpellSystem singleton class
 // Reason: Centralized spell management accessible from anywhere
-class SpellSystem
+class SpellSystem : public CS230::Component
 {
 public:
-
 	SpellSystem();
 	~SpellSystem();
 
-	// Delete copy constructor and assignment operator
-	SpellSystem(const SpellSystem&)			   = delete;
-	SpellSystem& operator=(const SpellSystem&) = delete;
+	// Set EventBus for testing or runtime use
+	void SetEventBus(EventBus* bus) { eventBus = bus; }
 
 	// Step 1.2: Spell registration
 	// Reason: Spells must be registered before they can be used
@@ -56,4 +56,6 @@ private:
 	// Step 1.8: Validation helpers
 	bool ValidateSpellSlots(Character* caster, int requiredLevel) const;
 	bool ValidateTarget(MockSpellBase* spell, Character* caster, Math::vec2 targetTile) const;
+
+	EventBus* eventBus = nullptr;
 };

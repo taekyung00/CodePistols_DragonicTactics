@@ -155,10 +155,10 @@ bool AISystem::ShouldAttack(Character* actor, Character* target) {
     if (!actor || !target) return false;
 
     // Check range
-    CombatSystem& combat = Engine::GetCombatSystem();
+    CombatSystem* combat = Engine::GetGameStateManager().GetGSComponent<CombatSystem>();
 	int			  actor_range = actor->GetAttackRange();
-	if (!combat.IsInRange(actor, target, actor_range))
-		return false; // range ???????
+	if (!combat || !combat->IsInRange(actor, target, actor_range))
+		return false; // range check
 
     // Check action points
     if (actor->GetActionPoints() == 0) return false; 
@@ -199,7 +199,7 @@ void AISystem::ExecuteDecision(Character* actor, const AIDecision& decision) {
     );
 
     GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
-    SpellSystem& spell_system = Engine::GetSpellSystem();
+    SpellSystem* spell_system = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
 
     switch (decision.type) {
         case AIDecisionType::Move:
@@ -217,12 +217,12 @@ void AISystem::ExecuteDecision(Character* actor, const AIDecision& decision) {
             break;
 
         case AIDecisionType::Attack:
-            Engine::GetCombatSystem().ExecuteAttack(actor, decision.target);
+            Engine::GetGameStateManager().GetGSComponent<CombatSystem>()->ExecuteAttack(actor, decision.target);
             break;
 
         case AIDecisionType::UseAbility:
             //actor->UseSpell(decision.abilityName, decision.target);
-            spell_system.CastSpell(actor, decision.abilityName, decision.target->GetGridPosition()->Get());
+            spell_system->CastSpell(actor, decision.abilityName, decision.target->GetGridPosition()->Get());
             break;
 
         case AIDecisionType::EndTurn:
@@ -234,9 +234,9 @@ void AISystem::ExecuteDecision(Character* actor, const AIDecision& decision) {
             break;
     }
 
-    auto& eventbus = Engine::GetEventBus();
+    auto* eventbus = Engine::GetGameStateManager().GetGSComponent<EventBus>();
     // Publish AI decision event for debugging
-    eventbus.Publish(AIDecisionEvent{
+    eventbus->Publish(AIDecisionEvent{
         reinterpret_cast<Character*>(actor), decision.type, decision.target, decision.reasoning
     });
 }
