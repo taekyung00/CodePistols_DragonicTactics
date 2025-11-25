@@ -925,6 +925,7 @@ add_executable(dragonic_tactics ${SOURCE_CODE})
 4. `source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_CODE})` 라인은 이미 130줄에 있으므로 그대로 유지
 
 **CONFIGURE_DEPENDS의 역할**:
+
 - 빌드 시마다 파일 목록 변경 체크
 - 새 파일 추가/삭제 감지 시 자동으로 CMake 재구성
 - CMakeLists.txt를 열어서 저장할 필요 없음!
