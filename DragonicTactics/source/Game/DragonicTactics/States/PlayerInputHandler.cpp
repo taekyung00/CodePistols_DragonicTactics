@@ -48,6 +48,17 @@ void PlayerInputHandler::Update(double dt, Character* current_character, GridSys
     }
 
     Dragon* dragon = static_cast<Dragon*>(current_character);
+
+    if (m_state == ActionState::Moving) {
+        auto move_comp = dragon->GetGOComponent<MovementComponent>();
+        if (move_comp && !move_comp->IsMoving()) {
+           
+            m_state = ActionState::None; 
+            
+            // Engine::GetLogger().LogEvent("Dragon finished moving.");
+        }
+    }
+
     HandleDragonInput(dt, dragon, grid, combat_system);
 }
 
@@ -59,15 +70,6 @@ void PlayerInputHandler::HandleDragonInput([[maybe_unused]]double dt, Dragon* dr
         return;
     }
 
-    if (m_state == ActionState::Moving) {
-        MovementComponent* move_comp = dragon->GetGOComponent<MovementComponent>();
-        if (move_comp && !move_comp->IsMoving()) {
-            Engine::GetLogger().LogEvent("Movement finished.");
-            m_state = ActionState::None;
-        }
-        return;
-    }
-
     if (input.MouseJustPressed(0) && !is_clicking_ui) {
         Math::vec2 mouse_pos = input.GetMousePos();
         HandleMouseClick(mouse_pos, dragon, grid, combat_system);
@@ -76,7 +78,7 @@ void PlayerInputHandler::HandleDragonInput([[maybe_unused]]double dt, Dragon* dr
 
 void PlayerInputHandler::HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, GridSystem* grid, CombatSystem* combat_system) {
     Math::ivec2 grid_pos = ConvertScreenToGrid(mouse_pos);
-
+   
     switch (m_state) {
         case ActionState::SelectingMove:
             if (grid->IsWalkable(grid_pos)) {
@@ -98,9 +100,24 @@ void PlayerInputHandler::HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, 
         } 
         break;
 
+        case ActionState::Moving:
+       {
+            MovementComponent* move_comp = dragon->GetGOComponent<MovementComponent>();
+            if (move_comp != nullptr && !move_comp->IsMoving())
+            {
+                Engine::GetLogger().LogEvent("Movement finished. State returning to None.");
+                m_state = ActionState::None;
+            }
+
+       }
+        break;
+
+
         case ActionState::None:
             break;
     }
+     Engine::GetLogger().LogDebug("Mouse: " + std::to_string(mouse_pos.x) + ", " + std::to_string(mouse_pos.y));
+    Engine::GetLogger().LogDebug("Grid Result: " + std::to_string(grid_pos.x) + ", " + std::to_string(grid_pos.y));
 }
 
 void PlayerInputHandler::HandleRightClick(Dragon* dragon) {

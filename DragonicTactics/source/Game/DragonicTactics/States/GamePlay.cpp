@@ -59,10 +59,11 @@ void GamePlay::Load()
 	GetGSComponent<EventBus>()->Clear();
 	GetGSComponent<DiceManager>()->SetSeed(100);
 	GetGSComponent<DebugManager>()->Init();
+    GetGSComponent<CombatSystem>()->SetDiceManager(GetGSComponent<DiceManager>());
+    //GetGSComponent<SpellSystem>()->SetEventBus(GetGSComponent<EventBus>());
 
-	CS230::GameObjectManager* go_manager = GetGSComponent<CS230::GameObjectManager>();
+    CS230::GameObjectManager* go_manager = GetGSComponent<CS230::GameObjectManager>();
     GridSystem* grid_system = GetGSComponent<GridSystem>();
-
 
 	const std::vector<std::string> map_data = { "wwwwwwww", "weefeeew", "weeeeeew", "weeeeeew", "weeeeeew", "weeeeeew", "weedeeew", "wwwwwwww" };
 
@@ -106,6 +107,7 @@ void GamePlay::Load()
         this->game_end = true;
     });
 }
+
 void GamePlay::OnCharacterDamaged(const CharacterDamagedEvent& event)
 {
     Engine::GetLogger().LogDebug("Damage Event! " + std::to_string(event.damageAmount));
@@ -164,8 +166,11 @@ void GamePlay::Update(double dt)
     {
         m_input_handler->Update(dt, current, grid, combatSystem);
         m_orchestrator->Update(dt, turnMgr, aiSystem, goMgr);
+        m_ui_manager->Update(dt);
     }
 
+    
+    goMgr->UpdateAll(dt);
 	UpdateGSComponents(dt);
 	
 }

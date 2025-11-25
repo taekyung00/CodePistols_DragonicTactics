@@ -73,8 +73,15 @@ bool BattleOrchestrator::ShouldContinueTurn(Character* current_character, AISyst
     return shouldAttack || shouldMove;
 }
 
+
+
 void BattleOrchestrator::HandleAITurn(Character* ai_character, TurnManager* turn_manager, AISystem* ai_system, CS230::GameObjectManager* go_manager) {
     
+    MovementComponent* move_comp = ai_character->GetGOComponent<MovementComponent>();
+    if (move_comp && move_comp->IsMoving()) {
+        return;
+    }
+
     if (ai_character->GetCharacterType() == CharacterTypes::Fighter) {
         Fighter* fighter = static_cast<Fighter*>(ai_character);
         
@@ -86,6 +93,8 @@ void BattleOrchestrator::HandleAITurn(Character* ai_character, TurnManager* turn
             turn_manager->EndCurrentTurn();
         }
     }
+
+    
     // if (ai_character->GetCharacterType() == CharacterTypes::Wizard) {
     //     Wizard* wizard = static_cast<Wizard*>(ai_character);
         
@@ -97,7 +106,6 @@ void BattleOrchestrator::HandleAITurn(Character* ai_character, TurnManager* turn
     //         turn_manager->EndCurrentTurn();
     //     }
     // }
-    
 }
 
 
