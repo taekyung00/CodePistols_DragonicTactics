@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Character.h"
 // Ginam: Week3 Developer B - Fighter combat abilities
 #include "../Abilities/MeleeAttack.h"

@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
 prior written consent is prohibited
@@ -10,7 +10,7 @@ Created:    May 29, 2025
 #pragma once
 
 #include "../Engine/GameObject.h"
-#include "../Engine/Vec2.hpp"
+#include "../Engine/Vec2.h"
 class Score : public CS230::Component {
 public:
 	Score(int value);

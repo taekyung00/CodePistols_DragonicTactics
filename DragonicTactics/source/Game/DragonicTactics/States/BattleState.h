@@ -1,5 +1,5 @@
-#pragma once
-#include "./Engine/GameState.hpp"
+﻿#pragma once
+#include "./Engine/GameState.h"
 #include "../Objects/Character.h"
 #include "../Objects/Dragon.h"
 #include "../Objects/Fighter.h"

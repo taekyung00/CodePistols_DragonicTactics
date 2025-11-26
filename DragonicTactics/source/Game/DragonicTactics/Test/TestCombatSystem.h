@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 // Individual CombatSystem test functions
 bool Test_CombatSystem_CalculateDamage();
 bool Test_CombatSystem_CalculateDamage_MinRoll();

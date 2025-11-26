@@ -1,9 +1,9 @@
-
+﻿
 // File: CS230/Game/System/SpellSystem.h
 #pragma once
 // #include "../Spells/SpellBase.h"
 #include "./Engine/Component.h"
-#include "../../../Engine/Vec2.hpp"
+#include "../../../Engine/Vec2.h"
 #include "./Game/DragonicTactics/Test/Week3TestMocks.h"
 #include <map>
 #include <memory>

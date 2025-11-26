@@ -1,4 +1,4 @@
-// File: CS230/Game/Singletons/AISystem.h
+﻿// File: CS230/Game/Singletons/AISystem.h
 #pragma once
 #include "./Engine/Component.h"
 #include "../Objects/Character.h"

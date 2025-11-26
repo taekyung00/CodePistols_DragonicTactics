@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 bool TestPathfindingStraightLine();
 bool TestPathfindingAroundObstacle();
 bool TestPathfindingNoPath();

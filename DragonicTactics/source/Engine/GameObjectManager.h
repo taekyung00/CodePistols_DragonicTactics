@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
 prior written consent is prohibited
@@ -12,7 +12,7 @@ Created:    April 25, 2025
 #include <list>
 #include <memory>
 #include "GameObject.h"
-#include "Matrix.hpp"
+#include "Matrix.h"
 #include "Component.h"
 
 namespace Math { class TransformationMatrix; }

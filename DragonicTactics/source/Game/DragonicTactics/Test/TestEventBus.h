@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 void test_subscribe_publish_singleSubscriber();
 void test_multiple_subscribers_sameEvent();
 void test_multiple_different_events();

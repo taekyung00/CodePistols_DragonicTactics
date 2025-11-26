@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 
 /**
  * \file
@@ -9,7 +9,7 @@
  * \copyright DigiPen Institute of Technology
  */
 
-#include "Vec2.hpp"
+#include "Vec2.h"
 
 namespace Math
 {

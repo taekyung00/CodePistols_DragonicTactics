@@ -1,4 +1,4 @@
-bool ASSERT_TRUE(bool condition);
+﻿bool ASSERT_TRUE(bool condition);
 
 bool ASSERT_FALSE(bool condition);
 

@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
 prior written consent is prohibited
@@ -11,7 +11,7 @@ Created:    Nov 16, 2025
 #pragma once
 
 #include "Engine/Component.h"
-#include "Engine/Matrix.hpp"
+#include "Engine/Matrix.h"
 #include <vector>
 
 class GridSystem;

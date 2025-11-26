@@ -1,6 +1,7 @@
-#pragma once
-#include "../../../Engine/GameState.hpp"
-#include "Test.h"
+﻿#pragma once
+#include "../../../Engine/GameState.h"
+#include "Game/DragonicTactics/StateComponents/GridSystem.h"
+#include "Game/DragonicTactics/Test/TestAI.h"
 
 class AITest : public CS230::GameState
 {
@@ -16,11 +17,4 @@ public:
 	{
 		return "AI Test";
     }
-
-    bool TestAITargetsClosestEnemy();
-    bool TestAIMovesCloserWhenOutOfRange();
-    bool TestAIAttacksWhenInRange();
-    bool TestAIUsesShieldBashWhenAdjacent();
-    bool TestAIEndsTurnWhenNoActions();
-    void RunFighterAITests();
 };
