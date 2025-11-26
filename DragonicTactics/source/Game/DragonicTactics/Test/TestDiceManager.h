@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 // ===== Basic Dice Rolling Tests =====
 bool TestDiceManager_RollDice();

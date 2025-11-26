@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 
 /*
 Copyright (C) 2023 DigiPen Institute of Technology
@@ -12,7 +12,7 @@ Created:    Nov 16, 2025
 
 #include "MovementComponent.h"
 #include "Engine/GameObject.h"								 // GetGOComponent, SetPosition
-#include "Engine/Logger.hpp"								 // Engine::GetLogger
+#include "Engine/Logger.h"								 // Engine::GetLogger
 #include "Game/DragonicTactics/StateComponents/GridSystem.h" // TILE_SIZE, IsWalkable, MoveCharacter
 #include "GridPosition.h"									 // Get, Set
 #include "StatsComponent.h"									 // GetSpeed, ReduceSpeed, IsAlive

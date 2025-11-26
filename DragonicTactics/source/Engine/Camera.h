@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
 prior written consent is prohibited
@@ -10,9 +10,9 @@ Created:    March 8, 2023
 
 #pragma once
 
-#include "Vec2.hpp"
-#include "Rect.hpp"
-#include "Matrix.hpp"
+#include "Vec2.h"
+#include "Rect.h"
+#include "Matrix.h"
 #include "Component.h"
 
 namespace CS230 {

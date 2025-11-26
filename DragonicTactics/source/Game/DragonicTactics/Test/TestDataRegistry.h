@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 // ===== Basic JSON Loading Tests =====
 bool TestDataRegistry_LoadJSON();

@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
 prior written consent is prohibited
@@ -14,8 +14,8 @@ Updated:    Oct 09, 2025
 #include <vector>
 #include "./Engine/GameObject.h"
 #include "./Engine/GameObjectManager.h"
-#include "./Engine/Matrix.hpp"
-#include "./Engine/Input.hpp"
+#include "./Engine/Matrix.h"
+#include "./Engine/Input.h"
 #include "./Game/DragonicTactics/Types/GameTypes.h"
 #include "./Game/DragonicTactics/Types/CharacterTypes.h"
 #include "./Game/DragonicTactics/Objects/Actions/Action.h"
@@ -99,7 +99,7 @@ protected:
     // double                      m_moveTimer                 = 0.0;
     // static constexpr double     MOVE_TIME_PER_TILE          = 0.2;
    
-    MovementComponent*          m_movement_component        = nullptr;
+    //MovementComponent*          m_movement_component        = nullptr;
     std::vector<Action*> m_action_list;
 
 private:

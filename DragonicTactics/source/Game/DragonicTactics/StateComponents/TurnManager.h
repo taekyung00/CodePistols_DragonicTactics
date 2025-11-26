@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "../Objects/Character.h"
 #include "../Types/Events.h"
 #include "./EventBus.h"

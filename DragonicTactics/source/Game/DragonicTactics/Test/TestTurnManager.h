@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 bool Test_TurnManager_Initialize();
 bool Test_TurnManager_Initialize_Empty();
 bool Test_TurnManager_Initialize_DeadCharacters();

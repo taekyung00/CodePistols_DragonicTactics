@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
 prior written consent is prohibited
@@ -9,8 +9,8 @@ Created:    March 12, 2025
 */
 
 #pragma once
-#include "../Engine/GameState.hpp"
-#include "../Engine/Texture.hpp"
+#include "../Engine/GameState.h"
+#include "../Engine/Texture.h"
 
 class Splash : public CS230::GameState
 {

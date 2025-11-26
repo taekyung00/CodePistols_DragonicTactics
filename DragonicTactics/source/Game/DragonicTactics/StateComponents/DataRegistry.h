@@ -1,9 +1,9 @@
-#pragma once
+﻿#pragma once
 #include <string>
 #include <map>
 #include <ctime>
 #include "./Engine/Component.h"
-#include "./Game/DragonicTactics/External/json.hpp"
+#include "./Game/DragonicTactics/External/json.h"
 #include "./Game/DragonicTactics/Types/CharacterTypes.h"
 
 class DataRegistry : public CS230::Component{

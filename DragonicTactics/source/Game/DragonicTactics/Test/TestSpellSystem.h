@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 bool TestSpellRegistration();
 bool TestSpellCasting();
 bool TestSpellUpcast();

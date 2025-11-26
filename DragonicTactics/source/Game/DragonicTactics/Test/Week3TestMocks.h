@@ -1,10 +1,10 @@
-#pragma once
+﻿#pragma once
 // File: DragonicTactics/source/Game/DragonicTactics/Test/Week3TestMocks.h
 // Purpose: Mockups for Week 3 independent development
 // Dev A: TreasureBox object and visualization
 // Dev E: Spell system (Fireball, CreateWall, LavaPool)
 
-#include "../../../Engine/Vec2.hpp"
+#include "../../../Engine/Vec2.h"
 #include "../../../Engine/GameObject.h"
 #include "../Types/CharacterTypes.h"
 #include <iostream>

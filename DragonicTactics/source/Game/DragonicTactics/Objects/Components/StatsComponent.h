@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include"./Engine/Component.h"
 #include "./Game/DragonicTactics/Types/CharacterTypes.h"
 #include<string>

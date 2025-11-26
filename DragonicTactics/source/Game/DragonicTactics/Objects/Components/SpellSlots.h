@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "./Engine/Component.h"
 #include <map>
 class SpellSlots : public CS230::Component {

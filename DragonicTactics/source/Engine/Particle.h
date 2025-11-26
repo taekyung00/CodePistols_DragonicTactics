@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
 prior written consent is prohibited
@@ -11,7 +11,7 @@ Created:    June 6, 2025
 #include "../Game/GameObjectTypes.h"
 #include "GameObject.h"
 #include "GameObjectManager.h"
-#include "GameStateManager.hpp"
+#include "GameStateManager.h"
 
 namespace CS230
 {

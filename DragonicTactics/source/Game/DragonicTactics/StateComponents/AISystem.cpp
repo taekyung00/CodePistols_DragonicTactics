@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 
 // File: CS230/Game/Singletons/AISystem.cpp
 #include "AISystem.h"
@@ -8,7 +8,7 @@
 #include "CombatSystem.h"
 #include "SpellSystem.h"
 #include "EventBus.h"
-#include "./Engine/GameStateManager.hpp"
+#include "./Engine/GameStateManager.h"
 
 
 

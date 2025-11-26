@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 
 bool ASSERT_TRUE(bool condition)
  {
