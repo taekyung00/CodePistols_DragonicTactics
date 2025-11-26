@@ -35,8 +35,6 @@ namespace CS200
 class TextManager;
 class EventBus;
 class CombatSystem;
-class DiceManager;
-class SpellSystem;
 
 /**
  * \brief Runtime information about the window and application state
@@ -251,10 +249,6 @@ public:
     static EventBus& GetEventBus();
 
     static CombatSystem& GetCombatSystem();
-
-    static DiceManager& GetDiceManager();
-
-    static SpellSystem& GetSpellSystem();
 
 public:
     /**

@@ -74,6 +74,7 @@ void MainMenu::SelecetOption()
 	}
 }
 
+
 void MainMenu::Load()
 {
 	CS200::RenderingAPI::SetClearColor(0x000000FF);

@@ -9,8 +9,6 @@
 #include "Engine.hpp"
 #include "./Game/DragonicTactics/Singletons/CombatSystem.h"
 #include "./Game/DragonicTactics/Singletons/EventBus.h"
-#include "./Game/DragonicTactics/Singletons/DiceManager.h"
-#include "Game/DragonicTactics/Singletons/SpellSystem.h"
 #include "CS200/ImGuiHelper.hpp"
 #include "CS200/ImmediateRenderer2D.hpp"
 #include "CS200/NDC.hpp"
@@ -103,8 +101,6 @@ public:
     TextManager                textManager{};
     EventBus                   eventbus{};
     CombatSystem               combatsystem{};
-	DiceManager				   dicemanager{};
-	SpellSystem				   spellsystem{};
 };
 
 
@@ -160,16 +156,6 @@ EventBus& Engine::GetEventBus()
 }
 CombatSystem& Engine::GetCombatSystem(){
     return Instance().impl->combatsystem;
-}
-
-DiceManager& Engine::GetDiceManager()
-{
-	return Instance().impl->dicemanager;
-}
-
-SpellSystem& Engine::GetSpellSystem()
-{
-	return Instance().impl->spellsystem;
 }
 
 void Engine::OnEvent(const SDL_Event& event)

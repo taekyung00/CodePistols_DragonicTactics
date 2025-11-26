@@ -4,7 +4,6 @@
 #include "../../../Engine/Vec2.hpp"
 
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
-#include "./Game/DragonicTactics/Singletons/AISystem.h"
 class Character;
 
 // BattleEvents.h - High-level battle events
@@ -140,22 +139,10 @@ struct TurnEndedEvent
 	int		   actionsUsed; // How many actions taken
 };
 
-// ===== SangYun: Initiative System Events (NEW) =====
 struct InitiativeRolledEvent
 {
-    Character* character;
-    int        roll;             // 1d20 result
-    int        speedModifier;    // (speed - 10) / 2
-    int        totalInitiative;  // roll + modifier
+	std::vector<Character*> turnOrder; // Full turn order after initiative
 };
-
-struct TurnOrderEstablishedEvent
-{
-    std::vector<Character*> turnOrder; // Full turn order after initiative (sorted highest first)
-};
-
-
-// =================== SangYun =====================
 
 /// @brief /////////////////
 struct SpellCastEventForSpell {
@@ -198,12 +185,4 @@ struct AbilityUsedEvent
 	Character*	target;		 // who is target
 	std::string abilityName; // ability name like "Melee Attack", "Shield Bash"
 	int			damageDealt; // total damage
-};
-
-struct AIDecisionEvent
-{
-    Character* actor;
-	AIDecisionType decision_type;
-	Character* decision_target;
-	std::string decision_reasoning;
 };
