@@ -8,40 +8,39 @@ Author:     Seungju Song
 Created:    November 5, 2025
 */
 #pragma once
-#include "../../../Engine/GameState.hpp"
-#include "../../../Engine/Fonts.h"
-#include "../../../Engine/Engine.hpp"
-#include "../../../Engine/Texture.hpp"
-#include "../../../CS200/RGBA.hpp"
-#include "../StateComponents/GridSystem.h"
+#include <memory>
+#include "Engine/GameState.hpp"
 
-class Dragon;
+class PlayerInputHandler;
+class GamePlayUIManager;
+class BattleOrchestrator;
 class Fighter;
+class Dragon;
+struct CharacterDamagedEvent;
 
-class GamePlay : public CS230::GameState
-{
+class GamePlay : public CS230::GameState {
 public:
-    GamePlay();
-    void          Load() override;
-    void          Update(double dt) override;
-    void          Unload() override;
-    void          Draw() override;
-    void          DrawImGui() override;
-    gsl::czstring GetName() const override;
+	GamePlay();
+	virtual ~GamePlay() = default;
+
+	void Load() override;
+	void Update(double dt) override;
+	void Draw() override;
+	void Unload() override;
+	void DrawImGui() override;
+	gsl::czstring GetName() const override;
+
 private:
-    enum class PlayerActionState
-    {
-        None,          
-        SelectingMove,  
-        SelectingAction, 
-        TargetingForAttack,
-        TargetingForSpell
-    };
-    PlayerActionState currentPlayerState = PlayerActionState::None;
+	std::unique_ptr<PlayerInputHandler> m_input_handler;
+	std::unique_ptr<GamePlayUIManager>  m_ui_manager;
+	std::unique_ptr<BattleOrchestrator> m_orchestrator;
 
-    Fighter* fighter;
-    Dragon* dragon;
+	void OnCharacterDamaged(const CharacterDamagedEvent& event);
 
-    std::vector<Math::ivec2> CalculateSimplePath(Math::ivec2 start, Math::ivec2 end);
-    
+	Fighter* fighter = nullptr;
+	Dragon* dragon  = nullptr;
+	bool     game_end = false;
 };
+namespace CS230 {
+
+}

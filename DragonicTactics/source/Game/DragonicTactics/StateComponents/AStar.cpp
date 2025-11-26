@@ -1,10 +1,11 @@
+#include "pch.h"
+
 #include "GridSystem.h"
 #include "./CS200/IRenderer2D.hpp"
 #include "./Engine/Engine.hpp"
 #include "./Engine/Logger.hpp"
 #include "./Game/DragonicTactics/Objects/Character.h"
 #include <cassert>
-#include <algorithm>
 
 int GridSystem::ManhattanDistance(Math::ivec2 a, Math::ivec2 b) const
 {

@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /*
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
@@ -15,8 +17,9 @@ Updated:    Oct 10, 2025
 #include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
 #include "./Game/DragonicTactics/Objects/Components/SpellSlots.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
+#include "./Game/DragonicTactics/Objects/Components/MovementComponent.h"
 #include "./Game/DragonicTactics/StateComponents/GridSystem.h"
-#include "./Game/DragonicTactics/Singletons/DiceManager.h"
+#include "./Game/DragonicTactics/StateComponents/DiceManager.h"
 #include "Components/GridPosition.h"
 #include "./Engine/Engine.hpp"
 
@@ -35,6 +38,7 @@ void Character::InitializeComponents(Math::ivec2 start_coordinates, int max_acti
     AddGOComponent(new GridPosition(start_coordinates));
     AddGOComponent(new ActionPoints(max_action_points));
     AddGOComponent(new SpellSlots(max_slots_per_level));
+    AddGOComponent(new MovementComponent(this));
 }
 
 void Character::RefreshActionPoints()
@@ -44,7 +48,6 @@ void Character::RefreshActionPoints()
 
 void Character::Update(double dt)
 {
-    UpdateMovement(dt);
 
     CS230::GameObject::Update(dt);
 }
@@ -54,27 +57,27 @@ void Character::Draw(Math::TransformationMatrix camera_matrix)
     CS230::GameObject::Draw(camera_matrix);
 }
 
-void Character::PerformAttack(Character* target)
-{
-    if (target == nullptr || !target->IsAlive())
-    {
-        Engine::GetLogger().LogDebug(TypeName() + " has no valid target to attack.");
-        return;
-    }
+// void Character::PerformAttack(Character* target)
+// {
+//     if (target == nullptr || !target->IsAlive())
+//     {
+//         Engine::GetLogger().LogDebug(TypeName() + " has no valid target to attack.");
+//         return;
+//     }
 
-    ActionPoints* ap = GetActionPointsComponent();
-    if (ap == nullptr || ap->Consume(1) == false)
-    {
-        Engine::GetLogger().LogDebug(TypeName() + " tried to attack, but has no Action Points.");
-        return;
-    }
+//     ActionPoints* ap = GetActionPointsComponent();
+//     if (ap == nullptr || ap->Consume(1) == false)
+//     {
+//         Engine::GetLogger().LogDebug(TypeName() + " tried to attack, but has no Action Points.");
+//         return;
+//     }
 
     
-    int total_damage = 10 + Engine::GetDiceManager().RollDiceFromString("4d6");
+//     int total_damage = 10 + Engine::GetDiceManager().RollDiceFromString("4d6");
 
-    Engine::GetLogger().LogEvent(TypeName() + " attacks " + target->TypeName() + " for " + std::to_string(total_damage) + " damage.");
-    target->TakeDamage(total_damage, this);
-}
+//     Engine::GetLogger().LogEvent(TypeName() + " attacks " + target->TypeName() + " for " + std::to_string(total_damage) + " damage.");
+//     target->TakeDamage(total_damage, this);
+// }
 
 void Character::PerformAction([[maybe_unused]] Action* action, [[maybe_unused]] Character* target, [[maybe_unused]] Math::ivec2 tile_position)
 {
@@ -82,13 +85,28 @@ void Character::PerformAction([[maybe_unused]] Action* action, [[maybe_unused]] 
 
 void Character::SetGridSystem(GridSystem* grid)
 {
-    m_gridSystem = grid;
+    m_gridSystem = grid; 
+    
+    MovementComponent* move_comp = GetGOComponent<MovementComponent>();
+    if (move_comp != nullptr)
+    {
+        move_comp->SetGridSystem(grid);
+    }
+    else
+    {
+        Engine::GetLogger().LogError(TypeName() + " is missing MovementComponent! Cannot set GridSystem for it.");
+    }
 }
 
 void Character::SetPath(std::vector<Math::ivec2> path)
 {
-    m_current_path = std::move(path);
-    m_moveTimer = 0.0;
+    if (m_movement_component == nullptr) {
+        m_movement_component = GetGOComponent<MovementComponent>();
+    }
+    if (m_movement_component)
+    {
+        m_movement_component->SetPath(std::move(path));
+    }
 }
 
 void Character::ReceiveHeal(int amount)
@@ -109,50 +127,6 @@ void Character::TakeDamage(int damage, [[maybe_unused]] Character* attacker)
     if (IsAlive() == false)
     {
         // Die();
-    }
-}
-
-
-void Character::UpdateMovement([[maybe_unused]] double dt)
-{
-    if (m_current_path.empty() || !IsAlive())
-    {
-        return; 
-    }
-    
-    if (m_gridSystem == nullptr)
-    {
-        Engine::GetLogger().LogError("Character cannot move: GridSystem is null.");
-        m_current_path.clear();
-        return;
-    }
-
-    m_moveTimer += dt;
-
-    if (m_moveTimer >= MOVE_TIME_PER_TILE)
-    {
-        m_moveTimer = 0.0; 
-
-        Math::ivec2 next_pos = m_current_path.front();
-        m_current_path.erase(m_current_path.begin()); 
-
-        Math::ivec2 current_pos = GetGridPosition()->Get();
-        
-        if (m_gridSystem->IsWalkable(next_pos))
-        {
-            m_gridSystem->MoveCharacter(current_pos, next_pos);
-            
-            GetGridPosition()->Set(next_pos);
-            SetPosition({ static_cast<double>(next_pos.x * GridSystem::TILE_SIZE), 
-                          static_cast<double>(next_pos.y * GridSystem::TILE_SIZE) });
-            
-            Engine::GetLogger().LogEvent(TypeName() + " moved to (" + std::to_string(next_pos.x) + ", " + std::to_string(next_pos.y) + ")");
-        }
-        else
-        {
-            Engine::GetLogger().LogError(TypeName() + " path blocked! Clearing rest of path.");
-            m_current_path.clear(); 
-        }
     }
 }
 
@@ -190,6 +164,7 @@ StatsComponent* Character::GetStatsComponent()
     return GetGOComponent<StatsComponent>();
 }
 
+
 int Character::GetHP()
 {
     return GetGOComponent<StatsComponent>()->GetCurrentHP();
@@ -203,10 +178,6 @@ int Character::GetMaxHP()
 int Character::GetAttackRange() {
     return GetGOComponent<StatsComponent>()->GetAttackRange();
 }
-// void Character::SetHp()
-// {
-//     GetGOComponent<StatsComponent>()
-// }
 
 GridPosition* Character::GetGridPosition()
 {
@@ -255,8 +226,8 @@ void Character::SetAttackRange(int new_range) {
     GetGOComponent<StatsComponent>()->SetAttackRange(new_range);
 }
 
-bool Character::HasSpell(std::string spell_name) {
-    return true;  //TODO modify it to return actual spell name(type)
+bool Character::HasSpell([[maybe_unused]] std::string spell_name) {
+    return false;  //TODO modify it to return actual spell name(type)
 }
 
 void Character::SetActionPoints(int new_points) {

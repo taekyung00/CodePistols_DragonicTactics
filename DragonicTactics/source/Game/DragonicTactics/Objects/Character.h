@@ -31,6 +31,7 @@ class AIMemory;
 class GridFootprint;
 class Action;
 class StatsComponent;
+class MovementComponent;
 
 class Character : public CS230::GameObject {
 public:
@@ -44,7 +45,7 @@ public:
     virtual void OnTurnStart() = 0;
     virtual void OnTurnEnd() = 0;
 
-    virtual void PerformAttack(Character* target);
+    // virtual void PerformAttack(Character* target);
     virtual void PerformAction(Action* action, Character* target, Math::ivec2 tile_position);
     virtual void TakeDamage(int damage, Character* attacker);
     virtual void ReceiveHeal(int amount);
@@ -86,19 +87,19 @@ protected:
     void InitializeComponents(Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level);
     
     
-    virtual void                DecideAction()              = 0;
+    //virtual void                DecideAction()              = 0;
     CharacterTypes              m_character_type;
     GameObject*                 m_turn_target               = nullptr;
     TurnGoal                    m_turn_goal                 = TurnGoal::None;
     
 
-    void                        UpdateMovement(double dt);
     GridSystem*                 m_gridSystem                = nullptr;
-    std::vector<Math::ivec2>    m_current_path;
-    double                      m_moveTimer                 = 0.0;
-    static constexpr double     MOVE_TIME_PER_TILE          = 0.2;
+    // void                        UpdateMovement(double dt);
+    // std::vector<Math::ivec2>    m_current_path;
+    // double                      m_moveTimer                 = 0.0;
+    // static constexpr double     MOVE_TIME_PER_TILE          = 0.2;
    
-
+    MovementComponent*          m_movement_component        = nullptr;
     std::vector<Action*> m_action_list;
 
 private:

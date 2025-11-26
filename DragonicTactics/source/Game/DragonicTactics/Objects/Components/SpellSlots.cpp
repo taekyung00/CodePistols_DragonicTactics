@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "SpellSlots.h"
 
 SpellSlots::SpellSlots(const std::map<int, int>& max_slots_per_level)
@@ -29,6 +31,11 @@ void SpellSlots::Recover(int max_level_to_recover) {
         }
     }
 }
+
+//int SpellSlots::GetMaxLevel() const
+//{
+//	return static_cast<int>(max_slots.size());
+//}
 
 ////////ADD////////
 int SpellSlots::GetSpellSlotCount(int level) {

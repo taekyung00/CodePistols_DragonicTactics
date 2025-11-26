@@ -17,6 +17,9 @@ Created:    May 6, 2025
 
 #include "../Engine/Fonts.h"
 
+#include <string> 
+#include <vector> 
+
 class MainMenu : public CS230::GameState {
 public:
     MainMenu();
@@ -42,10 +45,12 @@ enum class Option
     };
     Option current_option;
 
-    CS200::RGBA dragonic_tactics_color ;
-    CS200::RGBA console_test_color ;
-    CS200::RGBA rendering_test_color ;
-    CS200::RGBA exit_color;
+    struct MenuItem {
+        std::string text; 
+        Option      option; 
+    };
+
+    std::vector<MenuItem> menu_items;
 
     Math::vec2 title_pos;
     Math::vec2 title_scale;
@@ -54,7 +59,6 @@ enum class Option
     Math::vec2 menu_item_size;      
     double     menu_item_total_height; 
 
-    void update_colors();
 
     static constexpr Math::ivec2 default_window_size = {800,600};
 };

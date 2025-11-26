@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /**
  * \file
  * \author Rudy Castan
@@ -7,11 +9,8 @@
  * \copyright DigiPen Institute of Technology
  */
 #include "ImmediateRenderer2D.hpp"
-#include "Engine/Engine.hpp"
-#include "Engine/Matrix.hpp"
 #include "Engine/Path.hpp"
 #include "Engine/Texture.hpp"
-#include "Engine/Window.hpp"
 #include "NDC.hpp"
 #include "OpenGL/Buffer.hpp"
 #include "OpenGL/GL.hpp"

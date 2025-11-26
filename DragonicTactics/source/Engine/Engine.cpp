@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /**
  * \file
  * \author Rudy Castan
@@ -7,8 +9,7 @@
  * \copyright DigiPen Institute of Technology
  */
 #include "Engine.hpp"
-#include "./Game/DragonicTactics/Singletons/CombatSystem.h"
-#include "./Game/DragonicTactics/Singletons/EventBus.h"
+
 #include "CS200/ImGuiHelper.hpp"
 #include "CS200/ImmediateRenderer2D.hpp"
 #include "CS200/NDC.hpp"
@@ -99,8 +100,6 @@ public:
     CS200::ImmediateRenderer2D renderer2D{};
     CS230::TextureManager      textureManager{};
     TextManager                textManager{};
-    EventBus                   eventbus{};
-    CombatSystem               combatsystem{};
 };
 
 
@@ -148,14 +147,6 @@ CS230::TextureManager& Engine::GetTextureManager()
 TextManager& Engine::GetTextManager()
 {
     return Instance().impl->textManager;
-}
-
-EventBus& Engine::GetEventBus()
-{
-    return Instance().impl->eventbus;
-}
-CombatSystem& Engine::GetCombatSystem(){
-    return Instance().impl->combatsystem;
 }
 
 void Engine::OnEvent(const SDL_Event& event)
