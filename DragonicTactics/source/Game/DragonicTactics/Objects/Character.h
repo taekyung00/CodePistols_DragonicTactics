@@ -99,7 +99,7 @@ protected:
     // double                      m_moveTimer                 = 0.0;
     // static constexpr double     MOVE_TIME_PER_TILE          = 0.2;
    
-    MovementComponent*          m_movement_component        = nullptr;
+    //MovementComponent*          m_movement_component        = nullptr;
     std::vector<Action*> m_action_list;
 
 private:

@@ -98,14 +98,10 @@ void Character::SetGridSystem(GridSystem* grid)
     }
 }
 
-void Character::SetPath(std::vector<Math::ivec2> path)
-{
-    if (m_movement_component == nullptr) {
-        m_movement_component = GetGOComponent<MovementComponent>();
-    }
-    if (m_movement_component)
-    {
-        m_movement_component->SetPath(std::move(path));
+void Character::SetPath(std::vector<Math::ivec2> path) {
+    MovementComponent* movement = GetGOComponent<MovementComponent>();
+    if (movement) {
+        movement->SetPath(std::move(path));
     }
 }
 

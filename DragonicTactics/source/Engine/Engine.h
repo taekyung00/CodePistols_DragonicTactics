@@ -33,8 +33,6 @@ namespace CS200
 }
 
 class TextManager;
-class EventBus;
-class CombatSystem;
 
 /**
  * \brief Runtime information about the window and application state
@@ -245,10 +243,6 @@ public:
     static CS230::TextureManager& GetTextureManager();
 
     static TextManager& GetTextManager();
-
-    static EventBus& GetEventBus();
-
-    static CombatSystem& GetCombatSystem();
 
 public:
     /**

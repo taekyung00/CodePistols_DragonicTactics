@@ -52,11 +52,15 @@ void BattleState::Load() {
 
     currentPhase = BattlePhase::PlayerTurn;
     turnCount = 1;
-
-    Engine::Instance().GetEventBus().Subscribe<CharacterDeathEvent>([this](const CharacterDeathEvent& event) {
+    Engine::GetGameStateManager().GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>([this](const CharacterDeathEvent& event) {
         Engine::GetLogger().LogEvent("BattleState: " + event.character->TypeName() + " has died");
         CheckBattleEnd();
         });
+
+    // Engine::Instance().GetEventBus().Subscribe<CharacterDeathEvent>([this](const CharacterDeathEvent& event) {
+    //     Engine::GetLogger().LogEvent("BattleState: " + event.character->TypeName() + " has died");
+    //     CheckBattleEnd();
+    //     });
 
     Engine::GetLogger().LogEvent("BattleState: Battle started - Dragon vs Fighter");
 }
