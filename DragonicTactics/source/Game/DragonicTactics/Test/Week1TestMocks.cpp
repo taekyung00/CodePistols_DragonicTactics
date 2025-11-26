@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "Week1TestMocks.h"
 
 MockCharacter::MockCharacter(const std::string& _name) 

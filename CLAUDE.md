@@ -2,682 +2,295 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Recent Work Summary
+## 프로젝트 개요
 
-### Session History & Accomplishments
+**Dragonic Tactics**: D&D 스타일 턴제 전술 RPG
+- **엔진**: 커스텀 C++20 OpenGL 엔진 (CMake 빌드 시스템)
+- **기간**: 26주 개발 계획
+- **현재 상태**: Week 1-3 완료, Milestone 3 완료
 
-#### New Engine Implementation (CURRENT)
+## 빠른 시작
 
-**MAJOR UPDATE**: The project has transitioned from the old CS230 MSBuild-based engine to a **brand new CMake-based OpenGL engine** with SDL2, modern C++20, and multi-platform support (Windows + WebAssembly).
+### 빌드 명령어
 
-**Current Implementation Status**:
-- **Week 1 Foundation Systems**: IMPLEMENTED
-  - EventBus (type-safe event system)
-  - DiceManager (D&D dice notation)
-  - Character base class with grid positioning
-  - GridSystem (8x8 tactical grid)
-  - TurnManager (speed-based initiative)
-  - StatsComponent (combat stats tracking)
-
-- **Week 2 Systems**: IMPLEMENTED
-  - Dragon character (player)
-  - Fighter character (opponent)
-  - Grid integration with character movement
-  - Character sprite rendering
-
-- **Active Development**: Weeks 3-5 (Combat, Spells, Polish, Playtest)
-
-#### Architecture Documentation & Planning
-
-- **Reorganized documentation structure** into focused, topic-based files under `docs/`:
-
-  - **[docs/index.md](docs/index.md)** - Main navigation hub for all documentation
-  - **[docs/architecture.md](docs/architecture.md)** - High-level architecture overview (703 lines)
-  - **[docs/implementation-plan.md](docs/implementation-plan.md)** - 26-week development timeline (strategic overview)
-  - **[docs/Detailed Implementations/weeks/](docs/Detailed%20Implementations/weeks/)** - Week-by-week tactical guides (3,921 lines total):
-    - [week1.md](docs/Detailed%20Implementations/weeks/week1.md) - Foundation (5 systems in parallel) - 1,940 lines
-    - [week2.md](docs/Detailed%20Implementations/weeks/week2.md) - Dragon + Grid integration - 540 lines
-    - [week3.md](docs/Detailed%20Implementations/weeks/week3.md) - Combat + Spells - 542 lines
-    - [week4.md](docs/Detailed%20Implementations/weeks/week4.md) - Spell expansion - 528 lines
-    - [week5.md](docs/Detailed%20Implementations/weeks/week5.md) - Polish + Playtest 1 - 371 lines
-  - **[docs/systems/](docs/systems/)** - Detailed system specifications:
-    - [characters.md](docs/systems/characters.md) - Character implementations (705 lines)
-    - [singletons.md](docs/systems/singletons.md) - Global services (755 lines)
-    - [game-state-components.md](docs/systems/game-state-components.md) - Battle systems (1040 lines)
-    - [game-object-components.md](docs/systems/game-object-components.md) - Character components (693 lines)
-    - [interfaces.md](docs/systems/interfaces.md) - Patterns & factories (296 lines)
-  - **[docs/debug/](docs/debug/)** - Debug tools documentation:
-    - [tools.md](docs/debug/tools.md) - Debug system spec (782 lines)
-    - [commands.md](docs/debug/commands.md) - Command examples (783 lines)
-    - [ui.md](docs/debug/ui.md) - UI layout design (648 lines)
-
-#### Supporting Documentation
-
-- **architecture/** directory contains supplementary documents:
-  - **dragonic_tactics.md** - Korean language game design document (original specifications)
-  - **game_architecture_rules.md** - Korean architectural principles (5 core rules for indie game development)
-  - **Architecture_Document.md** - Academic milestone template for CS230 course
-  - **Rubric-EngineProof.md** - Academic grading rubric
-
-### Project Understanding
-
-**Current State**: NEW custom OpenGL engine with CMake build system, implementing Dragonic Tactics tactical RPG
-
-**Project Type**: Year-long tactical RPG development (26 weeks)
-
-**Game Genre**: Turn-based tactical RPG (inspired by D&D/Baldur's Gate 3)
-
-**Key Insight**: This is a complete custom engine built from scratch with tactical RPG systems integrated from the ground up.
-
-### Quick Start Commands
-
-#### Building
 ```bash
-# Configure build (Windows Debug)
+# 작업 디렉토리: DragonicTactics/ (프로젝트 루트 아님!)
+cd DragonicTactics
+
+# 구성 (설정)
 cmake --preset windows-debug
 
-# Build
+# 빌드
 cmake --build --preset windows-debug
 
-# Run executable
-./build/windows-debug/dragonic_tactics.exe
+# 실행
+build/windows-debug/dragonic_tactics.exe
 ```
 
-#### Alternative Build Presets
-- `windows-debug` - Debug build with console output
-- `windows-developer-release` - Optimized with debug symbols
-- `windows-release` - Full optimization, no console
-- `web-debug-on-windows` - WebAssembly/Emscripten build
+### 빌드 프리셋
+- `windows-debug` - 디버그 빌드 (콘솔 출력 활성화)
+- `windows-developer-release` - 최적화 + 디버그 심볼 + 콘솔
+- `windows-release` - 완전 최적화 (콘솔 비활성화)
+- `linux-debug` / `linux-developer-release` / `linux-release` - Linux 빌드
+- `web-debug-on-windows` - Windows에서 WebAssembly 빌드
+- `web-debug` / `web-developer-release` / `web-release` - Web 빌드 (Emscripten)
 
----
+### 테스트 단축키 (GamePlay 상태에서)
+- **F**: EventBus 테스트
+- **E**: DiceManager 테스트
+- **T**: Dragon 턴 상태 표시
+- **Y**: Fighter 턴 상태 표시
+- **D**: Dragon 공격
+- **H**: Fighter 힐
+- **S**: Grid 시각화
+- **P**: TurnManager 테스트
+- **J/R/L**: JSON 데이터 로드/리로드/로그
+- **Enter**: 전체 전투 시스템 테스트
+- **ESC**: 테스트 상태 종료
 
-## Build System
+## 프로젝트 구조
 
-This project uses **CMake 3.21+** with modern C++20:
-
-### Building
-
-#### Visual Studio 2022
-1. Open folder in Visual Studio (File → Open → Folder)
-2. CMake will auto-configure using presets
-3. Build: Ctrl+Shift+B
-4. Run: F5 (debugger) or Ctrl+F5 (no debugger)
-
-#### Command Line
-```bash
-# Configure
-cmake --preset windows-debug
-
-# Build
-cmake --build --preset windows-debug
-
-# Run
-./build/windows-debug/dragonic_tactics.exe
+```
+CodePistols_DragonicTactics/
+├── CLAUDE.md                    # 이 파일
+├── docs/                        # 설계 문서
+│   ├── index.md                 # 문서 네비게이션
+│   ├── architecture.md          # 아키텍처 개요
+│   ├── implementation-plan.md   # 26주 개발 계획
+│   ├── systems/                 # 시스템별 상세 설계
+│   └── Detailed Implementations/weeks/  # 주차별 구현 가이드
+│
+├── architecture/                # 지원 문서
+│   ├── dragonic_tactics.md      # 게임 디자인 문서 (한글)
+│   └── game_architecture_rules.md  # 아키텍처 원칙 (한글)
+│
+└── DragonicTactics/             # 메인 프로젝트
+    ├── CMakeLists.txt           # CMake 설정
+    ├── cmake/                   # CMake 모듈
+    ├── Assets/                  # 게임 에셋 (PNG, SPT, ANM)
+    └── source/                  # 소스 코드
+        ├── main.cpp             # 엔트리 포인트
+        ├── Engine/              # 엔진 코어 (CS230 네임스페이스)
+        ├── CS200/               # 렌더링 추상화
+        ├── OpenGL/              # OpenGL 래퍼
+        └── Game/DragonicTactics/  # 게임 코드
+            ├── Abilities/       # 캐릭터 어빌리티
+            │   ├── AbilityBase.h        # 어빌리티 인터페이스
+            │   ├── MeleeAttack.h/cpp    # 근접 공격
+            │   └── ShieldBash.h/cpp     # 쉴드 배쉬
+            ├── Objects/         # 게임 엔티티
+            │   ├── Character.h/cpp      # 캐릭터 베이스 클래스
+            │   ├── Dragon.h/cpp         # 플레이어 캐릭터
+            │   ├── Fighter.h/cpp        # 적 캐릭터
+            │   ├── Components/          # 캐릭터 컴포넌트
+            │   │   ├── ActionPoints.h/cpp    # 행동 포인트
+            │   │   ├── GridPosition.h/cpp    # 그리드 위치
+            │   │   ├── MovementComponent.h/cpp # 이동 시스템
+            │   │   ├── SpellSlots.h/cpp      # 마법 슬롯
+            │   │   └── StatsComponent.h/cpp  # 전투 스탯
+            │   └── Actions/             # 액션 시스템
+            │       ├── Action.h/cpp          # 액션 베이스
+            │       └── ActionAttack.h/cpp    # 공격 액션
+            ├── StateComponents/ # 게임 상태 컴포넌트 (GameState에 연결)
+            │   ├── AISystem.h/cpp       # AI 시스템
+            │   ├── AStar.cpp            # A* 경로 찾기
+            │   ├── CombatSystem.h/cpp   # 전투 해결
+            │   ├── DataRegistry.h/cpp   # 캐릭터 데이터 로딩
+            │   ├── DiceManager.h/cpp    # 주사위 굴림
+            │   ├── EventBus.h/cpp       # 이벤트 시스템
+            │   ├── GridSystem.h/cpp     # 8x8 전술 그리드
+            │   ├── SpellSystem.h/cpp    # 마법 시스템
+            │   └── TurnManager.h/cpp    # 턴 관리
+            ├── States/          # 게임 상태
+            │   ├── GamePlay.h/cpp       # 메인 게임플레이
+            │   ├── RenderingTest.h/cpp  # 렌더링 테스트
+            │   └── ConsoleTest.h/cpp    # 콘솔 테스트
+            ├── Types/           # 공유 타입 정의
+            │   ├── CharacterTypes.h     # 캐릭터 타입
+            │   ├── Events.h             # 이벤트 타입
+            │   ├── GameObjectTypes.h    # GameObject 타입
+            │   └── GameTypes.h          # 게임 타입
+            ├── Debugger/        # 디버그 도구
+            │   ├── DebugConsole.h/cpp   # 디버그 콘솔
+            │   ├── DebugManager.h/cpp   # 디버그 매니저
+            │   └── DebugVisualizer.h/cpp # 시각화
+            └── Test/            # 테스트 유틸리티
+                ├── Week1TestMocks.h/cpp # Week 1 테스트
+                ├── Week3TestMocks.h/cpp # Week 3 테스트
+                ├── TestAStar.h/cpp      # A* 테스트
+                ├── TestAssert.h/cpp     # Assert 테스트
+                ├── TestTurnInit.h/cpp   # 턴 초기화 테스트
+                ├── TestCombatSystem.h/cpp # 전투 시스템 테스트
+                ├── TestEventBus.h/cpp   # 이벤트 버스 테스트
+                ├── TestSpellSystem.h/cpp # 스펠 시스템 테스트
+                ├── TestDataRegistry.h/cpp # 데이터 레지스트리 테스트
+                ├── TestDiceManager.h/cpp # 주사위 매니저 테스트
+                ├── TestTurnManager.h/cpp # 턴 매니저 테스트
+                └── TestAI.h/cpp         # AI 테스트
 ```
 
-#### CMake GUI
-```bash
-cmake-gui .
-# Select preset: windows-debug, windows-developer-release, or windows-release
-# Configure → Generate → Open Project
-```
+## 핵심 시스템 (현재 구현됨)
 
-### Configuration
+**중요**: 모든 시스템은 `StateComponents/` 디렉토리에 위치하며, GameState 컴포넌트로 구현됨
 
-- **Language Standard**: C++20 (CMAKE_CXX_STANDARD 20, no extensions)
-- **Platform Toolset**: v143 (Visual Studio 2022)
-- **Warning Level**: Level 4 with warnings treated as errors
-- **Configurations**: Debug, Developer Release, Release
-- **Platforms**: Windows (x86/x64) + WebAssembly (Emscripten)
-- **Assets**: CMake post-build automatically copies `Assets/` folder to output directory
-
-### External Dependencies (via CMake FetchContent)
-
-All dependencies are **automatically downloaded and configured** by CMake:
-
-| Library | Purpose | Version |
-|---------|---------|---------|
-| **OpenGL** | Graphics API | System |
-| **GLEW** | OpenGL extensions | Latest |
-| **SDL2** | Window, input, platform abstraction | 2.28.5+ |
-| **Dear ImGui** | Debug UI overlay | docking branch |
-| **GSL** | Guidelines Support Library (lifetime safety) | v4.0.0 |
-| **STB** | Image loading (stb_image.h) | Latest |
-
-No manual dependency installation required - CMake handles everything!
-
----
-
-## Architecture Overview
-
-This is a **modern 2D tactical RPG engine** written in C++20 with OpenGL rendering, built using component-based architecture and event-driven design.
-
-### Core Engine (CS230 namespace)
-
-#### Engine Singleton ([source/Engine/Engine.hpp](DragonicTactics/source/Engine/Engine.hpp))
-- **Pattern**: Singleton with Pimpl idiom (private implementation)
-- **Purpose**: Central orchestrator for all engine subsystems
-- **Key Methods**:
-  - `Start(window_title)` - Initialize all subsystems, create window
-  - `Update()` - Main game loop iteration (input, logic, render, ImGui)
-  - `Stop()` - Graceful shutdown and cleanup
-  - `HasGameEnded()` - Check for termination condition
-
-#### Core Subsystems
-
-| Subsystem | File | Purpose |
-|-----------|------|---------|
-| **Window** | [Window.hpp](DragonicTactics/source/Engine/Window.hpp) | SDL2 window management, OpenGL context (800x600 default) |
-| **Input** | [Input.hpp](DragonicTactics/source/Engine/Input.hpp) | Keyboard input (A-Z, arrows, space, enter, escape, tab) |
-| **Logger** | [Logger.hpp](DragonicTactics/source/Engine/Logger.hpp) | Debug logging (Verbose/Debug/Event/Error) to `Logger.txt` |
-| **GameStateManager** | [GameStateManager.hpp](DragonicTactics/source/Engine/GameStateManager.hpp) | State machine (Splash → MainMenu → Battle) |
-| **TextureManager** | [TextureManager.hpp](DragonicTactics/source/Engine/TextureManager.hpp) | Asset loading and caching (PNG textures) |
-| **Renderer2D** | [IRenderer2D.hpp](DragonicTactics/source/CS200/IRenderer2D.hpp) | 2D graphics rendering abstraction (CS200 namespace) |
-| **TextManager** | [TextManager.hpp](DragonicTactics/source/Engine/TextManager.hpp) | Text rendering system |
-
-### GameObject Framework (CS230 namespace)
-
-#### GameObject ([source/Engine/GameObject.h](DragonicTactics/source/Engine/GameObject.h))
-Base entity class for all game objects:
-
-**Core Virtual Methods**:
-- `Type()` - Returns GameObjectTypes enum value
-- `TypeName()` - Returns string name for debugging
-- `Update(dt)` - Per-frame logic update
-- `Draw(transform)` - Rendering with transformation matrix
-
-**Properties**:
-- Position (`Math::vec2`)
-- Velocity, Rotation, Scale
-- Collision bounds and detection
-- Component system integration
-- State machine support (nested `State` classes)
-
-**State Machine Pattern**:
-```cpp
-class MyGameObject : public CS230::GameObject {
-    class StateIdle : public State { /* ... */ };
-    class StateMoving : public State { /* ... */ };
-    void change_state(State* new_state);
-};
-```
-
-**Collision System**:
-- `IsCollidingWith(GameObject*)` - Collision test
-- `CanCollideWith(GameObjectTypes)` - Filter collision checks
-- `ResolveCollision(GameObject*)` - Handle collision response
-
-#### Component System ([Component.h](DragonicTactics/source/Engine/Component.h), [ComponentManager.h](DragonicTactics/source/Engine/ComponentManager.h))
-
-**Component Interface**:
-```cpp
-class Component {
-    virtual void Update(double dt) = 0;
-    virtual ~Component() = default;
-};
-```
-
-**ComponentManager**:
-- Manages vector of `Component*` pointers
-- Owned by both `GameObject` and `GameState`
-- Template methods: `GetComponent<T>()` for type-safe retrieval
-
-**Usage Example**:
-```cpp
-auto stats = character->GetGOComponent<StatsComponent>();
-stats->TakeDamage(10);
-```
-
-#### GameState ([source/Engine/GameState.hpp](DragonicTactics/source/Engine/GameState.hpp))
-
-Abstract base for game states:
-
-**Virtual Lifecycle Methods**:
-- `Load()` - Initialize state resources
-- `Update(dt)` - Per-frame game logic
-- `Draw()` - Render game objects
-- `DrawImGui()` - Debug UI overlay
-- `Unload()` - Cleanup resources
-
-**Features**:
-- Component system support (like GameObject)
-- `GameObjectManager` ownership
-- State transition via `GameStateManager::SetNextGameState()`
-
----
-
-## Dragonic Tactics Systems
-
-### 1. Character System
-
-#### Character Base Class ([Game/DragonicTactics/Objects/Character.h](DragonicTactics/source/Game/DragonicTactics/Objects/Character.h))
-
-**Extends**: `CS230::GameObject`
-
-**Character Types**:
-```cpp
-enum class CharacterTypes {
-    Dragon,   // Player character
-    Fighter,  // Opponent (melee)
-    Rogue,    // Opponent (ranged/dex)
-    Cleric,   // Opponent (healer/support)
-    Wizard    // Opponent (spellcaster)
-};
-```
-
-**Core Components**:
-- `GridPosition` - Tile coordinates on 8x8 grid ([GridPosition.h](DragonicTactics/source/Game/DragonicTactics/Objects/Components/GridPosition.h))
-- `StatsComponent` - HP, attack, defense, speed ([StatsComponent.h](DragonicTactics/source/Game/DragonicTactics/Objects/Components/StatsComponent.h))
-- `ActionPoints` - Movement/action budget per turn ([ActionPoints.h](DragonicTactics/source/Game/DragonicTactics/Objects/Components/ActionPoints.h))
-- `SpellSlots` - Magic system (spell levels 1-9) ([SpellSlots.h](DragonicTactics/source/Game/DragonicTactics/Objects/Components/SpellSlots.h))
-
-**Key Methods**:
-```cpp
-// Turn management
-void OnTurnStart();
-void OnTurnEnd();
-int GetActionPoints() const;
-void RefreshActionPoints();
-
-// Combat
-void PerformAttack(Character* target);
-void PerformAction(Action* action, Character* target, Math::ivec2 tile_pos);
-void TakeDamage(int amount, DamageType type);
-void ReceiveHeal(int amount);
-
-// Movement
-void SetPathTo(Math::ivec2 destination);  // Pathfinding
-bool IsAlive() const;
-```
-
-#### Character Stats ([Game/DragonicTactics/Types/CharacterTypes.h](DragonicTactics/source/Game/DragonicTactics/Types/CharacterTypes.h))
+### 1. 이벤트 시스템 (EventBus)
+**GameState 컴포넌트**, 타입 안전 이벤트 디스패치
 
 ```cpp
-struct CharacterStats {
-    int max_hp = 10;
-    int current_hp = 10;
-    int base_attack = 1;
-    std::string attack_dice = "1d6";    // D&D dice notation
-    int base_defend = 1;
-    std::string defend_dice = "1d4";
-    int speed = 5;                      // Initiative/turn order
-    int attack_range = 1;               // Melee vs ranged
-};
-
-enum class DamageType {
-    Physical, Fire, Cold, Lightning, Poison
-};
-```
-
-#### Concrete Characters
-
-**Dragon** ([Dragon.h](DragonicTactics/source/Game/DragonicTactics/Objects/Dragon.h)):
-- Player-controlled character
-- Higher HP and balanced stats
-- Full spell system access
-
-**Fighter** ([Fighter.h](DragonicTactics/source/Game/DragonicTactics/Objects/Fighter.h)):
-- AI opponent
-- High HP, melee focus
-- Limited spellcasting
-
-### 2. Grid System ([Game/DragonicTactics/StateComponents/GridSystem.h](DragonicTactics/source/Game/DragonicTactics/StateComponents/GridSystem.h))
-
-**Type**: GameState Component (extends `CS230::Component`)
-
-**Grid Configuration**:
-- **Size**: 8x8 tiles
-- **Tile Size**: 64 pixels
-- **Total Area**: 512x512 pixels
-
-**Tile Types**:
-```cpp
-enum class TileType {
-    Empty,       // Walkable, no penalties
-    Wall,        // Impassable obstacle
-    Lava,        // Damage over time
-    Difficult,   // Extra movement cost
-    Invalid      // Out of bounds
-};
-```
-
-**Key Methods**:
-```cpp
-// Tile queries
-bool IsWalkable(Math::ivec2 tile) const;
-bool IsOccupied(Math::ivec2 tile) const;
-bool IsValidTile(Math::ivec2 tile) const;
-TileType GetTileType(Math::ivec2 tile) const;
-
-// Character management
-void AddCharacter(Character* character, Math::ivec2 position);
-void RemoveCharacter(Character* character);
-void MoveCharacter(Character* character, Math::ivec2 new_position);
-Character* GetCharacterAt(Math::ivec2 position) const;
-
-// Rendering
-void Draw(Math::TransformationMatrix camera_matrix);
-```
-
-### 3. Turn Management ([Game/DragonicTactics/StateComponents/TurnManager.h](DragonicTactics/source/Game/DragonicTactics/StateComponents/TurnManager.h))
-
-**Type**: Singleton pattern
-
-**Turn Flow**:
-1. `InitializeTurnOrder(characters)` - Sort by speed stat (initiative)
-2. `StartNextTurn()` - Activate next character in order
-3. Character performs actions (move, attack, cast spell)
-4. `EndCurrentTurn()` - Deactivate character, refresh resources
-5. Repeat until combat ends
-
-**Key Methods**:
-```cpp
-void InitializeTurnOrder(std::vector<Character*> characters);
-void StartNextTurn();
-void EndCurrentTurn();
-
-Character* GetCurrentCharacter() const;
-int GetCurrentTurnNumber() const;
-int GetRoundNumber() const;
-bool IsCombatActive() const;
-
-// Event publishing
-void PublishTurnStartEvent(Character* character);
-void PublishTurnEndEvent(Character* character);
-```
-
-### 4. Event System ([Game/DragonicTactics/Singletons/EventBus.h](DragonicTactics/source/Game/DragonicTactics/Singletons/EventBus.h))
-
-**Type**: Singleton with type-erased event dispatch
-
-**Pattern**: Publisher-Subscriber (Pub/Sub)
-
-**Usage Example**:
-```cpp
-// Subscribe to events
+// 이벤트 구독
 EventBus::Instance().Subscribe<CharacterDamagedEvent>(
     [](const CharacterDamagedEvent& event) {
-        Engine::GetLogger().LogEvent("Character took " +
-            std::to_string(event.damage) + " damage");
+        // 이벤트 처리
     }
 );
 
-// Publish events
+// 이벤트 발행
 CharacterDamagedEvent event{target, damage, attacker, damage_type};
 EventBus::Instance().Publish(event);
 ```
 
-**Event Categories** ([Game/DragonicTactics/Types/Events.h](DragonicTactics/source/Game/DragonicTactics/Types/Events.h)):
+### 2. 주사위 시스템 (DiceManager)
+**GameState 컴포넌트**, D&D 주사위 표기법 지원
 
-**Battle Events**:
-- `BattleStartedEvent` - Combat initialization
-- `BattleEndedEvent` - Combat conclusion
-- `VictoryConditionMetEvent` - Win condition triggered
-
-**Combat Events**:
-- `CharacterDamagedEvent` - Damage applied
-- `CharacterHealedEvent` - Healing applied
-- `CharacterDeathEvent` - Character eliminated
-- `AttackMissedEvent` - Attack failed
-
-**Movement Events**:
-- `CharacterMovedEvent` - Position changed
-- `MovementBlockedEvent` - Movement prevented
-
-**Spell Events**:
-- `SpellCastEvent` - Spell execution
-- `SpellEffectAppliedEvent` - Effect resolution
-- `SpellSlotConsumedEvent` - Resource depletion
-- `StatusEffectAddedEvent`, `StatusEffectRemovedEvent`, `StatusEffectTickEvent`
-
-**Turn Events**:
-- `TurnStartedEvent`, `TurnEndedEvent`
-- `InitiativeRolledEvent` - Turn order established
-
-**UI Events**:
-- `UIActionSelectedEvent`
-- `UITileHoveredEvent`
-- `UISpellSelectedEvent`
-
-### 5. Dice & Combat Systems
-
-#### DiceManager ([Game/DragonicTactics/Singletons/DiceManager.h](DragonicTactics/source/Game/DragonicTactics/Singletons/DiceManager.h))
-
-**Type**: Singleton with Mersenne Twister RNG
-
-**D&D Dice Notation Support**:
 ```cpp
-// Roll 3d6 (3 six-sided dice)
+// "3d6" (6면 주사위 3개) 굴림
 int result = DiceManager::Instance().RollDiceFromString("3d6");
 
-// Roll 2d8+5 (2 eight-sided dice plus 5)
+// "2d8+5" (8면 주사위 2개 + 5) 굴림
 int result = DiceManager::Instance().RollDiceFromString("2d8+5");
-
-// Manual roll
-int result = DiceManager::Instance().RollDice(3, 6); // 3d6
-
-// Get individual roll results
-std::vector<int> rolls = DiceManager::Instance().GetLastRolls();
 ```
 
-**Methods**:
-- `RollDice(count, sides)` - Basic dice roll
-- `RollDiceFromString(notation)` - Parse "3d6+2" format
-- `SetSeed(seed)` - Deterministic testing
-- `GetLastRolls()` - Roll history for UI display
+### 3. 캐릭터 시스템 (Character)
+**GameObject 상속**, 컴포넌트 기반 아키텍처
 
-#### CombatSystem ([Game/DragonicTactics/Singletons/CombatSystem.h](DragonicTactics/source/Game/DragonicTactics/Singletons/CombatSystem.h))
+**컴포넌트**:
+- `GridPosition` - 8x8 그리드 좌표
+- `StatsComponent` - HP, 공격력, 방어력, 속도
+- `ActionPoints` - 턴당 행동 포인트
+- `SpellSlots` - 마법 시스템 (레벨 1-9)
 
-**Type**: Singleton pattern
+**구현된 캐릭터**:
+- `Dragon` - 플레이어 캐릭터
+- `Fighter` - 적 캐릭터 (근접 전투)
 
-**Combat Resolution**:
+### 4. 그리드 시스템 (GridSystem)
+**GameState 컴포넌트**, 8x8 전술 그리드
+
 ```cpp
-// Full attack sequence
+// 타일 쿼리
+bool IsWalkable(Math::ivec2 tile) const;
+bool IsOccupied(Math::ivec2 tile) const;
+
+// 캐릭터 이동
+void MoveCharacter(Character* character, Math::ivec2 new_position);
+Character* GetCharacterAt(Math::ivec2 position) const;
+```
+
+### 5. 턴 관리 (TurnManager)
+**GameState 컴포넌트**, 속도 기반 이니셔티브
+
+```cpp
+// 턴 순서 초기화 (속도 스탯으로 정렬)
+void InitializeTurnOrder(std::vector<Character*> characters);
+
+// 턴 진행
+void StartNextTurn();
+void EndCurrentTurn();
+
+Character* GetCurrentCharacter() const;
+```
+
+### 6. 전투 시스템 (CombatSystem)
+**GameState 컴포넌트**, 주사위 기반 데미지 계산
+
+```cpp
+// 전체 공격 시퀀스
 CombatSystem::Instance().ExecuteAttack(attacker, defender);
 
-// Damage calculation
+// 데미지 계산
 int damage = CombatSystem::Instance().CalculateDamage(
     attacker, defender, damage_type
 );
 
-// Apply damage
-CombatSystem::Instance().ApplyDamage(target, damage, damage_type);
-
-// Range/positioning
-bool in_range = CombatSystem::Instance().IsInRange(
-    attacker, defender
-);
-int distance = CombatSystem::Instance().GetDistance(
-    attacker->GetGridPosition(), defender->GetGridPosition()
-);
+// 거리 계산
+int distance = CombatSystem::Instance().GetDistance(pos1, pos2);
 ```
 
-**Key Methods**:
-- `ExecuteAttack(attacker, defender)` - Full attack resolution
-- `CalculateDamage(attacker, defender, type)` - Roll attack dice
-- `ApplyDamage(target, amount, type)` - Apply damage with events
-- `RollAttackDamage(character)` - Parse attack_dice string
-- `IsCriticalHit()` - Critical hit detection (Week 4 feature)
-- `IsInRange(attacker, target)` - Range validation
-- `GetDistance(pos1, pos2)` - Grid distance calculation
+### 7. 마법 시스템 (SpellSystem)
+**GameState 컴포넌트**, D&D 스펠 슬롯 및 캐스팅
 
-### 6. Action System
-
-#### Action Base Class ([Game/DragonicTactics/Objects/Actions/Action.h](DragonicTactics/source/Game/DragonicTactics/Objects/Actions/Action.h))
-
-**Purpose**: Encapsulate character actions (attacks, spells, items)
-
-**Concrete Actions**:
-- `ActionAttack` ([ActionAttack.h](DragonicTactics/source/Game/DragonicTactics/Objects/Actions/ActionAttack.h)) - Physical attack action
-
-**Usage Pattern**:
 ```cpp
-// Character performs action
-ActionAttack attack_action;
-character->PerformAction(&attack_action, target, target_tile);
+// 스펠 캐스트
+SpellSystem::Instance().CastSpell(caster, spell_id, target);
+
+// 스펠 슬롯 확인
+bool hasSlot = character->GetSpellSlots()->HasSlot(spell_level);
 ```
 
----
+### 8. AI 시스템 (AISystem)
+**GameState 컴포넌트**, 적 AI 의사결정
 
-## File Organization
-
-```
-CodePistols_DragonicTactics/
-├── CMakeLists.txt                              # Root CMake config
-├── CMakePresets.json                           # Build presets
-├── CLAUDE.md                                   # This file
-├── README.md                                   # Project README
-├── docs/                                       # Architecture documentation
-│   ├── index.md                                # Documentation navigation
-│   ├── architecture.md                         # High-level architecture
-│   ├── implementation-plan.md                  # 26-week timeline
-│   ├── systems/                                # System specifications
-│   ├── debug/                                  # Debug tools docs
-│   └── Detailed Implementations/weeks/         # Week-by-week guides
-│
-├── architecture/                               # Supporting documents
-│   ├── dragonic_tactics.md                     # Original design (Korean)
-│   ├── game_architecture_rules.md              # Architecture principles
-│   ├── Architecture_Document.md                # Academic template
-│   └── Rubric-EngineProof.md                   # Grading rubric
-│
-├── DragonicTactics/                            # Main project root
-│   ├── CMakeLists.txt                          # Project CMake config
-│   ├── cmake/                                  # CMake modules
-│   │   ├── Dependencies.cmake                  # FetchContent dependencies
-│   │   ├── CompilerWarnings.cmake              # Warning settings
-│   │   └── StandardProjectSettings.cmake       # Build configuration
-│   │
-│   ├── source/                                 # All source code
-│   │   ├── main.cpp                            # Application entry point
-│   │   ├── CMakeLists.txt                      # Source build config
-│   │   │
-│   │   ├── Engine/                             # Core engine (CS230 namespace)
-│   │   │   ├── Engine.hpp/cpp                  # Main engine singleton
-│   │   │   ├── GameObject.h/cpp                # Entity base class
-│   │   │   ├── GameState.hpp                   # State interface
-│   │   │   ├── GameStateManager.hpp/cpp        # State machine
-│   │   │   ├── Component.h                     # Component interface
-│   │   │   ├── ComponentManager.h/cpp          # Component management
-│   │   │   ├── GameObjectManager.h/cpp         # Entity list management
-│   │   │   ├── Window.hpp/cpp                  # SDL window
-│   │   │   ├── Input.hpp/cpp                   # Keyboard input
-│   │   │   ├── Logger.hpp/cpp                  # Logging system
-│   │   │   ├── TextureManager.hpp/cpp          # Asset management
-│   │   │   ├── TextManager.hpp/cpp             # Text rendering
-│   │   │   ├── Vec2.hpp/cpp                    # Math::vec2
-│   │   │   ├── Matrix.hpp/cpp                  # Math::TransformationMatrix
-│   │   │   ├── Rect.hpp                        # Rectangle bounds
-│   │   │   ├── Random.hpp/cpp                  # RNG utilities
-│   │   │   ├── Sprite.h/cpp                    # Sprite rendering
-│   │   │   ├── Animation.h/cpp                 # Frame-based animation
-│   │   │   ├── Texture.hpp/cpp                 # Texture wrapper
-│   │   │   ├── Camera.h/cpp                    # Camera transformation
-│   │   │   ├── Particle.h/cpp                  # Particle effects
-│   │   │   └── ShowCollision.h/cpp             # Debug collision viz
-│   │   │
-│   │   ├── Game/                               # Game-specific code
-│   │   │   ├── States.h                        # Game state enum
-│   │   │   ├── Splash.h/cpp                    # Splash screen state
-│   │   │   ├── MainMenu.h/cpp                  # Main menu state
-│   │   │   │
-│   │   │   ├── CS230_Final/                    # Legacy final project
-│   │   │   │   ├── Cat.h/cpp                   # Platformer character
-│   │   │   │   └── Robot.h/cpp                 # Enemy character
-│   │   │   │
-│   │   │   └── DragonicTactics/                # Dragonic Tactics game
-│   │   │       │
-│   │   │       ├── Objects/                    # Game entities
-│   │   │       │   ├── Character.h/cpp         # Base character class
-│   │   │       │   ├── Dragon.h/cpp            # Player dragon
-│   │   │       │   ├── Fighter.h/cpp           # Opponent fighter
-│   │   │       │   │
-│   │   │       │   ├── Components/             # Character components
-│   │   │       │   │   ├── GridPosition.h/cpp  # Grid coordinates
-│   │   │       │   │   ├── StatsComponent.h/cpp # Combat stats
-│   │   │       │   │   ├── ActionPoints.h/cpp  # Movement budget
-│   │   │       │   │   └── SpellSlots.h/cpp    # Magic system
-│   │   │       │   │
-│   │   │       │   └── Actions/                # Action system
-│   │   │       │       ├── Action.h/cpp        # Action interface
-│   │   │       │       └── ActionAttack.h/cpp  # Attack action
-│   │   │       │
-│   │   │       ├── Singletons/                 # Global services
-│   │   │       │   ├── EventBus.h/cpp          # Event system
-│   │   │       │   ├── DiceManager.h/cpp       # Dice rolling
-│   │   │       │   ├── CombatSystem.h/cpp      # Combat resolution
-│   │   │       │   └── DataRegistry.h/cpp      # Config data storage
-│   │   │       │
-│   │   │       ├── StateComponents/            # GameState components
-│   │   │       │   ├── GridSystem.h/cpp        # 8x8 tactical grid
-│   │   │       │   └── TurnManager.h/cpp       # Turn management
-│   │   │       │
-│   │   │       ├── States/                     # Game states
-│   │   │       │   ├── BattleState.h/cpp       # Main combat state
-│   │   │       │   ├── Test.h                  # Test interface
-│   │   │       │   └── Test_*.cpp              # Team member tests
-│   │   │       │
-│   │   │       ├── Types/                      # Shared types
-│   │   │       │   ├── GameObjectTypes.h       # Entity type enum
-│   │   │       │   ├── CharacterTypes.h        # Character types/stats
-│   │   │       │   ├── GameTypes.h             # Shared game types
-│   │   │       │   └── Events.h                # Event definitions
-│   │   │       │
-│   │   │       ├── Debugger/                   # Debug tools
-│   │   │       │   ├── DebugManager.h/cpp
-│   │   │       │   └── DebugConsole.h/cpp
-│   │   │       │
-│   │   │       └── Test/                       # Test implementations
-│   │   │           └── Week1TestMocks.h/cpp    # Mock characters
-│   │   │
-│   │   ├── CS200/                              # Rendering abstraction
-│   │   │   ├── IRenderer2D.hpp                 # 2D rendering interface
-│   │   │   ├── ImmediateRenderer2D.hpp/cpp     # Immediate mode impl
-│   │   │   ├── RenderingAPI.hpp/cpp            # OpenGL wrapper
-│   │   │   ├── RGBA.hpp                        # Color type
-│   │   │   ├── Image.hpp/cpp                   # Image loading
-│   │   │   └── ImGuiHelper.hpp/cpp             # ImGui integration
-│   │   │
-│   │   ├── OpenGL/                             # Low-level OpenGL
-│   │   │   ├── GL.hpp/cpp                      # OpenGL initialization
-│   │   │   ├── Shader.hpp/cpp                  # Shader management
-│   │   │   ├── VertexArray.hpp/cpp             # VAO wrapper
-│   │   │   ├── Buffer.hpp/cpp                  # VBO/IBO wrapper
-│   │   │   ├── Framebuffer.hpp/cpp             # FBO wrapper
-│   │   │   └── Texture.hpp/cpp                 # Texture management
-│   │   │
-│   │   └── Demo/                               # Graphics demos
-│   │       ├── DemoShapes.hpp/cpp
-│   │       ├── DemoTexturing.hpp/cpp
-│   │       └── [Other demos]
-│   │
-│   ├── Assets/                                 # Game assets
-│   │   ├── *.png                               # Texture images
-│   │   ├── *.spt                               # Sprite definitions
-│   │   └── *.anm                               # Animation sequences
-│   │
-│   ├── app_resources/                          # Application resources
-│   │   └── windows/icon.ico                    # App icon
-│   │
-│   └── build/                                  # CMake output (gitignored)
-│       ├── windows-debug/
-│       ├── windows-developer-release/
-│       └── windows-release/
+```cpp
+// AI 턴 실행
+AISystem::Instance().ExecuteAITurn(character);
 ```
 
----
+### 9. 데이터 레지스트리 (DataRegistry)
+**GameState 컴포넌트**, JSON 기반 캐릭터 데이터 로딩
 
-## Development Guidelines
+```cpp
+// JSON 데이터 로드
+DataRegistry::Instance().LoadCharacterData("Assets/Data/characters.json");
 
-### Core Patterns
+// 캐릭터 데이터 조회
+auto charData = DataRegistry::Instance().GetCharacterData("Dragon");
+```
 
-#### Namespaces
-- **CS230**: Core engine systems (Engine, GameObject, GameState, Component)
-- **CS200**: Rendering abstraction layer (IRenderer2D, RenderingAPI)
-- **OpenGL**: Low-level OpenGL wrappers
-- **Math**: Math utilities (vec2, ivec2, TransformationMatrix)
+## 개발 패턴
 
-#### GameObject Development
+### 네임스페이스
+- **CS230**: 엔진 코어 (Engine, GameObject, GameState, Component)
+- **CS200**: 렌더링 추상화 (IRenderer2D, RenderingAPI)
+- **OpenGL**: 저수준 OpenGL 래퍼
+- **Math**: 수학 유틸리티 (vec2, ivec2, TransformationMatrix)
+
+### StateComponent 시스템 접근
+모든 게임 시스템은 GameState 컴포넌트로 구현되며, Instance() 메서드로 접근:
+
+```cpp
+// GameState에 추가 (AddGSComponent 사용)
+void GamePlay::Load() {
+    AddGSComponent(new EventBus());
+    AddGSComponent(new DiceManager());
+    AddGSComponent(new CombatSystem());
+    AddGSComponent(new TurnManager());
+    AddGSComponent(new GridSystem());
+    AddGSComponent(new SpellSystem());
+    AddGSComponent(new AISystem());
+    AddGSComponent(new DataRegistry());
+}
+
+// 어디서든 Instance()로 접근
+EventBus::Instance().Publish(event);
+DiceManager::Instance().RollDice(3, 6);
+CombatSystem::Instance().ExecuteAttack(attacker, defender);
+TurnManager::Instance().StartNextTurn();
+GridSystem::Instance().MoveCharacter(character, position);
+```
+
+### 엔진 서브시스템 접근
+```cpp
+Engine::GetLogger().LogEvent("메시지");
+Engine::GetInput().IsKeyPressed(InputKey::Space);
+Engine::GetWindow().GetSize();
+Engine::GetGameStateManager().SetNextGameState<BattleState>();
+```
+
+**중요**: GameState와 GameObject는 서로 다른 컴포넌트 시스템 사용:
+- **GameState**: `AddGSComponent()`, `GetGSComponent<T>()`, `UpdateGSComponents(dt)`
+- **GameObject**: `AddGOComponent()`, `GetGOComponent<T>()` (Update는 GameObject::Update에서 자동 호출)
+
+### GameObject 개발
 ```cpp
 class MyCharacter : public CS230::GameObject {
 public:
@@ -685,25 +298,25 @@ public:
     std::string TypeName() override { return "MyCharacter"; }
 
     void Update(double dt) override {
-        // Game logic
+        // 게임 로직
     }
 
     void Draw(Math::TransformationMatrix camera_matrix) override {
-        // Rendering
+        // 렌더링
     }
 };
 ```
 
-#### Component Development
+### 컴포넌트 개발
 ```cpp
 class MyComponent : public CS230::Component {
 public:
     void Update(double dt) override {
-        // Component logic
+        // 컴포넌트 로직
     }
 };
 
-// Usage in GameObject
+// GameObject에서 사용
 void MyGameObject::Load() {
     AddGOComponent(new MyComponent());
 }
@@ -714,17 +327,17 @@ void MyGameObject::Update(double dt) {
 }
 ```
 
-#### GameState Development
+### GameState 개발
 ```cpp
 class MyGameState : public CS230::GameState {
 public:
     void Load() override {
-        // Initialize resources
-        AddComponent(new GridSystem());
+        // 리소스 초기화 (AddGSComponent 사용)
+        AddGSComponent(new GridSystem());
     }
 
     void Update(double dt) override {
-        UpdateComponents(dt);
+        UpdateGSComponents(dt);  // GameState 컴포넌트 업데이트
         game_object_manager_.UpdateAll(dt);
     }
 
@@ -733,346 +346,201 @@ public:
     }
 
     void Unload() override {
-        // Cleanup
+        // 정리
     }
 };
 ```
 
-### Event-Driven Development
+## 기술 스택
 
-**Publishing Events**:
-```cpp
-// Create event
-CharacterDamagedEvent event{
-    .target = target_character,
-    .damage = damage_amount,
-    .attacker = attacker_character,
-    .damage_type = DamageType::Physical
-};
+### 빌드 시스템
+- **CMake 3.21+** (C++20 표준)
+- **Visual Studio 2022** (Platform Toolset v143)
+- **경고 레벨**: Level 4, 경고를 오류로 처리
+- **프리컴파일 헤더**: 현재 비활성화 (pch.h는 존재하지만 사용 안 함)
 
-// Publish to all subscribers
-EventBus::Instance().Publish(event);
+### 외부 의존성 (자동 다운로드)
+CMake FetchContent로 자동 관리:
+- **OpenGL** - 그래픽 API
+- **GLEW** - OpenGL 확장
+- **SDL2** - 윈도우, 입력, 플랫폼 추상화 (v2.28.5+)
+- **Dear ImGui** - 디버그 UI (docking 브랜치)
+- **GSL** - Guidelines Support Library (v4.0.0)
+- **STB** - 이미지 로딩 (stb_image.h)
+- **nlohmann/json** - JSON 파싱 (json.hpp in External/)
+
+### 플랫폼 지원
+- **Windows (Native)**: MSVC, OpenGL 직접 렌더링
+- **WebAssembly**: Emscripten, SDL2 + OpenGL ES
+
+## 문서 내비게이션
+
+자세한 설계 문서는 [docs/index.md](docs/index.md) 참조:
+
+### 시스템 설계
+- [docs/architecture.md](docs/architecture.md) - 전체 아키텍처
+- [docs/systems/characters.md](docs/systems/characters.md) - 캐릭터 시스템
+- [docs/systems/singletons.md](docs/systems/singletons.md) - 싱글톤 서비스
+- [docs/systems/game-state-components.md](docs/systems/game-state-components.md) - 전투 시스템
+- [docs/systems/game-object-components.md](docs/systems/game-object-components.md) - 컴포넌트
+
+### 구현 가이드
+- [docs/implementation-plan.md](docs/implementation-plan.md) - 26주 개발 계획
+- [docs/Detailed Implementations/weeks/week1.md](docs/Detailed%20Implementations/weeks/week1.md) - Week 1 가이드 (완료)
+- [docs/Detailed Implementations/weeks/week2.md](docs/Detailed%20Implementations/weeks/week2.md) - Week 2 가이드 (완료)
+- [docs/Detailed Implementations/weeks/week3.md](docs/Detailed%20Implementations/weeks/week3.md) - Week 3 가이드 (완료)
+
+### 디버그 도구
+- [docs/debug/tools.md](docs/debug/tools.md) - 디버그 시스템
+- [docs/debug/commands.md](docs/debug/commands.md) - 콘솔 명령어
+- [docs/debug/ui.md](docs/debug/ui.md) - 디버그 UI
+
+## 구현 상태
+
+### ✅ 완료 (Week 1-3, Milestone 3)
+- **핵심 시스템** (모두 StateComponents로 구현)
+  - EventBus (이벤트 시스템)
+  - DiceManager (주사위 굴림)
+  - CombatSystem (전투 해결)
+  - TurnManager (턴 관리)
+  - GridSystem (8x8 전술 그리드 + A* 경로 찾기)
+  - SpellSystem (마법 시스템)
+  - AISystem (적 AI)
+  - DataRegistry (JSON 데이터 로딩)
+
+- **캐릭터 시스템**
+  - Character 베이스 클래스
+  - Dragon 캐릭터 (플레이어)
+  - Fighter 캐릭터 (적)
+  - 컴포넌트: StatsComponent, ActionPoints, SpellSlots, GridPosition, MovementComponent
+
+- **어빌리티 시스템**
+  - AbilityBase 인터페이스
+  - MeleeAttack, ShieldBash
+
+- **액션 시스템**
+  - Action 베이스 클래스
+  - ActionAttack
+
+- **디버그 도구**
+  - DebugConsole (콘솔 명령어)
+  - DebugManager (디버그 모드 관리)
+  - DebugVisualizer (그리드 시각화)
+
+### ⏳ 계획 (Week 4+)
+- 더 많은 캐릭터 클래스
+- 더 많은 어빌리티
+- 고급 AI 행동
+- UI 시스템
+- 사운드 시스템
+
+## 핵심 파일
+
+### 엔트리 포인트
+- [DragonicTactics/source/main.cpp](DragonicTactics/source/main.cpp)
+
+### 엔진 코어
+- [Engine.hpp](DragonicTactics/source/Engine/Engine.hpp) - 엔진 싱글톤
+- [GameObject.h](DragonicTactics/source/Engine/GameObject.h) - 엔티티 베이스
+- [GameState.hpp](DragonicTactics/source/Engine/GameState.hpp) - 상태 인터페이스
+
+### 게임 시스템 (StateComponents)
+- [Character.h](DragonicTactics/source/Game/DragonicTactics/Objects/Character.h) - 캐릭터 베이스
+- [EventBus.h](DragonicTactics/source/Game/DragonicTactics/StateComponents/EventBus.h) - 이벤트 시스템
+- [GridSystem.h](DragonicTactics/source/Game/DragonicTactics/StateComponents/GridSystem.h) - 그리드 시스템
+- [DiceManager.h](DragonicTactics/source/Game/DragonicTactics/StateComponents/DiceManager.h) - 주사위 매니저
+- [CombatSystem.h](DragonicTactics/source/Game/DragonicTactics/StateComponents/CombatSystem.h) - 전투 시스템
+- [TurnManager.h](DragonicTactics/source/Game/DragonicTactics/StateComponents/TurnManager.h) - 턴 관리
+- [SpellSystem.h](DragonicTactics/source/Game/DragonicTactics/StateComponents/SpellSystem.h) - 마법 시스템
+- [AISystem.h](DragonicTactics/source/Game/DragonicTactics/StateComponents/AISystem.h) - AI 시스템
+- [DataRegistry.h](DragonicTactics/source/Game/DragonicTactics/StateComponents/DataRegistry.h) - 데이터 레지스트리
+
+## 중요 참고사항
+
+1. **작업 디렉토리**: 모든 빌드 명령은 `DragonicTactics/` 디렉토리에서 실행 (프로젝트 루트 아님!)
+2. **새 엔진**: MSBuild 기반 구 엔진이 아닌, CMake 기반 신규 엔진
+3. **C++20**: C++17이 아닌 C++20 표준 사용
+4. **CMake 프리셋**: `cmake --preset windows-debug` 형식으로 사용
+5. **StateComponents 아키텍처**: 모든 게임 시스템은 `StateComponents/` 디렉토리에 GameState 컴포넌트로 구현됨 (Singletons 폴더 없음)
+6. **Week 1-3 구현 완료**: EventBus, DiceManager, CombatSystem, TurnManager, GridSystem, SpellSystem, AISystem, DataRegistry 모두 구현됨
+7. **이벤트 기반 통신**: 시스템 간 통신은 EventBus 사용
+8. **디버그 로깅**: `Engine::GetLogger()`로 이벤트/오류 로그
+9. **ImGui**: 디버그 시각화용 ImGui 사용 (docking 브랜치)
+10. **테스트**: Test/ 디렉토리에 각 시스템별 테스트 파일 존재
+
+## 테스트 실행
+
+테스트는 런타임에 키보드 단축키로 실행됩니다 (GamePlay 상태에서):
+
+```bash
+# 빌드 후 실행
+cd DragonicTactics
+build/windows-debug/dragonic_tactics.exe
+
+# 게임 실행 후 테스트 단축키 사용 (위 "테스트 단축키" 섹션 참조)
 ```
 
-**Subscribing to Events**:
-```cpp
-// In Load() or constructor
-EventBus::Instance().Subscribe<CharacterDamagedEvent>(
-    [this](const CharacterDamagedEvent& event) {
-        // Handle event
-        UpdateHealthBar(event.target);
-        PlayDamageAnimation(event.target);
-    }
-);
+**테스트 파일 위치**: `DragonicTactics/source/Game/DragonicTactics/Test/`
+- 각 시스템별로 Test*.h/cpp 파일 존재
+- GamePlay.cpp에서 키보드 입력으로 테스트 함수 호출
+
+## 일반적인 개발 워크플로우
+
+### 새 캐릭터 클래스 추가
+1. `Objects/` 에 `MyCharacter.h/cpp` 생성
+2. `Character` 상속 및 필요한 컴포넌트 추가
+3. `source/CMakeLists.txt`의 `SOURCE_CODE`에 파일 추가
+4. `GamePlay::Load()`에서 인스턴스화 및 GridSystem에 등록
+5. 빌드 후 테스트
+
+### 새 어빌리티 추가
+1. `Abilities/` 에 `MyAbility.h/cpp` 생성
+2. `AbilityBase` 인터페이스 구현
+3. `Character::abilities_` 벡터에 추가
+4. `source/CMakeLists.txt`에 파일 추가
+5. 빌드 후 GamePlay에서 테스트
+
+### 새 이벤트 타입 추가
+1. `Types/Events.h`에 이벤트 구조체 정의
+2. 발행자에서 `EventBus::Instance().Publish(event)` 호출
+3. 구독자에서 `EventBus::Instance().Subscribe<EventType>(callback)` 호출
+4. 테스트 시 `EventBus::Instance().SetLogging(true)` 활성화
+
+### JSON 데이터 수정
+1. `Assets/Data/characters.json` 편집
+2. 게임 실행 후 **R** 키로 리로드
+3. **L** 키로 로드된 데이터 확인
+
+## 문제 해결
+
+### 빌드 실패
+```bash
+# CMake 캐시 정리 후 재구성
+cd DragonicTactics
+rm -rf build/
+cmake --preset windows-debug
+cmake --build --preset windows-debug
 ```
 
-### Singleton Access
-
-All singletons use `Instance()` static method:
-```cpp
-EventBus::Instance().Publish(event);
-DiceManager::Instance().RollDice(3, 6);
-CombatSystem::Instance().ExecuteAttack(attacker, defender);
-DataRegistry::Instance().LoadCharacterData("dragon.json");
-```
-
-### Engine Subsystem Access
-
-Access via `Engine::GetX()` static methods:
-```cpp
-Engine::GetLogger().LogEvent("Message");
-Engine::GetInput().IsKeyPressed(InputKey::Space);
-Engine::GetWindow().GetSize();
-Engine::GetGameStateManager().SetNextGameState<BattleState>();
-```
-
-### Math Utilities
-
-**2D Vectors**:
-```cpp
-Math::vec2 position{100.0f, 200.0f};
-Math::vec2 velocity{1.0f, 0.0f};
-position += velocity * dt;
-```
-
-**Integer Vectors (Grid Coordinates)**:
-```cpp
-Math::ivec2 tile{3, 5};  // Row 3, Column 5
-auto grid_pos = character->GetGOComponent<GridPosition>();
-grid_pos->SetPosition(tile);
-```
-
-**Transformation Matrices**:
-```cpp
-Math::TransformationMatrix transform;
-transform = Math::TranslationMatrix(position) *
-            Math::RotationMatrix(rotation) *
-            Math::ScaleMatrix(scale);
-sprite.Draw(transform);
-```
-
-### Collision Detection
-
-**GameObject-level Collision**:
-```cpp
-bool CanCollideWith(GameObjectTypes other_type) override {
-    return other_type == GameObjectTypes::Character;
-}
-
-void ResolveCollision(CS230::GameObject* other) override {
-    // Handle collision response
-}
-```
-
-**Grid-level Collision**:
-```cpp
-GridSystem* grid = GetComponent<GridSystem>();
-if (grid->IsWalkable(target_tile) && !grid->IsOccupied(target_tile)) {
-    grid->MoveCharacter(character, target_tile);
-}
-```
-
-### Debugging
-
-**Logging**:
-```cpp
-Engine::GetLogger().LogVerbose("Detailed info");
-Engine::GetLogger().LogDebug("Debug info");
-Engine::GetLogger().LogEvent("Important event");
-Engine::GetLogger().LogError("Error message");
-```
-
-**ImGui Debug UI**:
-```cpp
-void MyGameState::DrawImGui() override {
-    ImGui::Begin("Debug Window");
-    ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
-    ImGui::Text("Character HP: %d", character->GetHP());
-    if (ImGui::Button("Damage Character")) {
-        character->TakeDamage(10, DamageType::Physical);
-    }
-    ImGui::End();
-}
-```
-
-**Test Keyboard Shortcuts** (in Test states):
-- **F**: Test EventBus
-- **E**: Test DiceManager
-- **T/Y**: Display character status
-- **D/H**: Attack/Heal actions
-- **S**: Show grid visualization
-- **P**: Test TurnManager
-- **J/R/L**: JSON data loading
-- **Enter**: Run full combat test
-
-### Asset Management
-
-**Loading Textures**:
-```cpp
-// Automatic loading via TextureManager
-Texture* texture = Engine::GetTextureManager().Load("Assets/character.png");
-```
-
-**Sprite Definitions** (.spt files):
-```
-Assets/character.png
-frame_count frame_width frame_height
-```
-
-**Animation Definitions** (.anm files):
-```
-Assets/character.spt
-frame_duration
-frame1 frame2 frame3 ...
-```
-
----
-
-## Engine Systems Reference
-
-### Frame Rate
-- **Target FPS**: Not fixed (uses delta time for frame-independent logic)
-- **Delta Time**: Passed to `Update(dt)` methods for time-based calculations
-- **Frame Stats**: Displayed in ImGui overlay (if enabled)
-
-### Input System
-```cpp
-Input& input = Engine::GetInput();
-
-// Key states
-if (input.IsKeyDown(InputKey::W)) { /* Held down */ }
-if (input.IsKeyPressed(InputKey::Space)) { /* Just pressed this frame */ }
-if (input.IsKeyReleased(InputKey::Escape)) { /* Just released this frame */ }
-```
-
-**Available Keys** (InputKey enum):
-- A-Z (letter keys)
-- Num0-Num9 (number keys)
-- Space, Enter, Escape, Tab
-- Left, Right, Up, Down (arrow keys)
-
-### Game State Flow
-
-**State Transitions**:
-```cpp
-Engine::GetGameStateManager().SetNextGameState<BattleState>();
-```
-
-**Current Implementation**:
-- Splash → MainMenu → BattleState (Dragonic Tactics combat)
-
-**State Lifecycle**:
-1. `Load()` - Initialize resources
-2. `Update(dt)` - Frame-by-frame logic
-3. `Draw()` - Render game objects
-4. `DrawImGui()` - Debug UI overlay
-5. `Unload()` - Cleanup on state change
-
----
-
-## Project Architecture Documentation
-
-This repository contains comprehensive architecture documentation for the **Dragonic Tactics** tactical RPG project.
-
-### Required Reading for Context
-
-**Documentation Navigation**: See [docs/index.md](docs/index.md) for complete documentation map.
-
-**Read these files based on your task**:
-
-1. **[docs/architecture.md](docs/architecture.md)** - High-level architecture overview
-   - Class hierarchies and relationships
-   - Architectural patterns (Factory, Singleton, Component)
-   - System interaction diagrams
-
-2. **[docs/implementation-plan.md](docs/implementation-plan.md)** - 26-week development timeline (strategic)
-   - Phase-by-phase implementation strategy
-   - Dependency chains between systems
-   - When to build each system
-
-3. **[docs/Detailed Implementations/weeks/](docs/Detailed%20Implementations/weeks/)** - Week-by-week tactical guides (for active implementation)
-   - [week1.md](docs/Detailed%20Implementations/weeks/week1.md) - Week 1: Foundation (5 systems in parallel) - IMPLEMENTED
-   - [week2.md](docs/Detailed%20Implementations/weeks/week2.md) - Week 2: Dragon + Grid integration - IMPLEMENTED
-   - [week3.md](docs/Detailed%20Implementations/weeks/week3.md) - Week 3: Combat + Spells - IN PROGRESS
-   - [week4.md](docs/Detailed%20Implementations/weeks/week4.md) - Week 4: Spell expansion
-   - [week5.md](docs/Detailed%20Implementations/weeks/week5.md) - Week 5: Polish + Playtest 1
-   - Complete code examples, test cases, daily task breakdowns
-
-4. **[docs/systems/](docs/systems/)** - Detailed system specifications (read as needed):
-   - [characters.md](docs/systems/characters.md) - Character class implementations
-   - [singletons.md](docs/systems/singletons.md) - Global service specifications
-   - [game-state-components.md](docs/systems/game-state-components.md) - Battle system details
-   - [game-object-components.md](docs/systems/game-object-components.md) - Component behaviors
-   - [interfaces.md](docs/systems/interfaces.md) - Interface design & factory patterns
-
-5. **[docs/debug/](docs/debug/)** - Debug tools (for development workflow):
-   - [tools.md](docs/debug/tools.md) - Debug system specification
-   - [commands.md](docs/debug/commands.md) - Console command examples
-   - [ui.md](docs/debug/ui.md) - Debug UI layout
-
-6. **[architecture/dragonic_tactics.md](architecture/dragonic_tactics.md)** - Original game design (Korean)
-
-### Workflow for /init or New Sessions
-
-When starting a new session or receiving `/init`:
-
-1. Start with [docs/index.md](docs/index.md) - Documentation navigation hub
-2. Read [docs/architecture.md](docs/architecture.md) for overall project vision
-3. **Check this CLAUDE.md** to understand current implementation status (Weeks 1-2 complete)
-4. **For active implementation**: Read relevant week file in [docs/Detailed Implementations/weeks/](docs/Detailed%20Implementations/weeks/)
-5. For specific system design questions, navigate to relevant `docs/systems/*.md` file
-6. Check [docs/implementation-plan.md](docs/implementation-plan.md) for timeline context
-
-**Key Principle**: Each documentation file focuses on a single topic area (<1050 lines). Read only what you need for your current task.
-
-### Dragonic Tactics Project Context
-
-**Project Type**: Year-long tactical RPG development (26 weeks)
-
-**Base Engine**: Custom C++20 OpenGL engine with CMake (THIS REPOSITORY)
-
-**Game Genre**: Turn-based tactical RPG (inspired by D&D/Baldur's Gate 3)
-
-**Key Systems Implemented (Weeks 1-2)**:
-- Grid-based tactical combat (8x8 battlefield)
-- Turn management with speed-based initiative
-- Dice-based damage system (D&D style: 3d6, 2d8, etc.)
-- Event-driven architecture with EventBus singleton
-- Character base class with components (GridPosition, Stats, ActionPoints, SpellSlots)
-- Dragon (player) and Fighter (opponent) characters
-
-**Key Systems In Development (Weeks 3-5)**:
-- Full spell system with spell slots and upcasting
-- AI system for 4 opponent character types (Fighter, Cleric, Wizard, Rogue)
-- Data-driven design with JSON configuration
-- Combat polish and balance
-- UI/UX improvements
-
-**Implementation Status**:
-- ✅ Week 1: Foundation systems (EventBus, DiceManager, Character, Grid, TurnManager)
-- ✅ Week 2: Dragon + Fighter characters, Grid integration
-- 🚧 Week 3: Combat system refinement, Spell system
-- ⏳ Week 4: Spell expansion, Advanced combat
-- ⏳ Week 5: Polish, Playtest 1
-
----
-
-## Platform Support
-
-### Windows (Native)
-- Primary development platform
-- MSVC v143 (Visual Studio 2022)
-- Direct OpenGL rendering
-- Console output in Debug/Developer builds
-- Windowed application in Release builds
-
-### WebAssembly (Emscripten)
-- Cross-compile via `web-debug-on-windows` preset
-- Outputs single HTML file with embedded assets
-- Uses SDL2 + OpenGL ES
-- Browser compatibility for demos/playtesting
-
----
-
-## Additional Resources
-
-- **Build Issues**: Check [DragonicTactics/README.md](DragonicTactics/README.md)
-- **Contributing**: Follow C++20 Core Guidelines (GSL integrated)
-- **Code Style**: 4-space indentation, descriptive naming, comments for complex logic
-- **Version Control**: Git with main branch, feature branches for major systems
-- **Testing**: Test states in [Game/DragonicTactics/States/Test_*.cpp](DragonicTactics/source/Game/DragonicTactics/States/)
-
----
-
-## Summary for Claude Code
-
-**CRITICAL CONTEXT**:
-- This is a **NEW custom engine**, not the old CS230 MSBuild engine
-- Build system: **CMake 3.21+** (not MSBuild)
-- Language: **C++20** (not C++17)
-- Platform: **SDL2 + OpenGL** (not pure Win32)
-- Dependencies: **Automated via FetchContent** (OpenGL, GLEW, SDL2, ImGui, GSL, STB)
-- **Weeks 1-2 systems are IMPLEMENTED** - refer to source code, not just documentation
-- **Active development**: Week 3 (Combat + Spells)
-
-When working on this project:
-1. Use CMake build commands (not msbuild)
-2. Reference actual implementation files in `DragonicTactics/source/`
-3. Follow C++20 standards and modern practices
-4. Use EventBus for inter-system communication
-5. Leverage existing singletons (DiceManager, CombatSystem, etc.)
-6. Write tests in Test states for new features
-7. Log events/errors via Engine::GetLogger()
-8. Use ImGui for debug visualization
-
-**Entry Point**: [DragonicTactics/source/main.cpp](DragonicTactics/source/main.cpp)
-
-**Core Headers to Review**:
-- [Engine.hpp](DragonicTactics/source/Engine/Engine.hpp) - Engine singleton
-- [GameObject.h](DragonicTactics/source/Engine/GameObject.h) - Entity base
-- [Character.h](DragonicTactics/source/Game/DragonicTactics/Objects/Character.h) - Character base
-- [EventBus.h](DragonicTactics/source/Game/DragonicTactics/Singletons/EventBus.h) - Event system
-- [GridSystem.h](DragonicTactics/source/Game/DragonicTactics/StateComponents/GridSystem.h) - Grid system
-- [TurnManager.h](DragonicTactics/source/Game/DragonicTactics/StateComponents/TurnManager.h) - Turn management
-
-**Documentation Hub**: [docs/index.md](docs/index.md)
+### 실행 파일이 Assets을 찾지 못함
+- 실행 파일은 항상 `DragonicTactics/` 디렉토리에서 실행해야 함
+- Assets 폴더는 `DragonicTactics/Assets/`에 위치
+
+### Visual Studio에서 빌드 시
+- CMake 프리셋을 사용하거나
+- VS에서 "Open Folder"로 DragonicTactics 폴더 열기
+- CMakePresets.json이 자동으로 인식됨
+
+### 링커 오류 (unresolved external symbol)
+- `source/CMakeLists.txt`의 `SOURCE_CODE`에 .cpp 파일 추가 확인
+- CMake 재구성: `cmake --preset windows-debug`
+
+## 아키텍처 원칙
+
+프로젝트는 [architecture/game_architecture_rules.md](architecture/game_architecture_rules.md)의 원칙을 따릅니다:
+
+1. **모듈 독립성**: 각 시스템은 독립적으로 작동하며 교체 가능
+2. **접착제 시스템**: GameState가 시스템 간 연결 담당
+3. **코드와 데이터 분리**: JSON으로 게임 데이터 관리 (Assets/Data/)
+4. **이벤트 기반 통신**: EventBus를 통한 느슨한 결합
+5. **시뮬레이션/뷰 분리**: 게임 로직과 렌더링 분리

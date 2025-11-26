@@ -1,10 +1,11 @@
+#include "pch.h"
+
 #include "DebugManager.h"
 #include "DebugVisualizer.h"
 #include "DebugConsole.h"
 #include "./Engine/Engine.hpp"
 #include "./Engine/Logger.hpp"
 #include "./Engine/Input.hpp"
-#include <imgui.h>
 
 DebugManager::DebugManager()
     : console_(std::make_unique<DebugConsole>()),

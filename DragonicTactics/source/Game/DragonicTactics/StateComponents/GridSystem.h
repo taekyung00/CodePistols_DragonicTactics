@@ -2,7 +2,7 @@
 #include "./Engine/Component.h"
 #include "./Engine/Vec2.hpp"
 #include "./Game/DragonicTactics/Objects/Character.h"
-#include "./Game/DragonicTactics/States/Test.h"
+// #include "./Game/DragonicTactics/States/Test.h"
 #include "./Game/DragonicTactics/Test/Week1TestMocks.h"
 #include <map>
 
@@ -71,6 +71,8 @@ public:
 	// week2 : helper methods
 	int						ManhattanDistance(Math::ivec2 a, Math::ivec2 b) const;
 	std::vector<Math::ivec2> GetNeighbors(Math::ivec2 position) const;
+
+	std::vector<Character*> GetAllCharacters();
 
 	void Draw() const;
 

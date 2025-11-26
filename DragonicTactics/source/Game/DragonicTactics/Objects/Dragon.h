@@ -12,5 +12,5 @@ public:
     void TakeDamage(int damage, Character* attacker) override;
 
 protected:
-    void DecideAction() override;
+    //void DecideAction() override;
 };

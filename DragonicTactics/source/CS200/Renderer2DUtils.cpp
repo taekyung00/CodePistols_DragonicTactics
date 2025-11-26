@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /**
  * \file
  * \author Rudy Castan
@@ -7,8 +9,6 @@
  */
 #include "Renderer2DUtils.hpp"
 
-#include <algorithm>
-#include <cmath>
 
 namespace CS200::Renderer2DUtils
 {

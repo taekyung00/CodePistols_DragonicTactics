@@ -11,3 +11,5 @@ bool Test_CombatSystem_ExecuteAttack_NotEnoughAP();
 bool Test_CombatSystem_IsInRange_Adjacent();
 bool Test_CombatSystem_IsInRange_TooFar();
 bool Test_CombatSystem_GetDistance();
+
+extern bool TestCombatSystem;

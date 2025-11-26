@@ -23,7 +23,6 @@ enum class CharacterTypes
 };
 
 struct CharacterStats {
-    std::string character_type;
     int max_hp = 10;
     int current_hp = 10;
     int base_attack = 1;
@@ -32,6 +31,20 @@ struct CharacterStats {
     std::string defend_dice = "1d4";
     int speed = 5;
     int attack_range = 1;
+};
+
+// ===== Week 4: Data-Driven Design Structures =====
+
+struct CharacterData {
+    std::string character_type;
+    int max_hp;
+    int speed;
+    int max_action_points;
+    int base_attack_power;
+    std::string attack_dice;
+    int base_defense_power;
+    std::string defense_dice;
+    int attack_range;
     std::map<int, int> spell_slots;              // level -> count
     std::vector<std::string> known_spells;       // ["Fireball", "CreateWall", ...]
     std::vector<std::string> known_abilities;    // ["MeleeAttack", "ShieldBash"]

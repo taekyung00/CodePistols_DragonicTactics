@@ -1,5 +1,6 @@
 #pragma once
 
+
 // Individual TurnManager test functions
 bool TestInitiativeBasicRoll();
 bool TestInitiativeTurnOrder();

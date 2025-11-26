@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "ActionPoints.h"
 
 ActionPoints::ActionPoints(int _max_points)
@@ -23,6 +25,11 @@ int ActionPoints::GetCurrentPoints() const {
 
 int ActionPoints::GetMaxPoints() const {
     return max_points;
+}
+
+void ActionPoints::SetPoints(int new_points) {
+    if(new_points > max_points) return;
+    current_points = new_points;
 }
 
 bool ActionPoints::HasEnough(int amount) const {

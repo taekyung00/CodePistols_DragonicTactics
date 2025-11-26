@@ -1,10 +1,11 @@
+#include "pch.h"
+
 #include "GridSystem.h"
 #include "./CS200/IRenderer2D.hpp"
 #include "./Engine/Engine.hpp"
 #include "./Engine/Logger.hpp"
 #include "./Game/DragonicTactics/Objects/Character.h"
 #include <cassert>
-#include <algorithm>
 
 GridSystem::GridSystem()
 {
@@ -144,3 +145,17 @@ void GridSystem::MoveCharacter(Math::ivec2 old_pos, Math::ivec2 new_pos)
 void GridSystem::Update([[maybe_unused]] double dt)
 {
 }
+
+/// @brief //////////////////////
+std::vector<Character*> GridSystem::GetAllCharacters() {
+	std::vector<Character*> result;
+	for (int y = 0; y < MAP_HEIGHT; ++y)
+	{
+		for (int x = 0; x < MAP_WIDTH; ++x)
+		{
+			result.push_back(character_grid[y][x]);
+		}
+	}
+	return result;
+}
+////////////////////////////////////

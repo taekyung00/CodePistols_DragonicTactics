@@ -9,7 +9,7 @@ Created:    April 25, 2025
 */
 
 #pragma once
-#include "../Game/GameObjectTypes.h"
+#include "Game/DragonicTactics/Types/GameObjectTypes.h"
 #include "ComponentManager.h"
 #include "ShowCollision.h"
 #include "Sprite.h"

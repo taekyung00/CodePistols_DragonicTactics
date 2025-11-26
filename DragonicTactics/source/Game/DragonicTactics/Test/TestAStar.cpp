@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "TestAStar.h"
 
 #include "./Engine/Engine.hpp"

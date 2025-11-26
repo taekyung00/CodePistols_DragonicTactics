@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include "RenderingTest.h"
 #include "./Engine/Engine.hpp"
 #include "./Engine/Input.hpp"

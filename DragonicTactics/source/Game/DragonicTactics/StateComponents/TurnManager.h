@@ -1,27 +1,28 @@
 #pragma once
 #include "../Objects/Character.h"
 #include "../Types/Events.h"
-#include "../Singletons/EventBus.h"
+#include "./EventBus.h"
 #include "../Test/Week1TestMocks.h"
 #include <vector>
 #include <queue>
+
+// Forward declarations
+class EventBus;
 
 // ===== Week 4: Initiative System (NEW) =====
 // Initiative tracking structure
 struct InitiativeEntry {
     Character* character;
     MockCharacter* mockCharacter;  // For testing
-    int roll;              // 1d20 result
-    int speedModifier;     // (speed - 10) / 2
-    int totalInitiative;   // roll + modifier
+	int			   speed;
 
     // Constructor for real characters
-    InitiativeEntry(Character* ch, int r, int mod)
-        : character(ch), mockCharacter(nullptr), roll(r), speedModifier(mod), totalInitiative(r + mod) {}
+    InitiativeEntry(Character* ch, int sp)
+        : character(ch), mockCharacter(nullptr), speed(sp) {}
 
     // Constructor for mock characters (testing)
-    InitiativeEntry(MockCharacter* ch, int r, int mod)
-        : character(nullptr), mockCharacter(ch), roll(r), speedModifier(mod), totalInitiative(r + mod) {}
+	InitiativeEntry(MockCharacter* ch, int sp)
+        : character(nullptr), mockCharacter(ch), speed (sp){}
 };
 
 // Initiative mode options
@@ -36,6 +37,9 @@ class TurnManager : public CS230::Component
 public:
     TurnManager();
 
+    // Dependency injection for testing
+    void SetEventBus(EventBus* bus) { eventBus = bus; }
+
     // Turn management
     void InitializeTurnOrder(const std::vector<Character*>& characters);
     void InitializeTurnOrder(const std::vector<MockCharacter*>& characters);
@@ -45,12 +49,11 @@ public:
     // ===== Sangyun: Initiative System (NEW) =====
     void RollInitiative(const std::vector<Character*>& characters);
     void ResetInitiative();
-    int GetInitiativeValue(Character* character) const;
+    //int GetInitiativeValue(Character* character) const;
     void SetInitiativeMode(InitiativeMode mode) { initiativeMode = mode; }
 
     // Test support (MockCharacter overloads)
-    void RollInitiativeMock(const std::vector<MockCharacter*>& characters);
-    int GetInitiativeValueMock(MockCharacter* character) const;
+
     // ===== End Sangyun Initiative System =====
 
     // Turn state
@@ -78,6 +81,9 @@ private:
     int roundNumber;
     bool combatActive;
 
+    // Dependency injection
+    EventBus* eventBus = nullptr;
+
     // ===== Sangyun: Initiative System (NEW) =====
     std::vector<InitiativeEntry> initiativeOrder;
     InitiativeMode initiativeMode;
@@ -87,7 +93,6 @@ private:
     void PublishTurnEndEvent();
 
     // ===== Sangyun: Initiative Helper Methods (NEW) =====
-    int CalculateSpeedModifier(int speed) const;
     void SortInitiativeOrder();
     // ===== End Sangyun Initiative System =====
 };
