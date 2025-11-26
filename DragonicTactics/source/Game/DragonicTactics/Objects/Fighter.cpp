@@ -1,12 +1,12 @@
 #include "pch.h"
 
 #include "Fighter.h"
-#include "./Engine/Engine.hpp"
-#include "./Engine/GameObjectManager.h"
-#include "./Engine/GameStateManager.hpp"
-#include "./Game/DragonicTactics/Objects/Actions/ActionAttack.h"
-#include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
-#include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
+#include "Engine/Engine.hpp"
+#include "Engine/GameObjectManager.h"
+#include "Engine/GameStateManager.hpp"
+#include "Game/DragonicTactics/Objects/Actions/ActionAttack.h"
+#include "Game/DragonicTactics/Objects/Components/ActionPoints.h"
+#include "Game/DragonicTactics/Objects/Components/StatsComponent.h"
 
 Fighter::Fighter(Math::ivec2 start_coordinates)
 	: Character(

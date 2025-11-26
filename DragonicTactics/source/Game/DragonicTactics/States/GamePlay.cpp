@@ -28,6 +28,7 @@ Created:    November 5, 2025
 #include "Game/DragonicTactics/StateComponents/AISystem.h"    
 #include "Game/DragonicTactics/StateComponents/CombatSystem.h" 
 #include "Game/DragonicTactics/StateComponents/SpellSystem.h" 
+#include "Game/DragonicTactics/Factories/CharacterFactory.h"
 
 #include "../Debugger/DebugManager.h"
 
@@ -36,7 +37,7 @@ Created:    November 5, 2025
 #include "BattleOrchestrator.h"
 
 
-GamePlay::GamePlay() : fighter(nullptr), dragon(nullptr)
+GamePlay::GamePlay()// : fighter(nullptr), dragon(nullptr)
 {
 }
 
@@ -79,17 +80,19 @@ void GamePlay::Load()
                     case 'e': grid_system->SetTileType(current_pos, GridSystem::TileType::Empty); break;
                     case 'f':
                         grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
-                        fighter = new Fighter(current_pos);
-                        fighter->SetGridSystem(grid_system);
-                        go_manager->Add(fighter);
-                        grid_system->AddCharacter(fighter, current_pos);
+                        // fighter = new Fighter(current_pos);
+                        enemy = CharacterFactory::Create(CharacterTypes::Fighter,current_pos);
+                        enemy->SetGridSystem(grid_system);
+                        go_manager->Add(enemy);
+                        grid_system->AddCharacter(enemy, current_pos);
                         break;
                     case 'd':
                         grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
-                        dragon = new Dragon(current_pos);
-                        dragon->SetGridSystem(grid_system);
-                        go_manager->Add(dragon);
-                        grid_system->AddCharacter(dragon, current_pos);
+                        // dragon = new Dragon(current_pos);
+                        player = CharacterFactory::Create(CharacterTypes::Dragon,current_pos);
+                        player->SetGridSystem(grid_system);
+                        go_manager->Add(player);
+                        grid_system->AddCharacter(player, current_pos);
                         break;
                 }
             }
@@ -97,7 +100,7 @@ void GamePlay::Load()
 
 	TurnManager* turnMgr = GetGSComponent<TurnManager>();
 	turnMgr->SetEventBus(GetGSComponent<EventBus>()); 
-    turnMgr->InitializeTurnOrder({ dragon, fighter });
+    turnMgr->InitializeTurnOrder(std::vector<Character*>{ player, enemy });
     turnMgr->StartCombat();
 
 	GetGSComponent<EventBus>()->Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& event) { 
@@ -186,9 +189,11 @@ void GamePlay::Unload()
     m_input_handler.reset();
     m_ui_manager.reset();
     m_orchestrator.reset();
-        
-    fighter = nullptr;
-    dragon = nullptr;
+    
+    delete enemy;
+    delete player;
+    enemy = nullptr;
+    player = nullptr;
 }
 
 void GamePlay::Draw()
