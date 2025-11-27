@@ -10,7 +10,7 @@ Author:     Taekyung Ho
 Created:    April 25, 2025
 */
 #include "GameObjectManager.h"
-#include "Logger.hpp"
+#include "Logger.h"
 
 void CS230::GameObjectManager::Add(GameObject* object){
 	objects.emplace_back(object);

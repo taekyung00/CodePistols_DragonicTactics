@@ -1,7 +1,7 @@
 
 
 #pragma once
-#include "OpenGL/Framebuffer.hpp"
+#include "OpenGL/Framebuffer.h"
 #include <filesystem>
 #include <map>
 #include <memory>

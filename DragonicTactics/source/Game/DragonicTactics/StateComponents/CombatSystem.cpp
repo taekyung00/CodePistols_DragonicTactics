@@ -1,9 +1,9 @@
 #include "pch.h"
 
 #include "CombatSystem.h"
-#include "./Engine/Engine.hpp"
-#include "./Engine/Logger.hpp"
-#include "./Engine/GameStateManager.hpp"
+#include "./Engine/Engine.h"
+#include "./Engine/Logger.h"
+#include "./Engine/GameStateManager.h"
 #include "../StateComponents/DiceManager.h"
 #include "../StateComponents/EventBus.h"
 #include "./Game/DragonicTactics/StateComponents/GridSystem.h"

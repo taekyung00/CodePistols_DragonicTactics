@@ -10,8 +10,8 @@ Author:     Taekyung Ho
 Created:    April 16, 2025
 */
 #include "Animation.h"
-#include "Logger.hpp"
-#include "Path.hpp"
+#include "Logger.h"
+#include "Path.h"
 
 CS230::Animation::Animation(const std::filesystem::path& animation_file) : current_command(0)
 {

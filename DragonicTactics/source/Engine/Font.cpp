@@ -10,14 +10,14 @@
  * \copyright DigiPen Institute of Technology
  */
 
-#include "Font.hpp"
+#include "Font.h"
 
-#include "CS200/Image.hpp"
-#include "Engine.hpp"
-#include "Error.hpp"
-#include "Matrix.hpp"
-#include "Path.hpp"
-#include "TextureManager.hpp"
+#include "CS200/Image.h"
+#include "Engine.h"
+#include "Error.h"
+#include "Matrix.h"
+#include "Path.h"
+#include "TextureManager.h"
 #include <stb_image.h>
 
 /*

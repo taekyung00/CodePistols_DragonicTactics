@@ -14,8 +14,8 @@ Updated:    Oct 09, 2025
 #include <vector>
 #include "./Engine/GameObject.h"
 #include "./Engine/GameObjectManager.h"
-#include "./Engine/Matrix.hpp"
-#include "./Engine/Input.hpp"
+#include "./Engine/Matrix.h"
+#include "./Engine/Input.h"
 #include "./Game/DragonicTactics/Types/GameTypes.h"
 #include "./Game/DragonicTactics/Types/CharacterTypes.h"
 #include "./Game/DragonicTactics/Objects/Actions/Action.h"

@@ -3,9 +3,9 @@
 #include "TurnManager.h"
 #include "../Objects/Components/StatsComponent.h"
 #include "./DiceManager.h"
-#include "./Engine/Engine.hpp"
-#include "./Engine/GameStateManager.hpp"
-#include "./Engine/Logger.hpp"
+#include "./Engine/Engine.h"
+#include "./Engine/GameStateManager.h"
+#include "./Engine/Logger.h"
 
 TurnManager::TurnManager() : currentTurnIndex{}, turnNumber{}, roundNumber{}, combatActive{}, initiativeMode{ InitiativeMode::RollOnce }
 {

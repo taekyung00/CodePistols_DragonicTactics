@@ -10,10 +10,10 @@ Created:    March 19, 2025
 
 #pragma once
 #include <string>
-#include "Vec2.hpp"
-#include "Texture.hpp"
-#include "Matrix.hpp"
-#include "Engine.hpp"
+#include "Vec2.h"
+#include "Texture.h"
+#include "Matrix.h"
+#include "Engine.h"
 #include "Animation.h"
 #include "Component.h"
 #include "Collision.h"

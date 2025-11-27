@@ -7,8 +7,8 @@
  * \copyright DigiPen Institute of Technology
  */
 #pragma once
-#include "Engine/Matrix.hpp"
-#include "Engine/Vec2.hpp"
+#include "Engine/Matrix.h"
+#include "Engine/Vec2.h"
 
 namespace CS200
 {

@@ -8,7 +8,7 @@
  */
 #pragma once
 
-#include "Vec2.hpp"
+#include "Vec2.h"
 #include <filesystem>
 #include <gsl/gsl>
 #include <memory>

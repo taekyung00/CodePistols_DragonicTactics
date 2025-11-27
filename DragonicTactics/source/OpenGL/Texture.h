@@ -7,11 +7,11 @@
  */
 #pragma once
 
-#include "CS200/RGBA.hpp"
-#include "Engine/Vec2.hpp"
-#include "GLConstants.hpp"
-#include "GLTypes.hpp"
-#include "Handle.hpp"
+#include "CS200/RGBA.h"
+#include "Engine/Vec2.h"
+#include "GLConstants.h"
+#include "GLTypes.h"
+#include "Handle.h"
 #include <filesystem>
 #include <span>
 

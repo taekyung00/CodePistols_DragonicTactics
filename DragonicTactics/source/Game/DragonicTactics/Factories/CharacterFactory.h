@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/Vec2.hpp"
+#include "Engine/Vec2.h"
 #include "Game/DragonicTactics/Types/CharacterTypes.h"
 
 class Character;

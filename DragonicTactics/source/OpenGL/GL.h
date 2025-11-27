@@ -6,8 +6,8 @@
  * \copyright DigiPen Institute of Technology
  */
 #pragma once
-#include "GLConstants.hpp"
-#include "GLTypes.hpp"
+#include "GLConstants.h"
+#include "GLTypes.h"
 
 
 #if defined(DEVELOPER_VERSION)

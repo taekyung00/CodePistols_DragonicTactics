@@ -7,9 +7,9 @@
  */
 #pragma once
 
-#include "Engine/Vec2.hpp"
-#include "Handle.hpp"
-#include "Texture.hpp"
+#include "Engine/Vec2.h"
+#include "Handle.h"
+#include "Texture.h"
 
 namespace OpenGL
 {

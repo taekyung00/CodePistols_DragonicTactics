@@ -7,8 +7,8 @@
  */
 #pragma once
 
-#include "Engine/Vec2.hpp"
-#include "RGBA.hpp"
+#include "Engine/Vec2.h"
+#include "RGBA.h"
 
 namespace CS200::RenderingAPI
 {

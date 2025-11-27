@@ -13,7 +13,7 @@
 #pragma once
 #include <gsl/gsl>
 #include <vector>
-#include "Vec2.hpp"
+#include "Vec2.h"
 
 namespace CS230
 {

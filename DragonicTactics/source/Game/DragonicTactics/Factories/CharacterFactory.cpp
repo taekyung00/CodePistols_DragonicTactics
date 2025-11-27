@@ -16,9 +16,9 @@ Updated:    November 25, 2025
 #include "../Objects/Components/ActionPoints.h"
 #include "../Objects/Components/SpellSlots.h"
 #include "../StateComponents/DataRegistry.h"
-#include "Engine/Logger.hpp"
-#include "Engine/GameStateManager.hpp"
-#include "Engine/Engine.hpp"
+#include "Engine/Logger.h"
+#include "Engine/GameStateManager.h"
+#include "Engine/Engine.h"
 
 // Developer D: Helper function to convert CharacterData (JSON) to CharacterStats (game)
 CharacterStats ConvertToCharacterStats(const CharacterData& data) {

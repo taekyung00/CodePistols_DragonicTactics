@@ -9,9 +9,9 @@
  */
 
 #pragma once
-#include "Rect.hpp"
-#include "Texture.hpp"
-#include "Vec2.hpp"
+#include "Rect.h"
+#include "Texture.h"
+#include "Vec2.h"
 #include <filesystem>
 #include <map>
 #include <memory>

@@ -9,7 +9,7 @@
   */
 
  #pragma once
- #include "Vec2.hpp"
+ #include "Vec2.h"
  #include <algorithm>
 
  namespace Math

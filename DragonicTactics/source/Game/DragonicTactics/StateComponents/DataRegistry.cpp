@@ -1,9 +1,9 @@
 #include "pch.h"
 
 #include "DataRegistry.h"
-#include "../../../Engine/Engine.hpp"
-#include "../../../Engine/Logger.hpp"
-#include "../../../Engine/Path.hpp"
+#include "../../../Engine/Engine.h"
+#include "../../../Engine/Logger.h"
+#include "../../../Engine/Path.h"
 #include <sys/stat.h>  // For file timestamp
 
 // ===== Basic Loading =====

@@ -1,7 +1,7 @@
 #include "pch.h"
 
 #include "DiceManager.h"
-#include "./Engine/Logger.hpp"
+#include "./Engine/Logger.h"
 #include <cctype>
 
 DiceManager::DiceManager() {

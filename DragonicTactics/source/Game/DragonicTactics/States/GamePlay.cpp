@@ -11,8 +11,8 @@ Created:    November 5, 2025
 */
 #include "pch.h"
 #include "GamePlay.h"
-#include "./CS200/IRenderer2D.hpp"
-#include "./CS200/NDC.hpp"
+#include "./CS200/IRenderer2D.h"
+#include "./CS200/NDC.h"
 
 #include "Game/MainMenu.h"
 
@@ -157,25 +157,25 @@ void GamePlay::Update(double dt)
 
 	if (debugMgr) debugMgr->Update(dt);
 
-	if(game_end)
-    {
-        if (turnMgr) turnMgr->EndCombat();
-        Engine::GetGameStateManager().PopState();
-        Engine::GetGameStateManager().PushState<MainMenu>();
-        return;
-    }
-
+    
 	if (current != nullptr)
     {
         m_input_handler->Update(dt, current, grid, combatSystem);
         m_orchestrator->Update(dt, turnMgr, aiSystem, goMgr);
         m_ui_manager->Update(dt);
     }
-
+    
     
     goMgr->UpdateAll(dt);
 	UpdateGSComponents(dt);
 	
+    if(game_end || Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Escape))
+    {
+        if (turnMgr) turnMgr->EndCombat();
+        Engine::GetGameStateManager().PopState();
+        Engine::GetGameStateManager().PushState<MainMenu>();
+        return;
+    }
 }
 
 void GamePlay::Unload()
@@ -190,8 +190,7 @@ void GamePlay::Unload()
     m_ui_manager.reset();
     m_orchestrator.reset();
     
-    delete enemy;
-    delete player;
+
     enemy = nullptr;
     player = nullptr;
 }

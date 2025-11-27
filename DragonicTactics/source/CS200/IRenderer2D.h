@@ -7,9 +7,9 @@
  */
 #pragma once
 
-#include "Engine/Vec2.hpp"
-#include "OpenGL/Texture.hpp"
-#include "RGBA.hpp"
+#include "Engine/Vec2.h"
+#include "OpenGL/Texture.h"
+#include "RGBA.h"
 
 namespace Math
 {

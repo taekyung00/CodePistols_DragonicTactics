@@ -7,7 +7,7 @@
  */
 
 #pragma once
-#include "GLTypes.hpp"
+#include "GLTypes.h"
 
 namespace OpenGL
 {

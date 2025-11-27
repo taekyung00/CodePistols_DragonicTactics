@@ -1,10 +1,10 @@
 #include "pch.h"
 
 #include "Week3TestMocks.h"
-#include "../../../Engine/Engine.hpp"
+#include "../../../Engine/Engine.h"
 #include "../StateComponents/DiceManager.h"
 #include "../StateComponents/GridSystem.h"
-#include "./Engine/GameStateManager.hpp"
+#include "./Engine/GameStateManager.h"
 
 // ============================================================================
 // MOCKTREASURECRIPT - TreasureBox GameObject Implementation

@@ -7,7 +7,7 @@
  * \par CS200 Computer Graphics I
  * \copyright DigiPen Institute of Technology
  */
-#include "Random.hpp"
+#include "Random.h"
 
 #include <cassert>
 #include <chrono>

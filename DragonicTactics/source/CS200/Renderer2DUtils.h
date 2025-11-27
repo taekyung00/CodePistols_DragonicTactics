@@ -7,9 +7,9 @@
  */
 #pragma once
 
-#include "Engine/Matrix.hpp"
-#include "Engine/Vec2.hpp"
-#include "RGBA.hpp"
+#include "Engine/Matrix.h"
+#include "Engine/Vec2.h"
+#include "RGBA.h"
 #include <array>
 #include <optional>
 

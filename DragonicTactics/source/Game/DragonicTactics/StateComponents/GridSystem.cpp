@@ -1,9 +1,9 @@
 #include "pch.h"
 
 #include "GridSystem.h"
-#include "./CS200/IRenderer2D.hpp"
-#include "./Engine/Engine.hpp"
-#include "./Engine/Logger.hpp"
+#include "./CS200/IRenderer2D.h"
+#include "./Engine/Engine.h"
+#include "./Engine/Logger.h"
 #include "./Game/DragonicTactics/Objects/Character.h"
 #include <cassert>
 

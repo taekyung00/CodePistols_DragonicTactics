@@ -5,7 +5,7 @@
  * \par GAM200 Engine Porting
  * \copyright DigiPen Institute of Technology
  */
-#include "Font.hpp"
+#include "Font.h"
 #include "Fonts.h"
 #include <memory>
 #include <vector>

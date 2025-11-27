@@ -9,7 +9,7 @@ Created:    November 5, 2025
 */
 #pragma once
 #include <memory>
-#include "Engine/GameState.hpp"
+#include "Engine/GameState.h"
 
 class PlayerInputHandler;
 class GamePlayUIManager;

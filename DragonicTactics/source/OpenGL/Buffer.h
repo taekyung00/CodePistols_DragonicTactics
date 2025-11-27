@@ -7,8 +7,8 @@
  */
 #pragma once
 
-#include "GLConstants.hpp"
-#include "Handle.hpp"
+#include "GLConstants.h"
+#include "Handle.h"
 #include <span>
 
 namespace OpenGL

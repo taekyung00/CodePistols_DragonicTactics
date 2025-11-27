@@ -6,9 +6,9 @@
  * \copyright DigiPen Institute of Technology
  */
 #pragma once
-#include "GLConstants.hpp"
-#include "GLTypes.hpp"
-#include "Handle.hpp"
+#include "GLConstants.h"
+#include "GLTypes.h"
+#include "Handle.h"
 #include <cstdint>
 #include <initializer_list>
 #include <utility>

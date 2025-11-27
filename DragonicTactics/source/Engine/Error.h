@@ -7,8 +7,8 @@
  */
 #pragma once
 
-#include "Engine.hpp"
-#include "Logger.hpp"
+#include "Engine.h"
+#include "Logger.h"
 #include <filesystem>
 #include <source_location>
 #include <sstream>

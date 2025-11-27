@@ -10,13 +10,13 @@
 
 #pragma once
 
-#include "CS200/Image.hpp"
-#include "Matrix.hpp"
-#include "OpenGL/Texture.hpp"
+#include "CS200/Image.h"
+#include "Matrix.h"
+#include "OpenGL/Texture.h"
 #include <filesystem>
 #include <memory>
 
-#include "Vec2.hpp"
+#include "Vec2.h"
 
 namespace CS230
 {

@@ -4,9 +4,9 @@
 #include "SpellSystem.h"
 #include "../Objects/Character.h"
 #include "../StateComponents/EventBus.h"
-#include "./Engine/Engine.hpp"
-#include "./Engine/GameStateManager.hpp"
-#include "./Engine/Logger.hpp"
+#include "./Engine/Engine.h"
+#include "./Engine/GameStateManager.h"
+#include "./Engine/Logger.h"
 #include "../Types/Events.h"
 
 // class Character;

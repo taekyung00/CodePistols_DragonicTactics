@@ -2,8 +2,8 @@
 
 #include "../StateComponents/DiceManager.h"
 #include "../StateComponents/TurnManager.h"
-#include "./Engine/GameStateManager.hpp"
-#include "./Engine/Engine.hpp"
+#include "./Engine/GameStateManager.h"
+#include "./Engine/Engine.h"
 #include "./Game/DragonicTactics/Objects/Actions/ActionAttack.h"
 #include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"

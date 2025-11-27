@@ -11,8 +11,8 @@ Created:    November 24, 2025
 #include "pch.h"
 #include "PlayerInputHandler.h"
 #include "GamePlay.h"
-#include "./CS200/IRenderer2D.hpp"
-#include "./CS200/NDC.hpp"
+#include "./CS200/IRenderer2D.h"
+#include "./CS200/NDC.h"
 
 #include "../Debugger/DebugManager.h"
 #include "../StateComponents/GridSystem.h"

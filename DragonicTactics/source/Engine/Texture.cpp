@@ -10,14 +10,14 @@
  * \copyright DigiPen Institute of Technology
  */
 
-#include "Texture.hpp"
+#include "Texture.h"
 
-#include "CS200/IRenderer2D.hpp"
-#include "CS200/Image.hpp"
-#include "Engine.hpp"
-#include "Window.hpp"
-#include "Matrix.hpp"
-#include "OpenGL/GL.hpp"
+#include "CS200/IRenderer2D.h"
+#include "CS200/Image.h"
+#include "Engine.h"
+#include "Window.h"
+#include "Matrix.h"
+#include "OpenGL/GL.h"
 
 namespace CS230
 {

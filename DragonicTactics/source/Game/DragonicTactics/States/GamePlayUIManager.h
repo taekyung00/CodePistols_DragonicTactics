@@ -11,8 +11,8 @@ Created:    November 24, 2025
 #pragma once
 #include <vector>
 #include <string>
-#include "Engine/Vec2.hpp"
-#include "Engine/Matrix.hpp"
+#include "Engine/Vec2.h"
+#include "Engine/Matrix.h"
 
 class GamePlayUIManager {
 public:

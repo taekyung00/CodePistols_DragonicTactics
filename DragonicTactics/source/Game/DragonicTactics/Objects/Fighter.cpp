@@ -1,9 +1,9 @@
 #include "pch.h"
 
 #include "Fighter.h"
-#include "Engine/Engine.hpp"
+#include "Engine/Engine.h"
 #include "Engine/GameObjectManager.h"
-#include "Engine/GameStateManager.hpp"
+#include "Engine/GameStateManager.h"
 #include "Game/DragonicTactics/Objects/Actions/ActionAttack.h"
 #include "Game/DragonicTactics/Objects/Components/ActionPoints.h"
 #include "Game/DragonicTactics/Objects/Components/StatsComponent.h"

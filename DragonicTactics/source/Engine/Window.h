@@ -8,8 +8,8 @@
  * \copyright DigiPen Institute of Technology
  */
 #pragma once
-#include "CS200/RGBA.hpp"
-#include "Vec2.hpp"
+#include "CS200/RGBA.h"
+#include "Vec2.h"
 #include <functional>
 #include <gsl/gsl>
 #include <string_view>

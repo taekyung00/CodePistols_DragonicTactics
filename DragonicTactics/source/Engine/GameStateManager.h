@@ -8,9 +8,9 @@
  */
 #pragma once
 
-#include "Engine/Engine.hpp"
-#include "Engine/Logger.hpp"
-#include "GameState.hpp"
+#include "Engine/Engine.h"
+#include "Engine/Logger.h"
+#include "GameState.h"
 #include <memory>
 #include <vector>
 

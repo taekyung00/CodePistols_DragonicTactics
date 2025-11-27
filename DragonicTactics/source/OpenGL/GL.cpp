@@ -10,7 +10,7 @@
 // Include GLEW first to define OpenGL functions and constants
 #include <GL/glew.h>
 
-#include "GL.hpp"
+#include "GL.h"
 
 #include <cassert>
 
