@@ -9,6 +9,7 @@
 **Week 4 상태**: Week 1-3 완료, REFACTORING_TODO.md 완료
 
 **관련 문서**:
+
 - [Week 1-4](week1.md) - 이전 주차 구현
 - [docs/implementation-plan.md](../../implementation-plan.md) - 전체 26주 타임라인
 - [architecture/REFACTORING_TODO.md](../../../architecture/REFACTORING_TODO.md) - 리팩토링 완료 사항
@@ -60,10 +61,12 @@ Week 5는 게임의 **핵심 안정화** 및 **플레이어 경험 개선**에 �
 **목표**: 매 턴마다 실행되어야 하는 작업들의 명확한 정의 및 함수 일대일 대응
 
 **기초 지식**:
+
 - Week 3에서 TurnManager 구현 완료
 - 현재 문제: 함수 중복 호출, 누락된 작업, 호출 순서 불명확
 
 **파일 수정 목록**:
+
 ```
 DragonicTactics/source/Game/DragonicTactics/StateComponents/TurnManager.h/cpp
 DragonicTactics/source/Game/DragonicTactics/Objects/Character.h/cpp
@@ -84,6 +87,7 @@ docs/turn-flow-chart.md (신규)
 **단계**:
 
 1. **턴 시작 시 필수 작업 목록 작성**
+   
    ```
    1. StatusEffectManager - 시작 시 효과 적용 (Burn 데미지 등)
    2. ActionPoints - Refresh() 호출
@@ -93,6 +97,7 @@ docs/turn-flow-chart.md (신규)
    ```
 
 2. **턴 진행 중 허용 작업**
+   
    ```
    - 이동 (AP 소모)
    - 공격 (AP 소모)
@@ -101,6 +106,7 @@ docs/turn-flow-chart.md (신규)
    ```
 
 3. **턴 종료 시 필수 작업**
+   
    ```
    1. StatusEffectManager - 종료 시 효과 적용
    2. Character - OnTurnEnd() 호출
@@ -110,6 +116,7 @@ docs/turn-flow-chart.md (신규)
    ```
 
 4. **라운드 전환 시 작업**
+   
    ```
    1. TurnManager - 라운드 번호 증가
    2. EventBus - RoundStartedEvent 발행
@@ -170,6 +177,7 @@ graph TD
 ```
 
 **중요 원칙**:
+
 - 각 박스 = 하나의 함수 호출
 - 함수 중복 호출 금지
 - 모든 경로에서 필수 작업 누락 없음
@@ -670,15 +678,15 @@ if (Engine::GetInput().IsKeyPressed(InputKey::F9)) {
 
 ### 일일 작업 분배 (개발자 A)
 
-| 일차 | 작업 | 예상 시간 | 산출물 |
-|------|------|-----------|--------|
-| Day 1 | 턴 플로우 차트 작성 | 4h | turn-flow-chart.md |
-| Day 1-2 | 필수 작업 목록 정리 | 4h | 체크리스트 문서 |
-| Day 2 | 중복 함수 제거 | 4h | TurnManager.cpp 수정 |
-| Day 3 | 함수 일대일 대응 완료 | 4h | Character.cpp 수정 |
-| Day 3 | 디버그 로깅 추가 | 4h | 모든 함수에 로깅 |
-| Day 4 | 테스트 코드 작성 | 4h | TestTurnFlow.cpp |
-| Day 4-5 | 통합 테스트 및 검증 | 8h | 테스트 레포트 |
+| 일차      | 작업           | 예상 시간 | 산출물                |
+| ------- | ------------ | ----- | ------------------ |
+| Day 1   | 턴 플로우 차트 작성  | 4h    | turn-flow-chart.md |
+| Day 1-2 | 필수 작업 목록 정리  | 4h    | 체크리스트 문서           |
+| Day 2   | 중복 함수 제거     | 4h    | TurnManager.cpp 수정 |
+| Day 3   | 함수 일대일 대응 완료 | 4h    | Character.cpp 수정   |
+| Day 3   | 디버그 로깅 추가    | 4h    | 모든 함수에 로깅          |
+| Day 4   | 테스트 코드 작성    | 4h    | TestTurnFlow.cpp   |
+| Day 4-5 | 통합 테스트 및 검증  | 8h    | 테스트 레포트            |
 
 **총 예상 시간**: 32시간 (4일)
 
@@ -689,6 +697,7 @@ if (Engine::GetInput().IsKeyPressed(InputKey::F9)) {
 **목표**: 4명의 모험가 캐릭터에 대한 robust한 AI 구현
 
 **파일 수정 목록**:
+
 ```
 DragonicTactics/source/Game/DragonicTactics/StateComponents/AISystem.h/cpp
 DragonicTactics/source/Game/DragonicTactics/Objects/Fighter.h/cpp
@@ -1080,13 +1089,13 @@ void TestAI::TestDragonVsFighter() {
 
 ### 일일 작업 분배 (개발자 B)
 
-| 일차 | 작업 | 예상 시간 | 산출물 |
-|------|------|-----------|--------|
-| Day 1-2 | 공통 AI 프레임워크 | 8h | AISystem.cpp 기본 구조 |
-| Day 2-3 | Fighter AI 전략 구현 | 8h | ExecuteFighterAI 완성 |
-| Day 3-4 | 행동 생성 및 점수 계산 | 8h | GenerateActions, ScoreActions |
-| Day 4-5 | Bias 시스템 구현 | 4h | AIBias 구조체 및 적용 |
-| Day 5-6 | 테스트 및 밸런싱 | 12h | TestAI.cpp, 밸런스 조정 |
+| 일차      | 작업               | 예상 시간 | 산출물                           |
+| ------- | ---------------- | ----- | ----------------------------- |
+| Day 1-2 | 공통 AI 프레임워크      | 8h    | AISystem.cpp 기본 구조            |
+| Day 2-3 | Fighter AI 전략 구현 | 8h    | ExecuteFighterAI 완성           |
+| Day 3-4 | 행동 생성 및 점수 계산    | 8h    | GenerateActions, ScoreActions |
+| Day 4-5 | Bias 시스템 구현      | 4h    | AIBias 구조체 및 적용               |
+| Day 5-6 | 테스트 및 밸런싱        | 12h   | TestAI.cpp, 밸런스 조정            |
 
 **총 예상 시간**: 40시간 (5일)
 
@@ -1097,10 +1106,12 @@ void TestAI::TestDragonVsFighter() {
 **목표**: 실제 플레이용 게임 UI 구현 및 개발자용 디버그 UI 개선
 
 **중요 구분**:
+
 - **게임 UI** (GameUIManager): 플레이어가 게임 플레이 시 보는 UI (크고, 가독성 높음, 예쁨)
 - **디버그 UI** (DebugUIManager): 개발자가 디버깅 시 보는 UI (ImGui 사용, 작고, 기능 중심)
 
 **파일 목록**:
+
 ```
 DragonicTactics/source/Game/DragonicTactics/UI/GameUIManager.h/cpp (신규)
 DragonicTactics/source/Game/DragonicTactics/UI/DebugUIManager.h/cpp (신규)
@@ -1518,15 +1529,15 @@ void DebugUIManager::DrawAIDebugPanel() {
 
 ### 일일 작업 분배 (개발자 C)
 
-| 일차 | 작업 | 예상 시간 | 산출물 |
-|------|------|-----------|--------|
-| Day 1 | GameUIManager 기본 구조 | 4h | GameUIManager.h/cpp |
-| Day 1-2 | HP 바 시스템 | 4h | DrawHPBars 완성 |
-| Day 2 | 액션 로그 시스템 | 4h | DrawActionLog 완성 |
-| Day 2-3 | 턴 순서 패널 | 4h | DrawTurnOrder 완성 |
-| Day 3 | AP 표시 | 2h | DrawAPDisplay 완성 |
-| Day 3-4 | DebugUIManager 구현 | 6h | ImGui 패널들 |
-| Day 4-5 | 통합 및 테스트 | 8h | 전체 UI 테스트 |
+| 일차      | 작업                  | 예상 시간 | 산출물                 |
+| ------- | ------------------- | ----- | ------------------- |
+| Day 1   | GameUIManager 기본 구조 | 4h    | GameUIManager.h/cpp |
+| Day 1-2 | HP 바 시스템            | 4h    | DrawHPBars 완성       |
+| Day 2   | 액션 로그 시스템           | 4h    | DrawActionLog 완성    |
+| Day 2-3 | 턴 순서 패널             | 4h    | DrawTurnOrder 완성    |
+| Day 3   | AP 표시               | 2h    | DrawAPDisplay 완성    |
+| Day 3-4 | DebugUIManager 구현   | 6h    | ImGui 패널들           |
+| Day 4-5 | 통합 및 테스트            | 8h    | 전체 UI 테스트           |
 
 **총 예상 시간**: 32시간 (4일)
 
@@ -1537,6 +1548,7 @@ void DebugUIManager::DrawAIDebugPanel() {
 **목표**: 스마트 포인터 도입으로 메모리 안정성 확보
 
 **파일 수정 목록**:
+
 ```
 DragonicTactics/source/Engine/GameObjectManager.h/cpp
 DragonicTactics/source/Game/DragonicTactics/Factories/CharacterFactory.h/cpp
@@ -1809,13 +1821,13 @@ void TestMemory::TestCharacterLifecycle() {
 
 ### 일일 작업 분배 (개발자 D)
 
-| 일차 | 작업 | 예상 시간 | 산출물 |
-|------|------|-----------|--------|
-| Day 1 | 소유권 분석 및 다이어그램 | 4h | ownership-diagram.md |
-| Day 2 | GameObjectManager 수정 | 4h | unique_ptr 적용 |
-| Day 3 | CharacterFactory 수정 | 4h | unique_ptr 반환 |
-| Day 4 | GamePlay 수정 | 4h | 소유권 이전 코드 |
-| Day 4-5 | 메모리 테스트 | 8h | TestMemory.cpp, 레포트 |
+| 일차      | 작업                   | 예상 시간 | 산출물                  |
+| ------- | -------------------- | ----- | -------------------- |
+| Day 1   | 소유권 분석 및 다이어그램       | 4h    | ownership-diagram.md |
+| Day 2   | GameObjectManager 수정 | 4h    | unique_ptr 적용        |
+| Day 3   | CharacterFactory 수정  | 4h    | unique_ptr 반환        |
+| Day 4   | GamePlay 수정          | 4h    | 소유권 이전 코드            |
+| Day 4-5 | 메모리 테스트              | 8h    | TestMemory.cpp, 레포트  |
 
 **총 예상 시간**: 24시간 (3일)
 
@@ -1826,6 +1838,7 @@ void TestMemory::TestCharacterLifecycle() {
 **목표**: AI pause 시스템 + JSON 맵 로딩
 
 **파일 목록**:
+
 ```
 DragonicTactics/source/Game/DragonicTactics/StateComponents/AIPauseSystem.h/cpp (신규)
 DragonicTactics/source/Game/DragonicTactics/StateComponents/MapDataRegistry.h/cpp (신규)
@@ -2164,14 +2177,14 @@ void GamePlay::Load() {
 
 ### 일일 작업 분배 (개발자 E)
 
-| 일차 | 작업 | 예상 시간 | 산출물 |
-|------|------|-----------|--------|
-| Day 1-2 | AIPauseSystem 구현 | 8h | AIPauseSystem.cpp |
-| Day 2-3 | AI 행동 UI 표시 | 4h | GameUIManager 연동 |
-| Day 3 | maps.json 스키마 설계 | 2h | maps.json (2개 맵) |
-| Day 3-4 | MapDataRegistry 구현 | 6h | MapDataRegistry.cpp |
-| Day 4-5 | GridSystem 맵 로딩 | 6h | GridSystem::LoadMap |
-| Day 5 | 통합 테스트 | 6h | TestMapLoading.cpp |
+| 일차      | 작업                 | 예상 시간 | 산출물                 |
+| ------- | ------------------ | ----- | ------------------- |
+| Day 1-2 | AIPauseSystem 구현   | 8h    | AIPauseSystem.cpp   |
+| Day 2-3 | AI 행동 UI 표시        | 4h    | GameUIManager 연동    |
+| Day 3   | maps.json 스키마 설계   | 2h    | maps.json (2개 맵)    |
+| Day 3-4 | MapDataRegistry 구현 | 6h    | MapDataRegistry.cpp |
+| Day 4-5 | GridSystem 맵 로딩    | 6h    | GridSystem::LoadMap |
+| Day 5   | 통합 테스트             | 6h    | TestMapLoading.cpp  |
 
 **총 예상 시간**: 32시간 (4일)
 
@@ -2201,6 +2214,7 @@ void GamePlay::Load() {
 ```
 
 **검증 항목**:
+
 - [ ] 맵이 JSON에서 로드됨
 - [ ] 캐릭터가 스폰 포인트에 생성됨
 - [ ] 턴 플로우 체크리스트 모두 실행됨 (로그 확인)
@@ -2231,12 +2245,14 @@ void GamePlay::Load() {
 ### 최종 산출물 목록
 
 **문서**:
+
 - [ ] turn-flow-chart.md (턴 플로우 차트)
 - [ ] ai-decision-tree.md (AI 결정 트리)
 - [ ] ownership-diagram.md (소유권 다이어그램)
 - [ ] maps.json (2개 이상의 맵)
 
 **코드**:
+
 - [ ] TurnManager.cpp (체크리스트 적용)
 - [ ] AISystem.cpp (robust AI)
 - [ ] GameUIManager.cpp (게임 UI)
@@ -2247,6 +2263,7 @@ void GamePlay::Load() {
 - [ ] MapDataRegistry.cpp (맵 로딩)
 
 **테스트**:
+
 - [ ] TestTurnFlow.cpp
 - [ ] TestAI.cpp
 - [ ] TestMemory.cpp
@@ -2255,6 +2272,7 @@ void GamePlay::Load() {
 ### 검증 체크리스트
 
 **기능 검증**:
+
 - [ ] 턴 시스템이 안정적으로 작동 (함수 호출 로그 확인)
 - [ ] AI가 자율적으로 전투 (플레이어 개입 없이)
 - [ ] 게임 UI로 모든 정보 확인 가능
@@ -2263,6 +2281,7 @@ void GamePlay::Load() {
 - [ ] 맵이 JSON에서 로드됨
 
 **품질 검증**:
+
 - [ ] 메모리 누수 없음 (Visual Studio Memory Profiler)
 - [ ] 크래시 없음 (10분 플레이 테스트)
 - [ ] 로그에 오류 없음
