@@ -1,10 +1,12 @@
+#include "pch.h"
+
 #include "Dragon.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
 #include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
 #include "./Game/DragonicTactics/Objects/Components/MovementComponent.h"
 #include "./Game/DragonicTactics/Objects/Actions/ActionAttack.h"
-#include "./Engine/Engine.hpp"
-#include "./Engine/Logger.hpp"
+#include "./Engine/Engine.h"
+#include "./Engine/Logger.h"
 
 Dragon::Dragon(Math::ivec2 start_coordinates)
     : Character(

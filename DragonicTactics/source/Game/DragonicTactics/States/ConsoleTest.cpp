@@ -1,12 +1,9 @@
+#include "pch.h"
+
 #include "ConsoleTest.h"
-#include "Engine/Engine.hpp"
-#include "Engine/GameStateManager.hpp"
-#include "Engine/Input.hpp"
-#include "Engine/Window.hpp"
 
-
-#include "CS200/IRenderer2D.hpp"
-#include "CS200/NDC.hpp"
+#include "CS200/IRenderer2D.h"
+#include "CS200/NDC.h"
 
 #include "Game/DragonicTactics/StateComponents/GridSystem.h"
 #include "Game/DragonicTactics/Test/TestAStar.h"
@@ -18,9 +15,9 @@
 #include "Game/DragonicTactics/Test/TestTurnInit.h"
 #include "Game/DragonicTactics/Test/TestTurnManager.h"
 #include "Game/DragonicTactics/Test/TestAI.h"
+#include "Game/DragonicTactics/Test/TestNew.h"
 #include "Game/MainMenu.h"
 
-#include <imgui.h>
 
 bool TestAStar	  = false;
 bool TestEventBus = false;
@@ -30,6 +27,7 @@ bool TestDiceManager = false;
 bool TestCombatSystem = false;
 bool TestTrunManager = false;
 bool TestAI = false;
+bool TestNewFile = false;
 
 ConsoleTest::ConsoleTest()
 {
@@ -175,6 +173,12 @@ void ConsoleTest::Update([[maybe_unused]] double dt)
         TestAI = false;
         RemoveGSComponent<GridSystem>();
     }
+
+	if(TestNewFile)
+	{
+		TestNewFunction();
+		TestNewFile = false;
+	}
 }
 
 void ConsoleTest::Draw()
@@ -226,6 +230,11 @@ void ConsoleTest::DrawImGui()
 	{
 		TestAI = true;
 	}
+	if (ImGui::Button("TestNewFile"))
+	{
+		TestNewFile = true;
+	}
+
 	ImGui::End();
 }
 

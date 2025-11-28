@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /*
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
@@ -8,8 +10,8 @@ Author:     Taekyung Ho
 Created:    April 25, 2025
 */
 #include "GameObject.h"
-#include "GameState.hpp"
-#include "GameStateManager.hpp"
+#include "GameState.h"
+#include "GameStateManager.h"
 #include "ShowCollision.h"
 
 CS230::GameObject::GameObject(Math::vec2 _position) :

@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /**
  * \file
  * \author Rudy Castan
@@ -8,8 +10,7 @@
  * \copyright DigiPen Institute of Technology
  */
 
-#include "Matrix.hpp"
-#include <cmath>
+#include "Matrix.h"
 
 namespace Math
 {

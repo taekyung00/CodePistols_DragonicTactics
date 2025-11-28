@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /*
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
@@ -8,22 +10,21 @@ Author:     Taekyung Ho
 Created:    May 6, 2025
 */
 #include "MainMenu.h"
-#include "../CS200/IRenderer2D.hpp"
-#include "../CS200/NDC.hpp"
-#include "../CS200/RenderingAPI.hpp"
-#include "../Engine/Engine.hpp"
-#include "../Engine/GameStateManager.hpp"
-#include "../Engine/Input.hpp"
-#include "../Engine/TextManager.hpp"
-#include "../Engine/Window.hpp"
-#include "../Engine/Matrix.hpp"
+#include "../CS200/IRenderer2D.h"
+#include "../CS200/NDC.h"
+#include "../CS200/RenderingAPI.h"
+#include "../Engine/Engine.h"
+#include "../Engine/GameStateManager.h"
+#include "../Engine/Input.h"
+#include "../Engine/TextManager.h"
+#include "../Engine/Window.h"
+#include "../Engine/Matrix.h"
 #include "./Game/DragonicTactics/States/GamePlay.h"
 // #include "./Game/DragonicTactics/States/Test.h"
 #include "./Game/DragonicTactics/States/RenderingTest.h"
 #include "./Game/DragonicTactics/States/ConsoleTest.h"
-#include "./OpenGL/Environment.hpp"
+#include "./OpenGL/Environment.h"
 #include "States.h"
-#include <imgui.h>
 
 
 

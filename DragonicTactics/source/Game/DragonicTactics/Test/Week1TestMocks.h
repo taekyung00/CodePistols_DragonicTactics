@@ -1,7 +1,7 @@
 #pragma once
 // File: CS230/Game/Test/Week1TestMocks.h
 #pragma once
-#include "../../../Engine/Vec2.hpp"
+#include "../../../Engine/Vec2.h"
 #include <iostream>
 #include <string>
 #include <vector>

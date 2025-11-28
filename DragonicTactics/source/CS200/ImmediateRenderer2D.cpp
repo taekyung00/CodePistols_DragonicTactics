@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /**
  * \file
  * \author Rudy Castan
@@ -6,17 +8,14 @@
  * \par CS200 Computer Graphics I
  * \copyright DigiPen Institute of Technology
  */
-#include "ImmediateRenderer2D.hpp"
-#include "Engine/Engine.hpp"
-#include "Engine/Matrix.hpp"
-#include "Engine/Path.hpp"
-#include "Engine/Texture.hpp"
-#include "Engine/Window.hpp"
-#include "NDC.hpp"
-#include "OpenGL/Buffer.hpp"
-#include "OpenGL/GL.hpp"
-#include "Renderer2DUtils.hpp"
-#include "RenderingAPI.hpp"
+#include "ImmediateRenderer2D.h"
+#include "Engine/Path.h"
+#include "Engine/Texture.h"
+#include "NDC.h"
+#include "OpenGL/Buffer.h"
+#include "OpenGL/GL.h"
+#include "Renderer2DUtils.h"
+#include "RenderingAPI.h"
 #include <span>
 #include <utility>
 

@@ -8,56 +8,41 @@ Author:     Seungju Song
 Created:    November 5, 2025
 */
 #pragma once
-#include "../../../CS200/RGBA.hpp"
-#include "../../../Engine/Engine.hpp"
-#include "../../../Engine/Fonts.h"
-#include "../../../Engine/GameState.hpp"
-#include "../../../Engine/Texture.hpp"
-#include "../StateComponents/GridSystem.h"
-#include "../Types/Events.h"
+#include <memory>
+#include "Engine/GameState.h"
 
-class Dragon;
+class PlayerInputHandler;
+class GamePlayUIManager;
+class BattleOrchestrator;
 class Fighter;
+class Dragon;
+struct CharacterDamagedEvent;
 
-class GamePlay : public CS230::GameState
-{
+class GamePlay : public CS230::GameState {
 public:
 	GamePlay();
-	void		  Load() override;
-	void		  Update(double dt) override;
-	void		  Unload() override;
-	void		  Draw() override;
-	void		  DrawImGui() override;
+	virtual ~GamePlay() = default;
+
+	void Load() override;
+	void Update(double dt) override;
+	void Draw() override;
+	void Unload() override;
+	void DrawImGui() override;
 	gsl::czstring GetName() const override;
 
 private:
-    enum class PlayerActionState
-    {
-        None,          
-        SelectingMove,  
-        Moving,
-        SelectingAction, 
-        TargetingForAttack,
-        TargetingForSpell
-    };
-    PlayerActionState currentPlayerState = PlayerActionState::None;
-
-	struct DamageText
-	{
-		std::string text;
-		Math::vec2	position = { 0, 0 };
-		Math::vec2	size	 = { 0, 0 };
-		double		lifetime;
-	};
-
-	std::vector<DamageText> damage_texts;
+	std::unique_ptr<PlayerInputHandler> m_input_handler;
+	std::unique_ptr<GamePlayUIManager>  m_ui_manager;
+	std::unique_ptr<BattleOrchestrator> m_orchestrator;
 
 	void OnCharacterDamaged(const CharacterDamagedEvent& event);
 
-	Fighter* fighter;
-	Dragon*	 dragon;
-	bool	 game_end = false;
-	int pre_round = 0;
-
-	// std::vector<Math::ivec2> CalculateSimplePath(Math::ivec2 start, Math::ivec2 end);
+	// Fighter* fighter = nullptr;
+	// Dragon* dragon  = nullptr;
+	Character* player = nullptr;
+	Character* enemy = nullptr;
+	bool     game_end = false;
 };
+namespace CS230 {
+
+}

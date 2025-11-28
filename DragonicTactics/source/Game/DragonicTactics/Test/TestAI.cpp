@@ -1,7 +1,7 @@
+#include "pch.h"
+
 #include "TestAI.h"
 
-#include "Engine/Engine.hpp"
-#include "Engine/GameStateManager.hpp"
 
 #include "Game/DragonicTactics/StateComponents/GridSystem.h"
 #include "Game/DragonicTactics/Objects/Dragon.h"

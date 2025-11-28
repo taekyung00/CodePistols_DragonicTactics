@@ -1,8 +1,8 @@
-#pragma once
+﻿#pragma once
 #include <random>
 #include <string>
 #include "./Engine/Component.h"
-#include "./Engine/Engine.hpp"
+#include "./Engine/Engine.h"
 #include <vector>
 
 class DiceManager : public CS230::Component{

@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /*
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
@@ -8,7 +10,7 @@ Author:     Taekyung Ho
 Created:    May 17, 2025
 */
 #include "ShowCollision.h"
-#include "Input.hpp"
+#include "Input.h"
 
 CS230::ShowCollision::ShowCollision() : enabled(true) {}
 

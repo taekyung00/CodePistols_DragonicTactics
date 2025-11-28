@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /**
  * \file
  * \author Rudy Castan
@@ -8,8 +10,7 @@
  * \copyright DigiPen Institute of Technology
  */
 
-#include "Logger.hpp"
-#include <iostream>
+#include "Logger.h"
 
 namespace CS230
 {

@@ -1,6 +1,6 @@
+#include "pch.h"
+
 #include "TestSpellSystem.h"
-#include "Engine/Engine.hpp"
-#include "Engine/GameStateManager.hpp"
 #include "Game/DragonicTactics/Objects/Dragon.h"
 #include "Game/DragonicTactics/StateComponents/SpellSystem.h"
 #include "Game/DragonicTactics/StateComponents/EventBus.h"

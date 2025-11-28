@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /*
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
@@ -11,7 +13,7 @@ Updated:    Oct 10, 2025
 
 #include "Character.h"
 #include "./Engine/GameObject.h"
-#include "./Engine/Logger.hpp"
+#include "./Engine/Logger.h"
 #include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
 #include "./Game/DragonicTactics/Objects/Components/SpellSlots.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
@@ -19,7 +21,7 @@ Updated:    Oct 10, 2025
 #include "./Game/DragonicTactics/StateComponents/GridSystem.h"
 #include "./Game/DragonicTactics/StateComponents/DiceManager.h"
 #include "Components/GridPosition.h"
-#include "./Engine/Engine.hpp"
+#include "./Engine/Engine.h"
 
 
 Character::Character(CharacterTypes charType, Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level)
@@ -98,6 +100,9 @@ void Character::SetGridSystem(GridSystem* grid)
 
 void Character::SetPath(std::vector<Math::ivec2> path)
 {
+    if (m_movement_component == nullptr) {
+        m_movement_component = GetGOComponent<MovementComponent>();
+    }
     if (m_movement_component)
     {
         m_movement_component->SetPath(std::move(path));

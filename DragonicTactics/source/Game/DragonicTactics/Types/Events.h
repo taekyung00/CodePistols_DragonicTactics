@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
-#include "../../../Engine/Vec2.hpp"
+#include "../../../Engine/Vec2.h"
 
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
 #include "./Game/DragonicTactics/StateComponents/AISystem.h"

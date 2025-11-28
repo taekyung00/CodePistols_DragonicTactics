@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /**
  * \file
  * \author Rudy Castan
@@ -6,11 +8,9 @@
  * \par CS200 Computer Graphics I
  * \copyright DigiPen Institute of Technology
  */
-#include "Framebuffer.hpp"
-#include "Engine/Engine.hpp"
-#include "Engine/Logger.hpp"
-#include "GL.hpp"
-#include "Texture.hpp"
+#include "Framebuffer.h"
+#include "GL.h"
+#include "Texture.h"
 
 namespace
 {

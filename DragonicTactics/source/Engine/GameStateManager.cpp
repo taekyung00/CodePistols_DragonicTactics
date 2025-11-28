@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /**
  * \file
  * \author Rudy Castan
@@ -6,7 +8,7 @@
  * \par CS200 Computer Graphics I
  * \copyright DigiPen Institute of Technology
  */
-#include "GameStateManager.hpp"
+#include "GameStateManager.h"
 #include "GameObjectManager.h"
 
 namespace CS230

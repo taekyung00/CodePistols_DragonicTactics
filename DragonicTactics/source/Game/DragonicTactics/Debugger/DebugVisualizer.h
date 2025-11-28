@@ -1,6 +1,6 @@
 #pragma once
-#include "./CS200/RGBA.hpp"
-#include "./Engine/Vec2.hpp"
+#include "./CS200/RGBA.h"
+#include "./Engine/Vec2.h"
 #include <string>
 #include <vector>
 #include <deque>

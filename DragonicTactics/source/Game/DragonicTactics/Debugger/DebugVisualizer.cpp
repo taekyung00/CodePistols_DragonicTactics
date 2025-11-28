@@ -1,9 +1,11 @@
+#include "pch.h"
+
 #include "DebugVisualizer.h"
 #include "DebugManager.h"
-#include "./Engine/Logger.hpp"
-#include "./Engine/Engine.hpp"
-#include "./Engine/GameStateManager.hpp"
-#include "./CS200/IRenderer2D.hpp"
+#include "./Engine/Logger.h"
+#include "./Engine/Engine.h"
+#include "./Engine/GameStateManager.h"
+#include "./CS200/IRenderer2D.h"
 #include "./Game/DragonicTactics/StateComponents/GridSystem.h"
 #include "./Game/DragonicTactics/Objects/Character.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
@@ -12,8 +14,6 @@
 #include "./Game/DragonicTactics/StateComponents/EventBus.h"
 #include "./Game/DragonicTactics/StateComponents/DiceManager.h"
 #include "./Game/DragonicTactics/Types/Events.h"
-#include <algorithm>
-#include <imgui.h>
 
 void DebugVisualizer::Init()
 {

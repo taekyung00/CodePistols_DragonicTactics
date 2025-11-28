@@ -1,11 +1,13 @@
-#include "RenderingTest.h"
-#include "./Engine/Engine.hpp"
-#include "./Engine/Input.hpp"
-#include "./Engine/GameStateManager.hpp"
-#include "./Engine/Window.hpp"
+#include "pch.h"
 
-#include "./CS200/IRenderer2D.hpp"
-#include "./CS200/NDC.hpp"
+#include "RenderingTest.h"
+#include "./Engine/Engine.h"
+#include "./Engine/Input.h"
+#include "./Engine/GameStateManager.h"
+#include "./Engine/Window.h"
+
+#include "./CS200/IRenderer2D.h"
+#include "./CS200/NDC.h"
 
 #include "./Game/MainMenu.h"
 

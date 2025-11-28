@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /**
  * \file
  * \author Rudy Castan
@@ -8,14 +10,9 @@
 // Include GLEW first to define OpenGL functions and constants
 #include <GL/glew.h>
 
-#include "Engine/Engine.hpp"
-#include "Engine/Logger.hpp"
-#include "GL.hpp"
+#include "GL.h"
 
 #include <cassert>
-#include <iostream>
-#include <sstream>
-#include <string>
 
 
 #if defined(DEVELOPER_VERSION)

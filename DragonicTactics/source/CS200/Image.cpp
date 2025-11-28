@@ -1,4 +1,6 @@
-﻿/**
+#include "pch.h"
+
+/**
  * \file
  * \author Rudy Castan
  * \author Taekyung Ho
@@ -6,10 +8,10 @@
  * \par CS200 Computer Graphics I
  * \copyright DigiPen Institute of Technology
  */
-#include "Image.hpp"
+#include "Image.h"
 
-#include "Engine/Error.hpp"
-#include "Engine/Path.hpp"
+#include "Engine/Error.h"
+#include "Engine/Path.h"
 
 #include <stb_image.h>
 #include <utility>

@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /**
  * \file
  * \author Rudy Castan
@@ -6,9 +8,9 @@
  * \par CS200 Computer Graphics I
  * \copyright DigiPen Institute of Technology
  */
-#include "Buffer.hpp"
+#include "Buffer.h"
 
-#include "GL.hpp"
+#include "GL.h"
 
 namespace OpenGL
 {

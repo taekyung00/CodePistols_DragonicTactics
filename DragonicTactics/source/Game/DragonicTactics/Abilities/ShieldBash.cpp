@@ -1,11 +1,11 @@
+#include "pch.h"
+
 #include "ShieldBash.h"
 #include "../Objects/Character.h"
 #include "../StateComponents/GridSystem.h"
 #include "../StateComponents/DiceManager.h"
 #include "../StateComponents/EventBus.h"
-#include "../Types/Events.h"
-#include "../../../Engine/Engine.hpp"
-#include "../../../Engine/GameStateManager.hpp"
+
 #include "../Objects/Components/GridPosition.h"
 #include "../Objects/Components/StatsComponent.h"
 #include "../Objects/Components/ActionPoints.h"

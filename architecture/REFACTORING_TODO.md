@@ -853,57 +853,82 @@ cp DragonicTactics/source/CMakeLists.txt DragonicTactics/source/CMakeLists.txt.b
 
 **파일**: `DragonicTactics/source/CMakeLists.txt`
 
-**변경 전** (추정):
+**현재 상태** (8-122줄):
 
 ```cmake
-add_executable(dragonic_tactics
+set(SOURCE_CODE
+    CS200/Image.hpp CS200/Image.cpp          # ← 수동으로 모든 파일 나열
+    CS200/ImGuiHelper.hpp CS200/ImGuiHelper.cpp
+    # ... (중략) ...
+    Engine/Engine.hpp Engine/Engine.cpp
+    Engine/GameObject.cpp Engine/GameObject.h
+    # ... (중략) ...
+    Game/DragonicTactics/Objects/Character.cpp
+    Game/DragonicTactics/Objects/Dragon.cpp
+    # ... 114줄 더 ...
     main.cpp
-    Engine/Engine.cpp
-    Engine/GameObject.cpp
-    # ... 수동으로 나열
 )
+
+add_executable(dragonic_tactics ${SOURCE_CODE})
 ```
 
-**변경 후**:
+**변경 후** (8-122줄 전체를 아래 내용으로 교체):
 
 ```cmake
 # ========== 소스 파일 자동 수집 ==========
-file(GLOB_RECURSE ENGINE_SOURCES
+# GLOB_RECURSE: 하위 폴더까지 재귀적으로 모든 파일 검색
+# CONFIGURE_DEPENDS: 파일 추가/삭제 시 자동 재구성 (CMake 3.12+)
+
+file(GLOB_RECURSE ENGINE_SOURCES CONFIGURE_DEPENDS
     "Engine/*.cpp"
     "Engine/*.h"
     "Engine/*.hpp"
 )
 
-file(GLOB_RECURSE CS200_SOURCES
+file(GLOB_RECURSE CS200_SOURCES CONFIGURE_DEPENDS
     "CS200/*.cpp"
     "CS200/*.hpp"
+    "CS200/*.h"
 )
 
-file(GLOB_RECURSE OPENGL_SOURCES
+file(GLOB_RECURSE OPENGL_SOURCES CONFIGURE_DEPENDS
     "OpenGL/*.cpp"
     "OpenGL/*.hpp"
+    "OpenGL/*.h"
 )
 
-file(GLOB_RECURSE GAME_SOURCES
-    "Game/DragonicTactics/*.cpp"
-    "Game/DragonicTactics/*.h"
+file(GLOB_RECURSE GAME_SOURCES CONFIGURE_DEPENDS
+    "Game/*.cpp"           # Game 폴더 전체 검색
+    "Game/*.h"
+    "Game/*.hpp"
 )
 
 # ========== 실행 파일 생성 ==========
-add_executable(dragonic_tactics
-    main.cpp
-    ${ENGINE_SOURCES}
-    ${CS200_SOURCES}
-    ${OPENGL_SOURCES}
-    ${GAME_SOURCES}
+set(SOURCE_CODE
+    ${ENGINE_SOURCES}      # Engine 폴더의 모든 파일
+    ${CS200_SOURCES}       # CS200 폴더의 모든 파일
+    ${OPENGL_SOURCES}      # OpenGL 폴더의 모든 파일
+    ${GAME_SOURCES}        # Game 폴더의 모든 파일
+    main.cpp               # main.cpp는 별도 추가
 )
 
-# ========== IDE에서 폴더 구조 유지 ==========
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${ENGINE_SOURCES})
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${CS200_SOURCES})
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${OPENGL_SOURCES})
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${GAME_SOURCES})
+add_executable(dragonic_tactics ${SOURCE_CODE})
 ```
+
+**중요**: 반드시 `CONFIGURE_DEPENDS` 추가!
+
+**주의사항**:
+
+1. `set(SOURCE_CODE ...)` 블록 전체를 위 내용으로 교체
+2. 각 `file(GLOB_RECURSE ...)` 에 `CONFIGURE_DEPENDS` 플래그 추가
+3. 기존 124-130줄 (`add_executable`, `target_precompile_headers` 등)은 그대로 유지
+4. `source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_CODE})` 라인은 이미 130줄에 있으므로 그대로 유지
+
+**CONFIGURE_DEPENDS의 역할**:
+
+- 빌드 시마다 파일 목록 변경 체크
+- 새 파일 추가/삭제 감지 시 자동으로 CMake 재구성
+- CMakeLists.txt를 열어서 저장할 필요 없음!
 
 #### Step 3: 빌드 테스트
 
@@ -920,15 +945,38 @@ cmake --build --preset windows-debug
 
 #### Step 4: 새 파일 추가 테스트
 
-```cpp
-// Test 1: 새 파일 추가
-touch DragonicTactics/source/Game/DragonicTactics/Test/TestNew.cpp
+**시나리오**: Wizard.cpp 파일을 새로 추가했을 때
 
-// Test 2: CMake 재구성 (자동 감지 확인)
+```bash
+# Test 1: 새 파일 생성 (예: Wizard.cpp)
+# Visual Studio나 에디터에서 파일 생성하거나:
+touch DragonicTactics/source/Game/DragonicTactics/Objects/Wizard.cpp
+touch DragonicTactics/source/Game/DragonicTactics/Objects/Wizard.h
+
+# Test 2: CMake 재구성 (자동 감지 확인)
+cd DragonicTactics
 cmake --preset windows-debug
+# 출력에서 "Wizard.cpp" 찾기 → 자동 감지 확인!
 
-// Test 3: 빌드 (새 파일 포함 확인)
+# Test 3: 빌드 (새 파일 포함 확인)
 cmake --build --preset windows-debug
+# 컴파일 로그에 "Wizard.cpp" 나타나면 성공!
+```
+
+**예상 결과**:
+
+```
+Before (수동):
+1. Wizard.cpp 생성
+2. CMakeLists.txt 열기
+3. 46줄에 "Game/DragonicTactics/Objects/Wizard.cpp" 추가
+4. 저장 후 cmake 재구성
+5. 빌드
+
+After (자동):
+1. Wizard.cpp 생성
+2. cmake 재구성 (자동 감지!)
+3. 빌드
 ```
 
 ### 체크리스트

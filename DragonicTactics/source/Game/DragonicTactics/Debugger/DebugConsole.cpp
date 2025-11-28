@@ -1,11 +1,9 @@
+#include "pch.h"
+
 #include "DebugConsole.h"
 #include "DebugManager.h"
-#include "./Engine/Engine.hpp"
-#include "./Engine/Input.hpp"
-#include "./Engine/Logger.hpp"
-#include <sstream>
-#include <algorithm>
-#include <imgui.h>
+
+
 #include <cstring>
 
 void DebugConsole::Update([[maybe_unused]]double dt)

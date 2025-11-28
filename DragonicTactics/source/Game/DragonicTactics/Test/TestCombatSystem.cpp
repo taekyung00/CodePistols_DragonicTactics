@@ -1,7 +1,9 @@
+#include "pch.h"
+
 #include "../StateComponents/DiceManager.h"
 #include "../StateComponents/TurnManager.h"
-#include "./Engine/Engine.hpp"
-#include "./Engine/GameStateManager.hpp"
+#include "./Engine/Engine.h"
+#include "./Engine/GameStateManager.h"
 #include "./Game/DragonicTactics/Objects/Actions/ActionAttack.h"
 #include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
@@ -12,8 +14,6 @@
 #include "./Game/DragonicTactics/StateComponents/CombatSystem.h"
 #include "./Game/DragonicTactics/Test/TestAssert.h"
 #include "Week1TestMocks.h"
-#include <iostream>
-#include <vector>
 #include "TestCombatSystem.h"
 
 

@@ -1,7 +1,8 @@
+#include "pch.h"
+
 #include "DiceManager.h"
-#include "./Engine/Logger.hpp"
+#include "./Engine/Logger.h"
 #include <cctype>
-#include <sstream>
 
 DiceManager::DiceManager() {
     std::random_device rand;

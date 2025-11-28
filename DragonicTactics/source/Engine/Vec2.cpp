@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /**
  * \file
  * \author Jonathan Holmes
@@ -7,8 +9,7 @@
  * \copyright DigiPen Institute of Technology
  */
 
-#include "Vec2.hpp"
-#include <cmath>
+#include "Vec2.h"
 
 namespace Math
 {

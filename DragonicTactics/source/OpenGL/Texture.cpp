@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /**
  * \file
  * \author Rudy Castan
@@ -6,10 +8,10 @@
  * \par CS200 Computer Graphics I
  * \copyright DigiPen Institute of Technology
  */
-#include "Texture.hpp"
-#include "CS200/Image.hpp"
-#include "Environment.hpp"
-#include "GL.hpp"
+#include "Texture.h"
+#include "CS200/Image.h"
+#include "Environment.h"
+#include "GL.h"
 
 namespace OpenGL
 {

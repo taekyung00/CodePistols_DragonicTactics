@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /*
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
@@ -10,7 +12,6 @@ Created:    Oct 10, 2025
 
 #include "StatsComponent.h"
 #include "./Game/DragonicTactics/Types/CharacterTypes.h"
-#include <algorithm>
 
 StatsComponent::StatsComponent(const CharacterStats& initial_stats)
     : stats(initial_stats)

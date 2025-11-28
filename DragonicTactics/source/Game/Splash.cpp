@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /*
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
@@ -7,14 +9,14 @@ Project:    CS230 Engine
 Author:     Taekyung Ho
 Created:    March 12, 2025
 */
-#include "../Engine/Engine.hpp"
-#include "../Engine/TextureManager.hpp"
-#include "../Engine/Logger.hpp"
-#include "../Engine/GameStateManager.hpp"
-#include "../Engine/Window.hpp"
-#include "../CS200/RenderingAPI.hpp"
-#include "../CS200/IRenderer2D.hpp"
-#include "../CS200/NDC.hpp"
+#include "../Engine/Engine.h"
+#include "../Engine/TextureManager.h"
+#include "../Engine/Logger.h"
+#include "../Engine/GameStateManager.h"
+#include "../Engine/Window.h"
+#include "../CS200/RenderingAPI.h"
+#include "../CS200/IRenderer2D.h"
+#include "../CS200/NDC.h"
 #include "MainMenu.h"
 #include "Splash.h"
 

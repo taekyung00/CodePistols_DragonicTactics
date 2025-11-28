@@ -1,3 +1,5 @@
+#include "pch.h"
+
 /**
  * \file
  * \author Rudy Castan
@@ -9,15 +11,15 @@
  */
 
 
-#include "TextureManager.hpp"
-#include "CS200/IRenderer2D.hpp"
-#include "CS200/NDC.hpp"
-#include "Engine.hpp"
-#include "Logger.hpp"
-#include "OpenGL/GL.hpp"
-#include "Texture.hpp"
-#include "Window.hpp"
-#include "Path.hpp"
+#include "TextureManager.h"
+#include "CS200/IRenderer2D.h"
+#include "CS200/NDC.h"
+#include "Engine.h"
+#include "Logger.h"
+#include "OpenGL/GL.h"
+#include "Texture.h"
+#include "Window.h"
+#include "Path.h"
 namespace CS230
 {
     std::shared_ptr<Texture> TextureManager::Load(const std::filesystem::path& file_name)

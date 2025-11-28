@@ -1,3 +1,5 @@
+#include "pch.h"
+
 // File: CS230/Game/Singletons/AISystem.cpp
 #include "AISystem.h"
 #include "../StateComponents/GridSystem.h"
@@ -6,9 +8,7 @@
 #include "CombatSystem.h"
 #include "SpellSystem.h"
 #include "EventBus.h"
-#include "Game/DragonicTactics/Types/Events.h"
-#include "Engine/Engine.hpp"
-#include "./Engine/GameStateManager.hpp"
+#include "./Engine/GameStateManager.h"
 
 
 

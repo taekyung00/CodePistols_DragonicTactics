@@ -1,9 +1,11 @@
+#include "pch.h"
+
 #include "TestAStar.h"
 
-#include "./Engine/Engine.hpp"
-#include "./Engine/Logger.hpp"
-#include "./Engine/Vec2.hpp"
-#include "./Engine/GameStateManager.hpp"
+#include "./Engine/Engine.h"
+#include "./Engine/Logger.h"
+#include "./Engine/Vec2.h"
+#include "./Engine/GameStateManager.h"
 
 #include "./Game/DragonicTactics/StateComponents/GridSystem.h"
 #include "./Game/DragonicTactics/Test/TestAssert.h"
