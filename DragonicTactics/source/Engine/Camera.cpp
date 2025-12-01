@@ -10,7 +10,7 @@ Author:     Jonathan Holmes
 Created:    March 8, 2023
 */
 #include "Camera.h"
-#include "Engine.hpp"
+#include "Engine.h"
 
 CS230::Camera::Camera(Math::rect _player_zone) :  position(Math::vec2{0.0,0.0}), player_zone(_player_zone)  {}
 

@@ -10,7 +10,7 @@
  * \copyright DigiPen Institute of Technology
  */
 
-#include "Matrix.hpp"
+#include "Matrix.h"
 
 namespace Math
 {

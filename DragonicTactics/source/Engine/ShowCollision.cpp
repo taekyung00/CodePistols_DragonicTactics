@@ -10,7 +10,7 @@ Author:     Taekyung Ho
 Created:    May 17, 2025
 */
 #include "ShowCollision.h"
-#include "Input.hpp"
+#include "Input.h"
 
 CS230::ShowCollision::ShowCollision() : enabled(true) {}
 

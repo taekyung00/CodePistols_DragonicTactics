@@ -1,6 +1,6 @@
 #pragma once
 #include "./Engine/Component.h"
-#include "./Engine/Vec2.hpp"
+#include "./Engine/Vec2.h"
 
 class GridPosition : public CS230::Component {
 public:

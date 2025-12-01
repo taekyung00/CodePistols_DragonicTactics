@@ -9,8 +9,8 @@ Created:    March 12, 2025
 */
 
 #pragma once
-#include "../Engine/GameState.hpp"
-#include "../Engine/Texture.hpp"
+#include "../Engine/GameState.h"
+#include "../Engine/Texture.h"
 
 class Splash : public CS230::GameState
 {

@@ -10,7 +10,7 @@ Created:    Oct 14, 2025
 
 #pragma once
 #include <string>
-#include "./Engine/Vec2.hpp"
+#include "./Engine/Vec2.h"
 
 class Character;
 namespace CS230 {

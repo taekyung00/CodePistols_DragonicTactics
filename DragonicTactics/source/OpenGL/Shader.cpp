@@ -7,10 +7,10 @@
  * \par CS200 Computer Graphics I
  * \copyright DigiPen Institute of Technology
  */
-#include "Shader.hpp"
+#include "Shader.h"
 
-#include "Engine/Path.hpp"
-#include "GL.hpp"
+#include "Engine/Path.h"
+#include "GL.h"
 
 namespace
 {

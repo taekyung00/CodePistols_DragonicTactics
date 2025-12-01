@@ -7,7 +7,7 @@
  * \par CS200 Computer Graphics I
  * \copyright DigiPen Institute of Technology
  */
-#include "ImGuiHelper.hpp"
+#include "ImGuiHelper.h"
 
 #include <backends/imgui_impl_opengl3.h>
 #include <backends/imgui_impl_sdl2.h>

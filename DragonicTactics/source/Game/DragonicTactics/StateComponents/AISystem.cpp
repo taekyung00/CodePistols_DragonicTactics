@@ -8,7 +8,7 @@
 #include "CombatSystem.h"
 #include "SpellSystem.h"
 #include "EventBus.h"
-#include "./Engine/GameStateManager.hpp"
+#include "./Engine/GameStateManager.h"
 
 
 

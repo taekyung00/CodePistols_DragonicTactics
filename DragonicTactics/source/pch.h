@@ -16,24 +16,24 @@
 #include <cmath>
 
 
-#include "Engine/Engine.hpp"
+#include "Engine/Engine.h"
 #include "Engine/GameObject.h"
-#include "Engine/GameState.hpp"
+#include "Engine/GameState.h"
 #include "Engine/Component.h"
 #include "Engine/ComponentManager.h"
 #include "Engine/GameObjectManager.h"
-#include "Engine/GameStateManager.hpp"
-#include "Engine/Logger.hpp"
-#include "Engine/Input.hpp"
-#include "Engine/Window.hpp"
-#include "Engine/TextureManager.hpp"
+#include "Engine/GameStateManager.h"
+#include "Engine/Logger.h"
+#include "Engine/Input.h"
+#include "Engine/Window.h"
+#include "Engine/TextureManager.h"
 #include "Engine/Sprite.h"
 #include "Engine/Animation.h"
 
 
-#include "Engine/Vec2.hpp"
-#include "Engine/Matrix.hpp"
-#include "Engine/Rect.hpp"
+#include "Engine/Vec2.h"
+#include "Engine/Matrix.h"
+#include "Engine/Rect.h"
 
 
 #include "Game/DragonicTactics/Types/GameTypes.h"

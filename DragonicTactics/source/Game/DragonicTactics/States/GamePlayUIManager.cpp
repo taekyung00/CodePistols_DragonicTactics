@@ -8,14 +8,14 @@ Author:     Seungju Song
 Created:    November 24, 2025
 */
 #include "GamePlay.h"
-#include "./CS200/IRenderer2D.hpp"
-#include "./CS200/NDC.hpp"
-#include "./Engine/Engine.hpp"
+#include "./CS200/IRenderer2D.h"
+#include "./CS200/NDC.h"
+#include "./Engine/Engine.h"
 #include "./Engine/GameObjectManager.h"
-#include "./Engine/GameStateManager.hpp"
-#include "./Engine/Logger.hpp"
-#include "./Engine/TextManager.hpp"
-#include "./Engine/Window.hpp"
+#include "./Engine/GameStateManager.h"
+#include "./Engine/Logger.h"
+#include "./Engine/TextManager.h"
+#include "./Engine/Window.h"
 
 #include "../Debugger/DebugManager.h"
 #include "../StateComponents/GridSystem.h"
@@ -30,7 +30,7 @@ Created:    November 24, 2025
 #include "Game/DragonicTactics/StateComponents/EventBus.h"
 #include "Game/MainMenu.h"
 
-#include "Engine/Input.hpp"
+#include "Engine/Input.h"
 #include "Game/DragonicTactics/Objects/Components/GridPosition.h"
 #include "Game/DragonicTactics/Objects/Dragon.h"
 #include "Game/DragonicTactics/Objects/Fighter.h"

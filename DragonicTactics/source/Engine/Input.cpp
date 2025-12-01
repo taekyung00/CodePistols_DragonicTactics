@@ -12,10 +12,10 @@
  * \copyright DigiPen Institute of Technology
  */
 
-#include "Input.hpp"
-#include "Engine.hpp"
-#include "Logger.hpp"
-#include "Window.hpp"
+#include "Input.h"
+#include "Engine.h"
+#include "Logger.h"
+#include "Window.h"
 
 
 namespace CS230

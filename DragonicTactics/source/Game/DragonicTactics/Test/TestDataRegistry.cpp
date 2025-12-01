@@ -2,9 +2,9 @@
 
 #include "TestDataRegistry.h"
 
-#include "./Engine/Engine.hpp"
-#include "./Engine/GameStateManager.hpp"
-#include "./Engine/Logger.hpp"
+#include "./Engine/Engine.h"
+#include "./Engine/GameStateManager.h"
+#include "./Engine/Logger.h"
 
 #include "./Game/DragonicTactics/StateComponents/DataRegistry.h"
 #include "./Game/DragonicTactics/Types/CharacterTypes.h"

@@ -10,7 +10,7 @@
  * \copyright DigiPen Institute of Technology
  */
 
-#include "Logger.hpp"
+#include "Logger.h"
 
 namespace CS230
 {

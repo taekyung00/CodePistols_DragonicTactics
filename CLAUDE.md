@@ -7,7 +7,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Dragonic Tactics**: D&D 스타일 턴제 전술 RPG
 - **엔진**: 커스텀 C++20 OpenGL 엔진 (CMake 빌드 시스템)
 - **기간**: 26주 개발 계획
-- **현재 상태**: Week 1-3 완료, Milestone 3 완료
+- **현재 상태**: Week 1-3 완료, Milestone 3 완료, Week 4-5 진행 중
+- **팀 구성**: 5명의 개발자
+
+### 최근 변경사항
+- **헤더 파일 표준화**: `.hpp` → `.h` 확장자 변경 진행 중
+- **리팩토링**: 턴 관리 플로우 개선, AI 시스템 강화, 소유권 모델 재설계 진행 중
 
 ## 빠른 시작
 
@@ -373,6 +378,30 @@ CMake FetchContent로 자동 관리:
 - **Windows (Native)**: MSVC, OpenGL 직접 렌더링
 - **WebAssembly**: Emscripten, SDL2 + OpenGL ES
 
+## 개발 프로세스
+
+### 계획 문서 관리
+프로젝트는 유연한 계획 관리 방식을 따릅니다:
+
+1. **architecture.md**: 전체 게임 아키텍처 및 시스템 설계 (변경 없음)
+2. **implementation-plan.md**:
+   - architecture.md 기반으로 작성
+   - 우선순위에 따라 언제든지 재정렬 가능
+   - 향후 1개월 계획은 상세하게, 나머지는 간략하게 작성
+   - 팀 합의 후 업데이트
+3. **주차별 상세 계획** (Detailed Implementations/weeks/):
+   - implementation-plan 기반으로 매주 작성
+   - 한글로 작성
+   - 구조: Implementation Tasks → Implementation Example → Rigorous Test → Usage Example
+   - 5명의 개발자 역할 분담 포함
+
+### 작업 우선순위 설정
+새로운 우선순위를 설정할 때:
+1. 구현하고 싶은 기능/개선사항 나열
+2. Claude와 함께 기술적 타당성 평가
+3. 합의 후 implementation-plan.md 재작성
+4. 주차별 상세 계획 작성
+
 ## 문서 내비게이션
 
 자세한 설계 문서는 [docs/index.md](docs/index.md) 참조:
@@ -427,7 +456,15 @@ CMake FetchContent로 자동 관리:
   - DebugManager (디버그 모드 관리)
   - DebugVisualizer (그리드 시각화)
 
-### ⏳ 계획 (Week 4+)
+### ⏳ 진행 중 (Week 4-5)
+- **턴 플로우 개선**: 각 턴 시작/진행/종료 시 필수 작업들의 명확한 정의 및 함수 일대일 대응
+- **AI 시스템 강화**: 4명의 모험가 캐릭터에 대한 robust한 AI 구현
+- **디버그 UI 개선**: ImGui 기반 정보 표시, 런타임 토글 기능
+- **소유권 모델 재설계**: 캐릭터 객체의 명확한 소유권 및 스마트 포인터 적용
+- **AI 행동 시각화**: AI 행동 중간에 pause 추가로 플레이어가 상황 파악 가능
+- **맵 데이터 로딩**: JSON 기반 맵 데이터 파싱 및 타일 정보 설정
+
+### 📋 계획 (Week 6+)
 - 더 많은 캐릭터 클래스
 - 더 많은 어빌리티
 - 고급 AI 행동
@@ -462,11 +499,13 @@ CMake FetchContent로 자동 관리:
 3. **C++20**: C++17이 아닌 C++20 표준 사용
 4. **CMake 프리셋**: `cmake --preset windows-debug` 형식으로 사용
 5. **StateComponents 아키텍처**: 모든 게임 시스템은 `StateComponents/` 디렉토리에 GameState 컴포넌트로 구현됨 (Singletons 폴더 없음)
-6. **Week 1-3 구현 완료**: EventBus, DiceManager, CombatSystem, TurnManager, GridSystem, SpellSystem, AISystem, DataRegistry 모두 구현됨
-7. **이벤트 기반 통신**: 시스템 간 통신은 EventBus 사용
-8. **디버그 로깅**: `Engine::GetLogger()`로 이벤트/오류 로그
-9. **ImGui**: 디버그 시각화용 ImGui 사용 (docking 브랜치)
-10. **테스트**: Test/ 디렉토리에 각 시스템별 테스트 파일 존재
+6. **헤더 파일 표준화**: 새 코드는 `.h` 확장자 사용 (`.hpp` → `.h` 마이그레이션 진행 중)
+7. **Week 1-3 구현 완료**: EventBus, DiceManager, CombatSystem, TurnManager, GridSystem, SpellSystem, AISystem, DataRegistry 모두 구현됨
+8. **이벤트 기반 통신**: 시스템 간 통신은 EventBus 사용
+9. **디버그 로깅**: `Engine::GetLogger()`로 이벤트/오류 로그, 함수 호출 추적은 `__PRETTY_FUNCTION__` 매크로 사용
+10. **ImGui**: 디버그 시각화용 ImGui 사용 (docking 브랜치), 런타임에 켜고 끌 수 있음
+11. **테스트**: Test/ 디렉토리에 각 시스템별 테스트 파일 존재
+12. **메모리 관리**: 스마트 포인터 사용 권장 (RAII 원칙)
 
 ## 테스트 실행
 
@@ -485,6 +524,21 @@ build/windows-debug/dragonic_tactics.exe
 - GamePlay.cpp에서 키보드 입력으로 테스트 함수 호출
 
 ## 일반적인 개발 워크플로우
+
+### 디버깅 및 함수 호출 추적
+턴 관리 및 시스템 통합 디버깅 시:
+1. `__PRETTY_FUNCTION__` 매크로와 Logger 사용하여 함수 호출 확인
+2. 중복되는 기능 제거 (예: `OnTurnStart()` vs `RefreshActionPoints()`)
+3. 각 턴 단계별 필수 작업을 플로우차트로 정리
+4. 플로우차트의 각 항목과 실제 함수를 일대일 대응
+
+```cpp
+// 함수 호출 로깅 예시
+void Character::OnTurnStart() {
+    Engine::GetLogger().LogEvent(std::string(__PRETTY_FUNCTION__) + " called");
+    // 턴 시작 로직
+}
+```
 
 ### 새 캐릭터 클래스 추가
 1. `Objects/` 에 `MyCharacter.h/cpp` 생성
@@ -510,6 +564,12 @@ build/windows-debug/dragonic_tactics.exe
 1. `Assets/Data/characters.json` 편집
 2. 게임 실행 후 **R** 키로 리로드
 3. **L** 키로 로드된 데이터 확인
+
+### 새 파일 추가 시 주의사항
+1. **헤더 파일**: `.h` 확장자 사용 (`.hpp` 아님)
+2. **CMakeLists.txt 업데이트**: `source/CMakeLists.txt`의 `SOURCE_CODE` 변수에 추가
+3. **메모리 관리**: 가능한 스마트 포인터 사용 (`std::unique_ptr`, `std::shared_ptr`)
+4. **소유권 명확화**: 객체 생성 위치와 소유권 책임을 명확히 설계
 
 ## 문제 해결
 
@@ -544,3 +604,10 @@ cmake --build --preset windows-debug
 3. **코드와 데이터 분리**: JSON으로 게임 데이터 관리 (Assets/Data/)
 4. **이벤트 기반 통신**: EventBus를 통한 느슨한 결합
 5. **시뮬레이션/뷰 분리**: 게임 로직과 렌더링 분리
+
+## 추가 참고 문서
+
+- [architecture/REFACTORING_TODO.md](architecture/REFACTORING_TODO.md) - 현재 진행 중인 리팩토링 작업
+- [architecture/dragonic_tactics.md](architecture/dragonic_tactics.md) - 게임 디자인 문서 (한글)
+- [docs/implementation-plan.md](docs/implementation-plan.md) - 유연한 구현 계획 (우선순위 기반)
+- [docs/Detailed Implementations/weeks/](docs/Detailed%20Implementations/weeks/) - 주차별 상세 구현 가이드 (한글)

@@ -10,12 +10,12 @@
  * \copyright DigiPen Institute of Technology
  */
 
-#include "Window.hpp"
-#include "../OpenGL/GL.hpp"
-#include "CS200/RenderingAPI.hpp"
-#include "Engine.hpp"
-#include "Error.hpp"
-#include "Logger.hpp"
+#include "Window.h"
+#include "../OpenGL/GL.h"
+#include "CS200/RenderingAPI.h"
+#include "Engine.h"
+#include "Error.h"
+#include "Logger.h"
 #include <GL/glew.h>
 
 namespace

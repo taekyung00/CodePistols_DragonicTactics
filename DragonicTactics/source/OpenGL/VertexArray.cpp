@@ -8,8 +8,8 @@
  * \par CS200 Computer Graphics I
  * \copyright DigiPen Institute of Technology
  */
-#include "VertexArray.hpp"
-#include "GL.hpp"
+#include "VertexArray.h"
+#include "GL.h"
 
 namespace OpenGL
 {

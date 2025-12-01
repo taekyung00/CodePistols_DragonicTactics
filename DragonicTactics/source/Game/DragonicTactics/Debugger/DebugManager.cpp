@@ -3,9 +3,9 @@
 #include "DebugManager.h"
 #include "DebugVisualizer.h"
 #include "DebugConsole.h"
-#include "./Engine/Engine.hpp"
-#include "./Engine/Logger.hpp"
-#include "./Engine/Input.hpp"
+#include "./Engine/Engine.h"
+#include "./Engine/Logger.h"
+#include "./Engine/Input.h"
 
 DebugManager::DebugManager()
     : console_(std::make_unique<DebugConsole>()),

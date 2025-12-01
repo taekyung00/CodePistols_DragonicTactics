@@ -8,22 +8,22 @@
  * \par CS200 Computer Graphics I
  * \copyright DigiPen Institute of Technology
  */
-#include "Engine.hpp"
+#include "Engine.h"
 
-#include "CS200/ImGuiHelper.hpp"
-#include "CS200/ImmediateRenderer2D.hpp"
-#include "CS200/NDC.hpp"
-#include "CS200/RenderingAPI.hpp"
-#include "FPS.hpp"
-#include "Font.hpp"
-#include "GameState.hpp"
-#include "GameStateManager.hpp"
-#include "Input.hpp"
-#include "Logger.hpp"
-#include "TextManager.hpp"
-#include "TextureManager.hpp"
-#include "Timer.hpp"
-#include "Window.hpp"
+#include "CS200/ImGuiHelper.h"
+#include "CS200/ImmediateRenderer2D.h"
+#include "CS200/NDC.h"
+#include "CS200/RenderingAPI.h"
+#include "FPS.h"
+#include "Font.h"
+#include "GameState.h"
+#include "GameStateManager.h"
+#include "Input.h"
+#include "Logger.h"
+#include "TextManager.h"
+#include "TextureManager.h"
+#include "Timer.h"
+#include "Window.h"
 
 #include <chrono>
 

@@ -9,9 +9,9 @@ Created:    May 18, 2025
 */
 #pragma once
 #include "Component.h"
-#include "Rect.hpp"
+#include "Rect.h"
 #include "GameObject.h"
-#include "Matrix.hpp"
+#include "Matrix.h"
 
 namespace Math {
     class TransformationMatrix;

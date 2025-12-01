@@ -12,9 +12,9 @@ Created:    March 19, 2025
 
 #include "GameObject.h"
 #include "Sprite.h"
-#include "TextureManager.hpp"
-#include "Logger.hpp"
-#include "Path.hpp"
+#include "TextureManager.h"
+#include "Logger.h"
+#include "Path.h"
 
 CS230::Sprite::Sprite(const std::filesystem::path& sprite_file, GameObject* _given_object) {
     Load(sprite_file, _given_object);

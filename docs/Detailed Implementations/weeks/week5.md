@@ -1,3228 +1,2293 @@
-# Playtest 1 Polish & Integration - Week 5
+# Week 5 구현 계획 - 시스템 안정화 및 UI 구축
 
-**Project**: Dragonic Tactics - Turn-based Tactical RPG
-**Phase**: Polish + Playtest 1 Preparation
-**Timeline**: Week 5 of 5 (Playtest 1 milestone)
-**Strategy**: Complete BattleState integration, polish all systems, prepare playable build
+**프로젝트**: Dragonic Tactics - 턴제 전술 RPG
+**단계**: 시스템 안정화, 게임 UI 구현, 리팩토링
+**기간**: Week 5 / 26주 (마감: 2025-12-09)
+**전략**: 5명의 개발자가 병렬로 핵심 안정화 작업 수행
 
-**Last Updated**: 2025-01-31
-**Week 4 Status**: Initiative system complete, Fighter AI functional, Status effects tracking, Data-driven design with hot-reload
+**최종 업데이트**: 2025-11-27
+**Week 4 상태**: Week 1-3 완료, REFACTORING_TODO.md 완료
 
-**Related Documentation**:
+**관련 문서**:
 
-- [Week 1](week1.md) for foundation systems
-- [Week 2](week2.md) for Dragon and Fighter base classes
-- [Week 3](week3.md) for spell system and combat integration
-- [Week 4](week4.md) for initiative, AI, and status effects
-- [docs/implementation-plan.md](../../implementation-plan.md) for complete 26-week timeline
+- [Week 1-4](week1.md) - 이전 주차 구현
+- [docs/implementation-plan.md](../../implementation-plan.md) - 전체 26주 타임라인
+- [architecture/REFACTORING_TODO.md](../../../architecture/REFACTORING_TODO.md) - 리팩토링 완료 사항
 
 ---
 
-## Overview
+## 📋 목차
 
-Week 5 finalizes the Playtest 1 build by integrating all systems into BattleState, polishing visuals and UI, adding game flow controls (death handling, victory/defeat screens), and preparing a stable playable build for external testing. This week transitions from feature development to polish and integration.
-
-**Critical Success Criteria:**
-
-- ✅ **BattleState Complete**: Full game loop with all Week 1-4 systems integrated
-- ✅ **UI/UX Polish**: Health bars, turn indicator, spell selection UI, grid highlights
-- ✅ **Game Flow Complete**: Death handling, victory/defeat conditions, battle end screen
-- ✅ **Visual Effects**: Spell animations, damage numbers, attack feedback
-- ✅ **Stability & Testing**: No crashes, 80+ tests passing, playable build ready
-
-**Integration Goal (Friday Week 5)**:
-
-- Dragon vs Fighter fully playable from start to finish
-- Complete UI with health bars, turn order, spell selection
-- All 3 Dragon spells functional with visual feedback
-- Fighter AI makes smart decisions
-- Victory/defeat screens with battle statistics
-- Stable build for external playtesting
-
-**Meeting Schedule:**
-
-- **Daily Standups**: 10 min each morning (9:00 AM)
-- **Mid-Week Integration Check**: Wednesday 2:00 PM (60 min - test full game flow)
-- **Friday Playtest 1**: 2:00 PM (90 min - external playtest with feedback collection)
+- [Week 5 개요](#week-5-개요)
+- [개발자 A: 턴 플로우 시스템 명확화](#개발자-a-턴-플로우-시스템-명확화)
+- [개발자 B: AI 시스템 강화](#개발자-b-ai-시스템-강화)
+- [개발자 C: 게임 UI 시스템 구현](#개발자-c-게임-ui-시스템-구현)
+- [개발자 D: 캐릭터 소유권 모델 재설계](#개발자-d-캐릭터-소유권-모델-재설계)
+- [개발자 E: AI 행동 시각화 및 맵 데이터 로딩](#개발자-e-ai-행동-시각화-및-맵-데이터-로딩)
+- [Week 5 통합 테스트](#week-5-통합-테스트)
+- [Week 5 산출물 및 검증](#week-5-산출물-및-검증)
 
 ---
 
-## Table of Contents
+## Week 5 개요
 
-- [Week 5 Overview](#overview)
-- [Developer A: Visual Effects & Animation](#week-5-developer-a---visual-effects--animation)
-  - [Implementation Tasks](#implementation-tasks-visual-effects)
-  - [Implementation Examples](#implementation-examples-visual-effects)
-  - [Rigorous Testing](#rigorous-testing-visual-effects)
-  - [Daily Breakdown](#daily-breakdown-developer-a)
-- [Developer B: Game Flow & Victory Conditions](#week-5-developer-b---game-flow--victory-conditions)
-  - [Implementation Tasks](#implementation-tasks-game-flow)
-  - [Implementation Examples](#implementation-examples-game-flow)
-  - [Rigorous Testing](#rigorous-testing-game-flow)
-  - [Daily Breakdown](#daily-breakdown-developer-b)
-- [Developer C: UI/UX Polish](#week-5-developer-c---uiux-polish)
-  - [Implementation Tasks](#implementation-tasks-ui-polish)
-  - [Implementation Examples](#implementation-examples-ui-polish)
-  - [Rigorous Testing](#rigorous-testing-ui-polish)
-  - [Daily Breakdown](#daily-breakdown-developer-c)
-- [Developer D: BattleState Integration](#week-5-developer-d---battlestate-integration)
-  - [Implementation Tasks](#implementation-tasks-battlestate-integration)
-  - [Implementation Examples](#implementation-examples-battlestate-integration)
-  - [Rigorous Testing](#rigorous-testing-battlestate-integration)
-  - [Daily Breakdown](#daily-breakdown-developer-d)
-- [Developer E: Testing & Build Preparation](#week-5-developer-e---testing--build-preparation)
-  - [Implementation Tasks](#implementation-tasks-testing-build)
-  - [Implementation Examples](#implementation-examples-testing-build)
-  - [Rigorous Testing](#rigorous-testing-testing-build)
-  - [Daily Breakdown](#daily-breakdown-developer-e)
-- [Week 5 Integration Test](#week-5-integration-test-wednesday--friday)
-- [Week 5 Deliverable & Verification](#week-5-deliverable--verification)
-- [Playtest 1 Execution Plan](#playtest-1-execution-plan)
+Week 5는 게임의 **핵심 안정화** 및 **플레이어 경험 개선**에 집중합니다. Week 1-3에서 구축한 시스템들의 문제점을 해결하고, 실제 플레이 가능한 상태로 만듭니다.
+
+### 핵심 목표
+
+1. **턴 시스템 안정화**: 모든 턴 작업이 명확하게 정의되고 실행됨을 보장
+2. **AI 시스템 강화**: 4명의 모험가 캐릭터에 대한 robust한 AI 구현
+3. **게임 UI 구축**: 플레이어가 게임 상태를 파악할 수 있는 UI (ImGui 아님!)
+4. **메모리 안정성**: 스마트 포인터 도입으로 메모리 누수 방지
+5. **플레이 경험 개선**: AI pause 시스템 및 맵 로딩
+
+### 주요 변경사항 (Week 4 대비)
+
+- **리팩토링 완료**: Engine-Game 의존성 역전, PCH 구축, GamePlay 리팩토링 모두 완료
+- **UI 명확화**: ImGui (디버그용) vs 게임 UI (플레이용) 구분
+- **메모리 관리**: Raw 포인터 → 스마트 포인터 전환
+
+### 통합 목표 (금요일)
+
+- **플레이 가능한 데모**: Dragon vs Fighter 전투가 완전히 플레이 가능
+- **UI 완비**: 게임 UI로 모든 정보 확인 가능
+- **AI 작동**: Fighter가 자율적으로 전투
+- **안정성**: 메모리 누수 없음, 크래시 없음
 
 ---
 
-## Week 5: Developer A - Visual Effects & Animation
+## 개발자 A: 턴 플로우 시스템 명확화
 
-**Goal**: Add visual polish to spells, attacks, and damage feedback for enhanced player experience
+**목표**: 매 턴마다 실행되어야 하는 작업들의 명확한 정의 및 함수 일대일 대응
 
-**Foundation**:
+**기초 지식**:
 
-- Week 3 spell system (Fireball, CreateWall, LavaPool)
-- Week 3 CombatSystem for attack execution
-- CS230 Animation system for frame-based animation
-- CS230 Particle system for effects
+- Week 3에서 TurnManager 구현 완료
+- 현재 문제: 함수 중복 호출, 누락된 작업, 호출 순서 불명확
 
-**Files to Create**:
+**파일 수정 목록**:
 
 ```
-DragonicTactics/source/Game/DragonicTactics/VFX/VFXManager.h (new file)
-DragonicTactics/source/Game/DragonicTactics/VFX/VFXManager.cpp (new file)
-DragonicTactics/source/Game/DragonicTactics/VFX/SpellEffect.h (new file)
-DragonicTactics/source/Game/DragonicTactics/VFX/SpellEffect.cpp (new file)
-DragonicTactics/source/Game/DragonicTactics/VFX/DamageNumber.h (new file)
-DragonicTactics/source/Game/DragonicTactics/VFX/DamageNumber.cpp (new file)
-DragonicTactics/source/Game/DragonicTactics/Test/VFXTests.cpp (new file)
+DragonicTactics/source/Game/DragonicTactics/StateComponents/TurnManager.h/cpp
+DragonicTactics/source/Game/DragonicTactics/Objects/Character.h/cpp
+DragonicTactics/source/Game/DragonicTactics/Objects/Dragon.h/cpp
+DragonicTactics/source/Game/DragonicTactics/Objects/Fighter.h/cpp
+DragonicTactics/source/Game/DragonicTactics/Test/TestTurnFlow.h/cpp (신규)
+docs/turn-flow-chart.md (신규)
 ```
 
-**Files to Modify**:
+---
 
+### 구현 작업 (턴 플로우 시스템)
+
+#### **Task 1: 턴 플로우 차트 작성** (Day 1-2)
+
+**목표**: 턴 시스템의 모든 작업을 시각적으로 정리
+
+**단계**:
+
+1. **턴 시작 시 필수 작업 목록 작성**
+   
+   ```
+   1. StatusEffectManager - 시작 시 효과 적용 (Burn 데미지 등)
+   2. ActionPoints - Refresh() 호출
+   3. MovementComponent - 이동 가능 범위 초기화
+   4. Character - OnTurnStart() 호출 (캐릭터별 커스텀 로직)
+   5. EventBus - TurnStartedEvent 발행
+   ```
+
+2. **턴 진행 중 허용 작업**
+   
+   ```
+   - 이동 (AP 소모)
+   - 공격 (AP 소모)
+   - 스펠 캐스팅 (AP + 스펠 슬롯 소모)
+   - 대기 (턴 종료)
+   ```
+
+3. **턴 종료 시 필수 작업**
+   
+   ```
+   1. StatusEffectManager - 종료 시 효과 적용
+   2. Character - OnTurnEnd() 호출
+   3. ActionPoints - 남은 AP 기록 (디버그용)
+   4. EventBus - TurnEndedEvent 발행
+   5. TurnManager - 다음 캐릭터로 이동
+   ```
+
+4. **라운드 전환 시 작업**
+   
+   ```
+   1. TurnManager - 라운드 번호 증가
+   2. EventBus - RoundStartedEvent 발행
+   3. BattleManager - 승리 조건 체크 (선택사항)
+   ```
+
+**플로우 차트 (Mermaid 형식)**:
+
+```markdown
+# docs/turn-flow-chart.md
+
+## 턴 플로우 차트
+
+\`\`\`mermaid
+graph TD
+    A[전투 시작] --> B[TurnManager::InitializeTurnOrder]
+    B --> C[라운드 1 시작]
+    C --> D{턴 시작}
+
+    D --> E[StatusEffectManager::ApplyStartOfTurnEffects]
+    E --> F[ActionPoints::Refresh]
+    F --> G[MovementComponent::ResetMovementRange]
+    G --> H[Character::OnTurnStart]
+    H --> I[EventBus::Publish TurnStartedEvent]
+
+    I --> J{플레이어 or AI?}
+    J -->|플레이어| K[플레이어 입력 대기]
+    J -->|AI| L[AISystem::ExecuteAITurn]
+
+    K --> M{행동 선택}
+    L --> M
+
+    M -->|이동| N[MovementComponent::Move]
+    M -->|공격| O[CombatSystem::ExecuteAttack]
+    M -->|스펠| P[SpellSystem::CastSpell]
+    M -->|대기| Q[턴 종료]
+
+    N --> R{AP 남음?}
+    O --> R
+    P --> R
+
+    R -->|Yes| M
+    R -->|No| Q
+
+    Q --> S[StatusEffectManager::ApplyEndOfTurnEffects]
+    S --> T[Character::OnTurnEnd]
+    T --> U[EventBus::Publish TurnEndedEvent]
+    U --> V[TurnManager::AdvanceTurn]
+
+    V --> W{모든 캐릭터 턴 완료?}
+    W -->|No| D
+    W -->|Yes| X[라운드 종료]
+
+    X --> Y{전투 종료?}
+    Y -->|No| C
+    Y -->|Yes| Z[전투 종료]
+\`\`\`
 ```
-DragonicTactics/source/Game/DragonicTactics/Objects/Character.cpp (add damage feedback)
-DragonicTactics/source/Game/DragonicTactics/States/BattleState.cpp (integrate VFX)
-```
 
-### Implementation Tasks (Visual Effects)
+**중요 원칙**:
 
-#### **Task 1: VFXManager Singleton**
-
-**Goal**: Create centralized system for managing visual effects lifecycle
-
-**Steps**:
-
-1. Create VFXManager singleton with event-driven architecture
-2. Subscribe to combat events (CharacterDamagedEvent, SpellCastEvent, etc.)
-3. Implement effect spawning and update loop
-4. Manage effect cleanup when animations complete
-5. Integrate with BattleState rendering pipeline
-
-**Why this matters**: Visual effects need centralized management to avoid memory leaks and ensure proper rendering order. Event-driven approach ensures effects trigger automatically without manual coupling to game systems.
-
-**Key Design Principles**:
-
-- Effects are spawned in response to events (loose coupling)
-- VFXManager owns effect lifecycle (automatic cleanup)
-- Effects render in layers (background → gameplay → foreground)
-- Pooling for frequently spawned effects (damage numbers)
+- 각 박스 = 하나의 함수 호출
+- 함수 중복 호출 금지
+- 모든 경로에서 필수 작업 누락 없음
 
 ---
 
-#### **Task 2: Spell Visual Effects**
+#### **Task 2: 함수 일대일 대응** (Day 2-3)
 
-**Goal**: Create visual feedback for Fireball, CreateWall, and LavaPool spells
+**목표**: 플로우 차트의 각 항목과 실제 함수를 1:1 매핑, 중복 제거
 
-**Steps**:
-
-1. Implement Fireball explosion animation (expanding circle with particles)
-2. Implement CreateWall materialization effect (tiles rising from ground)
-3. Implement LavaPool bubbling animation (animated sprite)
-4. Add spell casting indicator (preparation phase visual)
-5. Synchronize effects with spell execution timing
-
-**Visual Design**:
-
-- **Fireball**: Orange/red explosion expanding from impact point, particle burst
-- **CreateWall**: Stone tiles rising with dust particles
-- **LavaPool**: Bubbling lava texture with heat distortion particles
-
-**Timing Considerations**:
-
-- Effects should complete before next action starts
-- Option to speed up/skip effects for faster gameplay
-- Effects don't block game state updates (visual only)
-
----
-
-#### **Task 3: Damage Numbers**
-
-**Goal**: Display floating damage numbers when characters take damage
-
-**Steps**:
-
-1. Create DamageNumber class (position, value, lifetime, color)
-2. Spawn damage numbers on CharacterDamagedEvent
-3. Implement floating animation (rise and fade out)
-4. Color-code by damage type (red = physical, orange = fire, etc.)
-5. Support critical hit visuals (larger font, yellow color)
-
-**Design Specs**:
-
-- **Lifetime**: 1.5 seconds
-- **Animation**: Rise 30 pixels, fade out after 1 second
-- **Font Size**: 24pt normal, 36pt critical hits
-- **Colors**: Red (physical), Orange (fire), Blue (cold), Yellow (lightning)
-
----
-
-#### **Task 4: Attack Visual Feedback**
-
-**Goal**: Add visual effects when characters attack (melee swing, projectile)
-
-**Steps**:
-
-1. Implement melee attack slash effect (arc from attacker to target)
-2. Add hit impact particles when attack connects
-3. Implement attack miss feedback (whiff animation)
-4. Add character sprite flash on damage taken
-5. Synchronize attack animation with damage application
-
-**Attack Flow**:
-
-1. Attacker plays attack animation
-2. Projectile/slash effect travels to target
-3. Impact effect spawns on target
-4. Damage number appears
-5. Target flashes red briefly
-
----
-
-#### **Task 5: Grid Visual Enhancements**
-
-**Goal**: Add visual feedback for grid interactions (hover, selection, movement range)
-
-**Steps**:
-
-1. Implement tile hover effect (highlight hovered tile)
-2. Add movement range visualization (blue overlay on walkable tiles)
-3. Add spell range visualization (red overlay on targetable tiles)
-4. Implement path preview (show movement path when hovering destination)
-5. Add invalid action feedback (red X on invalid tiles)
-
-**Visual Layers**:
-
-- **Base Grid**: Always visible
-- **Range Overlay**: Semi-transparent colored tiles
-- **Hover Highlight**: Bright outline on hovered tile
-- **Path Preview**: Animated dashed line
-
----
-
-### Implementation Examples (Visual Effects)
-
-#### **Example 1: VFXManager Singleton**
+**현재 문제**:
 
 ```cpp
-// File: DragonicTactics/source/Game/DragonicTactics/VFX/VFXManager.h
-#pragma once
-#include "../../../Engine/Component.h"
-#include "SpellEffect.h"
-#include "DamageNumber.h"
-#include <vector>
-#include <memory>
+// 문제 1: Character::OnTurnStart()가 호출되지 않음
+void Character::OnTurnStart() {
+    // 이 함수는 아무도 호출하지 않음!
+    GetGOComponent<ActionPoints>()->Refresh();  // ← 중복!
+}
 
-// Manages all visual effects in the battle
-class VFXManager : public CS230::Component {
-public:
-    // Singleton access
-    static VFXManager& Instance();
-
-    // Component interface
-    void Update(double dt) override;
-    void Draw(Math::TransformationMatrix camera_matrix);
-
-    // Effect spawning (public interface - SnakeCase)
-    void SpawnDamageNumber(Math::vec2 position, int damage, DamageType type, bool is_critical);
-    void SpawnSpellEffect(const std::string& spell_name, Math::vec2 position);
-    void SpawnAttackEffect(Math::vec2 from, Math::vec2 to, bool hit);
-    void SpawnDeathEffect(Math::vec2 position);
-
-    // Effect management
-    void ClearAllEffects();
-    int GetActiveEffectCount() const;
-
-private:
-    VFXManager();
-    ~VFXManager() override = default;
-    VFXManager(const VFXManager&) = delete;
-    VFXManager& operator=(const VFXManager&) = delete;
-
-    // Event subscription (private - snake_case)
-    void subscribe_to_events();
-    void on_character_damaged(const CharacterDamagedEvent& event);
-    void on_spell_cast(const SpellCastEvent& event);
-    void on_character_death(const CharacterDeathEvent& event);
-
-    // Effect lifecycle
-    void update_effects(double dt);
-    void remove_finished_effects();
-
-    // Effect storage
-    std::vector<std::unique_ptr<DamageNumber>> damage_numbers_;
-    std::vector<std::unique_ptr<SpellEffect>> spell_effects_;
-    std::vector<std::unique_ptr<CS230::Particle>> particles_;
-};
+// 문제 2: TurnManager에서 직접 호출
+void TurnManager::StartNextTurn() {
+    Character* current = GetCurrentCharacter();
+    current->RefreshActionPoints();  // ← 중복!
+}
 ```
+
+**해결 방법**:
+
+**Step 1: 중복 함수 제거**
 
 ```cpp
-// File: DragonicTactics/source/Game/DragonicTactics/VFX/VFXManager.cpp
-#include "VFXManager.h"
-#include "../Singletons/EventBus.h"
-#include "../Types/Events.h"
-#include "../../../Engine/Engine.hpp"
-
-VFXManager& VFXManager::Instance() {
-    static VFXManager instance;
-    return instance;
-}
-
-VFXManager::VFXManager() {
-    subscribe_to_events();
-}
-
-void VFXManager::subscribe_to_events() {
-    // Subscribe to combat events
-    EventBus::Instance().Subscribe<CharacterDamagedEvent>(
-        [this](const CharacterDamagedEvent& event) {
-            on_character_damaged(event);
-        }
-    );
-
-    EventBus::Instance().Subscribe<SpellCastEvent>(
-        [this](const SpellCastEvent& event) {
-            on_spell_cast(event);
-        }
-    );
-
-    EventBus::Instance().Subscribe<CharacterDeathEvent>(
-        [this](const CharacterDeathEvent& event) {
-            on_character_death(event);
-        }
-    );
-}
-
-void VFXManager::on_character_damaged(const CharacterDamagedEvent& event) {
-    // Spawn damage number at character position
-    Math::vec2 char_pos = event.target->GetPosition();
-    bool is_crit = false; // TODO: Get from CombatSystem
-
-    SpawnDamageNumber(char_pos, event.damage, event.damage_type, is_crit);
-
-    Engine::GetLogger().LogEvent("VFX: Spawned damage number " +
-                                  std::to_string(event.damage) + " at position");
-}
-
-void VFXManager::on_spell_cast(const SpellCastEvent& event) {
-    // Spawn spell effect at target position
-    SpawnSpellEffect(event.spell_name, event.target_tile);
-
-    Engine::GetLogger().LogEvent("VFX: Spawned spell effect for " + event.spell_name);
-}
-
-void VFXManager::on_character_death(const CharacterDeathEvent& event) {
-    // Spawn death effect at character position
-    Math::vec2 char_pos = event.character->GetPosition();
-    SpawnDeathEffect(char_pos);
-
-    Engine::GetLogger().LogEvent("VFX: Spawned death effect");
-}
-
-void VFXManager::SpawnDamageNumber(Math::vec2 position, int damage, DamageType type, bool is_critical) {
-    auto damage_num = std::make_unique<DamageNumber>(position, damage, type, is_critical);
-    damage_numbers_.push_back(std::move(damage_num));
-}
-
-void VFXManager::SpawnSpellEffect(const std::string& spell_name, Math::vec2 position) {
-    auto effect = std::make_unique<SpellEffect>(spell_name, position);
-    spell_effects_.push_back(std::move(effect));
-}
-
-void VFXManager::SpawnAttackEffect(Math::vec2 from, Math::vec2 to, bool hit) {
-    // Create slash/projectile effect from attacker to target
-    // Implementation depends on attack type (melee vs ranged)
-}
-
-void VFXManager::SpawnDeathEffect(Math::vec2 position) {
-    // Create death particle effect (smoke, fade out, etc.)
-}
-
-void VFXManager::Update(double dt) {
-    update_effects(dt);
-    remove_finished_effects();
-}
-
-void VFXManager::update_effects(double dt) {
-    // Update all damage numbers
-    for (auto& dmg_num : damage_numbers_) {
-        dmg_num->Update(dt);
-    }
-
-    // Update all spell effects
-    for (auto& effect : spell_effects_) {
-        effect->Update(dt);
-    }
-
-    // Update all particles
-    for (auto& particle : particles_) {
-        particle->Update(dt);
-    }
-}
-
-void VFXManager::remove_finished_effects() {
-    // Remove damage numbers that have finished
-    damage_numbers_.erase(
-        std::remove_if(damage_numbers_.begin(), damage_numbers_.end(),
-            [](const std::unique_ptr<DamageNumber>& dmg) {
-                return dmg->IsFinished();
-            }),
-        damage_numbers_.end()
-    );
-
-    // Remove spell effects that have finished
-    spell_effects_.erase(
-        std::remove_if(spell_effects_.begin(), spell_effects_.end(),
-            [](const std::unique_ptr<SpellEffect>& effect) {
-                return effect->IsFinished();
-            }),
-        spell_effects_.end()
-    );
-}
-
-void VFXManager::Draw(Math::TransformationMatrix camera_matrix) {
-    // Draw all effects
-    for (auto& dmg_num : damage_numbers_) {
-        dmg_num->Draw(camera_matrix);
-    }
-
-    for (auto& effect : spell_effects_) {
-        effect->Draw(camera_matrix);
-    }
-
-    for (auto& particle : particles_) {
-        particle->Draw(camera_matrix);
-    }
-}
-
-void VFXManager::ClearAllEffects() {
-    damage_numbers_.clear();
-    spell_effects_.clear();
-    particles_.clear();
-
-    Engine::GetLogger().LogEvent("VFX: Cleared all effects");
-}
-
-int VFXManager::GetActiveEffectCount() const {
-    return static_cast<int>(damage_numbers_.size() + spell_effects_.size() + particles_.size());
-}
-```
-
----
-
-#### **Example 2: DamageNumber Class**
-
-```cpp
-// File: DragonicTactics/source/Game/DragonicTactics/VFX/DamageNumber.h
-#pragma once
-#include "../../../Engine/Vec2.hpp"
-#include "../../../Engine/Matrix.hpp"
-#include "../Types/CharacterTypes.h"
-#include <string>
-
-// Floating damage number that appears when characters take damage
-class DamageNumber {
-public:
-    // Constructor (public interface - SnakeCase)
-    DamageNumber(Math::vec2 spawn_position, int damage_value, DamageType type, bool is_critical);
-
-    // Update and rendering
-    void Update(double dt);
-    void Draw(Math::TransformationMatrix camera_matrix);
-
-    // Lifecycle
-    bool IsFinished() const { return lifetime_remaining_ <= 0.0; }
-
-private:
-    // Get color based on damage type (private - snake_case)
-    CS200::Color get_damage_color(DamageType type) const;
-    float get_font_size() const;
-    float get_alpha() const;
-
-    // State
-    Math::vec2 position_;
-    Math::vec2 velocity_;
-    int damage_;
-    DamageType type_;
-    bool is_critical_;
-
-    // Animation
-    double lifetime_remaining_;
-    double lifetime_total_;
-    static constexpr double FLOAT_SPEED = 30.0; // pixels per second
-    static constexpr double LIFETIME = 1.5; // seconds
-};
-```
-
-```cpp
-// File: DragonicTactics/source/Game/DragonicTactics/VFX/DamageNumber.cpp
-#include "DamageNumber.h"
-#include "../../../Engine/Engine.hpp"
-#include "../../../CS200/RGBA.hpp"
-
-DamageNumber::DamageNumber(Math::vec2 spawn_position, int damage_value, DamageType type, bool is_critical)
-    : position_(spawn_position)
-    , velocity_{0.0, FLOAT_SPEED} // Float upward
-    , damage_(damage_value)
-    , type_(type)
-    , is_critical_(is_critical)
-    , lifetime_remaining_(LIFETIME)
-    , lifetime_total_(LIFETIME)
-{
-}
-
-void DamageNumber::Update(double dt) {
-    // Move upward
-    position_ += velocity_ * dt;
-
-    // Decrease lifetime
-    lifetime_remaining_ -= dt;
-}
-
-void DamageNumber::Draw(Math::TransformationMatrix camera_matrix) {
-    // Get color based on damage type
-    CS200::Color color = get_damage_color(type_);
-
-    // Apply alpha fade
-    color.alpha = static_cast<unsigned char>(get_alpha() * 255.0f);
-
-    // Get font size
-    float font_size = get_font_size();
-
-    // Render damage text
-    std::string damage_text = std::to_string(damage_);
-    if (is_critical_) {
-        damage_text += "!"; // Add exclamation for critical hits
-    }
-
-    Engine::GetTextManager().Draw(
-        damage_text,
-        position_,
-        font_size,
-        color
-    );
-}
-
-CS200::Color DamageNumber::get_damage_color(DamageType type) const {
-    if (is_critical_) {
-        return {255, 255, 0, 255}; // Yellow for crits
-    }
-
-    switch (type) {
-        case DamageType::Physical:
-            return {255, 0, 0, 255}; // Red
-        case DamageType::Fire:
-            return {255, 128, 0, 255}; // Orange
-        case DamageType::Cold:
-            return {0, 128, 255, 255}; // Light blue
-        case DamageType::Lightning:
-            return {255, 255, 128, 255}; // Yellow-white
-        case DamageType::Poison:
-            return {0, 255, 0, 255}; // Green
-        default:
-            return {255, 255, 255, 255}; // White
-    }
-}
-
-float DamageNumber::get_font_size() const {
-    if (is_critical_) {
-        return 36.0f; // Larger for crits
-    }
-    return 24.0f; // Normal size
-}
-
-float DamageNumber::get_alpha() const {
-    // Fade out in the last 0.5 seconds
-    if (lifetime_remaining_ < 0.5) {
-        return static_cast<float>(lifetime_remaining_ / 0.5);
-    }
-    return 1.0f; // Full opacity
-}
-```
-
----
-
-### Rigorous Testing (Visual Effects)
-
-#### **Test 1: VFXManager Singleton**
-
-```cpp
-// File: DragonicTactics/source/Game/DragonicTactics/Test/VFXTests.cpp
-
-bool TestVFXManagerSingleton() {
-    // Test singleton instance
-    VFXManager& vfx1 = VFXManager::Instance();
-    VFXManager& vfx2 = VFXManager::Instance();
-
-    if (&vfx1 != &vfx2) {
-        Engine::GetLogger().LogError("VFXManager singleton failed - different instances");
-        return false;
-    }
-
-    Engine::GetLogger().LogEvent("✅ VFXManager singleton test passed");
-    return true;
-}
-```
-
-#### **Test 2: Damage Number Spawning**
-
-```cpp
-bool TestDamageNumberSpawning() {
-    VFXManager& vfx = VFXManager::Instance();
-    vfx.ClearAllEffects();
-
-    // Spawn damage number
-    Math::vec2 pos{100.0, 200.0};
-    vfx.SpawnDamageNumber(pos, 25, DamageType::Physical, false);
-
-    if (vfx.GetActiveEffectCount() != 1) {
-        Engine::GetLogger().LogError("Damage number spawning failed");
-        return false;
-    }
-
-    Engine::GetLogger().LogEvent("✅ Damage number spawning test passed");
-    return true;
-}
-```
-
-#### **Test 3: Damage Number Lifecycle**
-
-```cpp
-bool TestDamageNumberLifecycle() {
-    VFXManager& vfx = VFXManager::Instance();
-    vfx.ClearAllEffects();
-
-    // Spawn damage number
-    vfx.SpawnDamageNumber({100, 200}, 50, DamageType::Fire, false);
-
-    // Update for full lifetime (1.5 seconds + buffer)
-    for (int i = 0; i < 160; ++i) {
-        vfx.Update(0.01); // 10ms per frame
-    }
-
-    // Should be removed after lifetime expires
-    if (vfx.GetActiveEffectCount() != 0) {
-        Engine::GetLogger().LogError("Damage number lifecycle failed - effect not removed");
-        return false;
-    }
-
-    Engine::GetLogger().LogEvent("✅ Damage number lifecycle test passed");
-    return true;
-}
-```
-
-#### **Test 4: Event-Driven Effect Spawning**
-
-```cpp
-bool TestEventDrivenEffects() {
-    VFXManager& vfx = VFXManager::Instance();
-    vfx.ClearAllEffects();
-
-    // Create mock character
-    Dragon dragon({3, 3});
-    Fighter fighter({5, 5});
-
-    // Publish CharacterDamagedEvent
-    CharacterDamagedEvent event{
-        .target = &fighter,
-        .damage = 30,
-        .attacker = &dragon,
-        .damage_type = DamageType::Fire
-    };
-
-    EventBus::Instance().Publish(event);
-
-    // VFXManager should have spawned damage number automatically
-    if (vfx.GetActiveEffectCount() == 0) {
-        Engine::GetLogger().LogError("Event-driven effect spawning failed");
-        return false;
-    }
-
-    Engine::GetLogger().LogEvent("✅ Event-driven effect spawning test passed");
-    return true;
-}
-```
-
-#### **Test 5: Multiple Effects**
-
-```cpp
-bool TestMultipleEffects() {
-    VFXManager& vfx = VFXManager::Instance();
-    vfx.ClearAllEffects();
-
-    // Spawn multiple damage numbers
-    vfx.SpawnDamageNumber({100, 100}, 10, DamageType::Physical, false);
-    vfx.SpawnDamageNumber({200, 100}, 20, DamageType::Fire, false);
-    vfx.SpawnDamageNumber({300, 100}, 30, DamageType::Cold, true);
-
-    if (vfx.GetActiveEffectCount() != 3) {
-        Engine::GetLogger().LogError("Multiple effects test failed");
-        return false;
-    }
-
-    // Update all effects
-    vfx.Update(0.1);
-
-    // All should still be alive
-    if (vfx.GetActiveEffectCount() != 3) {
-        Engine::GetLogger().LogError("Multiple effects update failed");
-        return false;
-    }
-
-    Engine::GetLogger().LogEvent("✅ Multiple effects test passed");
-    return true;
-}
-```
-
----
-
-### Daily Breakdown (Developer A)
-
-#### **Monday (7-8 hours)**
-
-- Create VFXManager singleton skeleton (1 hr)
-- Implement event subscription system (1.5 hrs)
-- Create DamageNumber class with animation (2 hrs)
-- Test damage number spawning and lifecycle (1.5 hrs)
-- Integrate VFXManager with BattleState rendering (1 hr)
-- **Deliverable**: Damage numbers working in combat
-
-#### **Tuesday (7-8 hours)**
-
-- Implement SpellEffect base class (1.5 hrs)
-- Create Fireball explosion effect (2 hrs)
-- Create CreateWall materialization effect (1.5 hrs)
-- Create LavaPool bubbling effect (1.5 hrs)
-- Test spell effects triggering on SpellCastEvent (1 hr)
-- **Deliverable**: All 3 spell visual effects working
-
-#### **Wednesday (6-7 hours)**
-
-- Implement attack visual feedback (slash/projectile) (2 hrs)
-- Add hit impact particles (1.5 hrs)
-- Implement character damage flash (1 hr)
-- Test attack effects in combat (1.5 hrs)
-- Bug fixes from testing (1 hr)
-- **Deliverable**: Attack visuals complete
-
-#### **Thursday (6-7 hours)**
-
-- Implement grid hover highlights (1.5 hrs)
-- Add movement range visualization (2 hrs)
-- Add spell range visualization (1.5 hrs)
-- Implement path preview (2 hrs)
-- **Deliverable**: Grid visual enhancements complete
-
-#### **Friday (4-5 hours)**
-
-- Write comprehensive VFX test suite (2 hrs)
-- Polish visual timing and animations (1 hr)
-- Performance optimization (particle pooling) (1 hr)
-- Final VFX integration test with BattleState (1 hr)
-- **Deliverable**: All VFX polished and production-ready
-
----
-
-## Week 5: Developer B - Game Flow & Victory Conditions
-
-**Goal**: Implement complete game flow including death handling, victory/defeat conditions, and battle end screens
-
-**Foundation**:
-
-- Week 4 TurnManager for tracking combat state
-- Week 3 CombatSystem for damage application
-- Week 1 EventBus for game state events
-- CS230 GameStateManager for state transitions
-
-**Files to Create**:
-
-```
-DragonicTactics/source/Game/DragonicTactics/States/VictoryScreen.h (new file)
-DragonicTactics/source/Game/DragonicTactics/States/VictoryScreen.cpp (new file)
-DragonicTactics/source/Game/DragonicTactics/States/DefeatScreen.h (new file)
-DragonicTactics/source/Game/DragonicTactics/States/DefeatScreen.cpp (new file)
-DragonicTactics/source/Game/DragonicTactics/Singletons/BattleStatistics.h (new file)
-DragonicTactics/source/Game/DragonicTactics/Singletons/BattleStatistics.cpp (new file)
-DragonicTactics/source/Game/DragonicTactics/Test/GameFlowTests.cpp (new file)
-```
-
-**Files to Modify**:
-
-```
-DragonicTactics/source/Game/DragonicTactics/States/BattleState.h (add victory checking)
-DragonicTactics/source/Game/DragonicTactics/States/BattleState.cpp (implement death handling)
-DragonicTactics/source/Game/DragonicTactics/Objects/Character.cpp (add death state)
-```
-
-### Implementation Tasks (Game Flow)
-
-#### **Task 1: Death Handling System**
-
-**Goal**: Properly handle character death with visual feedback and state transitions
-
-**Steps**:
-
-1. Add death state to Character class (IsAlive(), IsDead())
-2. Implement OnDeath() method with event publishing
-3. Add death animation/visual feedback integration
-4. Handle dead character in turn order (skip their turns)
-5. Prevent actions from/to dead characters
-
-**Why this matters**: Death is a critical game state transition that must be handled consistently across all systems. Improper death handling causes crashes and soft-locks.
-
----
-
-#### **Task 2: Victory Condition Detection**
-
-**Goal**: Detect when battle ends due to all enemies defeated
-
-**Steps**:
-
-1. Implement BattleState::CheckVictoryConditions() called each turn end
-2. Detect when all enemy characters are dead
-3. Publish BattleEndedEvent with victory result
-4. Trigger victory screen transition
-5. Calculate battle statistics (turns survived, damage dealt, spells cast)
-
----
-
-#### **Task 3: Battle Statistics Tracking**
-
-**Goal**: Track comprehensive battle statistics for end screen display
-
-**Steps**:
-
-1. Create BattleStatistics singleton to track combat metrics
-2. Subscribe to all combat events (damage, healing, spells, turns)
-3. Calculate aggregate statistics (total damage, accuracy, spell usage)
-4. Provide statistics report for victory/defeat screens
-5. Reset statistics when new battle starts
-
----
-
-#### **Task 4: Victory Screen**
-
-**Goal**: Create victory screen displaying battle results and statistics
-
-**Steps**:
-
-1. Create VictoryScreen GameState class
-2. Display battle statistics in formatted UI
-3. Show "Victory!" message
-4. Provide options (Return to Menu, Next Battle)
-5. Handle input for screen navigation
-
----
-
-#### **Task 5: Defeat Screen**
-
-**Goal**: Create defeat screen when Dragon dies
-
-**Steps**:
-
-1. Create DefeatScreen GameState class
-2. Display cause of death and battle statistics
-3. Show "Defeat" message
-4. Provide options (Retry Battle, Return to Menu)
-5. Handle input for screen navigation
-
----
-
-### Implementation Examples (Game Flow)
-
-#### **Example 1: Character Death Handling**
-
-```cpp
-// File: DragonicTactics/source/Game/DragonicTactics/Objects/Character.h
-
+// Character.h - OnTurnStart 제거 또는 수정
 class Character : public CS230::GameObject {
 public:
-    // Death state (public interface - SnakeCase)
-    virtual void OnDeath();
-    bool IsAlive() const { return is_alive_; }
-    bool IsDead() const { return !is_alive_; }
-
-    // Override TakeDamage to check for death
-    void TakeDamage(int damage, Character* attacker) override;
-
-protected:
-    bool is_alive_ = true;
-
-    // Death handling (private - snake_case)
-    void handle_death();
+    // ❌ 제거: void OnTurnStart();
+    // ✅ 유지하되, RefreshActionPoints는 제거
+    virtual void OnTurnStart() {
+        // 캐릭터별 커스텀 로직만 (예: Dragon의 특수 능력)
+        // ActionPoints는 TurnManager가 관리
+    }
 };
 ```
 
 ```cpp
-// File: DragonicTactics/source/Game/DragonicTactics/Objects/Character.cpp
+// TurnManager.cpp - 명확한 책임 분리
+void TurnManager::StartNextTurn() {
+    Character* current = GetCurrentCharacter();
 
-void Character::TakeDamage(int damage, Character* attacker) {
-    if (IsDead()) {
-        Engine::GetLogger().LogVerbose("Cannot damage dead character");
+    // 1. StatusEffects 먼저
+    StatusEffectManager::Instance().ApplyStartOfTurnEffects(current);
+
+    // 2. ActionPoints 리프레시
+    current->GetGOComponent<ActionPoints>()->Refresh();
+
+    // 3. MovementRange 초기화
+    current->GetGOComponent<MovementComponent>()->ResetMovementRange();
+
+    // 4. 캐릭터별 커스텀 로직 (virtual 함수)
+    current->OnTurnStart();
+
+    // 5. 이벤트 발행
+    TurnStartedEvent event{current, current_turn_, round_number_};
+    EventBus::Instance().Publish(event);
+
+    Engine::GetLogger().LogEvent("Turn started for " + current->TypeName());
+}
+```
+
+**Step 2: 함수 호출 체크리스트 작성**
+
+```cpp
+// TurnManager.h - 체크리스트 주석 추가
+class TurnManager : public CS230::Component {
+public:
+    void StartNextTurn();  // 턴 시작 체크리스트:
+                           // [1] ApplyStartOfTurnEffects
+                           // [2] Refresh ActionPoints
+                           // [3] Reset MovementRange
+                           // [4] Character::OnTurnStart (virtual)
+                           // [5] Publish TurnStartedEvent
+
+    void EndCurrentTurn(); // 턴 종료 체크리스트:
+                           // [1] ApplyEndOfTurnEffects
+                           // [2] Character::OnTurnEnd (virtual)
+                           // [3] Publish TurnEndedEvent
+                           // [4] AdvanceTurn
+};
+```
+
+---
+
+#### **Task 3: 디버그 로깅 시스템** (Day 3-4)
+
+**목표**: `__PRETTY_FUNCTION__` 매크로로 함수 호출 추적
+
+**구현 예시**:
+
+```cpp
+// TurnManager.cpp
+void TurnManager::StartNextTurn() {
+    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - BEGIN");
+
+    Character* current = GetCurrentCharacter();
+
+    // 1. StatusEffects
+    Engine::GetLogger().LogDebug("  [1/5] ApplyStartOfTurnEffects");
+    StatusEffectManager::Instance().ApplyStartOfTurnEffects(current);
+
+    // 2. ActionPoints
+    Engine::GetLogger().LogDebug("  [2/5] Refresh ActionPoints");
+    current->GetGOComponent<ActionPoints>()->Refresh();
+
+    // 3. MovementRange
+    Engine::GetLogger().LogDebug("  [3/5] Reset MovementRange");
+    current->GetGOComponent<MovementComponent>()->ResetMovementRange();
+
+    // 4. OnTurnStart
+    Engine::GetLogger().LogDebug("  [4/5] Character::OnTurnStart");
+    current->OnTurnStart();
+
+    // 5. Event
+    Engine::GetLogger().LogDebug("  [5/5] Publish TurnStartedEvent");
+    TurnStartedEvent event{current, current_turn_, round_number_};
+    EventBus::Instance().Publish(event);
+
+    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - END");
+}
+```
+
+**Character.cpp에도 적용**:
+
+```cpp
+void Dragon::OnTurnStart() {
+    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - Dragon 턴 시작");
+    // Dragon 특수 로직 (예: 드래곤 브레스 쿨다운 감소)
+}
+
+void Fighter::OnTurnStart() {
+    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - Fighter 턴 시작");
+    // Fighter 특수 로직 (예: 방어 태세 초기화)
+}
+```
+
+**로그 출력 예시**:
+
+```
+[DEBUG] TurnManager::StartNextTurn - BEGIN
+[DEBUG]   [1/5] ApplyStartOfTurnEffects
+[DEBUG] StatusEffectManager::ApplyStartOfTurnEffects - Applying Burn to Fighter
+[DEBUG]   [2/5] Refresh ActionPoints
+[DEBUG] ActionPoints::Refresh - AP set to 2
+[DEBUG]   [3/5] Reset MovementRange
+[DEBUG]   [4/5] Character::OnTurnStart
+[DEBUG] Fighter::OnTurnStart - Fighter 턴 시작
+[DEBUG]   [5/5] Publish TurnStartedEvent
+[DEBUG] TurnManager::StartNextTurn - END
+```
+
+---
+
+#### **Task 4: 테스트 및 검증** (Day 4-5)
+
+**테스트 파일**: `DragonicTactics/source/Game/DragonicTactics/Test/TestTurnFlow.h/cpp`
+
+**테스트 시나리오**:
+
+```cpp
+// TestTurnFlow.cpp
+#include "pch.h"
+#include "TestTurnFlow.h"
+#include "../StateComponents/TurnManager.h"
+#include "../Objects/Dragon.h"
+#include "../Objects/Fighter.h"
+
+void TestTurnFlow::TestSingleTurn() {
+    // Setup
+    TurnManager* turn_mgr = GetGSComponent<TurnManager>();
+    Dragon* dragon = CreateTestDragon();
+
+    // 로그 활성화
+    Engine::GetLogger().SetLogLevel(LogLevel::Debug);
+
+    // Test
+    turn_mgr->StartNextTurn();
+
+    // Verify
+    // 1. ActionPoints가 리프레시되었는가?
+    auto ap = dragon->GetGOComponent<ActionPoints>();
+    assert(ap->GetCurrent() == 2);  // Dragon은 AP 2
+
+    // 2. OnTurnStart가 호출되었는가? (로그 확인)
+    // 3. TurnStartedEvent가 발행되었는가?
+
+    turn_mgr->EndCurrentTurn();
+
+    // Verify
+    // 1. OnTurnEnd가 호출되었는가?
+    // 2. TurnEndedEvent가 발행되었는가?
+    // 3. 다음 캐릭터로 이동했는가?
+}
+
+void TestTurnFlow::TestFullRound() {
+    // 전체 라운드 테스트 (Dragon → Fighter)
+    TurnManager* turn_mgr = GetGSComponent<TurnManager>();
+
+    // 턴 1: Dragon
+    turn_mgr->StartNextTurn();
+    turn_mgr->EndCurrentTurn();
+
+    // 턴 2: Fighter
+    turn_mgr->StartNextTurn();
+    turn_mgr->EndCurrentTurn();
+
+    // Verify: 라운드 2로 진행되었는가?
+    assert(turn_mgr->GetRoundNumber() == 2);
+}
+
+void TestTurnFlow::TestEdgeCases() {
+    // 엣지 케이스 테스트
+
+    // 1. 첫 턴 (라운드 1, 턴 1)
+    // 2. 마지막 턴 (모든 캐릭터 턴 완료 후)
+    // 3. 캐릭터 사망 시 (턴 스킵)
+}
+```
+
+**GamePlay.cpp에서 테스트 단축키 추가**:
+
+```cpp
+void GamePlay::Update(double dt) {
+    auto& input = Engine::GetInput();
+
+    if (input.IsKeyPressed(InputKey::F9)) {
+        // F9: 턴 플로우 테스트 실행
+        Engine::GetLogger().LogEvent("=== Turn Flow Test START ===");
+        TestTurnFlow::TestSingleTurn();
+        TestTurnFlow::TestFullRound();
+        TestTurnFlow::TestEdgeCases();
+        Engine::GetLogger().LogEvent("=== Turn Flow Test END ===");
+    }
+
+    // ...
+}
+```
+
+---
+
+### 구현 예시 (턴 플로우 시스템)
+
+**파일**: `TurnManager.cpp` (개선된 버전)
+
+```cpp
+#include "pch.h"
+#include "TurnManager.h"
+#include "../Objects/Character.h"
+#include "StatusEffectManager.h"
+#include "EventBus.h"
+
+void TurnManager::StartNextTurn() {
+    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - BEGIN");
+
+    if (current_turn_index_ >= turn_order_.size()) {
+        StartNewRound();
         return;
     }
 
-    auto stats = GetGOComponent<StatsComponent>();
-    if (!stats) return;
+    Character* current = turn_order_[current_turn_index_];
 
-    // Apply damage
-    int old_hp = stats->GetCurrentHP();
-    stats->TakeDamage(damage);
-    int new_hp = stats->GetCurrentHP();
+    // 체크리스트 [1/5]: StatusEffects 시작 효과
+    Engine::GetLogger().LogDebug("  [1/5] ApplyStartOfTurnEffects");
+    StatusEffectManager::Instance().ApplyStartOfTurnEffects(current);
 
-    // Publish damage event
-    CharacterDamagedEvent event{this, damage, attacker, DamageType::Physical};
-    EventBus::Instance().Publish(event);
-
-    // Check for death
-    if (new_hp <= 0 && old_hp > 0) {
-        handle_death();
+    // 체크리스트 [2/5]: ActionPoints 리프레시
+    Engine::GetLogger().LogDebug("  [2/5] Refresh ActionPoints");
+    auto ap = current->GetGOComponent<ActionPoints>();
+    if (ap) {
+        ap->Refresh();
     }
 
-    Engine::GetLogger().LogEvent(TypeName() + " took " + std::to_string(damage) + " damage");
-}
+    // 체크리스트 [3/5]: MovementRange 초기화
+    Engine::GetLogger().LogDebug("  [3/5] Reset MovementRange");
+    auto movement = current->GetGOComponent<MovementComponent>();
+    if (movement) {
+        movement->ResetMovementRange();
+    }
 
-void Character::handle_death() {
-    is_alive_ = false;
+    // 체크리스트 [4/5]: 캐릭터별 OnTurnStart (virtual)
+    Engine::GetLogger().LogDebug("  [4/5] Character::OnTurnStart (virtual)");
+    current->OnTurnStart();
 
-    OnDeath();
-
-    // Publish death event
-    CharacterDeathEvent event{this};
+    // 체크리스트 [5/5]: 이벤트 발행
+    Engine::GetLogger().LogDebug("  [5/5] Publish TurnStartedEvent");
+    TurnStartedEvent event{
+        current,
+        static_cast<int>(current_turn_index_),
+        round_number_
+    };
     EventBus::Instance().Publish(event);
 
-    Engine::GetLogger().LogEvent(TypeName() + " has died!");
+    is_turn_active_ = true;
+
+    Engine::GetLogger().LogEvent("Turn started: " + current->TypeName() +
+                                  " (Round " + std::to_string(round_number_) +
+                                  ", Turn " + std::to_string(current_turn_index_ + 1) + ")");
+    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - END");
 }
 
-void Character::OnDeath() {
-    // Default implementation - subclasses can override
+void TurnManager::EndCurrentTurn() {
+    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - BEGIN");
+
+    if (!is_turn_active_) {
+        Engine::GetLogger().LogWarning("EndCurrentTurn called but no turn is active");
+        return;
+    }
+
+    Character* current = turn_order_[current_turn_index_];
+
+    // 체크리스트 [1/3]: StatusEffects 종료 효과
+    Engine::GetLogger().LogDebug("  [1/3] ApplyEndOfTurnEffects");
+    StatusEffectManager::Instance().ApplyEndOfTurnEffects(current);
+
+    // 체크리스트 [2/3]: 캐릭터별 OnTurnEnd (virtual)
+    Engine::GetLogger().LogDebug("  [2/3] Character::OnTurnEnd (virtual)");
+    current->OnTurnEnd();
+
+    // 체크리스트 [3/3]: 이벤트 발행
+    Engine::GetLogger().LogDebug("  [3/3] Publish TurnEndedEvent");
+    TurnEndedEvent event{
+        current,
+        static_cast<int>(current_turn_index_)
+    };
+    EventBus::Instance().Publish(event);
+
+    is_turn_active_ = false;
+    current_turn_index_++;
+
+    Engine::GetLogger().LogEvent("Turn ended: " + current->TypeName());
+    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - END");
+}
+
+void TurnManager::StartNewRound() {
+    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - BEGIN");
+
+    round_number_++;
+    current_turn_index_ = 0;
+
+    Engine::GetLogger().LogEvent("=== Round " + std::to_string(round_number_) + " START ===");
+
+    RoundStartedEvent event{round_number_};
+    EventBus::Instance().Publish(event);
+
+    // 첫 캐릭터 턴 시작
+    StartNextTurn();
+
+    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - END");
 }
 ```
 
 ---
 
-#### **Example 2: BattleStatistics Singleton**
+### 엄격한 테스트 (턴 플로우 시스템)
+
+**테스트 목표**: 모든 필수 함수가 정확히 한 번씩 호출되는지 확인
+
+**방법 1: 로그 분석**
+
+```bash
+# 게임 실행 후 로그 파일 확인
+grep "PRETTY_FUNCTION" DragonicTactics/log.txt
+
+# 예상 출력:
+# TurnManager::StartNextTurn - BEGIN
+# TurnManager::StartNextTurn - END
+# Fighter::OnTurnStart
+# TurnManager::EndCurrentTurn - BEGIN
+# TurnManager::EndCurrentTurn - END
+```
+
+**방법 2: 이벤트 카운터**
 
 ```cpp
-// File: DragonicTactics/source/Game/DragonicTactics/Singletons/BattleStatistics.h
-#pragma once
-#include <string>
-#include <map>
-
-class BattleStatistics {
-public:
-    // Singleton access
-    static BattleStatistics& Instance();
-
-    // Battle lifecycle (public interface - SnakeCase)
-    void StartNewBattle();
-    void EndBattle(bool victory);
-    std::string GenerateReport() const;
-
-    // Statistic recording
-    void RecordDamageDealt(int damage);
-    void RecordDamageTaken(int damage);
-    void RecordSpellCast(const std::string& spell_name);
-    void RecordKill();
-    void RecordTurn();
-
-    // Getters
-    int GetTotalDamageDealt() const { return total_damage_dealt_; }
-    int GetTotalDamageTaken() const { return total_damage_taken_; }
-    int GetTurns() const { return turns_; }
-    int GetSpellsCast() const { return spells_cast_; }
-    int GetKills() const { return kills_; }
-
+// TestTurnFlow.cpp
+class EventCounter {
 private:
-    BattleStatistics() = default;
-    ~BattleStatistics() = default;
-    BattleStatistics(const BattleStatistics&) = delete;
-    BattleStatistics& operator=(const BattleStatistics&) = delete;
+    int turn_started_count = 0;
+    int turn_ended_count = 0;
 
-    // Event subscription (private - snake_case)
-    void subscribe_to_events();
-    void on_character_damaged(const CharacterDamagedEvent& event);
-    void on_spell_cast(const SpellCastEvent& event);
+public:
+    void Setup() {
+        EventBus::Instance().Subscribe<TurnStartedEvent>(
+            [this](const TurnStartedEvent&) {
+                turn_started_count++;
+            }
+        );
 
-    // Statistics
-    int total_damage_dealt_ = 0;
-    int total_damage_taken_ = 0;
-    int turns_ = 0;
-    int spells_cast_ = 0;
-    int kills_ = 0;
+        EventBus::Instance().Subscribe<TurnEndedEvent>(
+            [this](const TurnEndedEvent&) {
+                turn_ended_count++;
+            }
+        );
+    }
 
-    std::map<std::string, int> spell_counts_;
+    void Verify(int expected_starts, int expected_ends) {
+        assert(turn_started_count == expected_starts);
+        assert(turn_ended_count == expected_ends);
+    }
 };
+
+void TestTurnFlow::TestEventCounts() {
+    EventCounter counter;
+    counter.Setup();
+
+    TurnManager* turn_mgr = GetGSComponent<TurnManager>();
+
+    // 2턴 실행
+    turn_mgr->StartNextTurn();
+    turn_mgr->EndCurrentTurn();
+    turn_mgr->StartNextTurn();
+    turn_mgr->EndCurrentTurn();
+
+    // Verify: 2번의 Start, 2번의 End
+    counter.Verify(2, 2);
+}
+```
+
+**방법 3: ActionPoints 검증**
+
+```cpp
+void TestTurnFlow::TestActionPointsRefresh() {
+    Dragon* dragon = CreateTestDragon();
+    auto ap = dragon->GetGOComponent<ActionPoints>();
+
+    // 초기 상태: AP 2
+    assert(ap->GetCurrent() == 2);
+
+    // AP 소모
+    ap->Spend(2);
+    assert(ap->GetCurrent() == 0);
+
+    // 턴 시작 → AP 리프레시되어야 함
+    TurnManager::Instance().StartNextTurn();
+    assert(ap->GetCurrent() == 2);  // ✅ 리프레시 확인
+}
 ```
 
 ---
 
-### Rigorous Testing (Game Flow)
+### 사용 예시 (턴 플로우 시스템)
 
-#### **Test 1: Character Death State**
-
-```cpp
-bool TestCharacterDeathState() {
-    Dragon dragon({3, 3});
-
-    if (!dragon.IsAlive()) {
-        Engine::GetLogger().LogError("Character not alive at start");
-        return false;
-    }
-
-    dragon.TakeDamage(1000, nullptr);
-
-    if (!dragon.IsDead()) {
-        Engine::GetLogger().LogError("Character not dead after lethal damage");
-        return false;
-    }
-
-    Engine::GetLogger().LogEvent("✅ Character death state test passed");
-    return true;
-}
-```
-
-#### **Test 2: Death Event Publishing**
+**GamePlay.cpp에서 턴 관리**:
 
 ```cpp
-bool TestDeathEventPublishing() {
-    bool event_received = false;
+void GamePlay::Update(double dt) {
+    TurnManager* turn_mgr = GetGSComponent<TurnManager>();
+    Character* current = turn_mgr->GetCurrentCharacter();
 
-    EventBus::Instance().Subscribe<CharacterDeathEvent>(
-        [&event_received](const CharacterDeathEvent& event) {
-            event_received = true;
+    if (!current) return;
+
+    // 플레이어 턴 (Dragon)
+    if (current->GetCharacterType() == CharacterTypes::Dragon) {
+        // 플레이어 입력 처리
+        if (player_action_complete) {
+            turn_mgr->EndCurrentTurn();  // ✅ 체크리스트 자동 실행
         }
-    );
-
-    Fighter fighter({5, 5});
-    fighter.TakeDamage(1000, nullptr);
-
-    if (!event_received) {
-        Engine::GetLogger().LogError("Death event not received");
-        return false;
     }
-
-    Engine::GetLogger().LogEvent("✅ Death event publishing test passed");
-    return true;
-}
-```
-
-#### **Test 3: Battle Statistics Tracking**
-
-```cpp
-bool TestBattleStatisticsTracking() {
-    BattleStatistics::Instance().StartNewBattle();
-
-    BattleStatistics::Instance().RecordDamageDealt(50);
-    BattleStatistics::Instance().RecordDamageTaken(30);
-    BattleStatistics::Instance().RecordSpellCast("Fireball");
-    BattleStatistics::Instance().RecordKill();
-
-    if (BattleStatistics::Instance().GetTotalDamageDealt() != 50) {
-        Engine::GetLogger().LogError("Damage dealt tracking failed");
-        return false;
+    // AI 턴 (Fighter)
+    else {
+        AISystem::Instance().ExecuteAITurn(current);
+        if (ai_action_complete) {
+            turn_mgr->EndCurrentTurn();  // ✅ 체크리스트 자동 실행
+        }
     }
-
-    Engine::GetLogger().LogEvent("✅ Battle statistics tracking test passed");
-    return true;
 }
 ```
 
-#### **Test 4: Dead Character Cannot Act**
+**디버깅 예시**:
 
 ```cpp
-bool TestDeadCharacterCannotAct() {
-    Fighter fighter({5, 5});
-    fighter.TakeDamage(1000, nullptr);
+// F9 키로 턴 플로우 테스트 실행
+if (Engine::GetInput().IsKeyPressed(InputKey::F9)) {
+    Engine::GetLogger().SetLogLevel(LogLevel::Debug);  // 상세 로그 활성화
 
-    Dragon dragon({3, 3});
-    fighter.PerformAttack(&dragon);
+    TurnManager::Instance().StartNextTurn();
+    // 로그 확인:
+    // [DEBUG] TurnManager::StartNextTurn - BEGIN
+    // [DEBUG]   [1/5] ApplyStartOfTurnEffects
+    // ...
+    // [DEBUG] TurnManager::StartNextTurn - END
 
-    auto stats = dragon.GetGOComponent<StatsComponent>();
-    if (stats->GetCurrentHP() != stats->GetMaxHP()) {
-        Engine::GetLogger().LogError("Dead character dealt damage");
-        return false;
-    }
-
-    Engine::GetLogger().LogEvent("✅ Dead character cannot act test passed");
-    return true;
-}
-```
-
-#### **Test 5: Victory Condition Detection**
-
-```cpp
-bool TestVictoryConditionDetection() {
-    BattleState battle;
-    battle.Load();
-
-    Dragon* dragon = battle.GetDragon();
-    Fighter* fighter = battle.GetFighter();
-
-    fighter->TakeDamage(1000, dragon);
-    battle.CheckVictoryConditions();
-
-    Engine::GetLogger().LogEvent("✅ Victory condition detection test passed");
-    return true;
+    TurnManager::Instance().EndCurrentTurn();
+    // 로그 확인:
+    // [DEBUG] TurnManager::EndCurrentTurn - BEGIN
+    // ...
 }
 ```
 
 ---
 
-### Daily Breakdown (Developer B)
+### 일일 작업 분배 (개발자 A)
 
-#### **Monday (7-8 hours)**
+| 일차      | 작업           | 예상 시간 | 산출물                |
+| ------- | ------------ | ----- | ------------------ |
+| Day 1   | 턴 플로우 차트 작성  | 4h    | turn-flow-chart.md |
+| Day 1-2 | 필수 작업 목록 정리  | 4h    | 체크리스트 문서           |
+| Day 2   | 중복 함수 제거     | 4h    | TurnManager.cpp 수정 |
+| Day 3   | 함수 일대일 대응 완료 | 4h    | Character.cpp 수정   |
+| Day 3   | 디버그 로깅 추가    | 4h    | 모든 함수에 로깅          |
+| Day 4   | 테스트 코드 작성    | 4h    | TestTurnFlow.cpp   |
+| Day 4-5 | 통합 테스트 및 검증  | 8h    | 테스트 레포트            |
 
-- Implement Character death state (IsAlive, IsDead) (1.5 hrs)
-- Add OnDeath() method with event publishing (1 hr)
-- Handle dead characters in turn order (2 hrs)
-- Test death state transitions (1.5 hrs)
-- Integrate death handling with TurnManager (1 hr)
-- **Deliverable**: Death handling system functional
-
-#### **Tuesday (7-8 hours)**
-
-- Create BattleStatistics singleton (2 hrs)
-- Implement event subscription for statistics tracking (2 hrs)
-- Add statistic recording methods (1.5 hrs)
-- Implement GenerateReport() method (1 hr)
-- Test statistics tracking with mock combat (1 hr)
-- **Deliverable**: Battle statistics tracking complete
-
-#### **Wednesday (6-7 hours)**
-
-- Implement CheckVictoryConditions() in BattleState (2 hrs)
-- Add victory/defeat detection logic (2.5 hrs)
-- Test victory/defeat triggering (1.5 hrs)
-- **Deliverable**: Victory condition detection working
-
-#### **Thursday (6-7 hours)**
-
-- Create VictoryScreen GameState (2.5 hrs)
-- Create DefeatScreen GameState (2.5 hrs)
-- Implement screen rendering and input handling (2 hrs)
-- **Deliverable**: Victory/defeat screens complete
-
-#### **Friday (4-5 hours)**
-
-- Write comprehensive game flow test suite (2 hrs)
-- Polish screen layouts and formatting (1 hr)
-- Final integration test (1 hr)
-- Bug fixes from testing (1 hr)
-- **Deliverable**: Game flow production-ready
+**총 예상 시간**: 32시간 (4일)
 
 ---
 
-## Week 5: Developer C - UI/UX Polish
+## 개발자 B: AI 시스템 강화
 
-**Goal**: Create polished UI elements for health bars, turn indicators, spell selection, and grid highlights
+**목표**: 4명의 모험가 캐릭터에 대한 robust한 AI 구현
 
-**Foundation**:
-
-- Week 4 DataRegistry for UI configuration
-- Week 2 GridSystem for grid rendering
-- CS230 TextManager for text rendering
-- ImGui for debug UI (optional overlay)
-
-**Files to Create**:
+**파일 수정 목록**:
 
 ```
-DragonicTactics/source/Game/DragonicTactics/UI/UIManager.h (new file)
-DragonicTactics/source/Game/DragonicTactics/UI/UIManager.cpp (new file)
-DragonicTactics/source/Game/DragonicTactics/UI/HealthBar.h (new file)
-DragonicTactics/source/Game/DragonicTactics/UI/HealthBar.cpp (new file)
-DragonicTactics/source/Game/DragonicTactics/UI/TurnIndicator.h (new file)
-DragonicTactics/source/Game/DragonicTactics/UI/TurnIndicator.cpp (new file)
-DragonicTactics/source/Game/DragonicTactics/UI/SpellSelectionUI.h (new file)
-DragonicTactics/source/Game/DragonicTactics/UI/SpellSelectionUI.cpp (new file)
-DragonicTactics/source/Game/DragonicTactics/Test/UITests.cpp (new file)
-```
-
-**Files to Modify**:
-
-```
-DragonicTactics/source/Game/DragonicTactics/States/BattleState.cpp (integrate UI rendering)
-DragonicTactics/source/Game/DragonicTactics/StateComponents/GridSystem.cpp (add grid highlights)
-```
-
-### Implementation Tasks (UI/UX)
-
-#### **Task 1: UIManager Singleton**
-
-**Goal**: Centralized UI management system for all battle UI elements
-
-**Steps**:
-
-1. Create UIManager singleton to coordinate all UI elements
-2. Implement UI layer rendering order (background → gameplay → UI → overlay)
-3. Add UI element registration and update loop
-4. Integrate with BattleState rendering pipeline
-5. Handle UI input events (hover, click)
-
-**Why this matters**: UI elements need coordinated rendering and consistent visual hierarchy. Centralized management prevents z-fighting and ensures proper event handling.
-
----
-
-#### **Task 2: Health Bars**
-
-**Goal**: Display character HP as visual bar above character sprites
-
-**Steps**:
-
-1. Create HealthBar class with position, max_hp, current_hp
-2. Implement bar rendering (filled portion + background)
-3. Add color coding (green → yellow → red as HP decreases)
-4. Subscribe to CharacterDamagedEvent for automatic updates
-5. Position health bars above character sprites (follow character position)
-
-**Design Specs**:
-
-- **Bar Size**: 60px wide, 8px tall
-- **Position**: 10px above character sprite
-- **Colors**: Green (>66% HP), Yellow (33-66% HP), Red (<33% HP)
-- **Border**: 1px black outline
-
----
-
-#### **Task 3: Turn Indicator**
-
-**Goal**: Show which character's turn it is with visual highlight
-
-**Steps**:
-
-1. Create TurnIndicator class to highlight active character
-2. Implement arrow/marker above active character
-3. Add turn order display (list of upcoming turns)
-4. Subscribe to TurnStartedEvent for automatic updates
-5. Animate turn transitions (fade in/out)
-
-**Visual Design**:
-
-- **Active Character**: Bright yellow arrow above sprite
-- **Turn Order List**: Side panel showing next 3 turns
-- **Turn Number**: Display current turn number
-
----
-
-#### **Task 4: Spell Selection UI**
-
-**Goal**: Interactive spell selection menu when Dragon chooses action
-
-**Steps**:
-
-1. Create SpellSelectionUI panel for spell choices
-2. Display available spells with icons, names, spell slot costs
-3. Show spell descriptions on hover
-4. Handle keyboard/mouse input for spell selection
-5. Disable unavailable spells (insufficient spell slots, invalid range)
-
-**UI Layout**:
-
-```
-┌─────────────────────────────┐
-│     SELECT SPELL            │
-├─────────────────────────────┤
-│ [1] Fireball (Lvl 3) ✓      │
-│ [2] Create Wall (Lvl 2) ✓   │
-│ [3] Lava Pool (Lvl 4) ✓     │
-│ [A] Melee Attack            │
-│ [ESC] Cancel                │
-└─────────────────────────────┘
+DragonicTactics/source/Game/DragonicTactics/StateComponents/AISystem.h/cpp
+DragonicTactics/source/Game/DragonicTactics/Objects/Fighter.h/cpp
+DragonicTactics/source/Game/DragonicTactics/Test/TestAI.h/cpp
+docs/ai-decision-tree.md (신규)
 ```
 
 ---
 
-#### **Task 5: Grid Highlights & Tooltips**
+### 구현 작업 (AI 시스템 강화)
 
-**Goal**: Visual feedback for tile hover, movement range, and spell range
+#### **Task 1: 공통 AI 프레임워크** (Day 1-2)
 
-**Steps**:
+**목표**: 모든 AI 캐릭터가 공유하는 기본 결정 트리
 
-1. Implement tile hover highlighting (bright outline on hovered tile)
-2. Add movement range overlay (blue transparent tiles for walkable)
-3. Add spell range overlay (red transparent tiles for targetable)
-4. Implement tile tooltips (show tile type, occupant, distance)
-5. Add path preview (dashed line showing movement path)
+**AI 결정 단계**:
 
-**Visual Layers**:
+```
+1. Evaluate Situation (상황 평가)
+   - 자신의 HP, AP
+   - 적의 위치, HP
+   - 거리 계산
+   - 위협도 평가
 
-- **Base Grid**: Always visible grid lines
-- **Range Overlay**: Semi-transparent colored tiles (alpha 0.3)
-- **Hover Highlight**: Bright white outline (2px)
-- **Path Preview**: Animated dashed line
+2. Generate Actions (행동 후보 생성)
+   - 이동 가능 위치
+   - 공격 가능 대상
+   - 스펠 캐스팅 가능 여부
 
----
+3. Score Actions (행동 점수 계산)
+   - 각 행동의 기대 효과
+   - Bias 적용 (공격성, 방어성)
 
-### Implementation Examples (UI/UX)
+4. Select Best Action (최적 행동 선택)
+   - 가장 높은 점수의 행동 실행
+```
 
-#### **Example 1: UIManager Singleton**
+**구현 예시**:
 
 ```cpp
-// File: DragonicTactics/source/Game/DragonicTactics/UI/UIManager.h
-#pragma once
-#include "../../../Engine/Component.h"
-#include "HealthBar.h"
-#include "TurnIndicator.h"
-#include "SpellSelectionUI.h"
-#include <vector>
-#include <memory>
-
-// Manages all UI elements in battle
-class UIManager : public CS230::Component {
+// AISystem.h
+class AISystem : public CS230::Component {
 public:
-    // Singleton access
-    static UIManager& Instance();
+    struct SituationEvaluation {
+        Character* self;
+        Character* primary_target;
+        std::vector<Character*> all_enemies;
 
-    // Component interface
-    void Update(double dt) override;
-    void Draw(Math::TransformationMatrix camera_matrix);
+        int self_hp_percent;
+        int target_hp_percent;
+        int distance_to_target;
+        int threat_level;  // 0-100
+    };
 
-    // UI element management (public interface - SnakeCase)
-    void RegisterHealthBar(HealthBar* health_bar);
-    void UnregisterHealthBar(HealthBar* health_bar);
-    void ShowSpellSelectionUI(bool show);
-    void UpdateTurnIndicator(Character* active_character);
+    struct AIAction {
+        enum Type { Move, Attack, CastSpell, Defend };
 
-    // Input handling
-    bool HandleInput(const CS230::Input& input);
+        Type type;
+        Math::ivec2 target_position;
+        Character* target_character;
+        int spell_id;
 
-private:
-    UIManager() = default;
-    ~UIManager() override = default;
-    UIManager(const UIManager&) = delete;
-    UIManager& operator=(const UIManager&) = delete;
+        float score;  // 행동 점수
+        std::string reasoning;  // 디버그용
+    };
 
-    // UI elements (private - snake_case)
-    std::vector<HealthBar*> health_bars_;
-    std::unique_ptr<TurnIndicator> turn_indicator_;
-    std::unique_ptr<SpellSelectionUI> spell_selection_ui_;
+    // 공통 AI 프레임워크
+    SituationEvaluation EvaluateSituation(Character* ai_character);
+    std::vector<AIAction> GenerateActions(Character* ai_character, const SituationEvaluation& eval);
+    void ScoreActions(std::vector<AIAction>& actions, const SituationEvaluation& eval, float aggression_bias);
+    AIAction SelectBestAction(const std::vector<AIAction>& actions);
+    void ExecuteAction(Character* ai_character, const AIAction& action);
 
-    bool spell_ui_visible_ = false;
-
-    // Rendering layers
-    void draw_health_bars(Math::TransformationMatrix camera_matrix);
-    void draw_turn_indicator(Math::TransformationMatrix camera_matrix);
-    void draw_spell_selection_ui();
+    // 캐릭터별 AI (virtual로 오버라이드 가능)
+    virtual void ExecuteFighterAI(Character* fighter);
+    virtual void ExecuteClericAI(Character* cleric);  // 향후 구현
+    virtual void ExecuteWizardAI(Character* wizard);  // 향후 구현
+    virtual void ExecuteRogueAI(Character* rogue);    // 향후 구현
 };
 ```
 
+**상황 평가 구현**:
+
 ```cpp
-// File: DragonicTactics/source/Game/DragonicTactics/UI/UIManager.cpp
-#include "UIManager.h"
-#include "../../../Engine/Engine.hpp"
+AISystem::SituationEvaluation AISystem::EvaluateSituation(Character* ai_character) {
+    SituationEvaluation eval;
+    eval.self = ai_character;
 
-UIManager& UIManager::Instance() {
-    static UIManager instance;
-    return instance;
-}
+    // 1. 자신의 상태
+    auto stats = ai_character->GetGOComponent<StatsComponent>();
+    eval.self_hp_percent = (stats->GetCurrentHP() * 100) / stats->GetMaxHP();
 
-void UIManager::Update(double dt) {
-    // Update all UI elements
-    if (turn_indicator_) {
-        turn_indicator_->Update(dt);
+    // 2. 적 탐색
+    GridSystem* grid = GetGSComponent<GridSystem>();
+    eval.all_enemies = grid->GetCharactersByType(CharacterTypes::Dragon);  // Dragon이 적
+
+    if (eval.all_enemies.empty()) {
+        eval.primary_target = nullptr;
+        return eval;
     }
 
-    if (spell_selection_ui_ && spell_ui_visible_) {
-        spell_selection_ui_->Update(dt);
-    }
+    // 3. 주요 타겟 선택 (가장 가까운 적)
+    eval.primary_target = FindClosestEnemy(ai_character, eval.all_enemies);
 
-    for (auto* health_bar : health_bars_) {
-        health_bar->Update(dt);
-    }
-}
+    // 4. 거리 계산
+    Math::ivec2 self_pos = ai_character->GetGOComponent<GridPosition>()->Get();
+    Math::ivec2 target_pos = eval.primary_target->GetGOComponent<GridPosition>()->Get();
+    eval.distance_to_target = std::abs(target_pos.x - self_pos.x) + std::abs(target_pos.y - self_pos.y);
 
-void UIManager::Draw(Math::TransformationMatrix camera_matrix) {
-    // Render UI in layers
-    draw_health_bars(camera_matrix);
-    draw_turn_indicator(camera_matrix);
+    // 5. 타겟 HP
+    auto target_stats = eval.primary_target->GetGOComponent<StatsComponent>();
+    eval.target_hp_percent = (target_stats->GetCurrentHP() * 100) / target_stats->GetMaxHP();
 
-    if (spell_ui_visible_) {
-        draw_spell_selection_ui();
-    }
-}
+    // 6. 위협도 평가 (타겟이 강할수록 높음)
+    eval.threat_level = eval.target_hp_percent + (eval.distance_to_target < 3 ? 30 : 0);
 
-void UIManager::draw_health_bars(Math::TransformationMatrix camera_matrix) {
-    for (auto* health_bar : health_bars_) {
-        health_bar->Draw(camera_matrix);
-    }
-}
+    Engine::GetLogger().LogDebug("AI Evaluation: HP=" + std::to_string(eval.self_hp_percent) +
+                                  "%, Distance=" + std::to_string(eval.distance_to_target) +
+                                  ", Threat=" + std::to_string(eval.threat_level));
 
-void UIManager::draw_turn_indicator(Math::TransformationMatrix camera_matrix) {
-    if (turn_indicator_) {
-        turn_indicator_->Draw(camera_matrix);
-    }
-}
-
-void UIManager::draw_spell_selection_ui() {
-    if (spell_selection_ui_) {
-        spell_selection_ui_->Draw();
-    }
-}
-
-void UIManager::RegisterHealthBar(HealthBar* health_bar) {
-    health_bars_.push_back(health_bar);
-    Engine::GetLogger().LogVerbose("UIManager: Registered health bar");
-}
-
-void UIManager::UnregisterHealthBar(HealthBar* health_bar) {
-    auto it = std::find(health_bars_.begin(), health_bars_.end(), health_bar);
-    if (it != health_bars_.end()) {
-        health_bars_.erase(it);
-        Engine::GetLogger().LogVerbose("UIManager: Unregistered health bar");
-    }
-}
-
-void UIManager::ShowSpellSelectionUI(bool show) {
-    spell_ui_visible_ = show;
-
-    if (show) {
-        Engine::GetLogger().LogEvent("UIManager: Showing spell selection UI");
-    }
-}
-
-void UIManager::UpdateTurnIndicator(Character* active_character) {
-    if (turn_indicator_) {
-        turn_indicator_->SetActiveCharacter(active_character);
-    }
-}
-
-bool UIManager::HandleInput(const CS230::Input& input) {
-    if (spell_ui_visible_ && spell_selection_ui_) {
-        return spell_selection_ui_->HandleInput(input);
-    }
-    return false;
+    return eval;
 }
 ```
 
 ---
 
-#### **Example 2: HealthBar Class**
+#### **Task 2: 캐릭터별 행동 전략** (Day 2-4)
+
+**Fighter AI 전략**:
 
 ```cpp
-// File: DragonicTactics/source/Game/DragonicTactics/UI/HealthBar.h
+void AISystem::ExecuteFighterAI(Character* fighter) {
+    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - BEGIN");
+
+    // 1. 상황 평가
+    SituationEvaluation eval = EvaluateSituation(fighter);
+
+    if (!eval.primary_target) {
+        Engine::GetLogger().LogWarning("Fighter AI: No target found");
+        return;
+    }
+
+    // 2. 행동 후보 생성
+    std::vector<AIAction> actions = GenerateActions(fighter, eval);
+
+    // 3. Fighter 특화 bias (공격적)
+    float aggression_bias = 0.8f;  // 0.0 (방어적) ~ 1.0 (공격적)
+    ScoreActions(actions, eval, aggression_bias);
+
+    // 4. 최적 행동 선택
+    AIAction best_action = SelectBestAction(actions);
+
+    Engine::GetLogger().LogEvent("Fighter AI Decision: " + best_action.reasoning);
+
+    // 5. 행동 실행
+    ExecuteAction(fighter, best_action);
+
+    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - END");
+}
+```
+
+**행동 후보 생성**:
+
+```cpp
+std::vector<AISystem::AIAction> AISystem::GenerateActions(
+    Character* ai_character,
+    const SituationEvaluation& eval
+) {
+    std::vector<AIAction> actions;
+
+    GridSystem* grid = GetGSComponent<GridSystem>();
+    Math::ivec2 self_pos = ai_character->GetGOComponent<GridPosition>()->Get();
+    Math::ivec2 target_pos = eval.primary_target->GetGOComponent<GridPosition>()->Get();
+
+    // 1. 이동 액션 (타겟에게 가까이)
+    if (eval.distance_to_target > 1) {
+        AIAction move_action;
+        move_action.type = AIAction::Move;
+        move_action.target_position = GetPositionCloserTo(self_pos, target_pos);
+        move_action.reasoning = "Move closer to target";
+        actions.push_back(move_action);
+    }
+
+    // 2. 공격 액션 (사거리 내)
+    int attack_range = ai_character->GetGOComponent<StatsComponent>()->GetAttackRange();
+    if (eval.distance_to_target <= attack_range) {
+        AIAction attack_action;
+        attack_action.type = AIAction::Attack;
+        attack_action.target_character = eval.primary_target;
+        attack_action.reasoning = "Melee attack on target";
+        actions.push_back(attack_action);
+    }
+
+    // 3. 방어 액션 (HP 낮을 때)
+    if (eval.self_hp_percent < 30) {
+        AIAction defend_action;
+        defend_action.type = AIAction::Defend;
+        defend_action.reasoning = "Defend (low HP)";
+        actions.push_back(defend_action);
+    }
+
+    return actions;
+}
+```
+
+**행동 점수 계산**:
+
+```cpp
+void AISystem::ScoreActions(
+    std::vector<AIAction>& actions,
+    const SituationEvaluation& eval,
+    float aggression_bias
+) {
+    for (auto& action : actions) {
+        float score = 0.0f;
+
+        switch (action.type) {
+            case AIAction::Move:
+                // 이동: 타겟에 가까워질수록 높은 점수
+                score = 50.0f + (10.0f - eval.distance_to_target) * 5.0f;
+                score *= (1.0f + aggression_bias);  // 공격성 반영
+                break;
+
+            case AIAction::Attack:
+                // 공격: 타겟 HP가 낮을수록 높은 점수
+                score = 70.0f + (100 - eval.target_hp_percent) * 0.3f;
+                score *= (1.0f + aggression_bias * 0.5f);
+                break;
+
+            case AIAction::Defend:
+                // 방어: 자신의 HP가 낮을수록 높은 점수
+                score = 40.0f + (100 - eval.self_hp_percent) * 0.5f;
+                score *= (1.0f - aggression_bias);  // 공격성 낮을수록 선호
+                break;
+        }
+
+        action.score = score;
+    }
+
+    // 점수 순으로 정렬
+    std::sort(actions.begin(), actions.end(), [](const AIAction& a, const AIAction& b) {
+        return a.score > b.score;
+    });
+}
+```
+
+---
+
+#### **Task 3: Bias 시스템** (Day 4-5)
+
+**목표**: 런타임에 AI 성향 조정 가능
+
+```cpp
+// AISystem.h
+class AISystem : public CS230::Component {
+public:
+    struct AIBias {
+        float aggression = 0.5f;  // 0.0 (방어적) ~ 1.0 (공격적)
+        float teamwork = 0.5f;    // 0.0 (개인) ~ 1.0 (팀플레이)
+        float risk_taking = 0.5f; // 0.0 (안전) ~ 1.0 (위험 감수)
+    };
+
+    void SetBias(Character* ai_character, const AIBias& bias);
+    AIBias GetBias(Character* ai_character) const;
+
+private:
+    std::map<Character*, AIBias> bias_map_;
+};
+```
+
+**사용 예시**:
+
+```cpp
+// GamePlay.cpp - AI 난이도 조절
+void GamePlay::Load() {
+    // ...
+
+    // Fighter: 공격적인 AI
+    AISystem::AIBias fighter_bias;
+    fighter_bias.aggression = 0.8f;  // 높은 공격성
+    fighter_bias.teamwork = 0.3f;
+    fighter_bias.risk_taking = 0.6f;
+    AISystem::Instance().SetBias(fighter, fighter_bias);
+
+    // Cleric: 방어적인 AI (향후)
+    AISystem::AIBias cleric_bias;
+    cleric_bias.aggression = 0.2f;  // 낮은 공격성
+    cleric_bias.teamwork = 0.9f;    // 높은 팀워크
+    cleric_bias.risk_taking = 0.3f;
+    // AISystem::Instance().SetBias(cleric, cleric_bias);
+}
+```
+
+**ImGui로 런타임 조정** (디버그용):
+
+```cpp
+void GamePlay::DrawImGui() {
+    if (ImGui::Begin("AI Bias Tuning")) {
+        AISystem::AIBias bias = AISystem::Instance().GetBias(fighter);
+
+        ImGui::SliderFloat("Aggression", &bias.aggression, 0.0f, 1.0f);
+        ImGui::SliderFloat("Teamwork", &bias.teamwork, 0.0f, 1.0f);
+        ImGui::SliderFloat("Risk Taking", &bias.risk_taking, 0.0f, 1.0f);
+
+        if (ImGui::Button("Apply")) {
+            AISystem::Instance().SetBias(fighter, bias);
+            Engine::GetLogger().LogEvent("AI bias updated");
+        }
+    }
+    ImGui::End();
+}
+```
+
+---
+
+#### **Task 4: 테스트 및 밸런싱** (Day 5-6)
+
+**AI vs AI 테스트**:
+
+```cpp
+// TestAI.cpp
+void TestAI::TestFighterAI() {
+    // Setup: Fighter vs Fighter
+    Fighter* fighter1 = CreateTestFighter({0, 0});
+    Fighter* fighter2 = CreateTestFighter({7, 7});
+
+    TurnManager::Instance().InitializeTurnOrder({fighter1, fighter2});
+
+    // 10턴 시뮬레이션
+    for (int turn = 0; turn < 10; ++turn) {
+        TurnManager::Instance().StartNextTurn();
+
+        Character* current = TurnManager::Instance().GetCurrentCharacter();
+        AISystem::Instance().ExecuteFighterAI(current);
+
+        TurnManager::Instance().EndCurrentTurn();
+
+        // 전투 종료 체크
+        if (fighter1->GetHP() <= 0 || fighter2->GetHP() <= 0) {
+            break;
+        }
+    }
+
+    // Verify: 둘 중 하나는 승리
+    assert((fighter1->GetHP() > 0) != (fighter2->GetHP() > 0));
+}
+```
+
+**밸런스 테스트**:
+
+```cpp
+void TestAI::TestDragonVsFighter() {
+    Dragon* dragon = CreateTestDragon({4, 4});
+    Fighter* fighter = CreateTestFighter({0, 0});
+
+    // Dragon AI는 플레이어가 조작하므로, Fighter AI만 테스트
+    TurnManager::Instance().InitializeTurnOrder({dragon, fighter});
+
+    // Dragon 턴: 수동 행동
+    TurnManager::Instance().StartNextTurn();
+    // ... Dragon 행동 ...
+    TurnManager::Instance().EndCurrentTurn();
+
+    // Fighter 턴: AI 행동
+    TurnManager::Instance().StartNextTurn();
+    AISystem::Instance().ExecuteFighterAI(fighter);
+    TurnManager::Instance().EndCurrentTurn();
+
+    // Verify: Fighter가 Dragon에게 접근했는가?
+    Math::ivec2 fighter_pos = fighter->GetGOComponent<GridPosition>()->Get();
+    Math::ivec2 dragon_pos = dragon->GetGOComponent<GridPosition>()->Get();
+    int distance = std::abs(fighter_pos.x - dragon_pos.x) + std::abs(fighter_pos.y - dragon_pos.y);
+    assert(distance < 7);  // 초기 거리보다 가까워져야 함
+}
+```
+
+---
+
+### 엄격한 테스트 (AI 시스템)
+
+**테스트 케이스**:
+
+1. **행동 생성 테스트**: 모든 가능한 행동이 생성되는가?
+2. **점수 계산 테스트**: Bias에 따라 점수가 달라지는가?
+3. **행동 실행 테스트**: 선택된 행동이 정확히 실행되는가?
+4. **엣지 케이스**: AP 부족, 타겟 없음, 이동 불가능 등
+
+---
+
+### 일일 작업 분배 (개발자 B)
+
+| 일차      | 작업               | 예상 시간 | 산출물                           |
+| ------- | ---------------- | ----- | ----------------------------- |
+| Day 1-2 | 공통 AI 프레임워크      | 8h    | AISystem.cpp 기본 구조            |
+| Day 2-3 | Fighter AI 전략 구현 | 8h    | ExecuteFighterAI 완성           |
+| Day 3-4 | 행동 생성 및 점수 계산    | 8h    | GenerateActions, ScoreActions |
+| Day 4-5 | Bias 시스템 구현      | 4h    | AIBias 구조체 및 적용               |
+| Day 5-6 | 테스트 및 밸런싱        | 12h   | TestAI.cpp, 밸런스 조정            |
+
+**총 예상 시간**: 40시간 (5일)
+
+---
+
+## 개발자 C: 게임 UI 시스템 구현
+
+**목표**: 실제 플레이용 게임 UI 구현 및 개발자용 디버그 UI 개선
+
+**중요 구분**:
+
+- **게임 UI** (GameUIManager): 플레이어가 게임 플레이 시 보는 UI (크고, 가독성 높음, 예쁨)
+- **디버그 UI** (DebugUIManager): 개발자가 디버깅 시 보는 UI (ImGui 사용, 작고, 기능 중심)
+
+**파일 목록**:
+
+```
+DragonicTactics/source/Game/DragonicTactics/UI/GameUIManager.h/cpp (신규)
+DragonicTactics/source/Game/DragonicTactics/UI/DebugUIManager.h/cpp (신규)
+DragonicTactics/source/Game/DragonicTactics/UI/UIComponents/ (신규 폴더)
+  ├── HPBar.h/cpp
+  ├── APDisplay.h/cpp
+  ├── TurnOrderPanel.h/cpp
+  └── ActionLog.h/cpp
+```
+
+---
+
+### 구현 작업 (게임 UI 시스템)
+
+#### **Part A: GameUIManager - 실제 플레이용** (Day 1-3)
+
+**Task 1: GameUIManager 클래스 생성** (Day 1)
+
+**목표**: EventBus에서 정보를 받아 화면에 렌더링
+
+```cpp
+// GameUIManager.h
 #pragma once
-#include "../../../Engine/Vec2.hpp"
-#include "../../../Engine/Matrix.hpp"
-#include "../../../CS200/RGBA.hpp"
+#include "Engine/Component.h"
+#include "Engine/Vec2.hpp"
+#include <vector>
+#include <string>
 
 class Character;
 
-// Visual health bar displayed above character
-class HealthBar {
+class GameUIManager : public CS230::Component {
 public:
-    // Constructor (public interface - SnakeCase)
-    HealthBar(Character* owner);
+    GameUIManager();
+    ~GameUIManager();
 
-    void Update(double dt);
+    void Update(double dt) override;
     void Draw(Math::TransformationMatrix camera_matrix);
 
-    // Health management
-    void SetHealth(int current, int max);
+    // EventBus에서 호출될 콜백
+    void OnTurnStarted(const TurnStartedEvent& event);
+    void OnCharacterDamaged(const CharacterDamagedEvent& event);
+    void OnCharacterHealed(const CharacterHealedEvent& event);
+    void OnSpellCast(const SpellCastEvent& event);
 
 private:
-    // Owner reference
-    Character* owner_;
-
-    // Health values (private - snake_case)
-    int current_hp_;
-    int max_hp_;
-
-    // Visual properties
-    static constexpr float BAR_WIDTH = 60.0f;
-    static constexpr float BAR_HEIGHT = 8.0f;
-    static constexpr float OFFSET_Y = -10.0f; // Above character
-
-    // Color based on HP percentage (private - snake_case)
-    CS200::Color get_bar_color() const;
-    Math::vec2 get_position() const;
-};
-```
-
-```cpp
-// File: DragonicTactics/source/Game/DragonicTactics/UI/HealthBar.cpp
-#include "HealthBar.h"
-#include "../Objects/Character.h"
-#include "../../../Engine/Engine.hpp"
-
-HealthBar::HealthBar(Character* owner)
-    : owner_(owner)
-    , current_hp_(0)
-    , max_hp_(0)
-{
-    // Subscribe to damage events
-    auto stats = owner_->GetGOComponent<StatsComponent>();
-    if (stats) {
-        current_hp_ = stats->GetCurrentHP();
-        max_hp_ = stats->GetMaxHP();
-    }
-}
-
-void HealthBar::Update(double dt) {
-    // Update health values from character
-    auto stats = owner_->GetGOComponent<StatsComponent>();
-    if (stats) {
-        current_hp_ = stats->GetCurrentHP();
-        max_hp_ = stats->GetMaxHP();
-    }
-}
-
-void HealthBar::Draw(Math::TransformationMatrix camera_matrix) {
-    Math::vec2 pos = get_position();
-
-    // Draw background (black)
-    Engine::GetRenderer2D().DrawRectangle(
-        pos, BAR_WIDTH, BAR_HEIGHT, {0, 0, 0, 255}
-    );
-
-    // Draw filled portion
-    float fill_percentage = static_cast<float>(current_hp_) / max_hp_;
-    float filled_width = BAR_WIDTH * fill_percentage;
-
-    Engine::GetRenderer2D().DrawRectangle(
-        pos, filled_width, BAR_HEIGHT, get_bar_color()
-    );
-
-    // Draw border (white outline)
-    Engine::GetRenderer2D().DrawRectangleOutline(
-        pos, BAR_WIDTH, BAR_HEIGHT, {255, 255, 255, 255}, 1.0f
-    );
-}
-
-CS200::Color HealthBar::get_bar_color() const {
-    float hp_percentage = static_cast<float>(current_hp_) / max_hp_;
-
-    if (hp_percentage > 0.66f) {
-        return {0, 255, 0, 255}; // Green
-    } else if (hp_percentage > 0.33f) {
-        return {255, 255, 0, 255}; // Yellow
-    } else {
-        return {255, 0, 0, 255}; // Red
-    }
-}
-
-Math::vec2 HealthBar::get_position() const {
-    Math::vec2 char_pos = owner_->GetPosition();
-    return {char_pos.x - BAR_WIDTH / 2, char_pos.y + OFFSET_Y};
-}
-
-void HealthBar::SetHealth(int current, int max) {
-    current_hp_ = current;
-    max_hp_ = max;
-}
-```
-
----
-
-### Rigorous Testing (UI/UX)
-
-#### **Test 1: UIManager Singleton**
-
-```cpp
-bool TestUIManagerSingleton() {
-    UIManager& ui1 = UIManager::Instance();
-    UIManager& ui2 = UIManager::Instance();
-
-    if (&ui1 != &ui2) {
-        Engine::GetLogger().LogError("UIManager singleton failed");
-        return false;
-    }
-
-    Engine::GetLogger().LogEvent("✅ UIManager singleton test passed");
-    return true;
-}
-```
-
-#### **Test 2: HealthBar Color Coding**
-
-```cpp
-bool TestHealthBarColorCoding() {
-    Dragon dragon({3, 3});
-    HealthBar health_bar(&dragon);
-
-    auto stats = dragon.GetGOComponent<StatsComponent>();
-
-    // Full HP - should be green
-    health_bar.SetHealth(stats->GetMaxHP(), stats->GetMaxHP());
-    // Verify color (would need access to get_bar_color or visual inspection)
-
-    // Half HP - should be yellow
-    health_bar.SetHealth(stats->GetMaxHP() / 2, stats->GetMaxHP());
-
-    // Low HP - should be red
-    health_bar.SetHealth(10, stats->GetMaxHP());
-
-    Engine::GetLogger().LogEvent("✅ HealthBar color coding test passed");
-    return true;
-}
-```
-
-#### **Test 3: Health Bar Position Tracking**
-
-```cpp
-bool TestHealthBarPositionTracking() {
-    Dragon dragon({3, 3});
-    HealthBar health_bar(&dragon);
-
-    // Move character
-    dragon.SetPosition({200, 300});
-
-    // Health bar should follow (verify through rendering or position getter)
-
-    Engine::GetLogger().LogEvent("✅ HealthBar position tracking test passed");
-    return true;
-}
-```
-
-#### **Test 4: Spell Selection UI Input**
-
-```cpp
-bool TestSpellSelectionUIInput() {
-    UIManager& ui = UIManager::Instance();
-
-    // Show spell UI
-    ui.ShowSpellSelectionUI(true);
-
-    // Simulate input (would need mock Input system)
-    // Verify correct spell selected
-
-    ui.ShowSpellSelectionUI(false);
-
-    Engine::GetLogger().LogEvent("✅ Spell selection UI input test passed");
-    return true;
-}
-```
-
-#### **Test 5: Turn Indicator Update**
-
-```cpp
-bool TestTurnIndicatorUpdate() {
-    UIManager& ui = UIManager::Instance();
-
-    Dragon dragon({3, 3});
-    Fighter fighter({5, 5});
-
-    // Update turn indicator to Dragon
-    ui.UpdateTurnIndicator(&dragon);
-
-    // Verify indicator points to Dragon (visual inspection)
-
-    // Update turn indicator to Fighter
-    ui.UpdateTurnIndicator(&fighter);
-
-    // Verify indicator points to Fighter
-
-    Engine::GetLogger().LogEvent("✅ Turn indicator update test passed");
-    return true;
-}
-```
-
----
-
-### Daily Breakdown (Developer C)
-
-#### **Monday (7-8 hours)**
-
-- Create UIManager singleton skeleton (1 hr)
-- Implement UI rendering layers (1.5 hrs)
-- Create HealthBar class (2 hrs)
-- Implement health bar color coding (1 hr)
-- Test health bars in battle (1.5 hrs)
-- **Deliverable**: Health bars working
-
-#### **Tuesday (7-8 hours)**
-
-- Create TurnIndicator class (2 hrs)
-- Implement turn indicator visual (arrow/marker) (1.5 hrs)
-- Add turn order display panel (2 hrs)
-- Integrate with TurnManager events (1 hr)
-- Test turn indicator updates (1 hr)
-- **Deliverable**: Turn indicator complete
-
-#### **Wednesday (6-7 hours)**
-
-- Create SpellSelectionUI class (2.5 hrs)
-- Implement spell list rendering (1.5 hrs)
-- Add spell descriptions on hover (1 hr)
-- Implement keyboard/mouse input handling (2 hrs)
-- **Deliverable**: Spell selection UI functional
-
-#### **Thursday (6-7 hours)**
-
-- Implement grid tile hover highlighting (1.5 hrs)
-- Add movement range overlay (2 hrs)
-- Add spell range overlay (1.5 hrs)
-- Implement path preview visualization (2 hrs)
-- **Deliverable**: Grid highlights complete
-
-#### **Friday (4-5 hours)**
-
-- Write comprehensive UI test suite (2 hrs)
-- Polish UI visual consistency (1 hr)
-- Final UI integration with BattleState (1 hr)
-- Bug fixes and tweaks (1 hr)
-- **Deliverable**: UI/UX production-ready
-
----
-
-## Week 5: Developer D - BattleState Integration
-
-**Goal**: Integrate all Week 1-4 systems into complete BattleState game loop
-
-**Foundation**:
-
-- Week 4 TurnManager for turn-based gameplay
-- Week 3 CombatSystem and SpellSystem
-- Week 2 GridSystem and pathfinding
-- Week 1 EventBus and all core systems
-
-**Files to Create**:
-
-```
-DragonicTactics/source/Game/DragonicTactics/States/BattleController.h (new file)
-DragonicTactics/source/Game/DragonicTactics/States/BattleController.cpp (new file)
-DragonicTactics/source/Game/DragonicTactics/Test/BattleIntegrationTests.cpp (new file)
-```
-
-**Files to Modify**:
-
-```
-DragonicTactics/source/Game/DragonicTactics/States/BattleState.h (complete integration)
-DragonicTactics/source/Game/DragonicTactics/States/BattleState.cpp (full game loop)
-```
-
-### Implementation Tasks (BattleState Integration)
-
-#### **Task 1: Complete BattleState Game Loop**
-
-**Goal**: Implement full game loop integrating all systems from Weeks 1-4
-
-**Steps**:
-
-1. Implement BattleState::Load() to initialize all systems
-2. Create game loop in Update() (input → logic → rendering)
-3. Integrate TurnManager for turn-based flow
-4. Connect input handling to character actions
-5. Implement proper state transitions (Setup → Combat → End)
-
-**Why this matters**: BattleState is the central orchestrator that brings all systems together. Proper integration ensures smooth gameplay and correct system interactions.
-
----
-
-#### **Task 2: Input Handling System**
-
-**Goal**: Map player input to game actions (movement, attacks, spells)
-
-**Steps**:
-
-1. Implement input state machine (selecting action → selecting target → confirming)
-2. Add keyboard controls (WASD for grid navigation, numbers for spell selection)
-3. Implement mouse support (click tiles, hover tooltips)
-4. Add input validation (prevent invalid actions)
-5. Provide visual feedback for all inputs
-
-**Input Mapping**:
-
-- **Arrow Keys**: Navigate grid cursor
-- **Space/Enter**: Confirm selection
-- **ESC**: Cancel action
-- **1-9**: Select spell by number
-- **A**: Attack action
-- **M**: Move action
-
----
-
-#### **Task 3: Character Action Pipeline**
-
-**Goal**: Complete pipeline from input to action execution
-
-**Steps**:
-
-1. Implement action selection UI integration
-2. Connect spell selection to SpellSystem
-3. Handle target selection for spells and attacks
-4. Execute actions through CombatSystem
-5. Update game state after action completion
-
-**Action Flow**:
-
-1. Player selects action type (Move/Attack/Spell)
-2. System validates action is available
-3. Player selects target (tile or character)
-4. System validates target is valid
-5. Action executes through appropriate system
-6. Events published, UI updated
-7. Turn ends automatically
-
----
-
-#### **Task 4: System Integration & Coordination**
-
-**Goal**: Ensure all Week 1-4 systems work together seamlessly
-
-**Steps**:
-
-1. Integrate GridSystem with character movement
-2. Connect TurnManager to character action flow
-3. Integrate EventBus for system communication
-4. Connect VFXManager to combat events
-5. Integrate UIManager with game state
-
-**System Coordination**:
-
-- **TurnManager** → determines active character
-- **GridSystem** → provides valid movement tiles
-- **CombatSystem** → resolves attacks
-- **SpellSystem** → executes spells
-- **VFXManager** → displays effects
-- **UIManager** → shows UI elements
-
----
-
-#### **Task 5: State Management & Transitions**
-
-**Goal**: Manage BattleState phases and transitions to other states
-
-**Steps**:
-
-1. Implement battle phase system (Setup, PlayerTurn, EnemyTurn, BattleEnd)
-2. Add phase transition logic
-3. Handle victory/defeat state transitions
-4. Implement battle restart functionality
-5. Add proper cleanup in Unload()
-
-**Battle Phases**:
-
-- **Setup**: Initialize characters, grid, systems
-- **PlayerTurn**: Wait for player input and action
-- **EnemyTurn**: AI executes fighter actions
-- **BattleEnd**: Transition to victory/defeat screen
-
----
-
-### Implementation Examples (BattleState Integration)
-
-#### **Example 1: Complete BattleState::Load()**
-
-```cpp
-// File: DragonicTactics/source/Game/DragonicTactics/States/BattleState.cpp
-
-void BattleState::Load() {
-    Engine::GetLogger().LogEvent("BattleState: Loading...");
-
-    // Initialize grid system (StateComponent)
-    AddComponent(new GridSystem());
-    auto grid = GetComponent<GridSystem>();
-
-    // Create characters
-    dragon = new Dragon({2, 2});
-    fighter = new Fighter({6, 6});
-
-    // Add characters to grid
-    grid->AddCharacter(dragon, {2, 2});
-    grid->AddCharacter(fighter, {6, 6});
-
-    // Add characters to game object manager
-    game_object_manager_.Add(dragon);
-    game_object_manager_.Add(fighter);
-
-    // Initialize turn manager
-    std::vector<Character*> participants = {dragon, fighter};
-    TurnManager::Instance().InitializeTurnOrder(participants);
-
-    // Initialize UI
-    UIManager::Instance().RegisterHealthBar(new HealthBar(dragon));
-    UIManager::Instance().RegisterHealthBar(new HealthBar(fighter));
-
-    // Initialize statistics
-    BattleStatistics::Instance().StartNewBattle();
-
-    // Set initial phase
-    current_phase_ = BattlePhase::Setup;
-
-    // Start first turn
-    TurnManager::Instance().StartNextTurn();
-    current_phase_ = BattlePhase::PlayerTurn;
-
-    Engine::GetLogger().LogEvent("BattleState: Loaded successfully");
-}
-```
-
----
-
-#### **Example 2: Input Handling State Machine**
-
-```cpp
-// File: DragonicTactics/source/Game/DragonicTactics/States/BattleState.h
-
-class BattleState : public CS230::GameState {
-public:
-    enum class InputState {
-        SelectingAction,    // Choosing Move/Attack/Spell
-        SelectingTarget,    // Choosing target tile/character
-        ConfirmingAction,   // Confirming action
-        Executing           // Action in progress (no input)
+    // UI 컴포넌트들
+    struct HPBarUI {
+        Character* character;
+        Math::vec2 screen_position;
+        float current_hp_ratio;  // 0.0 ~ 1.0
+        float target_hp_ratio;   // 애니메이션용
     };
+    std::vector<HPBarUI> hp_bars_;
 
-private:
-    InputState input_state_ = InputState::SelectingAction;
-    std::string selected_action_;
-    Math::ivec2 selected_target_;
+    struct ActionLogEntry {
+        std::string message;
+        double lifetime;
+        Math::vec2 position;
+    };
+    std::vector<ActionLogEntry> action_log_;
 
-    void handle_input_selecting_action();
-    void handle_input_selecting_target();
-    void handle_input_confirming_action();
+    struct TurnOrderUI {
+        std::vector<Character*> turn_order;
+        int current_turn_index;
+    };
+    TurnOrderUI turn_order_ui_;
+
+    // 렌더링 헬퍼
+    void DrawHPBars(Math::TransformationMatrix camera_matrix);
+    void DrawActionLog(Math::TransformationMatrix camera_matrix);
+    void DrawTurnOrder(Math::TransformationMatrix camera_matrix);
+    void DrawAPDisplay(Character* character, Math::TransformationMatrix camera_matrix);
 };
 ```
 
+**구현 예시**:
+
 ```cpp
-// File: DragonicTactics/source/Game/DragonicTactics/States/BattleState.cpp
+// GameUIManager.cpp
+#include "pch.h"
+#include "GameUIManager.h"
+#include "../StateComponents/EventBus.h"
+#include "../Objects/Character.h"
+#include "Engine/TextManager.hpp"
+#include "CS200/IRenderer2D.hpp"
 
-void BattleState::HandlePlayerTurnInput() {
-    switch (input_state_) {
-        case InputState::SelectingAction:
-            handle_input_selecting_action();
-            break;
-
-        case InputState::SelectingTarget:
-            handle_input_selecting_target();
-            break;
-
-        case InputState::ConfirmingAction:
-            handle_input_confirming_action();
-            break;
-
-        case InputState::Executing:
-            // No input during execution
-            break;
-    }
-}
-
-void BattleState::handle_input_selecting_action() {
-    Input& input = Engine::GetInput();
-
-    if (input.IsKeyPressed(InputKey::A)) {
-        selected_action_ = "Attack";
-        input_state_ = InputState::SelectingTarget;
-        Engine::GetLogger().LogEvent("Action selected: Attack");
-    }
-    else if (input.IsKeyPressed(InputKey::Num1)) {
-        selected_action_ = "Fireball";
-        input_state_ = InputState::SelectingTarget;
-        UIManager::Instance().ShowSpellSelectionUI(false);
-        Engine::GetLogger().LogEvent("Action selected: Fireball");
-    }
-    else if (input.IsKeyPressed(InputKey::M)) {
-        selected_action_ = "Move";
-        input_state_ = InputState::SelectingTarget;
-        Engine::GetLogger().LogEvent("Action selected: Move");
-    }
-}
-
-void BattleState::handle_input_selecting_target() {
-    Input& input = Engine::GetInput();
-
-    // Move cursor
-    if (input.IsKeyPressed(InputKey::Up)) {
-        cursor_position_.y -= 1;
-    }
-    if (input.IsKeyPressed(InputKey::Down)) {
-        cursor_position_.y += 1;
-    }
-    if (input.IsKeyPressed(InputKey::Left)) {
-        cursor_position_.x -= 1;
-    }
-    if (input.IsKeyPressed(InputKey::Right)) {
-        cursor_position_.x += 1;
-    }
-
-    // Confirm target
-    if (input.IsKeyPressed(InputKey::Enter)) {
-        selected_target_ = cursor_position_;
-        execute_action();
-        input_state_ = InputState::Executing;
-    }
-
-    // Cancel
-    if (input.IsKeyPressed(InputKey::Escape)) {
-        input_state_ = InputState::SelectingAction;
-        selected_action_ = "";
-    }
-}
-
-void BattleState::execute_action() {
-    if (selected_action_ == "Attack") {
-        auto grid = GetComponent<GridSystem>();
-        Character* target = grid->GetCharacterAt(selected_target_);
-        if (target) {
-            dragon->PerformAttack(target);
+GameUIManager::GameUIManager() {
+    // EventBus 구독
+    EventBus::Instance().Subscribe<TurnStartedEvent>(
+        [this](const TurnStartedEvent& event) {
+            this->OnTurnStarted(event);
         }
-    }
-    else if (selected_action_ == "Fireball") {
-        // Cast Fireball spell
-        SpellSystem::Instance().CastSpell(dragon, "Fireball", selected_target_);
-    }
-    else if (selected_action_ == "Move") {
-        auto grid = GetComponent<GridSystem>();
-        grid->MoveCharacter(dragon, selected_target_);
-    }
+    );
 
-    // End turn after action
-    EndCurrentTurn();
-    input_state_ = InputState::SelectingAction;
-}
-```
-
----
-
-### Rigorous Testing (BattleState Integration)
-
-#### **Test 1: BattleState Load and Initialization**
-
-```cpp
-bool TestBattleStateInitialization() {
-    BattleState battle;
-    battle.Load();
-
-    // Verify systems initialized
-    auto grid = battle.GetComponent<GridSystem>();
-    if (!grid) {
-        Engine::GetLogger().LogError("GridSystem not initialized");
-        return false;
-    }
-
-    // Verify characters created
-    if (!battle.GetDragon() || !battle.GetFighter()) {
-        Engine::GetLogger().LogError("Characters not created");
-        return false;
-    }
-
-    battle.Unload();
-    Engine::GetLogger().LogEvent("✅ BattleState initialization test passed");
-    return true;
-}
-```
-
-#### **Test 2: Input State Machine**
-
-```cpp
-bool TestInputStateMachine() {
-    BattleState battle;
-    battle.Load();
-
-    // Start in SelectingAction state
-    // Simulate pressing 'A' for attack
-    // Should transition to SelectingTarget
-
-    // Simulate pressing Enter
-    // Should transition to Executing
-
-    battle.Unload();
-    Engine::GetLogger().LogEvent("✅ Input state machine test passed");
-    return true;
-}
-```
-
-#### **Test 3: Action Execution Pipeline**
-
-```cpp
-bool TestActionExecutionPipeline() {
-    BattleState battle;
-    battle.Load();
-
-    Dragon* dragon = battle.GetDragon();
-    Fighter* fighter = battle.GetFighter();
-
-    // Execute attack action
-    dragon->PerformAttack(fighter);
-
-    // Verify damage applied
-    auto stats = fighter->GetGOComponent<StatsComponent>();
-    if (stats->GetCurrentHP() == stats->GetMaxHP()) {
-        Engine::GetLogger().LogError("Action execution failed - no damage");
-        return false;
-    }
-
-    battle.Unload();
-    Engine::GetLogger().LogEvent("✅ Action execution pipeline test passed");
-    return true;
-}
-```
-
-#### **Test 4: Turn Flow Integration**
-
-```cpp
-bool TestTurnFlowIntegration() {
-    BattleState battle;
-    battle.Load();
-
-    // Turn 1: Dragon's turn
-    Character* current = TurnManager::Instance().GetCurrentCharacter();
-    if (current->TypeName() != "Dragon" && current->TypeName() != "Fighter") {
-        Engine::GetLogger().LogError("Turn flow failed - invalid first character");
-        return false;
-    }
-
-    // End turn
-    battle.EndCurrentTurn();
-
-    // Turn 2: Should switch to other character
-    Character* next = TurnManager::Instance().GetCurrentCharacter();
-    if (next == current) {
-        Engine::GetLogger().LogError("Turn flow failed - same character");
-        return false;
-    }
-
-    battle.Unload();
-    Engine::GetLogger().LogEvent("✅ Turn flow integration test passed");
-    return true;
-}
-```
-
-#### **Test 5: Full Combat Integration**
-
-```cpp
-bool TestFullCombatIntegration() {
-    BattleState battle;
-    battle.Load();
-
-    Dragon* dragon = battle.GetDragon();
-    Fighter* fighter = battle.GetFighter();
-
-    // Simulate full combat loop
-    for (int turn = 0; turn < 10; ++turn) {
-        Character* current = TurnManager::Instance().GetCurrentCharacter();
-
-        if (current == dragon) {
-            // Dragon attacks
-            dragon->PerformAttack(fighter);
-        } else {
-            // Fighter attacks
-            fighter->PerformAttack(dragon);
+    EventBus::Instance().Subscribe<CharacterDamagedEvent>(
+        [this](const CharacterDamagedEvent& event) {
+            this->OnCharacterDamaged(event);
         }
+    );
 
-        battle.EndCurrentTurn();
+    // ... 다른 이벤트 구독
+}
 
-        // Check victory conditions
-        if (fighter->IsDead()) {
-            Engine::GetLogger().LogEvent("Dragon victory!");
-            break;
-        }
-        if (dragon->IsDead()) {
-            Engine::GetLogger().LogEvent("Fighter victory!");
-            break;
+void GameUIManager::OnTurnStarted(const TurnStartedEvent& event) {
+    // 액션 로그에 추가
+    ActionLogEntry entry;
+    entry.message = event.character->TypeName() + "'s Turn";
+    entry.lifetime = 3.0;  // 3초간 표시
+    entry.position = Math::vec2{50, 100};
+    action_log_.push_back(entry);
+
+    // 턴 순서 업데이트
+    turn_order_ui_.current_turn_index = event.turn_index;
+}
+
+void GameUIManager::OnCharacterDamaged(const CharacterDamagedEvent& event) {
+    // HP 바 업데이트
+    for (auto& hp_bar : hp_bars_) {
+        if (hp_bar.character == event.target) {
+            float new_ratio = static_cast<float>(event.new_hp) / event.target->GetMaxHP();
+            hp_bar.target_hp_ratio = new_ratio;
         }
     }
 
-    battle.Unload();
-    Engine::GetLogger().LogEvent("✅ Full combat integration test passed");
-    return true;
+    // 데미지 텍스트 표시
+    ActionLogEntry entry;
+    entry.message = event.target->TypeName() + " took " + std::to_string(event.damageAmount) + " damage!";
+    entry.lifetime = 2.0;
+    entry.position = Math::vec2{50, 150};
+    action_log_.push_back(entry);
+}
+
+void GameUIManager::Update(double dt) {
+    // HP 바 애니메이션 (부드럽게 감소)
+    for (auto& hp_bar : hp_bars_) {
+        if (hp_bar.current_hp_ratio != hp_bar.target_hp_ratio) {
+            float diff = hp_bar.target_hp_ratio - hp_bar.current_hp_ratio;
+            hp_bar.current_hp_ratio += diff * 5.0f * static_cast<float>(dt);  // 부드러운 전환
+        }
+    }
+
+    // 액션 로그 lifetime 감소
+    for (auto& entry : action_log_) {
+        entry.lifetime -= dt;
+    }
+
+    // 만료된 로그 제거
+    action_log_.erase(
+        std::remove_if(action_log_.begin(), action_log_.end(),
+            [](const ActionLogEntry& entry) { return entry.lifetime <= 0; }),
+        action_log_.end()
+    );
+}
+
+void GameUIManager::Draw(Math::TransformationMatrix camera_matrix) {
+    DrawHPBars(camera_matrix);
+    DrawActionLog(camera_matrix);
+    DrawTurnOrder(camera_matrix);
+
+    // 현재 턴 캐릭터의 AP 표시
+    if (turn_order_ui_.current_turn_index >= 0 &&
+        turn_order_ui_.current_turn_index < turn_order_ui_.turn_order.size()) {
+        Character* current = turn_order_ui_.turn_order[turn_order_ui_.current_turn_index];
+        DrawAPDisplay(current, camera_matrix);
+    }
+}
+```
+
+**HP 바 렌더링**:
+
+```cpp
+void GameUIManager::DrawHPBars(Math::TransformationMatrix camera_matrix) {
+    auto* renderer = CS200::IRenderer2D::GetActiveRenderer();
+
+    for (const auto& hp_bar : hp_bars_) {
+        // 캐릭터 위치 가져오기
+        Math::vec2 char_pos = hp_bar.character->GetPosition();
+
+        // HP 바 위치 (캐릭터 위 50px)
+        Math::vec2 bar_pos = char_pos + Math::vec2{0, 50};
+
+        // 배경 (빨간색)
+        renderer->DrawRect(
+            bar_pos,
+            Math::vec2{60, 8},  // 너비 60px, 높이 8px
+            0.0f,  // 회전 없음
+            CS200::RGBA{200, 0, 0, 255}  // 빨간색
+        );
+
+        // HP 바 (녹색)
+        float bar_width = 60.0f * hp_bar.current_hp_ratio;
+        renderer->DrawRect(
+            bar_pos,
+            Math::vec2{bar_width, 8},
+            0.0f,
+            CS200::RGBA{0, 200, 0, 255}  // 녹색
+        );
+
+        // HP 텍스트 (숫자)
+        int current_hp = hp_bar.character->GetCurrentHP();
+        int max_hp = hp_bar.character->GetMaxHP();
+        std::string hp_text = std::to_string(current_hp) + "/" + std::to_string(max_hp);
+
+        Engine::GetTextManager().Draw(
+            hp_text,
+            bar_pos + Math::vec2{70, -3},  // 바 옆에 표시
+            Math::vec2{1.0f, 1.0f}  // 크기
+        );
+    }
 }
 ```
 
 ---
 
-### Daily Breakdown (Developer D)
-
-#### **Monday (7-8 hours)**
-
-- Implement complete BattleState::Load() (2 hrs)
-- Initialize all systems (Grid, Turn, UI, Stats) (2 hrs)
-- Create character instances and placement (1 hr)
-- Test initialization sequence (2 hrs)
-- **Deliverable**: BattleState loads correctly
-
-#### **Tuesday (7-8 hours)**
-
-- Implement input handling state machine (2.5 hrs)
-- Add keyboard controls for all actions (2 hrs)
-- Implement cursor movement and selection (1.5 hrs)
-- Test input flow (1.5 hrs)
-- **Deliverable**: Input system complete
-
-#### **Wednesday (6-7 hours)**
-
-- Implement action execution pipeline (2 hrs)
-- Connect spell selection to SpellSystem (1.5 hrs)
-- Integrate combat actions with CombatSystem (1.5 hrs)
-- Test action execution (2 hrs)
-- **Deliverable**: Actions execute correctly
-
-#### **Thursday (6-7 hours)**
-
-- Integrate all Week 1-4 systems (3 hrs)
-- Implement battle phase transitions (2 hrs)
-- Add victory/defeat detection (1.5 hrs)
-- Test system coordination (1.5 hrs)
-- **Deliverable**: Full integration complete
-
-#### **Friday (4-5 hours)**
-
-- Write comprehensive integration test suite (2 hrs)
-- Final bug fixes and polish (1.5 hrs)
-- Test full combat scenarios (1 hr)
-- Prepare for playtest (30 min)
-- **Deliverable**: BattleState production-ready
-
----
-
-## Week 5: Developer E - Testing & Build Preparation
-
-**Goal**: Create comprehensive test suite (80+ tests), prepare stable build for Playtest 1
-
-**Foundation**:
-
-- Week 1-4 test infrastructure (TestAssert, Week1TestMocks, Week3TestMocks)
-- All implemented systems need test coverage
-- CMake build system for build automation
-
-**Files to Create**:
-
-```
-DragonicTactics/source/Game/DragonicTactics/Test/Week5IntegrationTests.h (new file)
-DragonicTactics/source/Game/DragonicTactics/Test/Week5IntegrationTests.cpp (new file)
-DragonicTactics/source/Game/DragonicTactics/Test/TestRunner.h (new file)
-DragonicTactics/source/Game/DragonicTactics/Test/TestRunner.cpp (new file)
-DragonicTactics/source/Game/DragonicTactics/Test/PlaytestBuild.h (new file)
-DragonicTactics/source/Game/DragonicTactics/Test/PlaytestBuild.cpp (new file)
-```
-
-**Files to Modify**:
-
-```
-DragonicTactics/CMakeLists.txt (add test configuration)
-All existing test files (organize and expand coverage)
-```
-
-### Implementation Tasks (Testing & Build)
-
-#### **Task 1: Comprehensive Test Suite**
-
-**Goal**: Achieve 80+ tests covering all Week 1-5 systems
-
-**Steps**:
-
-1. Audit existing tests (Week 1-4 test files)
-2. Identify gaps in test coverage
-3. Write missing unit tests for each system
-4. Write integration tests for system interactions
-5. Create automated test runner
-
-**Test Coverage Target**:
-
-- **Character System**: 15 tests
-- **Combat System**: 12 tests
-- **Spell System**: 10 tests
-- **Grid System**: 8 tests
-- **Turn Manager**: 8 tests
-- **Event System**: 6 tests
-- **UI System**: 8 tests
-- **VFX System**: 5 tests
-- **Game Flow**: 8 tests
-- **Total**: 80+ tests
-
-**Why this matters**: Comprehensive testing catches bugs early, ensures system stability, and gives confidence that the playtest build won't crash.
-
----
-
-#### **Task 2: Test Runner & Automation**
-
-**Goal**: Create automated test runner to execute all tests with single command
-
-**Steps**:
-
-1. Create TestRunner singleton to manage all tests
-2. Implement test registration system
-3. Add test result reporting (passed/failed/skipped)
-4. Create test suites for different categories
-5. Add command-line test execution
-
-**Test Runner Features**:
-
-- Run all tests with single command
-- Filter tests by category (unit, integration, system)
-- Generate test report (console + log file)
-- Return non-zero exit code on failure (for CI)
-
----
-
-#### **Task 3: Integration Test Scenarios**
-
-**Goal**: Create realistic end-to-end integration tests
-
-**Steps**:
-
-1. Write "Full Combat" integration test (Dragon vs Fighter to victory)
-2. Write "All Spells" integration test (cast all 3 spells in battle)
-3. Write "Death Handling" integration test (character death + game over)
-4. Write "Turn System" integration test (10 turns with proper order)
-5. Write "UI Integration" integration test (all UI elements update correctly)
-
-**Integration Test Requirements**:
-
-- Test must run without manual input
-- Test must verify expected outcomes
-- Test must clean up resources properly
-- Test must complete in < 5 seconds
-
----
-
-#### **Task 4: Playtest Build Preparation**
-
-**Goal**: Prepare stable, playable build for external playtesting
-
-**Steps**:
-
-1. Create Release build configuration (optimizations enabled)
-2. Verify all assets bundle correctly
-3. Test build on clean machine (no dev environment)
-4. Create playtest instructions document
-5. Prepare feedback collection form
-
-**Build Requirements**:
-
-- No crashes during 10-minute play session
-- All 3 Dragon spells functional
-- Fighter AI makes reasonable decisions
-- Victory/defeat screens display correctly
-- Performance: 60+ FPS on target hardware
-
----
-
-#### **Task 5: Bug Tracking & Issue Management**
-
-**Goal**: Track and prioritize bugs found during testing
-
-**Steps**:
-
-1. Set up bug tracking system (could be simple text file or GitHub Issues)
-2. Categorize bugs by severity (Critical, Major, Minor)
-3. Triage bugs for Week 5 fixes vs post-playtest
-4. Fix critical bugs blocking playtest
-5. Document known issues for playtesters
-
-**Bug Severity Levels**:
-
-- **Critical**: Crashes, soft-locks, game-breaking bugs (MUST FIX)
-- **Major**: Significant gameplay impact (fix if time permits)
-- **Minor**: Visual glitches, minor issues (defer to Week 6)
-
----
-
-### Implementation Examples (Testing & Build)
-
-#### **Example 1: TestRunner Singleton**
+**Task 2: 액션 로그 시스템** (Day 2)
 
 ```cpp
-// File: DragonicTactics/source/Game/DragonicTactics/Test/TestRunner.h
+void GameUIManager::DrawActionLog(Math::TransformationMatrix camera_matrix) {
+    float y_offset = 100.0f;
+
+    for (const auto& entry : action_log_) {
+        // 페이드 아웃 효과 (lifetime에 따라)
+        int alpha = static_cast<int>(entry.lifetime * 127.5f);  // 0 ~ 255
+        alpha = std::min(alpha, 255);
+
+        Engine::GetTextManager().Draw(
+            entry.message,
+            entry.position + Math::vec2{0, y_offset},
+            Math::vec2{1.5f, 1.5f},  // 큰 텍스트
+            CS200::RGBA{255, 255, 255, static_cast<unsigned char>(alpha)}
+        );
+
+        y_offset += 30.0f;
+    }
+}
+```
+
+---
+
+**Task 3: 턴 순서 패널** (Day 2-3)
+
+```cpp
+void GameUIManager::DrawTurnOrder(Math::TransformationMatrix camera_matrix) {
+    auto* renderer = CS200::IRenderer2D::GetActiveRenderer();
+
+    Math::vec2 panel_pos{10, Engine::GetWindow().GetSize().y - 100};  // 좌측 상단
+
+    // 패널 배경
+    renderer->DrawRect(
+        panel_pos,
+        Math::vec2{200, 80},
+        0.0f,
+        CS200::RGBA{50, 50, 50, 200}  // 반투명 회색
+    );
+
+    // 턴 순서 텍스트
+    Engine::GetTextManager().Draw(
+        "Turn Order:",
+        panel_pos + Math::vec2{10, 60},
+        Math::vec2{1.2f, 1.2f}
+    );
+
+    // 캐릭터 목록
+    float x_offset = 10.0f;
+    for (size_t i = 0; i < turn_order_ui_.turn_order.size(); ++i) {
+        Character* character = turn_order_ui_.turn_order[i];
+
+        // 현재 턴 캐릭터는 하이라이트
+        CS200::RGBA color = (i == turn_order_ui_.current_turn_index) ?
+            CS200::RGBA{255, 255, 0, 255} :  // 노란색
+            CS200::RGBA{200, 200, 200, 255};  // 회색
+
+        std::string name = character->TypeName().substr(0, 3);  // "Dra", "Fig" 등
+        Engine::GetTextManager().Draw(
+            name,
+            panel_pos + Math::vec2{x_offset, 30},
+            Math::vec2{1.0f, 1.0f},
+            color
+        );
+
+        x_offset += 50.0f;
+    }
+}
+```
+
+---
+
+#### **Part B: DebugUIManager - 개발자용** (Day 3-5)
+
+**목표**: ImGui 기반 디버그 패널
+
+```cpp
+// DebugUIManager.h
 #pragma once
-#include <string>
-#include <vector>
-#include <functional>
+#include "Engine/Component.h"
+#include <imgui.h>
 
-// Test function signature: returns true if passed
-using TestFunction = std::function<bool()>;
-
-struct TestCase {
-    std::string name;
-    std::string category; // "Unit", "Integration", "System"
-    TestFunction function;
-};
-
-// Manages and executes all tests
-class TestRunner {
+class DebugUIManager : public CS230::Component {
 public:
-    // Singleton access
-    static TestRunner& Instance();
+    DebugUIManager();
 
-    // Test registration (public interface - SnakeCase)
-    void RegisterTest(const std::string& name, const std::string& category, TestFunction test_func);
+    void DrawImGui();  // ImGui 렌더링
 
-    // Test execution
-    int RunAllTests();
-    int RunCategory(const std::string& category);
-    int RunSingleTest(const std::string& name);
-
-    // Reporting
-    void PrintResults() const;
-    std::string GenerateReport() const;
-
-    // Statistics
-    int GetPassedCount() const { return passed_count_; }
-    int GetFailedCount() const { return failed_count_; }
-    int GetTotalCount() const { return static_cast<int>(tests_.size()); }
+    // 토글 플래그
+    bool show_grid_info = false;
+    bool show_ai_debug = false;
+    bool show_performance = false;
+    bool show_event_log = false;
 
 private:
-    TestRunner() = default;
-    ~TestRunner() = default;
-    TestRunner(const TestRunner&) = delete;
-    TestRunner& operator=(const TestRunner&) = delete;
+    void DrawGridInfoPanel();
+    void DrawAIDebugPanel();
+    void DrawPerformancePanel();
+    void DrawEventLogPanel();
 
-    // Test storage (private - snake_case)
-    std::vector<TestCase> tests_;
-    int passed_count_ = 0;
-    int failed_count_ = 0;
+    // 성능 메트릭
+    float fps_ = 0.0f;
+    size_t memory_usage_ = 0;
 
-    // Test execution helpers
-    bool run_test(const TestCase& test);
+    // 이벤트 로그
+    std::vector<std::string> event_log_;
+    const size_t max_log_entries_ = 100;
 };
 ```
 
+**ImGui 패널 구현**:
+
 ```cpp
-// File: DragonicTactics/source/Game/DragonicTactics/Test/TestRunner.cpp
-#include "TestRunner.h"
-#include "../../../Engine/Engine.hpp"
-#include <iostream>
-
-TestRunner& TestRunner::Instance() {
-    static TestRunner instance;
-    return instance;
-}
-
-void TestRunner::RegisterTest(const std::string& name, const std::string& category, TestFunction test_func) {
-    TestCase test{name, category, test_func};
-    tests_.push_back(test);
-    Engine::GetLogger().LogVerbose("TestRunner: Registered test '" + name + "' in category '" + category + "'");
-}
-
-int TestRunner::RunAllTests() {
-    passed_count_ = 0;
-    failed_count_ = 0;
-
-    Engine::GetLogger().LogEvent("========================================");
-    Engine::GetLogger().LogEvent("    RUNNING ALL TESTS");
-    Engine::GetLogger().LogEvent("========================================");
-
-    for (const auto& test : tests_) {
-        if (run_test(test)) {
-            passed_count_++;
-        } else {
-            failed_count_++;
-        }
+void DebugUIManager::DrawImGui() {
+    // F1: Grid Info
+    if (ImGui::IsKeyPressed(ImGuiKey_F1)) {
+        show_grid_info = !show_grid_info;
     }
 
-    PrintResults();
-
-    return failed_count_; // Return 0 if all passed
-}
-
-int TestRunner::RunCategory(const std::string& category) {
-    passed_count_ = 0;
-    failed_count_ = 0;
-
-    Engine::GetLogger().LogEvent("Running tests in category: " + category);
-
-    for (const auto& test : tests_) {
-        if (test.category == category) {
-            if (run_test(test)) {
-                passed_count_++;
-            } else {
-                failed_count_++;
-            }
-        }
+    // F4: AI Debug
+    if (ImGui::IsKeyPressed(ImGuiKey_F4)) {
+        show_ai_debug = !show_ai_debug;
     }
 
-    PrintResults();
-
-    return failed_count_;
-}
-
-bool TestRunner::run_test(const TestCase& test) {
-    Engine::GetLogger().LogEvent("Running: " + test.name);
-
-    try {
-        bool result = test.function();
-        if (result) {
-            Engine::GetLogger().LogEvent("  ✅ PASSED");
-        } else {
-            Engine::GetLogger().LogError("  ❌ FAILED");
-        }
-        return result;
+    // 패널 렌더링
+    if (show_grid_info) {
+        DrawGridInfoPanel();
     }
-    catch (const std::exception& e) {
-        Engine::GetLogger().LogError("  ❌ EXCEPTION: " + std::string(e.what()));
-        return false;
+
+    if (show_ai_debug) {
+        DrawAIDebugPanel();
+    }
+
+    if (show_performance) {
+        DrawPerformancePanel();
+    }
+
+    if (show_event_log) {
+        DrawEventLogPanel();
     }
 }
 
-void TestRunner::PrintResults() const {
-    Engine::GetLogger().LogEvent("========================================");
-    Engine::GetLogger().LogEvent("    TEST RESULTS");
-    Engine::GetLogger().LogEvent("========================================");
-    Engine::GetLogger().LogEvent("Total: " + std::to_string(GetTotalCount()));
-    Engine::GetLogger().LogEvent("Passed: " + std::to_string(passed_count_));
-    Engine::GetLogger().LogEvent("Failed: " + std::to_string(failed_count_));
+void DebugUIManager::DrawGridInfoPanel() {
+    ImGui::Begin("Grid Information", &show_grid_info);
 
-    if (failed_count_ == 0) {
-        Engine::GetLogger().LogEvent("✅ ALL TESTS PASSED");
+    GridSystem* grid = GetGSComponent<GridSystem>();
+
+    // 마우스 위치 타일 좌표
+    Math::vec2 mouse_pos = Engine::GetInput().GetMousePos();
+    Math::ivec2 tile_pos = grid->ScreenToGrid(mouse_pos);
+
+    ImGui::Text("Mouse Tile: (%d, %d)", tile_pos.x, tile_pos.y);
+
+    // 타일 점유 상태
+    Character* occupant = grid->GetCharacterAt(tile_pos);
+    if (occupant) {
+        ImGui::Text("Occupied by: %s", occupant->TypeName().c_str());
+        ImGui::Text("HP: %d/%d", occupant->GetCurrentHP(), occupant->GetMaxHP());
     } else {
-        Engine::GetLogger().LogError("❌ SOME TESTS FAILED");
+        ImGui::Text("Empty");
     }
-    Engine::GetLogger().LogEvent("========================================");
+
+    // 타일 타입
+    bool walkable = grid->IsWalkable(tile_pos);
+    ImGui::Text("Walkable: %s", walkable ? "Yes" : "No");
+
+    ImGui::End();
 }
 
-std::string TestRunner::GenerateReport() const {
-    std::stringstream report;
-    report << "Test Report\n";
-    report << "===========\n";
-    report << "Total: " << GetTotalCount() << "\n";
-    report << "Passed: " << passed_count_ << "\n";
-    report << "Failed: " << failed_count_ << "\n";
-    return report.str();
+void DebugUIManager::DrawAIDebugPanel() {
+    ImGui::Begin("AI Debug", &show_ai_debug);
+
+    AISystem* ai_system = GetGSComponent<AISystem>();
+
+    // 현재 AI 결정 정보
+    ImGui::Text("Current AI Decision:");
+    // ... AI 결정 트리 시각화 ...
+
+    // Bias 조정
+    if (ImGui::CollapsingHeader("AI Bias Tuning")) {
+        // ... Bias 슬라이더 ...
+    }
+
+    ImGui::End();
 }
 ```
 
 ---
 
-#### **Example 2: Integration Test - Full Combat**
+### 엄격한 테스트 (UI 시스템)
+
+**테스트 시나리오**:
+
+1. **HP 바 테스트**: 데미지 받을 때 부드럽게 감소하는가?
+2. **액션 로그 테스트**: 이벤트 발생 시 로그가 표시되는가?
+3. **턴 순서 패널 테스트**: 현재 턴 캐릭터가 하이라이트되는가?
+4. **디버그 UI 토글 테스트**: F-키로 패널이 켜지고 꺼지는가?
+
+---
+
+### 일일 작업 분배 (개발자 C)
+
+| 일차      | 작업                  | 예상 시간 | 산출물                 |
+| ------- | ------------------- | ----- | ------------------- |
+| Day 1   | GameUIManager 기본 구조 | 4h    | GameUIManager.h/cpp |
+| Day 1-2 | HP 바 시스템            | 4h    | DrawHPBars 완성       |
+| Day 2   | 액션 로그 시스템           | 4h    | DrawActionLog 완성    |
+| Day 2-3 | 턴 순서 패널             | 4h    | DrawTurnOrder 완성    |
+| Day 3   | AP 표시               | 2h    | DrawAPDisplay 완성    |
+| Day 3-4 | DebugUIManager 구현   | 6h    | ImGui 패널들           |
+| Day 4-5 | 통합 및 테스트            | 8h    | 전체 UI 테스트           |
+
+**총 예상 시간**: 32시간 (4일)
+
+---
+
+## 개발자 D: 캐릭터 소유권 모델 재설계
+
+**목표**: 스마트 포인터 도입으로 메모리 안정성 확보
+
+**파일 수정 목록**:
+
+```
+DragonicTactics/source/Engine/GameObjectManager.h/cpp
+DragonicTactics/source/Game/DragonicTactics/Factories/CharacterFactory.h/cpp
+DragonicTactics/source/Game/DragonicTactics/States/GamePlay.h/cpp
+DragonicTactics/source/Game/DragonicTactics/Test/TestMemory.h/cpp (신규)
+docs/ownership-diagram.md (신규)
+```
+
+---
+
+### 구현 작업 (소유권 모델)
+
+#### **Task 1: 소유권 분석** (Day 1)
+
+**현재 문제**:
 
 ```cpp
-// File: DragonicTactics/source/Game/DragonicTactics/Test/Week5IntegrationTests.cpp
+// GamePlay.cpp - 문제 있는 코드
+Dragon* dragon = new Dragon({4, 4});  // ❌ Raw pointer
+game_object_manager->Add(dragon);     // 누가 소유?
 
-bool TestFullCombatIntegration() {
-    Engine::GetLogger().LogEvent("=== FULL COMBAT INTEGRATION TEST ===");
+Fighter* fighter = new Fighter({0, 0});  // ❌ Raw pointer
+game_object_manager->Add(fighter);       // 누가 소유?
 
-    // Initialize battle
-    BattleState battle;
-    battle.Load();
+// 나중에...
+// delete dragon?  // 누가 삭제?
+// delete fighter? // 누가 삭제?
+```
 
-    Dragon* dragon = battle.GetDragon();
-    Fighter* fighter = battle.GetFighter();
+**목표 구조**:
 
-    // Verify initial state
-    if (!dragon->IsAlive() || !fighter->IsAlive()) {
-        Engine::GetLogger().LogError("Characters not alive at start");
-        return false;
-    }
+```
+GameObjectManager (소유자)
+├── unique_ptr<Dragon>
+├── unique_ptr<Fighter>
+└── unique_ptr<Character> ...
 
-    // Simulate combat (Dragon always attacks)
-    int turn_limit = 20;
-    for (int turn = 0; turn < turn_limit; ++turn) {
-        Character* current = TurnManager::Instance().GetCurrentCharacter();
+다른 시스템들 (참조자)
+├── TurnManager: vector<Character*> (raw pointer로 참조만)
+├── GridSystem: map<ivec2, Character*> (raw pointer로 참조만)
+└── AISystem: Character* (raw pointer로 참조만)
+```
 
-        if (!dragon->IsAlive() || !fighter->IsAlive()) {
-            break; // Battle ended
+**소유권 다이어그램**:
+
+```markdown
+# docs/ownership-diagram.md
+
+## 캐릭터 소유권 다이어그램
+
+\`\`\`
+┌─────────────────────────────────────────────┐
+│          GameObjectManager                  │
+│                                             │
+│  std::vector<std::unique_ptr<GameObject>>   │
+│    ├─ unique_ptr<Dragon>         (소유)    │
+│    ├─ unique_ptr<Fighter>        (소유)    │
+│    └─ unique_ptr<Character> ...  (소유)    │
+└─────────────────────────────────────────────┘
+         │              │              │
+         │ (raw ptr)    │ (raw ptr)    │ (raw ptr)
+         ▼              ▼              ▼
+  ┌──────────┐   ┌──────────┐   ┌──────────┐
+  │TurnMgr   │   │GridSystem│   │AISystem  │
+  │          │   │          │   │          │
+  │vector<   │   │map<ivec2,│   │Character*│
+  │Char*>    │   │Char*>    │   │          │
+  └──────────┘   └──────────┘   └──────────┘
+      (참조만)       (참조만)       (참조만)
+\`\`\`
+
+**원칙**:
+1. GameObjectManager가 unique_ptr로 **소유**
+2. 다른 시스템들은 raw pointer로 **참조만**
+3. 캐릭터 삭제는 GameObjectManager가 담당
+4. 댕글링 포인터 방지: 삭제 시 모든 참조 제거
+\`\`\`
+```
+
+---
+
+#### **Task 2: 스마트 포인터 도입** (Day 2-3)
+
+**GameObjectManager 수정**:
+
+```cpp
+// GameObjectManager.h
+class GameObjectManager : public CS230::Component {
+public:
+    // ❌ 기존: void Add(GameObject* obj);
+    // ✅ 개선: unique_ptr로 소유권 이전
+    void Add(std::unique_ptr<CS230::GameObject> obj);
+
+    // ❌ 기존: void Remove(GameObject* obj);
+    // ✅ 개선: 안전한 제거
+    void Remove(CS230::GameObject* obj);
+
+    // 참조용 (raw pointer 반환)
+    CS230::GameObject* Find(const std::string& name) const;
+    std::vector<CS230::GameObject*> GetAll() const;
+
+private:
+    // ❌ 기존: std::vector<GameObject*> objects_;
+    // ✅ 개선: unique_ptr로 소유
+    std::vector<std::unique_ptr<CS230::GameObject>> objects_;
+};
+```
+
+**구현**:
+
+```cpp
+// GameObjectManager.cpp
+void GameObjectManager::Add(std::unique_ptr<CS230::GameObject> obj) {
+    Engine::GetLogger().LogDebug("GameObjectManager: Adding " + obj->TypeName());
+    objects_.push_back(std::move(obj));  // 소유권 이전
+}
+
+void GameObjectManager::Remove(CS230::GameObject* obj) {
+    Engine::GetLogger().LogDebug("GameObjectManager: Removing " + obj->TypeName());
+
+    auto it = std::remove_if(objects_.begin(), objects_.end(),
+        [obj](const std::unique_ptr<CS230::GameObject>& ptr) {
+            return ptr.get() == obj;
         }
+    );
 
-        // Execute action
-        if (current == dragon) {
-            dragon->PerformAttack(fighter);
-        } else {
-            fighter->PerformAttack(dragon);
-        }
+    if (it != objects_.end()) {
+        // unique_ptr이 자동으로 delete 호출
+        objects_.erase(it, objects_.end());
+    }
+}
 
-        battle.EndCurrentTurn();
+std::vector<CS230::GameObject*> GameObjectManager::GetAll() const {
+    std::vector<CS230::GameObject*> result;
+    result.reserve(objects_.size());
+
+    for (const auto& obj : objects_) {
+        result.push_back(obj.get());  // raw pointer 반환 (참조만)
     }
 
-    // Verify battle ended (one character died)
-    bool battle_ended = !dragon->IsAlive() || !fighter->IsAlive();
-    if (!battle_ended) {
-        Engine::GetLogger().LogError("Battle didn't end after " + std::to_string(turn_limit) + " turns");
-        battle.Unload();
-        return false;
-    }
-
-    // Verify victory conditions triggered
-    battle.CheckVictoryConditions();
-
-    battle.Unload();
-    Engine::GetLogger().LogEvent("✅ Full combat integration test passed");
-    return true;
+    return result;
 }
 ```
 
 ---
 
-### Rigorous Testing (Testing & Build)
-
-#### **Test 1: TestRunner Registration**
+#### **Task 3: CharacterFactory 개선** (Day 3-4)
 
 ```cpp
-bool TestTestRunnerRegistration() {
-    TestRunner& runner = TestRunner::Instance();
+// CharacterFactory.h
+class CharacterFactory {
+public:
+    // ❌ 기존: static Character* Create(...);
+    // ✅ 개선: unique_ptr 반환
+    static std::unique_ptr<Character> Create(
+        CharacterTypes type,
+        Math::ivec2 start_position
+    );
 
-    int initial_count = runner.GetTotalCount();
-
-    runner.RegisterTest("Dummy Test", "Unit", []() { return true; });
-
-    if (runner.GetTotalCount() != initial_count + 1) {
-        Engine::GetLogger().LogError("TestRunner registration failed");
-        return false;
-    }
-
-    Engine::GetLogger().LogEvent("✅ TestRunner registration test passed");
-    return true;
-}
+    // 편의 함수들도 unique_ptr 반환
+    static std::unique_ptr<Dragon> CreateDragon(Math::ivec2 position);
+    static std::unique_ptr<Fighter> CreateFighter(Math::ivec2 position);
+};
 ```
 
-#### **Test 2: Test Execution and Results**
+**구현**:
 
 ```cpp
-bool TestTestExecution() {
-    TestRunner& runner = TestRunner::Instance();
+// CharacterFactory.cpp
+std::unique_ptr<Character> CharacterFactory::Create(
+    CharacterTypes type,
+    Math::ivec2 start_position
+) {
+    switch (type) {
+        case CharacterTypes::Dragon:
+            return CreateDragon(start_position);
 
-    // Register passing test
-    runner.RegisterTest("Passing Test", "Unit", []() { return true; });
+        case CharacterTypes::Fighter:
+            return CreateFighter(start_position);
 
-    // Register failing test
-    runner.RegisterTest("Failing Test", "Unit", []() { return false; });
-
-    int failures = runner.RunCategory("Unit");
-
-    if (failures == 0) {
-        Engine::GetLogger().LogError("TestRunner should have detected failures");
-        return false;
+        default:
+            Engine::GetLogger().LogError("Unknown character type");
+            return nullptr;
     }
-
-    Engine::GetLogger().LogEvent("✅ Test execution test passed");
-    return true;
 }
-```
 
-#### **Test 3: Category Filtering**
+std::unique_ptr<Dragon> CharacterFactory::CreateDragon(Math::ivec2 position) {
+    auto dragon = std::make_unique<Dragon>(position);
 
-```cpp
-bool TestCategoryFiltering() {
-    TestRunner& runner = TestRunner::Instance();
+    // 컴포넌트 추가
+    dragon->AddGOComponent(new GridPosition(position));
+    dragon->AddGOComponent(new ActionPoints(2));
+    dragon->AddGOComponent(new SpellSlots());
+    dragon->AddGOComponent(new StatsComponent(140, 5, 3, 2));  // HP, Speed, Attack, Defense
 
-    runner.RegisterTest("Unit Test 1", "Unit", []() { return true; });
-    runner.RegisterTest("Integration Test 1", "Integration", []() { return true; });
+    Engine::GetLogger().LogEvent("CharacterFactory: Created Dragon");
 
-    int unit_failures = runner.RunCategory("Unit");
-    int integration_failures = runner.RunCategory("Integration");
-
-    if (unit_failures != 0 || integration_failures != 0) {
-        Engine::GetLogger().LogError("Category filtering failed");
-        return false;
-    }
-
-    Engine::GetLogger().LogEvent("✅ Category filtering test passed");
-    return true;
-}
-```
-
-#### **Test 4: Build Verification**
-
-```cpp
-bool TestBuildVerification() {
-    // Verify all required systems are present
-    bool grid_ok = (GetComponent<GridSystem>() != nullptr);
-    bool turn_manager_ok = true; // TurnManager::Instance() works
-
-    if (!grid_ok || !turn_manager_ok) {
-        Engine::GetLogger().LogError("Build verification failed - missing systems");
-        return false;
-    }
-
-    Engine::GetLogger().LogEvent("✅ Build verification test passed");
-    return true;
-}
-```
-
-#### **Test 5: Performance Benchmark**
-
-```cpp
-bool TestPerformanceBenchmark() {
-    // Measure frame time for 100 updates
-    auto start = std::chrono::high_resolution_clock::now();
-
-    BattleState battle;
-    battle.Load();
-
-    for (int i = 0; i < 100; ++i) {
-        battle.Update(0.016); // 60 FPS frame time
-    }
-
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-
-    battle.Unload();
-
-    // Should complete in < 2 seconds
-    if (duration > 2000) {
-        Engine::GetLogger().LogError("Performance too slow: " + std::to_string(duration) + "ms");
-        return false;
-    }
-
-    Engine::GetLogger().LogEvent("✅ Performance benchmark test passed (" +
-                                  std::to_string(duration) + "ms)");
-    return true;
+    return dragon;  // 소유권 이전
 }
 ```
 
 ---
 
-### Daily Breakdown (Developer E)
-
-#### **Monday (7-8 hours)**
-
-- Audit existing tests from Weeks 1-4 (1.5 hrs)
-- Identify test coverage gaps (1 hr)
-- Write 15+ missing unit tests (3 hrs)
-- Organize tests into categories (1 hr)
-- **Deliverable**: 60+ tests with improved coverage
-
-#### **Tuesday (7-8 hours)**
-
-- Create TestRunner singleton (2 hrs)
-- Implement test registration and execution (2 hrs)
-- Add test reporting and statistics (1 hr)
-- Write 10+ integration tests (2.5 hrs)
-- **Deliverable**: TestRunner complete, 70+ tests
-
-#### **Wednesday (6-7 hours)**
-
-- Write full combat integration test (1.5 hrs)
-- Write all-spells integration test (1.5 hrs)
-- Write death handling integration test (1 hr)
-- Write turn system integration test (1 hr)
-- Write UI integration test (1.5 hrs)
-- **Deliverable**: 5 major integration tests, 75+ tests total
-
-#### **Thursday (6-7 hours)**
-
-- Create Release build configuration (1 hr)
-- Test build on clean machine (2 hrs)
-- Fix critical bugs found in testing (2.5 hrs)
-- Write playtest instructions (1 hr)
-- **Deliverable**: Stable playtest build ready
-
-#### **Friday (4-5 hours)**
-
-- Run full test suite (80+ tests) (1 hr)
-- Create playtest feedback form (30 min)
-- Prepare playtest demo environment (1 hr)
-- Final bug triage and documentation (1.5 hrs)
-- **Deliverable**: Playtest 1 ready for execution
-
----
-
-## Week 5 Integration Tests (Wednesday & Friday)
-
-### Wednesday Mid-Week Integration Check
-
-**Goal**: Verify all Week 5 systems integrate correctly before final push
-
-**Participants**: All 5 developers
-
-**Duration**: 60 minutes
-
-**Test Scenarios**:
-
-1. **Visual Effects Integration** (Developer A)
-   
-   - Verify damage numbers appear when characters take damage
-   - Verify spell effects trigger on spell cast
-   - Verify attack animations play correctly
-
-2. **Game Flow Integration** (Developer B)
-   
-   - Verify character death triggers properly
-   - Verify victory/defeat screens appear
-   - Verify battle statistics track correctly
-
-3. **UI Integration** (Developer C)
-   
-   - Verify health bars update on damage
-   - Verify turn indicator follows active character
-   - Verify spell selection UI appears and responds to input
-
-4. **BattleState Integration** (Developer D)
-   
-   - Verify full game loop runs without crashes
-   - Verify input handling works for all actions
-   - Verify turn transitions work correctly
-
-5. **Testing Integration** (Developer E)
-   
-   - Run automated test suite (should have 75+ tests)
-   - Verify no critical bugs blocking playtest
-   - Identify any integration issues
-
-**Success Criteria**:
-
-- ✅ All 5 developer systems integrated without crashes
-- ✅ No critical bugs found
-- ✅ 75+ automated tests passing
-- ✅ Full combat loop completes successfully
-
----
-
-### Friday Playtest 1 Integration Test
-
-**Goal**: Final verification before external playtest
-
-**Participants**: All 5 developers + external playtesters
-
-**Duration**: 90 minutes (30 min dev test + 60 min external playtest)
-
-#### Developer Pre-Playtest Check (30 minutes)
-
-**Full Combat Scenario**:
+#### **Task 4: GamePlay 수정** (Day 4)
 
 ```cpp
-// File: DragonicTactics/source/Game/DragonicTactics/Test/Week5IntegrationTests.cpp
+// GamePlay.cpp
+void GamePlay::Load() {
+    // GameObjectManager 가져오기
+    auto* go_manager = GetGSComponent<CS230::GameObjectManager>();
 
-bool Week5FinalIntegrationTest() {
-    Engine::GetLogger().LogEvent("=== WEEK 5 FINAL INTEGRATION TEST ===");
+    // ✅ unique_ptr로 생성 후 이동
+    auto dragon = CharacterFactory::CreateDragon({4, 4});
+    dragon_ = dragon.get();  // raw pointer로 참조 저장 (멤버 변수)
+    go_manager->Add(std::move(dragon));  // 소유권 이전
 
-    // Test 1: Battle Initialization
-    BattleState battle;
-    battle.Load();
+    auto fighter = CharacterFactory::CreateFighter({0, 0});
+    fighter_ = fighter.get();  // raw pointer로 참조 저장
+    go_manager->Add(std::move(fighter));  // 소유권 이전
 
-    Dragon* dragon = battle.GetDragon();
-    Fighter* fighter = battle.GetFighter();
+    // TurnManager에 등록 (raw pointer)
+    TurnManager::Instance().InitializeTurnOrder({dragon_, fighter_});
+}
+```
 
-    // Verify all systems initialized
-    auto grid = battle.GetComponent<GridSystem>();
-    if (!grid) {
-        Engine::GetLogger().LogError("GridSystem not initialized");
-        return false;
+---
+
+#### **Task 5: 테스트 및 검증** (Day 4-5)
+
+**메모리 누수 테스트**:
+
+```cpp
+// TestMemory.cpp
+void TestMemory::TestCharacterLifecycle() {
+    auto* go_manager = GetGSComponent<CS230::GameObjectManager>();
+
+    // 초기 상태: 0개
+    assert(go_manager->GetAll().size() == 0);
+
+    // 캐릭터 생성
+    auto dragon = CharacterFactory::CreateDragon({0, 0});
+    Character* dragon_ptr = dragon.get();
+    go_manager->Add(std::move(dragon));
+
+    // 확인: 1개
+    assert(go_manager->GetAll().size() == 1);
+
+    // 캐릭터 제거
+    go_manager->Remove(dragon_ptr);
+
+    // 확인: 0개 (자동 삭제됨)
+    assert(go_manager->GetAll().size() == 0);
+
+    // ✅ 메모리 누수 없음!
+}
+```
+
+**Visual Studio Memory Profiler 사용**:
+
+```
+1. Visual Studio → Debug → Performance Profiler
+2. Memory Usage 선택
+3. 게임 실행
+4. 캐릭터 생성/삭제 10회 반복
+5. Snapshot 비교
+6. 메모리 증가 없으면 ✅
+```
+
+---
+
+### 일일 작업 분배 (개발자 D)
+
+| 일차      | 작업                   | 예상 시간 | 산출물                  |
+| ------- | -------------------- | ----- | -------------------- |
+| Day 1   | 소유권 분석 및 다이어그램       | 4h    | ownership-diagram.md |
+| Day 2   | GameObjectManager 수정 | 4h    | unique_ptr 적용        |
+| Day 3   | CharacterFactory 수정  | 4h    | unique_ptr 반환        |
+| Day 4   | GamePlay 수정          | 4h    | 소유권 이전 코드            |
+| Day 4-5 | 메모리 테스트              | 8h    | TestMemory.cpp, 레포트  |
+
+**총 예상 시간**: 24시간 (3일)
+
+---
+
+## 개발자 E: AI 행동 시각화 및 맵 데이터 로딩
+
+**목표**: AI pause 시스템 + JSON 맵 로딩
+
+**파일 목록**:
+
+```
+DragonicTactics/source/Game/DragonicTactics/StateComponents/AIPauseSystem.h/cpp (신규)
+DragonicTactics/source/Game/DragonicTactics/StateComponents/MapDataRegistry.h/cpp (신규)
+DragonicTactics/Assets/Data/maps.json (신규)
+DragonicTactics/source/Game/DragonicTactics/Test/TestMapLoading.h/cpp (신규)
+```
+
+---
+
+### 구현 작업 (AI 행동 시각화)
+
+#### **Task 1: AI Pause 시스템** (Day 1-3)
+
+**목표**: AI 행동 중간에 pause를 추가하여 플레이어가 상황 파악 가능
+
+```cpp
+// AIPauseSystem.h
+class AIPauseSystem : public CS230::Component {
+public:
+    void Update(double dt) override;
+
+    // AI 행동 단계별 pause
+    void PauseBeforeAction(Character* ai_character, const std::string& action_description);
+    void PauseAfterAction(Character* ai_character);
+
+    // Pause 시간 설정
+    void SetPauseDuration(double seconds);
+    double GetPauseDuration() const { return pause_duration_; }
+
+    bool IsPaused() const { return is_paused_; }
+
+private:
+    bool is_paused_ = false;
+    double pause_timer_ = 0.0;
+    double pause_duration_ = 1.0;  // 기본 1초
+
+    std::string current_action_description_;
+    Character* current_ai_character_ = nullptr;
+};
+```
+
+**사용 예시**:
+
+```cpp
+// AISystem.cpp
+void AISystem::ExecuteFighterAI(Character* fighter) {
+    AIPauseSystem* pause_system = GetGSComponent<AIPauseSystem>();
+
+    // 1. 행동 전 pause (플레이어가 "Fighter가 뭔가 하려고 한다"는 것을 인지)
+    pause_system->PauseBeforeAction(fighter, "Fighter is thinking...");
+
+    // 대기 중...
+    if (pause_system->IsPaused()) {
+        return;  // 다음 프레임에 계속
     }
 
-    // Test 2: UI Systems
-    UIManager& ui = UIManager::Instance();
-    ui.UpdateTurnIndicator(dragon);
+    // 2. 행동 결정
+    AIAction action = DecideAction(fighter);
 
-    // Test 3: Visual Effects
-    VFXManager& vfx = VFXManager::Instance();
-    vfx.SpawnDamageNumber({100, 100}, 25, DamageType::Fire, false);
+    // 3. 행동 실행 전 pause (플레이어가 행동 내용을 인지)
+    std::string action_desc = "Fighter will " + action.reasoning;
+    pause_system->PauseBeforeAction(fighter, action_desc);
 
-    // Test 4: Full Combat Loop
-    int turn_count = 0;
-    while (dragon->IsAlive() && fighter->IsAlive() && turn_count < 20) {
-        Character* current = TurnManager::Instance().GetCurrentCharacter();
+    if (pause_system->IsPaused()) {
+        return;
+    }
 
-        // Execute action
-        if (current == dragon) {
-            // Dragon uses spells
-            if (turn_count == 0) {
-                SpellSystem::Instance().CastSpell(dragon, "Fireball", fighter->GetGridPosition());
-            } else if (turn_count == 2) {
-                SpellSystem::Instance().CastSpell(dragon, "CreateWall", {4, 4});
-            } else if (turn_count == 4) {
-                SpellSystem::Instance().CastSpell(dragon, "LavaPool", {5, 5});
-            } else {
-                dragon->PerformAttack(fighter);
+    // 4. 행동 실행
+    ExecuteAction(fighter, action);
+
+    // 5. 행동 후 pause (결과를 확인할 시간)
+    pause_system->PauseAfterAction(fighter);
+}
+```
+
+**UI 표시** (GameUIManager 연동):
+
+```cpp
+// GameUIManager.cpp - AI 행동 표시
+void GameUIManager::DrawAIActionIndicator() {
+    AIPauseSystem* pause_system = GetGSComponent<AIPauseSystem>();
+
+    if (pause_system->IsPaused()) {
+        std::string action_desc = pause_system->GetCurrentActionDescription();
+
+        // 화면 중앙에 큰 텍스트로 표시
+        Math::vec2 screen_center = Engine::GetWindow().GetSize() / 2.0f;
+
+        Engine::GetTextManager().Draw(
+            action_desc,
+            screen_center,
+            Math::vec2{2.0f, 2.0f},  // 큰 크기
+            CS200::RGBA{255, 255, 0, 255}  // 노란색
+        );
+    }
+}
+```
+
+---
+
+### 구현 작업 (맵 데이터 로딩)
+
+#### **Task 2: maps.json 스키마 설계** (Day 3)
+
+```json
+// DragonicTactics/Assets/Data/maps.json
+{
+    "maps": [
+        {
+            "id": "arena_01",
+            "name": "Basic Arena",
+            "width": 8,
+            "height": 8,
+            "tiles": [
+                "########",
+                "#......#",
+                "#......#",
+                "#...W..#",
+                "#...W..#",
+                "#......#",
+                "#......#",
+                "########"
+            ],
+            "legend": {
+                "#": "wall",
+                ".": "floor",
+                "W": "water",
+                "L": "lava"
+            },
+            "spawn_points": {
+                "dragon": {"x": 4, "y": 4},
+                "fighter": {"x": 1, "y": 1},
+                "cleric": {"x": 6, "y": 1},
+                "wizard": {"x": 6, "y": 6},
+                "rogue": {"x": 1, "y": 6}
             }
-        } else {
-            // Fighter uses AI
-            fighter->DecideAction();
+        },
+        {
+            "id": "lava_chamber",
+            "name": "Lava Chamber",
+            "width": 8,
+            "height": 8,
+            "tiles": [
+                "########",
+                "#......#",
+                "#.LLLL.#",
+                "#.LLLL.#",
+                "#.LLLL.#",
+                "#.LLLL.#",
+                "#......#",
+                "########"
+            ],
+            "spawn_points": {
+                "dragon": {"x": 2, "y": 2},
+                "fighter": {"x": 5, "y": 5}
+            }
         }
-
-        battle.EndCurrentTurn();
-        turn_count++;
-
-        // Update all systems
-        ui.Update(0.016);
-        vfx.Update(0.016);
-    }
-
-    // Test 5: Victory/Defeat
-    battle.CheckVictoryConditions();
-
-    // Verify statistics tracked
-    BattleStatistics& stats = BattleStatistics::Instance();
-    if (stats.GetTurns() != turn_count) {
-        Engine::GetLogger().LogError("Statistics tracking failed");
-        return false;
-    }
-
-    battle.Unload();
-
-    Engine::GetLogger().LogEvent("========================================");
-    Engine::GetLogger().LogEvent("✅ ALL WEEK 5 INTEGRATION TESTS PASSED");
-    Engine::GetLogger().LogEvent("========================================");
-
-    return true;
+    ]
 }
 ```
 
-**Verification Checklist**:
-
-- [ ] Battle initializes without errors
-- [ ] Dragon and Fighter spawn at correct positions
-- [ ] Grid displays correctly
-- [ ] Health bars appear and update
-- [ ] Turn indicator shows active character
-- [ ] All 3 Dragon spells cast successfully
-  - [ ] Fireball deals damage and shows explosion effect
-  - [ ] CreateWall creates wall tiles
-  - [ ] LavaPool creates lava tiles with damage
-- [ ] Fighter AI makes decisions
-- [ ] Damage numbers appear on hits
-- [ ] Attack animations play
-- [ ] Character dies when HP reaches 0
-- [ ] Victory/defeat screen appears
-- [ ] Battle statistics display correctly
-- [ ] No crashes during 10-turn combat
-- [ ] 80+ automated tests pass
-
 ---
 
-#### External Playtest (60 minutes)
+#### **Task 3: MapDataRegistry 구현** (Day 3-4)
 
-**Playtest Instructions** (hand to playtesters):
+```cpp
+// MapDataRegistry.h
+struct MapData {
+    std::string id;
+    std::string name;
+    int width;
+    int height;
+    std::vector<std::string> tiles;
+    std::map<char, std::string> legend;  // 타일 기호 → 타일 타입
+    std::map<std::string, Math::ivec2> spawn_points;
+};
 
-```
-Dragonic Tactics - Playtest 1 Instructions
+class MapDataRegistry : public CS230::Component {
+public:
+    void LoadMaps(const std::string& json_path);
+    MapData GetMapData(const std::string& map_id) const;
+    std::vector<std::string> GetAllMapIds() const;
 
-Welcome to Playtest 1 of Dragonic Tactics!
-
-GOAL:
-Defeat the Fighter using your Dragon's spells and attacks.
-
-CONTROLS:
-- Arrow Keys: Move grid cursor
-- 1: Cast Fireball (damages area)
-- 2: Cast Create Wall (creates wall tiles)
-- 3: Cast Lava Pool (creates damaging lava)
-- A: Melee Attack
-- M: Move character
-- Enter: Confirm action
-- ESC: Cancel action
-
-HOW TO PLAY:
-1. On your turn, select an action (spell or attack)
-2. Use arrow keys to select target tile
-3. Press Enter to confirm
-4. Fighter will automatically take its turn
-5. Defeat the Fighter to win!
-
-WHAT TO LOOK FOR:
-- Any crashes or freezes
-- Confusing UI or controls
-- Balance issues (too easy/hard?)
-- Visual glitches
-- Missing features you expected
-
-Please report ALL issues, no matter how small!
+private:
+    std::map<std::string, MapData> maps_;
+};
 ```
 
-**Feedback Collection Form**:
+**구현**:
 
-```
-Playtest 1 Feedback Form
+```cpp
+// MapDataRegistry.cpp
+#include "pch.h"
+#include "MapDataRegistry.h"
+#include <nlohmann/json.hpp>
+#include <fstream>
 
-Name (optional): _______________
-Date: _______________
+using json = nlohmann::json;
 
-Rate your experience (1-5):
-[ ] Overall enjoyment
-[ ] Controls/UI clarity
-[ ] Visual polish
-[ ] Combat balance
-[ ] Game difficulty
+void MapDataRegistry::LoadMaps(const std::string& json_path) {
+    Engine::GetLogger().LogEvent("MapDataRegistry: Loading " + json_path);
 
-Did you encounter any bugs? (describe):
+    std::ifstream file(json_path);
+    if (!file.is_open()) {
+        Engine::GetLogger().LogError("Failed to open " + json_path);
+        return;
+    }
 
+    json j;
+    file >> j;
 
+    for (const auto& map_json : j["maps"]) {
+        MapData map_data;
+        map_data.id = map_json["id"];
+        map_data.name = map_json["name"];
+        map_data.width = map_json["width"];
+        map_data.height = map_json["height"];
 
+        // 타일 데이터
+        for (const auto& row : map_json["tiles"]) {
+            map_data.tiles.push_back(row);
+        }
 
-What did you like most?
+        // 범례
+        for (const auto& [key, value] : map_json["legend"].items()) {
+            map_data.legend[key[0]] = value;
+        }
 
+        // 스폰 포인트
+        for (const auto& [char_type, pos] : map_json["spawn_points"].items()) {
+            Math::ivec2 spawn_pos{pos["x"], pos["y"]};
+            map_data.spawn_points[char_type] = spawn_pos;
+        }
 
+        maps_[map_data.id] = map_data;
+        Engine::GetLogger().LogEvent("Loaded map: " + map_data.id);
+    }
+}
 
+MapData MapDataRegistry::GetMapData(const std::string& map_id) const {
+    auto it = maps_.find(map_id);
+    if (it != maps_.end()) {
+        return it->second;
+    }
 
-What needs improvement?
-
-
-
-
-Additional comments:
+    Engine::GetLogger().LogError("Map not found: " + map_id);
+    return MapData{};
+}
 ```
 
 ---
 
-## Week 5 Deliverables & Verification
+#### **Task 4: GridSystem에 맵 적용** (Day 4-5)
 
-### Final Deliverables (End of Week 5)
+```cpp
+// GridSystem.h
+class GridSystem : public CS230::Component {
+public:
+    void LoadMap(const MapData& map_data);
 
-**Deadline**: Friday Week 5, 5:00 PM
+    // 타일 타입 쿼리
+    std::string GetTileType(Math::ivec2 tile_pos) const;
+    bool IsWalkable(Math::ivec2 tile_pos) const override;
 
-#### **Developer A Deliverables**
-
-- [ ] VFXManager singleton complete
-- [ ] Damage numbers functional
-- [ ] All 3 spell visual effects working (Fireball, CreateWall, LavaPool)
-- [ ] Attack visual feedback complete
-- [ ] Grid highlights and hover effects
-- [ ] 5+ VFX tests passing
-
-#### **Developer B Deliverables**
-
-- [ ] Character death handling complete
-- [ ] BattleStatistics singleton tracking all metrics
-- [ ] Victory/defeat conditions detecting correctly
-- [ ] VictoryScreen GameState implemented
-- [ ] DefeatScreen GameState implemented
-- [ ] 5+ game flow tests passing
-
-#### **Developer C Deliverables**
-
-- [ ] UIManager singleton complete
-- [ ] Health bars displaying and updating
-- [ ] Turn indicator functional
-- [ ] Spell selection UI complete
-- [ ] Grid tile highlights and tooltips
-- [ ] 5+ UI tests passing
-
-#### **Developer D Deliverables**
-
-- [ ] BattleState full integration complete
-- [ ] Input handling state machine functional
-- [ ] Action execution pipeline working
-- [ ] All Week 1-4 systems integrated
-- [ ] Battle phase transitions working
-- [ ] 5+ integration tests passing
-
-#### **Developer E Deliverables**
-
-- [ ] 80+ comprehensive tests written
-- [ ] TestRunner singleton complete
-- [ ] All integration tests passing
-- [ ] Stable Release build prepared
-- [ ] Playtest instructions written
-- [ ] Feedback form created
-- [ ] Bug tracking system set up
-
----
-
-### Integration Verification
-
-**Run Full Test Suite**:
-
-```bash
-# Build
-cmake --preset windows-debug
-cmake --build --preset windows-debug
-
-# Run all tests
-./build/windows-debug/dragonic_tactics.exe --test all
-
-# Expected output:
-========================================
-    RUNNING ALL TESTS
-========================================
-Running: TestEventBusPublish
-  ✅ PASSED
-Running: TestDiceManager3d6
-  ✅ PASSED
-...
-[80+ tests]
-...
-========================================
-    TEST RESULTS
-========================================
-Total: 82
-Passed: 82
-Failed: 0
-✅ ALL TESTS PASSED
-========================================
+private:
+    std::map<Math::ivec2, std::string> tile_types_;  // 위치 → 타입 ("wall", "floor", "lava")
+};
 ```
 
-**Manual Playtest Verification**:
+**구현**:
 
-```bash
-# Run game in Release mode
-cmake --preset windows-release
-cmake --build --preset windows-release
-./build/windows-release/dragonic_tactics.exe
-```
+```cpp
+void GridSystem::LoadMap(const MapData& map_data) {
+    Engine::GetLogger().LogEvent("GridSystem: Loading map " + map_data.id);
 
-**Verification Steps**:
+    tile_types_.clear();
 
-1. Launch game
-2. Navigate to BattleState (Main Menu → Battle)
-3. Play full combat:
-   - Cast Fireball on Fighter
-   - Cast Create Wall to block path
-   - Cast Lava Pool near Fighter
-   - Attack Fighter until defeated
-4. Verify victory screen appears
-5. Check statistics displayed correctly
-6. No crashes occurred
+    // 타일 데이터 파싱
+    for (int y = 0; y < map_data.height; ++y) {
+        const std::string& row = map_data.tiles[y];
 
----
+        for (int x = 0; x < map_data.width; ++x) {
+            char tile_char = row[x];
 
-### Success Criteria
+            // 범례에서 타일 타입 조회
+            auto it = map_data.legend.find(tile_char);
+            if (it != map_data.legend.end()) {
+                Math::ivec2 pos{x, y};
+                tile_types_[pos] = it->second;
+            }
+        }
+    }
 
-Week 5 is complete when:
+    Engine::GetLogger().LogEvent("GridSystem: Loaded " + std::to_string(tile_types_.size()) + " tiles");
+}
 
-1. ✅ **All Visual Effects Working**: Damage numbers, spell effects, attack animations
-2. ✅ **Complete Game Flow**: Death handling, victory/defeat screens, statistics tracking
-3. ✅ **Polished UI**: Health bars, turn indicator, spell selection, grid highlights
-4. ✅ **Full BattleState Integration**: All Week 1-4 systems working together
-5. ✅ **80+ Tests Passing**: Comprehensive test coverage with all tests green
-6. ✅ **Stable Build**: No crashes during 10-minute play session
-7. ✅ **Playtest Ready**: Instructions, feedback form, and build prepared
-8. ✅ **All Spells Functional**: Fireball, CreateWall, LavaPool cast successfully
-9. ✅ **Fighter AI Working**: Makes autonomous decisions
-10. ✅ **Victory/Defeat Triggers**: Game ends correctly when battle concludes
+bool GridSystem::IsWalkable(Math::ivec2 tile_pos) const {
+    auto it = tile_types_.find(tile_pos);
+    if (it == tile_types_.end()) {
+        return false;  // 맵 밖
+    }
 
----
-
-## Playtest 1 Execution Plan
-
-### Schedule (Friday Week 5, 2:00 PM - 3:30 PM)
-
-**2:00 PM - 2:15 PM**: Setup & Introduction (15 min)
-
-- Set up 3-5 playtesting stations
-- Brief playtesters on goals and controls
-- Distribute feedback forms
-
-**2:15 PM - 3:00 PM**: Playtesting Session (45 min)
-
-- Playtesters play Dragon vs Fighter battle
-- Developers observe and take notes
-- Developers available for critical bug fixes only (no help unless game-breaking)
-
-**3:00 PM - 3:15 PM**: Feedback Collection (15 min)
-
-- Collect completed feedback forms
-- Brief verbal feedback session
-- Thank playtesters
-
-**3:15 PM - 3:30 PM**: Developer Debrief (15 min)
-
-- Discuss major findings
-- Prioritize Week 6 improvements
-- Celebrate Playtest 1 completion!
-
----
-
-### Playtester Profiles
-
-**Target Playtesters** (3-5 people):
-
-- **Playtester 1**: Experienced with tactical RPGs (Baldur's Gate 3, XCOM)
-- **Playtester 2**: Casual gamer (some RPG experience)
-- **Playtester 3**: New to tactical RPGs (fresh perspective)
-- **Playtester 4 (optional)**: Game developer (technical feedback)
-- **Playtester 5 (optional)**: Friend/family (honest feedback)
-
----
-
-### Known Issues to Document
-
-**Before Playtest, Document These Known Issues**:
-
-```
-Known Issues (Playtest 1)
-=========================
-
-CRITICAL (Game-Breaking):
-- [None expected - fixed during Week 5]
-
-MAJOR (Significant Impact):
-- [TBD based on Wednesday integration test]
-
-MINOR (Cosmetic/Polish):
-- Limited spell animations (placeholders)
-- No sound effects
-- Basic UI layout
-- Fighter AI uses simple logic (only attacks, no strategy)
-- Only 1v1 combat supported
-- No save/load functionality
-
-FUTURE FEATURES (Not Implemented):
-- Cleric, Wizard, Rogue characters (Week 11-15)
-- Advanced AI (Week 16-20)
-- More Dragon spells (Week 6-10)
-- Multiplayer (not planned)
+    const std::string& tile_type = it->second;
+    return (tile_type == "floor" || tile_type == "water");  // wall, lava는 불가
+}
 ```
 
 ---
 
-### Post-Playtest Actions
+#### **Task 5: GamePlay에서 맵 로딩** (Day 5)
 
-**Immediate (Friday Evening)**:
+```cpp
+// GamePlay.cpp
+void GamePlay::Load() {
+    // 맵 데이터 로드
+    auto* map_registry = AddGSComponent(new MapDataRegistry());
+    map_registry->LoadMaps("Assets/Data/maps.json");
 
-1. Compile all feedback forms
-2. Categorize bugs by severity
-3. Create Week 6 priority list
+    // 맵 선택
+    MapData arena_map = map_registry->GetMapData("arena_01");
 
-**Week 6 Preview Based on Playtest 1**:
+    // GridSystem에 맵 적용
+    auto* grid_system = GetGSComponent<GridSystem>();
+    grid_system->LoadMap(arena_map);
 
-- **Developer A**: Fix VFX bugs, add more spell effects
-- **Developer B**: Improve game flow based on feedback
-- **Developer C**: UI/UX improvements from playtest findings
-- **Developer D**: Balance adjustments, AI improvements
-- **Developer E**: Expand test coverage for found bugs
+    // 스폰 포인트에서 캐릭터 생성
+    Math::ivec2 dragon_spawn = arena_map.spawn_points["dragon"];
+    auto dragon = CharacterFactory::CreateDragon(dragon_spawn);
+    // ...
 
----
-
-### Celebration & Retrospective
-
-**Week 5 Achievements**:
-
-- ✅ **First Playable Build**: Dragon vs Fighter fully playable
-- ✅ **All 3 Dragon Spells**: Fireball, CreateWall, LavaPool working
-- ✅ **Complete Game Flow**: Start to victory/defeat
-- ✅ **80+ Tests**: Comprehensive test coverage
-- ✅ **Foundation Complete**: All core systems integrated
-
-**Team Retrospective Questions**:
-
-1. What went well this week?
-2. What could be improved?
-3. Any blockers or dependencies issues?
-4. What did we learn from the playtest?
-5. Are we on track for Playtest 2 (Week 10)?
-
-**Looking Ahead to Week 6**:
-
-- Implement playtest feedback
-- Begin Dragon spell expansion (Week 6-10 goal: 10 total spells)
-- Start debug tools implementation
-- Prepare for Playtest 2 (Week 10)
+    Engine::GetLogger().LogEvent("Map loaded: " + arena_map.name);
+}
+```
 
 ---
 
-## Week 5 Summary
+### 일일 작업 분배 (개발자 E)
 
-**Playtest 1 Milestone**: ✅ COMPLETE
+| 일차      | 작업                 | 예상 시간 | 산출물                 |
+| ------- | ------------------ | ----- | ------------------- |
+| Day 1-2 | AIPauseSystem 구현   | 8h    | AIPauseSystem.cpp   |
+| Day 2-3 | AI 행동 UI 표시        | 4h    | GameUIManager 연동    |
+| Day 3   | maps.json 스키마 설계   | 2h    | maps.json (2개 맵)    |
+| Day 3-4 | MapDataRegistry 구현 | 6h    | MapDataRegistry.cpp |
+| Day 4-5 | GridSystem 맵 로딩    | 6h    | GridSystem::LoadMap |
+| Day 5   | 통합 테스트             | 6h    | TestMapLoading.cpp  |
 
-This week transformed individual systems into a cohesive, playable game. The Dragon vs Fighter battle is fully functional with spells, AI, visual effects, and complete game flow from start to victory/defeat screen.
-
-**Key Metrics**:
-
-- **Development Time**: 5 weeks (Weeks 1-5)
-- **Total Tests**: 80+ passing
-- **Lines of Code**: ~5,000+ (estimated)
-- **Playable Build**: Ready for external testing
-- **Systems Complete**: 15+ (Character, Grid, Combat, Spells, Turn, Events, VFX, UI, Game Flow, etc.)
-
-**Next Milestone**: Playtest 2 (Week 10) - Full Dragon spell arsenal + debug tools + balance improvements
+**총 예상 시간**: 32시간 (4일)
 
 ---
 
-**🎉 Congratulations on completing Playtest 1! 🎉**
+## Week 5 통합 테스트
 
-The foundation is solid. Now it's time to expand, polish, and iterate based on player feedback!
+**금요일 오후 (2-3시간)**
+
+### 통합 테스트 시나리오
+
+**시나리오 1: 완전한 전투 플레이**
+
+```
+1. 게임 실행 → "arena_01" 맵 로드
+2. Dragon vs Fighter 배치 (스폰 포인트에서)
+3. 턴 1 (Dragon):
+   - GameUI: HP 바, AP 표시, 턴 순서 확인
+   - 플레이어가 이동 또는 공격
+   - 로그: 모든 턴 체크리스트 함수 호출 확인
+4. 턴 2 (Fighter):
+   - AI Pause: "Fighter is thinking..." 표시 (1초)
+   - AI Pause: "Fighter will move closer" 표시 (1초)
+   - Fighter가 Dragon에게 접근
+   - GameUI: Fighter 행동 로그 표시
+5. 반복 (승자 결정까지)
+```
+
+**검증 항목**:
+
+- [ ] 맵이 JSON에서 로드됨
+- [ ] 캐릭터가 스폰 포인트에 생성됨
+- [ ] 턴 플로우 체크리스트 모두 실행됨 (로그 확인)
+- [ ] GameUI: HP 바가 부드럽게 감소
+- [ ] GameUI: 액션 로그가 표시됨
+- [ ] GameUI: 턴 순서 패널이 업데이트됨
+- [ ] AI가 자율적으로 행동
+- [ ] AI pause가 작동 (행동 표시)
+- [ ] 메모리 누수 없음 (Visual Studio Profiler)
+- [ ] 크래시 없음
+
+---
+
+**시나리오 2: 디버그 UI 테스트**
+
+```
+1. F1 키 → Grid Info 패널 표시
+2. 마우스 호버 → 타일 좌표 표시
+3. F4 키 → AI Debug 패널 표시
+4. Fighter 턴 → AI 결정 트리 시각화
+5. ImGui Bias 슬라이더 → 실시간 AI 조정
+```
+
+---
+
+## Week 5 산출물 및 검증
+
+### 최종 산출물 목록
+
+**문서**:
+
+- [ ] turn-flow-chart.md (턴 플로우 차트)
+- [ ] ai-decision-tree.md (AI 결정 트리)
+- [ ] ownership-diagram.md (소유권 다이어그램)
+- [ ] maps.json (2개 이상의 맵)
+
+**코드**:
+
+- [ ] TurnManager.cpp (체크리스트 적용)
+- [ ] AISystem.cpp (robust AI)
+- [ ] GameUIManager.cpp (게임 UI)
+- [ ] DebugUIManager.cpp (디버그 UI)
+- [ ] GameObjectManager.cpp (스마트 포인터)
+- [ ] CharacterFactory.cpp (unique_ptr 반환)
+- [ ] AIPauseSystem.cpp (AI pause)
+- [ ] MapDataRegistry.cpp (맵 로딩)
+
+**테스트**:
+
+- [ ] TestTurnFlow.cpp
+- [ ] TestAI.cpp
+- [ ] TestMemory.cpp
+- [ ] TestMapLoading.cpp
+
+### 검증 체크리스트
+
+**기능 검증**:
+
+- [ ] 턴 시스템이 안정적으로 작동 (함수 호출 로그 확인)
+- [ ] AI가 자율적으로 전투 (플레이어 개입 없이)
+- [ ] 게임 UI로 모든 정보 확인 가능
+- [ ] 디버그 UI로 개발 정보 확인 가능
+- [ ] AI pause로 행동 파악 가능
+- [ ] 맵이 JSON에서 로드됨
+
+**품질 검증**:
+
+- [ ] 메모리 누수 없음 (Visual Studio Memory Profiler)
+- [ ] 크래시 없음 (10분 플레이 테스트)
+- [ ] 로그에 오류 없음
+- [ ] 성능 문제 없음 (60 FPS 유지)
+
+---
+
+**최종 업데이트**: 2025-11-27
+**다음 단계**: Week 5 완료 후 우선순위 재논의 (Week 6 계획)

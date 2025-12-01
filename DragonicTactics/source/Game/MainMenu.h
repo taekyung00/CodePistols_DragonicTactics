@@ -10,10 +10,10 @@ Created:    May 6, 2025
 
 #pragma once
 
-#include "../Engine/Engine.hpp"
-#include "../Engine/GameState.hpp"
-#include "../Engine/Texture.hpp"
-#include "../Engine/Font.hpp"
+#include "../Engine/Engine.h"
+#include "../Engine/GameState.h"
+#include "../Engine/Texture.h"
+#include "../Engine/Font.h"
 
 #include "../Engine/Fonts.h"
 

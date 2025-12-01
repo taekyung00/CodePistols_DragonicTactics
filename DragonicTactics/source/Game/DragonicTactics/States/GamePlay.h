@@ -9,7 +9,7 @@ Created:    November 5, 2025
 */
 #pragma once
 #include <memory>
-#include "Engine/GameState.hpp"
+#include "Engine/GameState.h"
 
 class PlayerInputHandler;
 class GamePlayUIManager;
@@ -37,8 +37,10 @@ private:
 
 	void OnCharacterDamaged(const CharacterDamagedEvent& event);
 
-	Fighter* fighter = nullptr;
-	Dragon* dragon  = nullptr;
+	// Fighter* fighter = nullptr;
+	// Dragon* dragon  = nullptr;
+	Character* player = nullptr;
+	Character* enemy = nullptr;
 	bool     game_end = false;
 };
 namespace CS230 {

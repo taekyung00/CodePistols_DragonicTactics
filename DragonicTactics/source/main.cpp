@@ -5,9 +5,9 @@
  * \copyright DigiPen Institute of Technology
  */
 
-#include "Engine/Engine.hpp"
-#include "Engine/GameStateManager.hpp"
-#include "Engine/Window.hpp"
+#include "Engine/Engine.h"
+#include "Engine/GameStateManager.h"
+#include "Engine/Window.h"
 #include "Game/Splash.h"
 
 namespace
