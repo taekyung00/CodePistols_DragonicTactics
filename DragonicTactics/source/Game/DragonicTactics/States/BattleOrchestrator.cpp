@@ -52,11 +52,13 @@ void BattleOrchestrator::Update([[maybe_unused]]double dt, TurnManager* turn_man
 bool BattleOrchestrator::ShouldContinueTurn(Character* current_character, AISystem* ai_system, CS230::GameObjectManager* go_manager) {
     Character* target = nullptr;
 
-    for (const auto& obj_ptr : go_manager->GetAll()) {
-        CS230::GameObject* obj = obj_ptr.get(); 
+    // const std::list<CS230::GameObject*>& objects = go_manager->GetAll();
+    std::vector<CS230::GameObject*> objects = go_manager->GetAllRaw();
+    for (const auto& obj_ptr : objects) {
+        // CS230::GameObject* obj = obj_ptr;
 
-        if (obj->Type() == GameObjectTypes::Character) {
-            Character* character = static_cast<Character*>(obj);
+        if (obj_ptr->Type() == GameObjectTypes::Character) {
+            Character* character = static_cast<Character*>(obj_ptr);
             
             if (character->GetCharacterType() == CharacterTypes::Dragon) {
                 target = character;

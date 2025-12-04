@@ -20,7 +20,7 @@ namespace Math { class TransformationMatrix; }
 namespace CS230 {
     class GameObjectManager : public CS230::Component{
     public:
-        void Add(GameObject* object);
+        void Add(std::unique_ptr<GameObject> object);
         void Unload();
 
         void UpdateAll(double dt);
@@ -29,10 +29,12 @@ namespace CS230 {
 
         void CollisionTest();
 
-        const std::vector<std::unique_ptr<GameObject>>& GetAll() const { 
+        const std::list<std::unique_ptr<GameObject>>& GetAll() const { 
             return objects; 
         }
+
+        std::vector<GameObject*> GetAllRaw() const;
     private:
-       std::vector<std::unique_ptr<GameObject>> objects;
+       std::list<std::unique_ptr<GameObject>> objects;
     };
 }

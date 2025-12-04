@@ -1543,279 +1543,303 @@ void DebugUIManager::DrawAIDebugPanel() {
 
 ---
 
-## 개발자 D: 캐릭터 소유권 모델 재설계
+## 개발자 D: GameObjectManager Smart Pointer 전환
 
-**목표**: 스마트 포인터 도입으로 메모리 안정성 확보
+**목표**: GameObjectManager를 raw pointer에서 `std::unique_ptr`로 변환하여 명확한 소유권 관리 및 메모리 안전성 확보
+
+**기초 지식**:
+- GameObjectManager는 현재 raw pointer로 GameObject를 관리
+- Unload()에서 메모리 누수 발생 (clear()만 호출, delete 없음)
+- 소유권이 불명확하여 dangling pointer 위험
 
 **파일 수정 목록**:
 
 ```
 DragonicTactics/source/Engine/GameObjectManager.h/cpp
 DragonicTactics/source/Game/DragonicTactics/Factories/CharacterFactory.h/cpp
-DragonicTactics/source/Game/DragonicTactics/States/GamePlay.h/cpp
+DragonicTactics/source/Game/DragonicTactics/States/GamePlay.cpp
+DragonicTactics/source/Game/DragonicTactics/States/BattleOrchestrator.cpp
+DragonicTactics/source/Engine/Particle.h
 DragonicTactics/source/Game/DragonicTactics/Test/TestMemory.h/cpp (신규)
-docs/ownership-diagram.md (신규)
 ```
 
 ---
 
-### 구현 작업 (소유권 모델)
+### 구현 작업 (Smart Pointer 전환)
 
-#### **Task 1: 소유권 분석** (Day 1)
+#### **Task 1: 설계 결정 및 소유권 다이어그램** (Day 1, 4시간)
 
-**현재 문제**:
+**핵심 설계 결정**:
+
+1. **이중 API 전략**
+   - `GetAll()`: unique_ptr list const 참조 반환 (내부 사용)
+   - `GetAllRaw()`: raw pointer vector 반환 (외부 시스템용)
+
+2. **소유권 모델**
+   - **GameObjectManager**: unique_ptr로 소유
+   - **비소유 시스템** (TurnManager, GridSystem, Events): raw pointer 참조
+   - **캐시된 포인터** (GamePlay.player/enemy): raw pointer, "비소유 캐시"로 문서화
+
+3. **현재 문제 분석**:
 
 ```cpp
-// GamePlay.cpp - 문제 있는 코드
-Dragon* dragon = new Dragon({4, 4});  // ❌ Raw pointer
-game_object_manager->Add(dragon);     // 누가 소유?
+// GameObjectManager.cpp - 메모리 누수!
+void GameObjectManager::Unload() {
+    objects.clear();  // ❌ delete 없이 clear만 → 메모리 누수!
+}
 
-Fighter* fighter = new Fighter({0, 0});  // ❌ Raw pointer
-game_object_manager->Add(fighter);       // 누가 소유?
-
-// 나중에...
-// delete dragon?  // 누가 삭제?
-// delete fighter? // 누가 삭제?
+// GamePlay.cpp - 소유권 불명확
+Character* enemy = CharacterFactory::Create(...);  // ❌ 누가 소유?
+go_manager->Add(enemy);  // ❌ 소유권 이전인가, 공유인가?
 ```
 
 **목표 구조**:
 
 ```
 GameObjectManager (소유자)
-├── unique_ptr<Dragon>
-├── unique_ptr<Fighter>
-└── unique_ptr<Character> ...
+├── unique_ptr<Dragon>     (소유)
+├── unique_ptr<Fighter>    (소유)
+└── ...
 
 다른 시스템들 (참조자)
-├── TurnManager: vector<Character*> (raw pointer로 참조만)
-├── GridSystem: map<ivec2, Character*> (raw pointer로 참조만)
-└── AISystem: Character* (raw pointer로 참조만)
-```
-
-**소유권 다이어그램**:
-
-```markdown
-# docs/ownership-diagram.md
-
-## 캐릭터 소유권 다이어그램
-
-\`\`\`
-┌─────────────────────────────────────────────┐
-│          GameObjectManager                  │
-│                                             │
-│  std::vector<std::unique_ptr<GameObject>>   │
-│    ├─ unique_ptr<Dragon>         (소유)    │
-│    ├─ unique_ptr<Fighter>        (소유)    │
-│    └─ unique_ptr<Character> ...  (소유)    │
-└─────────────────────────────────────────────┘
-         │              │              │
-         │ (raw ptr)    │ (raw ptr)    │ (raw ptr)
-         ▼              ▼              ▼
-  ┌──────────┐   ┌──────────┐   ┌──────────┐
-  │TurnMgr   │   │GridSystem│   │AISystem  │
-  │          │   │          │   │          │
-  │vector<   │   │map<ivec2,│   │Character*│
-  │Char*>    │   │Char*>    │   │          │
-  └──────────┘   └──────────┘   └──────────┘
-      (참조만)       (참조만)       (참조만)
-\`\`\`
-
-**원칙**:
-1. GameObjectManager가 unique_ptr로 **소유**
-2. 다른 시스템들은 raw pointer로 **참조만**
-3. 캐릭터 삭제는 GameObjectManager가 담당
-4. 댕글링 포인터 방지: 삭제 시 모든 참조 제거
-\`\`\`
+├── GamePlay.player:  Character*           (비소유 캐시)
+├── TurnManager:      vector<Character*>   (비소유 참조)
+├── GridSystem:       Character*[8][8]     (비소유 참조)
+└── Events:           vector<Character*>   (비소유 참조)
 ```
 
 ---
 
-#### **Task 2: 스마트 포인터 도입** (Day 2-3)
+#### **Task 2: GameObjectManager 헤더 및 구현 수정** (Day 1-2, 8시간)
 
-**GameObjectManager 수정**:
+**Step 1: GameObjectManager.h 수정**
 
 ```cpp
 // GameObjectManager.h
-class GameObjectManager : public CS230::Component {
-public:
-    // ❌ 기존: void Add(GameObject* obj);
-    // ✅ 개선: unique_ptr로 소유권 이전
-    void Add(std::unique_ptr<CS230::GameObject> obj);
+namespace CS230 {
+    class GameObjectManager : public CS230::Component {
+    public:
+        // NEW: unique_ptr로 소유권 이전 (move semantics)
+        void Add(std::unique_ptr<GameObject> object);
 
-    // ❌ 기존: void Remove(GameObject* obj);
-    // ✅ 개선: 안전한 제거
-    void Remove(CS230::GameObject* obj);
+        // NEW: unique_ptr list 반환 (내부 반복용)
+        const std::list<std::unique_ptr<GameObject>>& GetAll() const {
+            return objects;
+        }
 
-    // 참조용 (raw pointer 반환)
-    CS230::GameObject* Find(const std::string& name) const;
-    std::vector<CS230::GameObject*> GetAll() const;
+        // NEW: 비소유 참조자를 위한 헬퍼
+        std::vector<GameObject*> GetAllRaw() const;
 
-private:
-    // ❌ 기존: std::vector<GameObject*> objects_;
-    // ✅ 개선: unique_ptr로 소유
-    std::vector<std::unique_ptr<CS230::GameObject>> objects_;
-};
+    private:
+        std::list<std::unique_ptr<GameObject>> objects;  // CHANGED
+    };
+}
 ```
 
-**구현**:
+**Step 2: GameObjectManager.cpp 수정**
+
+핵심 변경사항:
+- `Add()`: `std::move()` 사용하여 소유권 이전
+- `Unload()`: `clear()` → unique_ptr 자동 삭제로 메모리 누수 수정
+- `UpdateAll()`: iterator 패턴으로 안전한 삭제
+- `CollisionTest()`: unique_ptr 순회로 수정, `.get()`으로 raw pointer 전달
+- `GetAllRaw()`: 새 헬퍼 메서드 구현
 
 ```cpp
-// GameObjectManager.cpp
-void GameObjectManager::Add(std::unique_ptr<CS230::GameObject> obj) {
-    Engine::GetLogger().LogDebug("GameObjectManager: Adding " + obj->TypeName());
-    objects_.push_back(std::move(obj));  // 소유권 이전
+void GameObjectManager::Add(std::unique_ptr<GameObject> object) {
+    objects.emplace_back(std::move(object));
 }
 
-void GameObjectManager::Remove(CS230::GameObject* obj) {
-    Engine::GetLogger().LogDebug("GameObjectManager: Removing " + obj->TypeName());
+void GameObjectManager::Unload() {
+    objects.clear();  // ✅ unique_ptr가 자동 삭제 (누수 수정!)
+}
 
-    auto it = std::remove_if(objects_.begin(), objects_.end(),
-        [obj](const std::unique_ptr<CS230::GameObject>& ptr) {
-            return ptr.get() == obj;
+void GameObjectManager::UpdateAll(double dt) {
+    // 안전한 삭제를 위한 iterator 수집
+    std::vector<std::list<std::unique_ptr<GameObject>>::iterator> destroy_iterators;
+
+    for (auto it = objects.begin(); it != objects.end(); ++it) {
+        (*it)->Update(dt);
+        if ((*it)->Destroyed()) {
+            destroy_iterators.push_back(it);
         }
-    );
+    }
 
-    if (it != objects_.end()) {
-        // unique_ptr이 자동으로 delete 호출
-        objects_.erase(it, objects_.end());
+    for (auto it : destroy_iterators) {
+        objects.erase(it);  // unique_ptr 소멸자가 delete 처리
     }
 }
 
-std::vector<CS230::GameObject*> GameObjectManager::GetAll() const {
-    std::vector<CS230::GameObject*> result;
-    result.reserve(objects_.size());
-
-    for (const auto& obj : objects_) {
-        result.push_back(obj.get());  // raw pointer 반환 (참조만)
+void GameObjectManager::CollisionTest() {
+    // CHANGED: unique_ptr 순회, .get()으로 raw pointer 전달
+    for (const auto& object1 : objects) {
+        for (const auto& object2 : objects) {
+            if (object1.get() != object2.get() && object1->CanCollideWith(object2->Type())) {
+                if (object1->IsCollidingWith(object2.get())) {
+                    Engine::GetLogger().LogEvent("Collision Detected: " +
+                        object1->TypeName() + " and " + object2->TypeName());
+                    object1->ResolveCollision(object2.get());
+                }
+            }
+        }
     }
+}
 
-    return result;
+std::vector<GameObject*> GameObjectManager::GetAllRaw() const {
+    std::vector<GameObject*> raw_pointers;
+    raw_pointers.reserve(objects.size());
+    for (const auto& obj_ptr : objects) {
+        raw_pointers.push_back(obj_ptr.get());
+    }
+    return raw_pointers;
 }
 ```
 
 ---
 
-#### **Task 3: CharacterFactory 개선** (Day 3-4)
+#### **Task 3: CharacterFactory 수정** (Day 2, 4시간)
+
+**CharacterFactory.h**:
 
 ```cpp
-// CharacterFactory.h
 class CharacterFactory {
 public:
-    // ❌ 기존: static Character* Create(...);
-    // ✅ 개선: unique_ptr 반환
+    // CHANGED: unique_ptr 반환으로 소유권 이전 표현
     static std::unique_ptr<Character> Create(
         CharacterTypes type,
         Math::ivec2 start_position
     );
 
-    // 편의 함수들도 unique_ptr 반환
+private:
     static std::unique_ptr<Dragon> CreateDragon(Math::ivec2 position);
     static std::unique_ptr<Fighter> CreateFighter(Math::ivec2 position);
 };
 ```
 
-**구현**:
+**CharacterFactory.cpp 구현 패턴**:
 
 ```cpp
-// CharacterFactory.cpp
-std::unique_ptr<Character> CharacterFactory::Create(
-    CharacterTypes type,
-    Math::ivec2 start_position
-) {
-    switch (type) {
-        case CharacterTypes::Dragon:
-            return CreateDragon(start_position);
+std::unique_ptr<Dragon> CharacterFactory::CreateDragon(Math::ivec2 position) {
+    std::unique_ptr<Dragon> dragon = std::make_unique<Dragon>(position);
 
-        case CharacterTypes::Fighter:
-            return CreateFighter(start_position);
+    // 컴포넌트 추가...
 
-        default:
-            Engine::GetLogger().LogError("Unknown character type");
-            return nullptr;
+    return dragon;  // move semantics
+}
+```
+
+---
+
+#### **Task 4: 호출 지점 업데이트** (Day 3, 8시간)
+
+**GamePlay.cpp - 캐시-then-move 패턴**:
+
+```cpp
+// GamePlay.cpp (lines 83-95)
+case 'f':
+    grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
+    {
+        auto enemy_ptr = CharacterFactory::Create(CharacterTypes::Fighter, current_pos);
+        enemy = enemy_ptr.get();  // 비소유 캐시 (move 전에!)
+        enemy->SetGridSystem(grid_system);
+        go_manager->Add(std::move(enemy_ptr));  // 소유권 이전
+        grid_system->AddCharacter(enemy, current_pos);
+    }
+    break;
+```
+
+**BattleOrchestrator.cpp - GetAllRaw() 사용**:
+
+```cpp
+bool BattleOrchestrator::ShouldContinueTurn(...) {
+    // CHANGED: GetAllRaw() 사용 (비소유 반복)
+    std::vector<CS230::GameObject*> objects = go_manager->GetAllRaw();
+
+    for (const auto& obj_ptr : objects) {
+        if (obj_ptr->Type() == GameObjectTypes::Character) {
+            Character* character = static_cast<Character*>(obj_ptr);
+            // 처리...
+        }
     }
 }
+```
 
-std::unique_ptr<Dragon> CharacterFactory::CreateDragon(Math::ivec2 position) {
-    auto dragon = std::make_unique<Dragon>(position);
+**Particle.h - 엣지 케이스**:
 
-    // 컴포넌트 추가
-    dragon->AddGOComponent(new GridPosition(position));
-    dragon->AddGOComponent(new ActionPoints(2));
-    dragon->AddGOComponent(new SpellSlots());
-    dragon->AddGOComponent(new StatsComponent(140, 5, 3, 2));  // HP, Speed, Attack, Defense
+```cpp
+for (int i = 0; i < T::MaxCount; ++i) {
+    std::unique_ptr<T> new_particle = std::make_unique<T>();
+    T* particle_ptr = new_particle.get();  // 로컬 캐시
 
-    Engine::GetLogger().LogEvent("CharacterFactory: Created Dragon");
-
-    return dragon;  // 소유권 이전
+    go_manager->Add(std::move(new_particle));  // 소유권 이전
+    particles.push_back(particle_ptr);  // 비소유 참조 저장
 }
 ```
 
 ---
 
-#### **Task 4: GamePlay 수정** (Day 4)
+#### **Task 5: 테스트 및 검증** (Day 3-4, 4시간)
+
+**TestMemory.cpp 작성**:
 
 ```cpp
-// GamePlay.cpp
-void GamePlay::Load() {
-    // GameObjectManager 가져오기
-    auto* go_manager = GetGSComponent<CS230::GameObjectManager>();
+void TestMemory::TestOwnershipTransfer() {
+    auto go_manager = std::make_unique<GameObjectManager>();
 
-    // ✅ unique_ptr로 생성 후 이동
-    auto dragon = CharacterFactory::CreateDragon({4, 4});
-    dragon_ = dragon.get();  // raw pointer로 참조 저장 (멤버 변수)
-    go_manager->Add(std::move(dragon));  // 소유권 이전
+    auto character = CharacterFactory::Create(CharacterTypes::Dragon, {0, 0});
+    Character* raw_ptr = character.get();
 
-    auto fighter = CharacterFactory::CreateFighter({0, 0});
-    fighter_ = fighter.get();  // raw pointer로 참조 저장
-    go_manager->Add(std::move(fighter));  // 소유권 이전
+    go_manager->Add(std::move(character));
 
-    // TurnManager에 등록 (raw pointer)
-    TurnManager::Instance().InitializeTurnOrder({dragon_, fighter_});
+    // Verify: character는 nullptr
+    assert(character == nullptr);
+
+    // Verify: raw_ptr은 여전히 유효
+    assert(raw_ptr != nullptr);
+
+    // Verify: GetAllRaw()에 포함됨
+    auto objects = go_manager->GetAllRaw();
+    assert(objects.size() == 1);
+    assert(objects[0] == raw_ptr);
 }
-```
 
----
+void TestMemory::TestUnloadNoLeak() {
+    auto go_manager = std::make_unique<GameObjectManager>();
 
-#### **Task 5: 테스트 및 검증** (Day 4-5)
+    // 5개 캐릭터 추가
+    for (int i = 0; i < 5; ++i) {
+        auto character = CharacterFactory::Create(CharacterTypes::Fighter, {i, 0});
+        go_manager->Add(std::move(character));
+    }
 
-**메모리 누수 테스트**:
+    assert(go_manager->GetAllRaw().size() == 5);
 
-```cpp
-// TestMemory.cpp
-void TestMemory::TestCharacterLifecycle() {
-    auto* go_manager = GetGSComponent<CS230::GameObjectManager>();
+    // Unload → unique_ptr가 자동 삭제
+    go_manager->Unload();
 
-    // 초기 상태: 0개
-    assert(go_manager->GetAll().size() == 0);
-
-    // 캐릭터 생성
-    auto dragon = CharacterFactory::CreateDragon({0, 0});
-    Character* dragon_ptr = dragon.get();
-    go_manager->Add(std::move(dragon));
-
-    // 확인: 1개
-    assert(go_manager->GetAll().size() == 1);
-
-    // 캐릭터 제거
-    go_manager->Remove(dragon_ptr);
-
-    // 확인: 0개 (자동 삭제됨)
-    assert(go_manager->GetAll().size() == 0);
-
+    assert(go_manager->GetAllRaw().size() == 0);
     // ✅ 메모리 누수 없음!
 }
 ```
 
-**Visual Studio Memory Profiler 사용**:
+**빌드 및 통합 테스트**:
 
+```bash
+cd DragonicTactics
+cmake --preset windows-debug
+cmake --build --preset windows-debug
+
+# 실행 테스트
+build/windows-debug/dragonic_tactics.exe
 ```
-1. Visual Studio → Debug → Performance Profiler
-2. Memory Usage 선택
-3. 게임 실행
-4. 캐릭터 생성/삭제 10회 반복
-5. Snapshot 비교
-6. 메모리 증가 없으면 ✅
-```
+
+**체크리스트**:
+- [ ] 캐릭터 생성 정상 작동
+- [ ] 턴 시스템 정상 작동
+- [ ] 전투 시스템 정상 작동
+- [ ] 캐릭터 사망 시 정리 확인
+- [ ] Unload 후 메모리 누수 없음 (Visual Studio Profiler)
+- [ ] GamePlay 종료 시 크래시 없음
 
 ---
 

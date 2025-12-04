@@ -8,10 +8,11 @@ Author:     Taekyung Ho
 Created:    June 6, 2025
 */
 #pragma once
-#include "../Game/GameObjectTypes.h"
+#include "Game/GameObjectTypes.h"
 #include "GameObject.h"
 #include "GameObjectManager.h"
 #include "GameStateManager.h"
+#include <memory>
 
 namespace CS230
 {
@@ -55,11 +56,12 @@ namespace CS230
     {
         for (int i = 0; i < T::MaxCount; ++i)
         {
-            T* new_particle = new T();
+            std::unique_ptr<T> new_particle = std::make_unique<T>();
+            T* particle_ptr = new_particle.get();
 
-            Engine::GetGameStateManager().GetGSComponent<CS230::GameObjectManager>()->Add(new_particle);
+            Engine::GetGameStateManager().GetGSComponent<CS230::GameObjectManager>()->Add(std::move(new_particle));
 
-            particles.push_back(new_particle);
+            particles.push_back(particle_ptr);
         }
     }
 

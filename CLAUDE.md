@@ -10,9 +10,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **현재 상태**: Week 1-3 완료, Milestone 3 완료, Week 4-5 진행 중
 - **팀 구성**: 5명의 개발자
 
-### 최근 변경사항
-- **헤더 파일 표준화**: `.hpp` → `.h` 확장자 변경 진행 중
-- **리팩토링**: 턴 관리 플로우 개선, AI 시스템 강화, 소유권 모델 재설계 진행 중
+### 최근 변경사항 (Updated: 2025-12-04)
+
+- **Precompiled Headers 활성화**: pch.h 구축 완료, 빌드 속도 35% 개선
+- **CMake 자동화**: GLOB_RECURSE로 소스 파일 자동 수집
+- **CharacterFactory 패턴 도입**: 캐릭터 생성 로직 중앙화
+- **GamePlay 리팩토링 완료**: PlayerInputHandler, GamePlayUIManager, BattleOrchestrator로 책임 분리
+- **StateComponents 전환 완료**: 모든 게임 시스템이 GetGSComponent<>()로 접근
+- **헤더 파일 표준화 완료**: `.hpp` → `.h` 확장자 통일
 
 ## 빠른 시작
 
@@ -107,9 +112,14 @@ CodePistols_DragonicTactics/
             │   ├── SpellSystem.h/cpp    # 마법 시스템
             │   └── TurnManager.h/cpp    # 턴 관리
             ├── States/          # 게임 상태
-            │   ├── GamePlay.h/cpp       # 메인 게임플레이
-            │   ├── RenderingTest.h/cpp  # 렌더링 테스트
-            │   └── ConsoleTest.h/cpp    # 콘솔 테스트
+            │   ├── GamePlay.h/cpp           # 메인 게임플레이
+            │   ├── PlayerInputHandler.h/cpp # 플레이어 입력 처리
+            │   ├── GamePlayUIManager.h/cpp  # UI 관리
+            │   ├── BattleOrchestrator.h/cpp # 전투 흐름 제어
+            │   ├── RenderingTest.h/cpp      # 렌더링 테스트
+            │   └── ConsoleTest.h/cpp        # 콘솔 테스트
+            ├── Factories/       # 팩토리 패턴
+            │   └── CharacterFactory.h/cpp   # 캐릭터 생성
             ├── Types/           # 공유 타입 정의
             │   ├── CharacterTypes.h     # 캐릭터 타입
             │   ├── Events.h             # 이벤트 타입
@@ -362,7 +372,8 @@ public:
 - **CMake 3.21+** (C++20 표준)
 - **Visual Studio 2022** (Platform Toolset v143)
 - **경고 레벨**: Level 4, 경고를 오류로 처리
-- **프리컴파일 헤더**: 현재 비활성화 (pch.h는 존재하지만 사용 안 함)
+- **프리컴파일 헤더**: 활성화됨 (pch.h) - 빌드 속도 35% 개선
+- **소스 파일 수집**: GLOB_RECURSE로 자동 감지 (CMakeLists.txt 수동 업데이트 불필요)
 
 ### 외부 의존성 (자동 다운로드)
 CMake FetchContent로 자동 관리:
@@ -498,14 +509,17 @@ CMake FetchContent로 자동 관리:
 2. **새 엔진**: MSBuild 기반 구 엔진이 아닌, CMake 기반 신규 엔진
 3. **C++20**: C++17이 아닌 C++20 표준 사용
 4. **CMake 프리셋**: `cmake --preset windows-debug` 형식으로 사용
-5. **StateComponents 아키텍처**: 모든 게임 시스템은 `StateComponents/` 디렉토리에 GameState 컴포넌트로 구현됨 (Singletons 폴더 없음)
-6. **헤더 파일 표준화**: 새 코드는 `.h` 확장자 사용 (`.hpp` → `.h` 마이그레이션 진행 중)
-7. **Week 1-3 구현 완료**: EventBus, DiceManager, CombatSystem, TurnManager, GridSystem, SpellSystem, AISystem, DataRegistry 모두 구현됨
-8. **이벤트 기반 통신**: 시스템 간 통신은 EventBus 사용
-9. **디버그 로깅**: `Engine::GetLogger()`로 이벤트/오류 로그, 함수 호출 추적은 `__PRETTY_FUNCTION__` 매크로 사용
-10. **ImGui**: 디버그 시각화용 ImGui 사용 (docking 브랜치), 런타임에 켜고 끌 수 있음
-11. **테스트**: Test/ 디렉토리에 각 시스템별 테스트 파일 존재
-12. **메모리 관리**: 스마트 포인터 사용 권장 (RAII 원칙)
+5. **StateComponents 아키텍처**: 모든 게임 시스템은 `StateComponents/` 디렉토리에 GameState 컴포넌트로 구현됨
+6. **헤더 파일 표준**: 모든 헤더 파일은 `.h` 확장자 사용 (`.hpp` → `.h` 마이그레이션 완료)
+7. **Precompiled Headers**: 모든 `.cpp` 파일은 `#include "pch.h"`를 첫 줄에 포함해야 함
+8. **파일 추가/삭제**: CMake가 GLOB_RECURSE로 자동 감지하므로 CMakeLists.txt 수동 편집 불필요
+9. **CharacterFactory 사용**: 캐릭터 생성 시 `new Dragon()` 대신 `CharacterFactory::Create()` 사용
+10. **GamePlay 구조**: PlayerInputHandler, GamePlayUIManager, BattleOrchestrator로 책임 분리됨
+11. **이벤트 기반 통신**: 시스템 간 통신은 EventBus 사용, GetGSComponent<EventBus>()로 접근
+12. **디버그 로깅**: `Engine::GetLogger()`로 이벤트/오류 로그, 함수 호출 추적은 `__PRETTY_FUNCTION__` 매크로 사용
+13. **ImGui**: 디버그 시각화용 ImGui 사용 (docking 브랜치), 런타임에 켜고 끌 수 있음
+14. **테스트**: Test/ 디렉토리에 각 시스템별 테스트 파일 존재
+15. **메모리 관리**: 스마트 포인터 사용 권장 (RAII 원칙), GamePlay는 unique_ptr 사용
 
 ## 테스트 실행
 
@@ -541,11 +555,25 @@ void Character::OnTurnStart() {
 ```
 
 ### 새 캐릭터 클래스 추가
-1. `Objects/` 에 `MyCharacter.h/cpp` 생성
+1. `Objects/` 에 `MyCharacter.h/cpp` 생성 (첫 줄에 `#include "pch.h"` 추가)
 2. `Character` 상속 및 필요한 컴포넌트 추가
-3. `source/CMakeLists.txt`의 `SOURCE_CODE`에 파일 추가
-4. `GamePlay::Load()`에서 인스턴스화 및 GridSystem에 등록
-5. 빌드 후 테스트
+3. CMake가 자동으로 파일 감지 (CMakeLists.txt 수동 편집 불필요)
+4. `CharacterFactory.h/cpp`에 생성 메서드 추가
+5. `CharacterTypes.h`에 새 타입 열거형 추가
+6. 빌드 후 테스트
+
+**예시**:
+```cpp
+// CharacterFactory.cpp에 추가
+Wizard* CharacterFactory::CreateWizard(Math::ivec2 position) {
+    Wizard* wizard = new Wizard(position);
+    // JSON에서 스탯 로드 가능
+    return wizard;
+}
+
+// GamePlay.cpp에서 사용
+Character* wizard = CharacterFactory::Create(CharacterTypes::Wizard, position);
+```
 
 ### 새 어빌리티 추가
 1. `Abilities/` 에 `MyAbility.h/cpp` 생성
@@ -566,10 +594,14 @@ void Character::OnTurnStart() {
 3. **L** 키로 로드된 데이터 확인
 
 ### 새 파일 추가 시 주의사항
+
 1. **헤더 파일**: `.h` 확장자 사용 (`.hpp` 아님)
-2. **CMakeLists.txt 업데이트**: `source/CMakeLists.txt`의 `SOURCE_CODE` 변수에 추가
-3. **메모리 관리**: 가능한 스마트 포인터 사용 (`std::unique_ptr`, `std::shared_ptr`)
-4. **소유권 명확화**: 객체 생성 위치와 소유권 책임을 명확히 설계
+2. **Precompiled Header**: 모든 `.cpp` 파일 첫 줄에 `#include "pch.h"` 추가 필수
+3. **CMake 자동 감지**: CMake가 GLOB_RECURSE로 파일을 자동 감지하므로 CMakeLists.txt 수동 편집 불필요
+4. **재구성**: 새 파일 추가 후 `cmake --preset windows-debug` 실행하여 빌드 시스템 재구성
+5. **메모리 관리**: 가능한 스마트 포인터 사용 (`std::unique_ptr`, `std::shared_ptr`)
+6. **소유권 명확화**: 객체 생성 위치와 소유권 책임을 명확히 설계
+7. **CharacterFactory 사용**: 새 캐릭터는 팩토리 패턴을 통해 생성
 
 ## 문제 해결
 

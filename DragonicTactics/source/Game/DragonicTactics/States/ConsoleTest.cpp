@@ -6,6 +6,8 @@
 #include "CS200/NDC.h"
 
 #include "Game/DragonicTactics/StateComponents/GridSystem.h"
+#include "Game/DragonicTactics/Factories/CharacterFactory.h"
+#include "../StateComponents/DataRegistry.h"
 #include "Game/DragonicTactics/Test/TestAStar.h"
 #include "Game/DragonicTactics/Test/TestEventBus.h"
 #include "Game/DragonicTactics/Test/TestSpellSystem.h"
@@ -16,6 +18,7 @@
 #include "Game/DragonicTactics/Test/TestTurnManager.h"
 #include "Game/DragonicTactics/Test/TestAI.h"
 #include "Game/DragonicTactics/Test/TestNew.h"
+#include "Game/DragonicTactics/Test/TestMemory.h"
 #include "Game/MainMenu.h"
 
 
@@ -28,6 +31,7 @@ bool TestCombatSystem = false;
 bool TestTrunManager = false;
 bool TestAI = false;
 bool TestNewFile = false;
+bool TestMemory = false;
 
 ConsoleTest::ConsoleTest()
 {
@@ -160,6 +164,7 @@ void ConsoleTest::Update([[maybe_unused]] double dt)
 
 		TestCombatSystem = false;
     }
+
 	if(TestTrunManager)
 	{
 		test_turnmanager_all();
@@ -178,6 +183,19 @@ void ConsoleTest::Update([[maybe_unused]] double dt)
 	{
 		TestNewFunction();
 		TestNewFile = false;
+	}
+
+	if(TestMemory)
+	{
+		AddGSComponent(new CS230::GameObjectManager());
+		AddGSComponent(new CharacterFactory());
+		AddGSComponent(new DataRegistry());
+		TestOwnershipTransfer();
+		TestUnloadNoLeak();
+		RemoveGSComponent<CS230::GameObjectManager>();
+		RemoveGSComponent<CharacterFactory>();
+		RemoveGSComponent<DataRegistry>();
+		TestMemory = false;
 	}
 }
 
@@ -233,6 +251,10 @@ void ConsoleTest::DrawImGui()
 	if (ImGui::Button("TestNewFile"))
 	{
 		TestNewFile = true;
+	}
+	if (ImGui::Button("TestMemory"))
+	{
+		TestMemory = true;
 	}
 
 	ImGui::End();
