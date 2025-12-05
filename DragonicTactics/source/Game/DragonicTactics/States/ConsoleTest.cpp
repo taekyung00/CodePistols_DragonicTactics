@@ -93,6 +93,7 @@ void ConsoleTest::Update([[maybe_unused]] double dt)
 	{
 		Engine::GetLogger().LogEvent("========== DataRegistry Tests ==========");
 
+		AddGSComponent(new DataRegistry());
 		// Basic Loading Tests
 		TestDataRegistry_LoadJSON();
 		TestDataRegistry_GetValue();
@@ -114,6 +115,7 @@ void ConsoleTest::Update([[maybe_unused]] double dt)
 
 		Engine::GetLogger().LogEvent("========== All DataRegistry Tests Complete ==========");
 		TestDataRegistry = false;
+		RemoveGSComponent<DataRegistry>();
 	}
 
 	// ===== DiceManager Tests =====

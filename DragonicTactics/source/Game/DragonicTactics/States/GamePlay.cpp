@@ -24,12 +24,12 @@ Created:    November 5, 2025
 #include "Game/DragonicTactics/Factories/CharacterFactory.h"
 #include "Game/DragonicTactics/StateComponents/AISystem.h"
 #include "Game/DragonicTactics/StateComponents/CombatSystem.h"
+#include "Game/DragonicTactics/StateComponents/DataRegistry.h"
 #include "Game/DragonicTactics/StateComponents/DiceManager.h"
 #include "Game/DragonicTactics/StateComponents/EventBus.h"
 #include "Game/DragonicTactics/StateComponents/GridSystem.h"
 #include "Game/DragonicTactics/StateComponents/SpellSystem.h"
 #include "Game/DragonicTactics/StateComponents/TurnManager.h"
-#include "Game/DragonicTactics/StateComponents/DataRegistry.h"
 
 #include "../Debugger/DebugManager.h"
 
@@ -56,13 +56,14 @@ void GamePlay::Load()
   AddGSComponent(new TurnManager());
   AddGSComponent(new DebugManager());
   AddGSComponent(new CharacterFactory());
-//   AddGSComponent(new DataRegistry());
+  AddGSComponent(new DataRegistry());
 
   GetGSComponent<EventBus>()->Clear();
   GetGSComponent<DiceManager>()->SetSeed(100);
   GetGSComponent<DebugManager>()->Init();
   GetGSComponent<CombatSystem>()->SetDiceManager(GetGSComponent<DiceManager>());
-//   GetGSComponent<DataRegistry>()->LoadFromFile("Assets/Data/characters.json");
+  GetGSComponent<DataRegistry>()->LoadFromFile("Assets/Data/characters.json");
+  GetGSComponent<DataRegistry>()->LoadAllCharacterData("Assets/Data/characters.json");
   // GetGSComponent<SpellSystem>()->SetEventBus(GetGSComponent<EventBus>());
 
   CS230::GameObjectManager* go_manager		  = GetGSComponent<CS230::GameObjectManager>();

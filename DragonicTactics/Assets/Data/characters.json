@@ -1,33 +1,37 @@
 {
   "Dragon": {
-    "maxHP": 140,
+    "max_hp": 140,
     "speed": 5,
-    "maxActionPoints": 2,
-    "baseAttackPower": 0,
-    "attackDice": "3d6",
-    "baseDefensePower": 0,
-    "defenseDice": "2d8",
-    "attackRange": 3,
-    "spellSlots": {
+    "max_action_points": 2,
+    "base_attack_power": 0,
+    "attack_dice": "3d6",
+    "base_defense_power": 0,
+    "defense_dice": "2d8",
+    "attack_range": 3,
+    "spell_slots": {
       "1": 4,
       "2": 3,
       "3": 2,
       "4": 2,
       "5": 1
-    }
+    },
+    "known_spells": [],
+    "known_abilities": []
   },
   "Fighter": {
-    "maxHP": 90,
+    "max_hp": 90,
     "speed": 3,
-    "maxActionPoints": 2,
-    "baseAttackPower": 5,
-    "attackDice": "2d6",
-    "baseDefensePower": 0,
-    "defenseDice": "1d10",
-    "attackRange": 1,
-    "spellSlots": {
+    "max_action_points": 2,
+    "base_attack_power": 5,
+    "attack_dice": "2d6",
+    "base_defense_power": 0,
+    "defense_dice": "1d10",
+    "attack_range": 1,
+    "spell_slots": {
       "1": 2,
       "2": 2
-    }
+    },
+    "known_spells": [],
+    "known_abilities": ["MeleeAttack", "ShieldBash"]
   }
 }

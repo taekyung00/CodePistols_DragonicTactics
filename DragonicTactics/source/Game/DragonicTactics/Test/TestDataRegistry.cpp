@@ -17,14 +17,14 @@ bool TestDataRegistry_LoadJSON()
 {
     Engine::GetLogger().LogEvent("=== Test: LoadJSON ===");
     
-    DataRegistry registry;
+    DataRegistry* registry = Engine::GetGameStateManager().GetGSComponent<DataRegistry>();
     
     // Load characters.json
-    registry.LoadFromFile("Assets/Data/characters.json");
+    registry->LoadFromFile("Assets/Data/characters.json");
     
     // Verify basic keys exist
-    ASSERT_TRUE(registry.HasKey("Dragon"));
-    ASSERT_TRUE(registry.HasKey("Fighter"));
+    ASSERT_TRUE(registry->HasKey("Dragon"));
+    ASSERT_TRUE(registry->HasKey("Fighter"));
     
     std::cout << "TestDataRegistry_LoadJSON passed" << std::endl;
     return true;
@@ -34,22 +34,22 @@ bool TestDataRegistry_GetValue()
 {
     Engine::GetLogger().LogEvent("=== Test: GetValue ===");
     
-    DataRegistry registry;
+    DataRegistry* registry = Engine::GetGameStateManager().GetGSComponent<DataRegistry>();
     
     // Test getting Dragon HP
-    int dragonHP = registry.GetValue<int>("Dragon.max_hp", 0);
-    ASSERT_EQ(dragonHP, 141);
+    int dragonHP = registry->GetValue<int>("Dragon.max_hp", 0);
+    ASSERT_EQ(dragonHP, 140);
     
     // Test getting Fighter HP
-    int fighterHP = registry.GetValue<int>("Fighter.max_hp", 0);
+    int fighterHP = registry->GetValue<int>("Fighter.max_hp", 0);
     ASSERT_EQ(fighterHP, 90);
     
     // Test getting string value
-    std::string dragonDice = registry.GetValue<std::string>("Dragon.attack_dice", "");
+    std::string dragonDice = registry->GetValue<std::string>("Dragon.attack_dice", "");
     ASSERT_EQ(dragonDice, std::string("3d6"));
     
     // Test default value for non-existent key
-    int nonExistent = registry.GetValue<int>("Rogue.max_hp", -1);
+    int nonExistent = registry->GetValue<int>("Rogue.max_hp", -1);
     ASSERT_EQ(nonExistent, -1);
     
     std::cout << "TestDataRegistry_GetValue passed" << std::endl;
@@ -60,15 +60,15 @@ bool TestDataRegistry_HasKey()
 {
     Engine::GetLogger().LogEvent("=== Test: HasKey ===");
     
-    DataRegistry registry;
+    DataRegistry* registry = Engine::GetGameStateManager().GetGSComponent<DataRegistry>();
     
     // Test existing keys
-    ASSERT_TRUE(registry.HasKey("Dragon.max_hp"));
-    ASSERT_TRUE(registry.HasKey("Fighter.speed"));
+    ASSERT_TRUE(registry->HasKey("Dragon.max_hp"));
+    ASSERT_TRUE(registry->HasKey("Fighter.speed"));
     
     // Test non-existing keys
-    ASSERT_FALSE(registry.HasKey("Rogue.max_hp"));
-    ASSERT_FALSE(registry.HasKey("Dragon.nonexistent"));
+    ASSERT_FALSE(registry->HasKey("Rogue.max_hp"));
+    ASSERT_FALSE(registry->HasKey("Dragon.nonexistent"));
     
     std::cout << "TestDataRegistry_HasKey passed" << std::endl;
     return true;
@@ -78,13 +78,13 @@ bool TestDataRegistry_GetArray()
 {
     Engine::GetLogger().LogEvent("=== Test: GetArray ===");
     
-    DataRegistry registry;
+    DataRegistry* registry = Engine::GetGameStateManager().GetGSComponent<DataRegistry>();
     
     // First load character data to populate characterDatabase
-    CharacterData dragon = registry.GetCharacterData("Fighter");
+    CharacterData dragon = registry->GetCharacterData("Fighter");
     
     // Test getting known_spells array
-    std::vector<std::string> spells = registry.GetArray<std::string>("Dragon.known_spells");
+    std::vector<std::string> spells = registry->GetArray<std::string>("Dragon.known_spells");
     
     // GetArray might return empty if not implemented, so check dragon.known_spells directly
     if (spells.empty() && !dragon.known_spells.empty()) {
@@ -113,13 +113,13 @@ bool TestDataRegistry_GetCharacterData()
 {
     Engine::GetLogger().LogEvent("=== Test: GetCharacterData ===");
     
-    DataRegistry registry;
+    DataRegistry* registry = Engine::GetGameStateManager().GetGSComponent<DataRegistry>();
     
     // Ensure data is loaded first
-    registry.LoadAllCharacterData("Assets/Data/characters.json");;
+    registry->LoadAllCharacterData("Assets/Data/characters.json");;
     
     // Get Dragon data
-    CharacterData dragonData = registry.GetCharacterData("Dragon");
+    CharacterData dragonData = registry->GetCharacterData("Dragon");
     
     ASSERT_EQ(dragonData.character_type, std::string("Dragon"));
     ASSERT_EQ(dragonData.max_hp, 141);
@@ -134,9 +134,9 @@ bool TestDataRegistry_DragonStats()
 {
     Engine::GetLogger().LogEvent("=== Test: Dragon Stats ===");
     
-    DataRegistry registry;
-    registry.LoadAllCharacterData("Assets/Data/characters.json");
-    CharacterData dragon = registry.GetCharacterData("Dragon");
+    DataRegistry* registry = Engine::GetGameStateManager().GetGSComponent<DataRegistry>();
+    registry->LoadAllCharacterData("Assets/Data/characters.json");
+    CharacterData dragon = registry->GetCharacterData("Dragon");
     
     // Verify all Dragon stats
     ASSERT_EQ(dragon.max_hp, 141);
@@ -164,9 +164,9 @@ bool TestDataRegistry_FighterStats()
 {
     Engine::GetLogger().LogEvent("=== Test: Fighter Stats ===");
     
-    DataRegistry registry;
-    registry.LoadAllCharacterData("Assets/Data/characters.json");
-    CharacterData fighter = registry.GetCharacterData("Fighter");
+    DataRegistry* registry = Engine::GetGameStateManager().GetGSComponent<DataRegistry>();
+    registry->LoadAllCharacterData("Assets/Data/characters.json");
+    CharacterData fighter = registry->GetCharacterData("Fighter");
     
     // Verify all Fighter stats
     ASSERT_EQ(fighter.max_hp, 90);
@@ -195,17 +195,17 @@ bool TestDataRegistry_ReloadAll()
 {
     Engine::GetLogger().LogEvent("=== Test: ReloadAll ===");
     
-    DataRegistry registry;
+    DataRegistry* registry = Engine::GetGameStateManager().GetGSComponent<DataRegistry>();
     
     // Initial load
-    registry.LoadFromFile("Assets/Data/characters.json");
-    int initialHP = registry.GetValue<int>("Dragon.max_hp", 0);
+    registry->LoadFromFile("Assets/Data/characters.json");
+    int initialHP = registry->GetValue<int>("Dragon.max_hp", 0);
     
     // Reload
-    registry.ReloadAll();
+    registry->ReloadAll();
     
     // Verify data still accessible after reload
-    int reloadedHP = registry.GetValue<int>("Dragon.max_hp", 0);
+    int reloadedHP = registry->GetValue<int>("Dragon.max_hp", 0);
     ASSERT_EQ(initialHP, reloadedHP);
     
     std::cout << "TestDataRegistry_ReloadAll passed" << std::endl;
@@ -216,16 +216,16 @@ bool TestDataRegistry_FileModificationDetection()
 {
     Engine::GetLogger().LogEvent("=== Test: File Modification Detection ===");
     
-    DataRegistry registry;
+    DataRegistry* registry = Engine::GetGameStateManager().GetGSComponent<DataRegistry>();
     
     // Load file
-    registry.LoadFromFile("Assets/Data/characters.json");
+    registry->LoadFromFile("Assets/Data/characters.json");
     
     // Call ReloadAll (should detect no changes if file not modified)
-    registry.ReloadAll();
+    registry->ReloadAll();
     
     // Verify data still correct
-    ASSERT_EQ(registry.GetValue<int>("Dragon.max_hp", 0), 141);
+    ASSERT_EQ(registry->GetValue<int>("Dragon.max_hp", 0), 141);
     
     std::cout << "TestDataRegistry_FileModificationDetection passed" << std::endl;
     return true;
@@ -237,10 +237,10 @@ bool TestDataRegistry_ValidateCharacterJSON()
 {
     Engine::GetLogger().LogEvent("=== Test: ValidateCharacterJSON ===");
     
-    DataRegistry registry;
+    DataRegistry* registry = Engine::GetGameStateManager().GetGSComponent<DataRegistry>();
     
     // Validate existing file
-    bool valid = registry.ValidateCharacterJSON("Assets/Data/characters.json");
+    bool valid = registry->ValidateCharacterJSON("Assets/Data/characters.json");
     ASSERT_TRUE(valid);
     
     std::cout << "TestDataRegistry_ValidateCharacterJSON passed" << std::endl;
@@ -251,14 +251,14 @@ bool TestDataRegistry_InvalidJSONHandling()
 {
     Engine::GetLogger().LogEvent("=== Test: Invalid JSON Handling ===");
     
-    DataRegistry registry;
+    DataRegistry* registry = Engine::GetGameStateManager().GetGSComponent<DataRegistry>();
     
     // Try to load non-existent file (should not crash)
-    //registry.LoadFromFile("Data/nonexistent.json");
+    //registry->LoadFromFile("Data/nonexistent.json");
     //??????????????
     
     // Should still work with existing data
-    ASSERT_TRUE(registry.HasKey("Dragon.max_hp"));
+    ASSERT_TRUE(registry->HasKey("Dragon.max_hp"));
     
     std::cout << "TestDataRegistry_InvalidJSONHandling passed" << std::endl;
     return true;
