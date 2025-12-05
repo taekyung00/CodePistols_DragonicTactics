@@ -73,14 +73,23 @@ private:
         double timestamp;
     };
     std::deque<EventLogEntry> event_log_;
+
+    struct AIDecisionLog {
+        std::string actorName;
+        std::string actionType;
+        std::string targetName;
+        Math::ivec2 destination;
+        std::string reasoning;
+        double timestamp;
+    };
+    std::deque<AIDecisionLog> ai_decision_history_;
     
     double game_time_{0.0};
     
     // === Event Handlers ===
+    void OnAIDecision(const struct AIDecisionEvent& event);
     void OnCharacterDamaged(const struct CharacterDamagedEvent& event);
-    void OnCharacterMoved(const struct CharacterMovedEvent& event);
     void OnCharacterDeath(const struct CharacterDeathEvent& event);
-    void OnSpellCast(const struct SpellCastEvent& event);
     void OnTurnStarted(const struct TurnStartedEvent& event);
     
     // === Rendering Helpers ===
@@ -89,4 +98,8 @@ private:
     void DrawImGuiDiceHistory();
     void DrawImGuiCharacterStats(const GridSystem* grid);
     void DrawImGuiCombatLog();
+    void DrawImGuiAIDecisions();
+
+    //=== Utility ===
+    std::string GetDecisionTypeString(AIDecisionType type);
 };

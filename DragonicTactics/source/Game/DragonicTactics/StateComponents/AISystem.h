@@ -1,44 +1,25 @@
-// File: CS230/Game/Singletons/AISystem.h
+/**
+ * @file AISystem.h
+ * @author Sangyun Lee
+ * @brief 
+ * @date 2025-12-04
+ */
+
 #pragma once
 #include "./Engine/Component.h"
-#include "../Objects/Character.h"
-#include <vector>
+#include "AI/IAIStrategy.h"
+#include <map>
 
-enum class AIDecisionType {
-    Move,
-    Attack,
-    UseAbility,
-    EndTurn,
-    None
-};
-
-struct AIDecision {
-    AIDecisionType type;
-    Character* target;        // Target for attack/ability
-    Math::ivec2 destination;  // Destination for move
-    std::string abilityName;  // Ability to use
-    std::string reasoning;    // Debug: Why this decision?
-};
-
-class AISystem : public CS230::Component{
+class AISystem : public CS230::Component {
 public:
-    AISystem() = default;
-    ~AISystem() = default;
+    AISystem();
+    ~AISystem();
 
-    // Main AI entry point
+    void Init();
+
     AIDecision MakeDecision(Character* actor);
-
-    // Decision helpers
-    Character* AssessThreats(Character* actor);
-    bool ShouldMoveCloser(Character* actor, Character* target);
-    bool ShouldAttack(Character* actor, Character* target);
-    bool ShouldUseAbility(Character* actor, Character* target);
-
-    // Execution
     void ExecuteDecision(Character* actor, const AIDecision& decision);
 
 private:
-
-    // Threat assessment
-    int CalculateThreatScore(Character* actor, Character* target);
+    std::map<CharacterTypes, IAIStrategy*> m_strategies;
 };

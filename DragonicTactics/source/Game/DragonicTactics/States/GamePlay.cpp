@@ -14,6 +14,7 @@ Created:    November 5, 2025
 #include "./CS200/IRenderer2D.h"
 #include "./CS200/NDC.h"
 
+#include "Engine/Timer.h"
 #include "Game/MainMenu.h"
 
 #include "Game/DragonicTactics/Objects/Dragon.h"
@@ -56,6 +57,7 @@ void GamePlay::Load()
     AddGSComponent(new GridSystem());
     AddGSComponent(new TurnManager());
     AddGSComponent(new DebugManager());
+    AddGSComponent(new util::Timer());
 
 	GetGSComponent<EventBus>()->Clear();
 	GetGSComponent<DiceManager>()->SetSeed(100);
@@ -161,7 +163,7 @@ void GamePlay::Update(double dt)
 	if (current != nullptr)
     {
         m_input_handler->Update(dt, current, grid, combatSystem);
-        m_orchestrator->Update(dt, turnMgr, aiSystem, goMgr);
+        m_orchestrator->Update(dt, turnMgr, aiSystem);
         m_ui_manager->Update(dt);
     }
     

@@ -13,6 +13,7 @@ Created:    November 24, 2025
 #include "GamePlay.h"
 #include "./CS200/IRenderer2D.h"
 #include "./CS200/NDC.h"
+#include "Engine/Timer.h"
 
 
 #include "../Debugger/DebugManager.h"
@@ -35,7 +36,7 @@ Created:    November 24, 2025
 #include "Game/DragonicTactics/StateComponents/SpellSystem.h"
 
 
-void BattleOrchestrator::Update([[maybe_unused]]double dt, TurnManager* turn_manager, AISystem* ai_system, CS230::GameObjectManager* go_manager) {
+void BattleOrchestrator::Update([[maybe_unused]]double dt, TurnManager* turn_manager, AISystem* ai_system) {
     if (!turn_manager->IsCombatActive()) return;
 
     Character* current = turn_manager->GetCurrentCharacter();
@@ -45,67 +46,64 @@ void BattleOrchestrator::Update([[maybe_unused]]double dt, TurnManager* turn_man
     }
 
     if (current->GetCharacterType() != CharacterTypes::Dragon) {
-       HandleAITurn(current, turn_manager, ai_system, go_manager);
+        HandleAITurn(current, turn_manager, ai_system);
     }
 }
 
-bool BattleOrchestrator::ShouldContinueTurn(Character* current_character, AISystem* ai_system, CS230::GameObjectManager* go_manager) {
-    Character* target = nullptr;
+// bool BattleOrchestrator::ShouldContinueTurn(Character* current_character, AISystem* ai_system, CS230::GameObjectManager* go_manager) {
+//     Character* target = nullptr;
 
-    for (const auto& obj_ptr : go_manager->GetAll()) {
-        CS230::GameObject* obj = obj_ptr.get(); 
+//     for (const auto& obj_ptr : go_manager->GetAll()) {
+//         CS230::GameObject* obj = obj_ptr.get(); 
 
-        if (obj->Type() == GameObjectTypes::Character) {
-            Character* character = static_cast<Character*>(obj);
+//         if (obj->Type() == GameObjectTypes::Character) {
+//             Character* character = static_cast<Character*>(obj);
             
-            if (character->GetCharacterType() == CharacterTypes::Dragon) {
-                target = character;
-                break;
-            }
-        }
-    }
+//             if (character->GetCharacterType() == CharacterTypes::Dragon) {
+//                 target = character;
+//                 break;
+//             }
+//         }
+//     }
 
-    if (!target) return false;
+//     if (!target) return false;
 
-    bool shouldAttack = ai_system->ShouldAttack(current_character, target);
-    bool shouldMove   = ai_system->ShouldMoveCloser(current_character, target);
+//     bool shouldAttack = ai_system->ShouldAttack(current_character, target);
+//     bool shouldMove   = ai_system->ShouldMoveCloser(current_character, target);
     
-    return shouldAttack || shouldMove;
-}
+//     return shouldAttack || shouldMove;
+// }
 
 
 
-void BattleOrchestrator::HandleAITurn(Character* ai_character, TurnManager* turn_manager, AISystem* ai_system, CS230::GameObjectManager* go_manager) {
+void BattleOrchestrator::HandleAITurn(Character* ai_character, TurnManager* turn_manager, AISystem* ai_system) {
     
+    // 1. 캐릭터가 이동 중이거나 애니메이션 중이라면 대기 (기존 유지)
     MovementComponent* move_comp = ai_character->GetGOComponent<MovementComponent>();
     if (move_comp && move_comp->IsMoving()) {
         return;
     }
 
-    if (ai_character->GetCharacterType() == CharacterTypes::Fighter) {
-        Fighter* fighter = static_cast<Fighter*>(ai_character);
-        
-        fighter->Action();
+    auto timer = Engine::GetGameStateManager().GetGSComponent<util::Timer>();
+    timer->ResetTimeStamp();
+    while (timer->GetElapsedSeconds() < 0.4){}
 
-        bool keep_turn = ShouldContinueTurn(ai_character, ai_system, go_manager);
+    // 2. AISystem에게 "지금 뭐 할래?"라고 물어봅니다. (전략 패턴 활용)
+    // 기존의 fighter->Action() 대신 시스템을 직접 이용합니다.
+    AIDecision decision = ai_system->MakeDecision(ai_character);
 
-        if (!keep_turn) {
-            turn_manager->EndCurrentTurn();
-        }
+    // 3. 결정에 따른 분기 처리
+    if (decision.type == AIDecisionType::EndTurn) {
+        // AI가 "턴 종료"를 선언했으면 턴을 넘깁니다.
+        Engine::GetLogger().LogEvent(ai_character->TypeName() + " ends turn. Reason: " + decision.reasoning);
+        turn_manager->EndCurrentTurn();
     }
-
-    
-    // if (ai_character->GetCharacterType() == CharacterTypes::Wizard) {
-    //     Wizard* wizard = static_cast<Wizard*>(ai_character);
-        
-    //     wizard->Action();
-
-    //     bool keep_turn = ShouldContinueTurn(ai_character, ai_system, go_manager);
-
-    //     if (!keep_turn) {
-    //         turn_manager->EndCurrentTurn();
-    //     }
-    // }
+    else {
+        // 이동, 공격, 스킬 등의 행동을 실행합니다.
+        // 실행 후에는 함수를 빠져나가고, 다음 Update 프레임에 다시 들어와서
+        // AI가 또 다른 행동(예: 이동 후 공격)을 할지 다시 MakeDecision을 통해 확인하게 됩니다.
+        ai_system->ExecuteDecision(ai_character, decision);
+    }
 }
 
 
