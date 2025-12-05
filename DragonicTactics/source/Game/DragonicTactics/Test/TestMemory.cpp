@@ -1,5 +1,6 @@
 #include "TestMemory.h"
 #include "Game/DragonicTactics/Factories/CharacterFactory.h"
+#include "Game/DragonicTactics/Objects/Character.h"
 #include "TestAssert.h"
 #include "pch.h"
 #include <memory>

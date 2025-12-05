@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <vector>
 #include <string>
 #include <memory>
@@ -14,7 +13,6 @@
 #include <fstream>
 #include <sstream>
 #include <cmath>
-
 
 #include "Engine/Engine.h"
 #include "Engine/GameObject.h"
@@ -30,20 +28,16 @@
 #include "Engine/Sprite.h"
 #include "Engine/Animation.h"
 
-
 #include "Engine/Vec2.h"
 #include "Engine/Matrix.h"
 #include "Engine/Rect.h"
-
 
 #include "Game/DragonicTactics/Types/GameTypes.h"
 #include "Game/DragonicTactics/Types/CharacterTypes.h"
 #include "Game/DragonicTactics/Types/GameObjectTypes.h"
 #include "Game/DragonicTactics/Types/Events.h"
 
-
 #include <SDL.h>
 #include <imgui.h>
-
 
 #include <gsl/gsl>

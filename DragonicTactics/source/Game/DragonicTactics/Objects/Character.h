@@ -12,13 +12,13 @@ Updated:    Oct 09, 2025
 #pragma once
 #include <map>
 #include <vector>
-#include "./Engine/GameObject.h"
-#include "./Engine/GameObjectManager.h"
-#include "./Engine/Matrix.h"
-#include "./Engine/Input.h"
-#include "./Game/DragonicTactics/Types/GameTypes.h"
-#include "./Game/DragonicTactics/Types/CharacterTypes.h"
-#include "./Game/DragonicTactics/Objects/Actions/Action.h"
+#include "Engine/GameObject.h"
+#include "Engine/GameObjectManager.h"
+#include "Engine/Matrix.h"
+#include "Engine/Input.h"
+#include "Game/DragonicTactics/Types/GameTypes.h"
+#include "Game/DragonicTactics/Types/CharacterTypes.h"
+#include "Game/DragonicTactics/Objects/Actions/Action.h"
 
 class GridSystem;
 class GridPosition;
