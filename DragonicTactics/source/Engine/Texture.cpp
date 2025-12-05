@@ -32,7 +32,7 @@ namespace CS230
 
     void Texture::Draw(const Math::TransformationMatrix& display_matrix, Math::ivec2 texel_position, Math::ivec2 frame_size, unsigned int color)
     {
-        CS200::IRenderer2D& renderer = Engine::GetRenderer2D();
+        auto		  renderer_2d		  = Engine::GetTextureManager().GetRenderer2D();
 
         const Math::ivec2 slice_amount = { image_size.x / frame_size.x, image_size.y / frame_size.y };
 
@@ -76,7 +76,7 @@ namespace CS230
         world_tranlation                = { display_matrix[0][2], display_matrix[1][2] };
         const auto       world_transfromation = Math::TranslationMatrix(world_tranlation) * Math::TranslationMatrix(set_bottom_left) * Math::ScaleMatrix(world_scale);
 
-        renderer.DrawQuad(world_transfromation, textureHandle, texel_coord_bl, texel_coord_tr, color);
+        renderer_2d->DrawQuad(world_transfromation, textureHandle, texel_coord_bl, texel_coord_tr, color);
     }
 
     Math::ivec2 Texture::GetSize() const

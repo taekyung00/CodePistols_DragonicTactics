@@ -211,10 +211,10 @@ void GamePlay::Unload()
 void GamePlay::Draw()
 {
   Engine::GetWindow().Clear(0x1a1a1aff);
-  auto& renderer_2d = Engine::GetRenderer2D();
+  auto		  renderer_2d		  = Engine::GetTextureManager().GetRenderer2D();
 
   Math::TransformationMatrix camera_matrix = CS200::build_ndc_matrix(Engine::GetWindow().GetSize());
-  renderer_2d.BeginScene(camera_matrix);
+  renderer_2d->BeginScene(camera_matrix);
 
   GridSystem* grid_system = GetGSComponent<GridSystem>();
   if (grid_system != nullptr)
@@ -232,7 +232,7 @@ void GamePlay::Draw()
 
   GetGSComponent<DebugManager>()->Draw(grid_system);
 
-  renderer_2d.EndScene();
+  renderer_2d->EndScene();
 }
 
 void GamePlay::DrawImGui()

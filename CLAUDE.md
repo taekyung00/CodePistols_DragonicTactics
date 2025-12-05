@@ -366,6 +366,84 @@ public:
 };
 ```
 
+## 렌더링 시스템
+
+프로젝트는 **3가지 렌더링 모드**를 지원하며, 런타임에 전환 가능합니다:
+
+### 렌더링 모드
+
+1. **ImmediateRenderer2D** (기본)
+   - 즉시 모드 렌더링
+   - 각 Draw 호출마다 즉시 GPU에 전송
+   - 단순하고 디버깅이 쉬움
+   - 성능: 낮음 (많은 draw call)
+
+2. **BatchRenderer2D**
+   - 배치 렌더링
+   - 동일한 텍스처를 사용하는 여러 쿼드를 하나의 draw call로 묶음
+   - CPU에서 정점 데이터를 모아서 한 번에 GPU로 전송
+   - 성능: 중간 (draw call 감소)
+
+3. **InstancedRenderer2D**
+   - 인스턴스 렌더링
+   - GPU 인스턴싱을 활용하여 동일한 메시를 여러 번 그림
+   - 각 인스턴스는 다른 변환 행렬과 텍스처 좌표 사용
+   - 성능: 높음 (최소 draw call + GPU 가속)
+
+### 렌더링 모드 전환
+
+```cpp
+// TextureManager를 통해 렌더러 전환
+Engine::GetTextureManager().SwitchRenderer(
+    CS230::TextureManager::RendererType::Batch
+);
+
+// 현재 렌더러 확인
+auto current_type = Engine::GetTextureManager().GetCurrentRendererType();
+
+// 렌더러 접근
+CS200::IRenderer2D* renderer = CS230::TextureManager::GetRenderer2D();
+```
+
+### 렌더링 인터페이스 (IRenderer2D)
+
+모든 렌더러는 동일한 인터페이스를 구현:
+
+```cpp
+// 장면 시작/종료
+void BeginScene(const Math::TransformationMatrix& view_projection);
+void EndScene();
+
+// 그리기 명령
+void DrawQuad(const Math::TransformationMatrix& transform,
+              OpenGL::TextureHandle texture,
+              Math::vec2 texture_coord_bl = {0.0, 0.0},
+              Math::vec2 texture_coord_tr = {1.0, 1.0},
+              CS200::RGBA tintColor = CS200::WHITE,
+              float depth = 1.f);
+
+void DrawCircle(const Math::TransformationMatrix& transform,
+                CS200::RGBA fill_color = CS200::CLEAR,
+                CS200::RGBA line_color = CS200::WHITE,
+                double line_width = 2.0,
+                float depth = 0.f);
+
+void DrawRectangle(const Math::TransformationMatrix& transform,
+                   CS200::RGBA fill_color = CS200::CLEAR,
+                   CS200::RGBA line_color = CS200::WHITE,
+                   double line_width = 2.0,
+                   float depth = 0.f);
+
+void DrawLine(Math::vec2 start_point, Math::vec2 end_point,
+              CS200::RGBA line_color = CS200::WHITE,
+              double line_width = 2.0,
+              float depth = 0.f);
+
+// 성능 모니터링
+size_t GetDrawCallCounter();
+size_t GetDrawTextureCounter();
+```
+
 ## 기술 스택
 
 ### 빌드 시스템
@@ -438,6 +516,14 @@ CMake FetchContent로 자동 관리:
 ## 구현 상태
 
 ### ✅ 완료 (Week 1-3, Milestone 3)
+
+- **렌더링 시스템**
+  - IRenderer2D 인터페이스
+  - ImmediateRenderer2D (즉시 모드)
+  - BatchRenderer2D (배치 렌더링)
+  - InstancedRenderer2D (GPU 인스턴싱)
+  - 런타임 렌더러 전환 기능
+
 - **핵심 시스템** (모두 StateComponents로 구현)
   - EventBus (이벤트 시스템)
   - DiceManager (주사위 굴림)
@@ -491,6 +577,13 @@ CMake FetchContent로 자동 관리:
 - [Engine.hpp](DragonicTactics/source/Engine/Engine.hpp) - 엔진 싱글톤
 - [GameObject.h](DragonicTactics/source/Engine/GameObject.h) - 엔티티 베이스
 - [GameState.hpp](DragonicTactics/source/Engine/GameState.hpp) - 상태 인터페이스
+- [TextureManager.h](DragonicTactics/source/Engine/TextureManager.h) - 텍스처 및 렌더러 관리
+
+### 렌더링 시스템 (CS200)
+- [IRenderer2D.h](DragonicTactics/source/CS200/IRenderer2D.h) - 렌더러 인터페이스
+- [ImmediateRenderer2D.h](DragonicTactics/source/CS200/ImmediateRenderer2D.h) - 즉시 모드 렌더러
+- [BatchRenderer2D.h](DragonicTactics/source/CS200/BatchRenderer2D.h) - 배치 렌더러
+- [InstancedRenderer2D.h](DragonicTactics/source/CS200/InstancedRenderer2D.h) - 인스턴스 렌더러
 
 ### 게임 시스템 (StateComponents)
 - [Character.h](DragonicTactics/source/Game/DragonicTactics/Objects/Character.h) - 캐릭터 베이스
@@ -520,6 +613,8 @@ CMake FetchContent로 자동 관리:
 13. **ImGui**: 디버그 시각화용 ImGui 사용 (docking 브랜치), 런타임에 켜고 끌 수 있음
 14. **테스트**: Test/ 디렉토리에 각 시스템별 테스트 파일 존재
 15. **메모리 관리**: 스마트 포인터 사용 권장 (RAII 원칙), GamePlay는 unique_ptr 사용
+16. **렌더링 시스템**: TextureManager를 통해 3가지 렌더러(Immediate/Batch/Instanced) 중 선택, 런타임 전환 가능
+17. **렌더러 접근**: `CS230::TextureManager::GetRenderer2D()`로 현재 활성화된 렌더러 접근
 
 ## 테스트 실행
 
@@ -639,7 +734,12 @@ cmake --build --preset windows-debug
 
 ## 추가 참고 문서
 
+### 아키텍처 및 리팩토링
+- [architecture/engine-game-separation-plan.md](architecture/engine-game-separation-plan.md) - 🎯 **엔진-게임 분리 계획** (4-Phase 마이그레이션 가이드)
 - [architecture/REFACTORING_TODO.md](architecture/REFACTORING_TODO.md) - 현재 진행 중인 리팩토링 작업
 - [architecture/dragonic_tactics.md](architecture/dragonic_tactics.md) - 게임 디자인 문서 (한글)
+- [architecture/game_architecture_rules.md](architecture/game_architecture_rules.md) - 아키텍처 원칙
+
+### 구현 가이드
 - [docs/implementation-plan.md](docs/implementation-plan.md) - 유연한 구현 계획 (우선순위 기반)
 - [docs/Detailed Implementations/weeks/](docs/Detailed%20Implementations/weeks/) - 주차별 상세 구현 가이드 (한글)

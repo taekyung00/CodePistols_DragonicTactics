@@ -98,7 +98,7 @@ void DebugVisualizer::DrawGridOverlay(const GridSystem* grid)
         return;
     }
     
-    auto& renderer = Engine::GetRenderer2D();
+    auto renderer_2d = Engine::GetTextureManager().GetRenderer2D();
     
     const int TILE_SIZE = GridSystem::TILE_SIZE;
     const int MAP_WIDTH = 8;
@@ -109,7 +109,7 @@ void DebugVisualizer::DrawGridOverlay(const GridSystem* grid)
     // Vertical lines
     for (int x = 0; x <= MAP_WIDTH; ++x) {
         int screen_x = x * TILE_SIZE + TILE_SIZE;
-        renderer.DrawLine(
+        renderer_2d->DrawLine(
             Math::vec2{static_cast<float>(screen_x), static_cast<float>(TILE_SIZE)},
             Math::vec2{static_cast<float>(screen_x), static_cast<float>((MAP_HEIGHT + 1) * TILE_SIZE)},
             grid_color
@@ -119,7 +119,7 @@ void DebugVisualizer::DrawGridOverlay(const GridSystem* grid)
     // Horizontal lines
     for (int y = 0; y <= MAP_HEIGHT; ++y) {
         int screen_y = y * TILE_SIZE + TILE_SIZE;
-        renderer.DrawLine(
+        renderer_2d->DrawLine(
             Math::vec2{static_cast<float>(TILE_SIZE), static_cast<float>(screen_y)},
             Math::vec2{static_cast<float>((MAP_WIDTH + 1) * TILE_SIZE), static_cast<float>(screen_y)},
             grid_color

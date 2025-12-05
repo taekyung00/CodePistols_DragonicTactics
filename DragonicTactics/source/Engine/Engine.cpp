@@ -134,10 +134,10 @@ CS230::GameStateManager& Engine::GetGameStateManager()
     return Instance().impl->gameStateManager;
 }
 
-CS200::IRenderer2D& Engine::GetRenderer2D()
-{
-    return Instance().impl->renderer2D;
-}
+// CS200::IRenderer2D& Engine::GetRenderer2D()
+// {
+//     return Instance().impl->renderer2D;
+// }
 
 CS230::TextureManager& Engine::GetTextureManager()
 {
@@ -206,14 +206,16 @@ void Engine::Start(std::string_view window_title)
     impl->environment.DisplaySize = { static_cast<double>(window_size.x), static_cast<double>(window_size.y) };
     ImGuiHelper::Initialize(window.GetSDLWindow(), window.GetGLContext());
     window.SetEventCallback([this](const SDL_Event& event){this->OnEvent(event);});
-    impl->renderer2D.Init();
+    impl->textureManager.Init();
+	// impl->renderer2D.Init();
     impl->timer.ResetTimeStamp();
     impl->textManager.Init();
 }
 
 void Engine::Stop()
 {
-    impl->renderer2D.Shutdown();
+    impl->textureManager.Shutdown();
+	// impl->renderer2D.Shutdown();
     impl->gameStateManager.Clear();
     ImGuiHelper::Shutdown();
     impl->logger.LogEvent("Engine Stopped");

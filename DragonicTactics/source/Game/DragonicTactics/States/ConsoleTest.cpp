@@ -204,12 +204,12 @@ void ConsoleTest::Update([[maybe_unused]] double dt)
 void ConsoleTest::Draw()
 {
 	Engine::GetWindow().Clear(0x1a1a1aff);
-	auto& renderer_2d = Engine::GetRenderer2D();
+	auto		  renderer_2d		  = Engine::GetTextureManager().GetRenderer2D();
 
-	renderer_2d.BeginScene(CS200::build_ndc_matrix(Engine::GetWindow().GetSize()));
+	renderer_2d->BeginScene(CS200::build_ndc_matrix(Engine::GetWindow().GetSize()));
 
 
-	renderer_2d.EndScene();
+	renderer_2d->EndScene();
 }
 
 void ConsoleTest::DrawImGui()

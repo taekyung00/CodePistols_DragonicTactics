@@ -38,7 +38,7 @@ namespace CS230
         DrawLine(int(top_left.x), int(top_left.y), int(bottom_left.x), int(bottom_left.y), WHITE);*/
 
         Math::rect world_boundary = WorldBoundary();
-        auto&      renderer2d     = Engine::GetRenderer2D();
+        auto		  renderer_2d		  = Engine::GetTextureManager().GetRenderer2D();
 
         // [[maybe_unused]] Math::vec2 bottom_left  = /*display_matrix * */ Math::vec2{ world_boundary.Left(), world_boundary.Bottom() };
         // [[maybe_unused]] Math::vec2 bottom_right = /*display_matrix * */ Math::vec2{ world_boundary.Right(), world_boundary.Bottom() };
@@ -47,7 +47,7 @@ namespace CS230
 
         // const auto center_matrix = display_matrix * Math::TranslationMatrix(world_boundary.Center());
 
-        renderer2d.DrawRectangle(display_matrix*Math::TranslationMatrix(world_boundary.Center())*Math::ScaleMatrix(world_boundary.Size()), CS200::CLEAR, CS200::WHITE, line_width);
+        renderer_2d->DrawRectangle(display_matrix*Math::TranslationMatrix(world_boundary.Center())*Math::ScaleMatrix(world_boundary.Size()), CS200::CLEAR, CS200::WHITE, line_width);
     }
 
     Math::rect RectCollision::WorldBoundary()
@@ -116,8 +116,8 @@ namespace CS230
         //     previous_vertex = vertex;
         // }
         const auto transform = display_matrix * Math::TranslationMatrix(object->GetPosition()) * Math::ScaleMatrix(2 * GetRadius());
-        auto&      renderer2d           = Engine::GetRenderer2D();
-        renderer2d.DrawCircle(transform);
+        auto      renderer_2d           = Engine::GetTextureManager().GetRenderer2D();
+        renderer_2d->DrawCircle(transform);
     }
 
     double CircleCollision::GetRadius()

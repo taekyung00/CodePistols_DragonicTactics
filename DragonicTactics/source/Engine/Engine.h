@@ -222,7 +222,7 @@ public:
      * - Camera and viewport transformations
      * - Blend modes and rendering effects
      */
-    static CS200::IRenderer2D& GetRenderer2D();
+    // static CS200::IRenderer2D& GetRenderer2D();
 
     /**
      * \brief Access the texture resource management system

@@ -9,14 +9,14 @@ Project:    CS230 Engine
 Author:     Taekyung Ho
 Created:    March 12, 2025
 */
-#include "../Engine/Engine.h"
-#include "../Engine/TextureManager.h"
-#include "../Engine/Logger.h"
-#include "../Engine/GameStateManager.h"
-#include "../Engine/Window.h"
-#include "../CS200/RenderingAPI.h"
-#include "../CS200/IRenderer2D.h"
-#include "../CS200/NDC.h"
+#include "Engine/Engine.h"
+#include "Engine/TextureManager.h"
+#include "Engine/Logger.h"
+#include "Engine/GameStateManager.h"
+#include "Engine/Window.h"
+#include "CS200/RenderingAPI.h"
+#include "CS200/IRenderer2D.h"
+#include "CS200/NDC.h"
 #include "MainMenu.h"
 #include "Splash.h"
 
@@ -43,11 +43,11 @@ void Splash::Unload()
 void Splash::Draw()  {
 
     CS200::RenderingAPI::Clear();
-    auto& renderer_2d          = Engine::GetRenderer2D();
-    renderer_2d.BeginScene(CS200::build_ndc_matrix(Engine::GetWindow().GetSize()));
+    auto		  renderer_2d		  = Engine::GetTextureManager().GetRenderer2D();
+    renderer_2d->BeginScene(CS200::build_ndc_matrix(Engine::GetWindow().GetSize()));
     texture->Draw(Math::TranslationMatrix({ (Engine::GetWindow().GetSize() - texture->GetSize()) / 2 }));
 
-    renderer_2d.EndScene();
+    renderer_2d->EndScene();
 }
 
 void Splash::DrawImGui()

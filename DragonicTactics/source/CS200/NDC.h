@@ -1,4 +1,4 @@
-﻿/**
+/**
  * \file
  * \author Rudy Castan
  * \author Taekyung ho
@@ -57,10 +57,14 @@ namespace CS200
      * - Cross-platform graphics coordinate normalization
      *
      * Integration with Graphics Pipeline:
-     * Window Coordinates → World Coordinates → NDC → GPU Rendering
+     * Window Coordinates -> World Coordinates -> NDC -> GPU Rendering
      */
-    inline Math::TransformationMatrix build_ndc_matrix(Math::ivec2 view_size) noexcept
+    inline Math::TransformationMatrix build_ndc_matrix(Math::ivec2 view_size, [[maybe_unused]] bool is_centered = false) noexcept
     {
+        if(is_centered)
+        {
+            return Math::ScaleMatrix({ 2.0 / view_size.x, 2.0 / view_size.y });
+        }
         return Math::TranslationMatrix(Math::vec2{ -1.0, -1.0 }) * Math::ScaleMatrix({ 2.0 / view_size.x, 2.0 / view_size.y });
     }
 }

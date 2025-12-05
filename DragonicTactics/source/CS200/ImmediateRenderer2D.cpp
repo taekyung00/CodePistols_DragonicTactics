@@ -1,5 +1,3 @@
-#include "pch.h"
-
 /**
  * \file
  * \author Rudy Castan
@@ -8,9 +6,14 @@
  * \par CS200 Computer Graphics I
  * \copyright DigiPen Institute of Technology
  */
+
+ #include "pch.h"
 #include "ImmediateRenderer2D.h"
+#include "Engine/Engine.h"
+#include "Engine/Matrix.h"
 #include "Engine/Path.h"
 #include "Engine/Texture.h"
+#include "Engine/Window.h"
 #include "NDC.h"
 #include "OpenGL/Buffer.h"
 #include "OpenGL/GL.h"
@@ -92,10 +95,16 @@ namespace CS200
     void ImmediateRenderer2D::Shutdown()
     {
         OpenGL::DestroyShader(texturingCombineShader);
+        OpenGL::DestroyShader(sdfShader);
+
         GL::DeleteBuffers(1, &quad.positionBufferHandle), quad.positionBufferHandle = 0;
         GL::DeleteBuffers(1, &quad.texCoordBufferHandle), quad.texCoordBufferHandle = 0;
         GL::DeleteBuffers(1, &quad.indexBufferHandle), quad.indexBufferHandle       = 0;
         GL::DeleteBuffers(1, &sdfBufferHandle), sdfBufferHandle                     = 0;
+        GL::DeleteBuffers(1, &camera_uniform_buffer), camera_uniform_buffer         = 0;
+
+        GL::DeleteVertexArrays(1, &quad.modelHandle), quad.modelHandle           = 0;
+        GL::DeleteVertexArrays(1, &sdfVeretexArrayHandle), sdfVeretexArrayHandle = 0;
     }
 
     void ImmediateRenderer2D::BeginScene([[maybe_unused]] const Math::TransformationMatrix& view_projection)
@@ -113,14 +122,18 @@ namespace CS200
         GL::BindBuffer(GL_UNIFORM_BUFFER, camera_uniform_buffer);
 
         OpenGL::BindUniformBufferToShader(texturingCombineShader.Shader, 0, camera_uniform_buffer, "NDC");
+
+        draw_call = 0;
+		texture_call = 0;
     }
 
     void ImmediateRenderer2D::EndScene()
     {
+		
     }
 
     void ImmediateRenderer2D::DrawQuad(
-        [[maybe_unused]] const Math::TransformationMatrix& transform, OpenGL::TextureHandle texture, Math::vec2 texture_coord_bl, Math::vec2 texture_coord_tr, CS200::RGBA tintColor)
+		[[maybe_unused]] const Math::TransformationMatrix& transform, OpenGL::TextureHandle texture, Math::vec2 texture_coord_bl, Math::vec2 texture_coord_tr, CS200::RGBA tintColor, float depth)
     {
         //- Bind texture to texture unit 0
         GL::UseProgram(texturingCombineShader.Shader);
@@ -149,7 +162,7 @@ namespace CS200
         GL::UniformMatrix3fv(locations.at("uTexCoordTransform"), 1, GL_FALSE, texture_transform.data());
 
 
-        GL::Uniform1f(locations.at("uDepth"), 0);
+        GL::Uniform1f(locations.at("uDepth"), depth);
 
 
         const auto colors = unpack_color(tintColor);
@@ -162,31 +175,32 @@ namespace CS200
         constexpr GLenum  indices_type             = GL_UNSIGNED_BYTE;
         constexpr GLvoid* byte_offset_into_indices = nullptr;
         GL::DrawElements(primitive_pattern, quad.indicesCount, indices_type, byte_offset_into_indices);
-
+		++draw_call;
+		++texture_call;
         GL::BindTexture(GL_TEXTURE_2D, 0);
         GL::BindVertexArray(0);
         GL::UseProgram(0);
     }
 
-    void ImmediateRenderer2D::DrawCircle(const Math::TransformationMatrix& transform, CS200::RGBA fill_color, CS200::RGBA line_color, double line_width)
+    void ImmediateRenderer2D::DrawCircle(const Math::TransformationMatrix& transform, CS200::RGBA fill_color, CS200::RGBA line_color, double line_width, float depth)
     {
-        DrawSDF(transform, fill_color, line_color, line_width, SDFShape::Circle);
+        DrawSDF(transform, fill_color, line_color, line_width, SDFShape::Circle, depth);
     }
 
-    void ImmediateRenderer2D::DrawRectangle(const Math::TransformationMatrix& transform, CS200::RGBA fill_color, CS200::RGBA line_color, double line_width)
+    void ImmediateRenderer2D::DrawRectangle(const Math::TransformationMatrix& transform, CS200::RGBA fill_color, CS200::RGBA line_color, double line_width, float depth)
     {
-        DrawSDF(transform, fill_color, line_color, line_width, SDFShape::Rectangle);
+        DrawSDF(transform, fill_color, line_color, line_width, SDFShape::Rectangle, depth);
     }
 
-    void ImmediateRenderer2D::DrawLine(const Math::TransformationMatrix& transform, Math::vec2 start_point, Math::vec2 end_point, CS200::RGBA line_color, double line_width)
+    void ImmediateRenderer2D::DrawLine(const Math::TransformationMatrix& transform, Math::vec2 start_point, Math::vec2 end_point, CS200::RGBA line_color, double line_width, float depth)
     {
         const auto line_transform = Renderer2DUtils::CalculateLineTransform(transform, start_point, end_point, line_width);
-        DrawSDF(line_transform, line_color, line_color, line_width, SDFShape::Rectangle);
+        DrawSDF(line_transform, line_color, line_color, line_width, SDFShape::Rectangle, depth);
     }
 
-    void ImmediateRenderer2D::DrawLine(Math::vec2 start_point, Math::vec2 end_point, CS200::RGBA line_color, double line_width)
+    void ImmediateRenderer2D::DrawLine(Math::vec2 start_point, Math::vec2 end_point, CS200::RGBA line_color, double line_width, float depth)
     {
-        DrawLine(Math::TransformationMatrix{}, start_point, end_point, line_color, line_width);
+        DrawLine(Math::TransformationMatrix{}, start_point, end_point, line_color, line_width, depth);
     }
 
     void ImmediateRenderer2D::updateCameraUniformValues(const Math::TransformationMatrix& view_projection)
@@ -204,7 +218,7 @@ namespace CS200
         }
     }
 
-    void ImmediateRenderer2D::DrawSDF(const Math::TransformationMatrix& transform, CS200::RGBA fill_color, CS200::RGBA line_color, double line_width, SDFShape sdf_shape)
+    void ImmediateRenderer2D::DrawSDF(const Math::TransformationMatrix& transform, CS200::RGBA fill_color, CS200::RGBA line_color, double line_width, SDFShape sdf_shape, float depth)
     {
         GL::UseProgram(sdfShader.Shader);
         // Calculate SDF-specific transform using Renderer2DUtils::CalculateSDFTransform()
@@ -216,7 +230,7 @@ namespace CS200
        //GL::UniformMatrix3fv(locations.at("uToNDC"), 1, GL_FALSE, CS200::Renderer2DUtils::to_opengl_mat3(CS200::build_ndc_matrix(Engine::GetWindow().GetSize())).data());
         GL::UniformMatrix3fv(locations.at("uModel"), 1, GL_FALSE, sdf_transform.QuadTransform.data());
         GL::Uniform2f(locations.at("uSDFScale"), sdf_transform.QuadSize[0], sdf_transform.QuadSize[1]);
-        GL::Uniform1f(locations.at("uDepth"), 1);
+        GL::Uniform1f(locations.at("uDepth"), depth);
 
         // fragment
         GL::Uniform4fv(locations.at("uFillColor"), 1, CS200::unpack_color(fill_color).data());
@@ -231,32 +245,50 @@ namespace CS200
         constexpr GLenum  indices_type             = GL_UNSIGNED_BYTE;
         constexpr GLvoid* byte_offset_into_indices = nullptr;
         GL::DrawElements(primitive_pattern, quad.indicesCount, indices_type, byte_offset_into_indices);
-
+		++draw_call;
+		++texture_call;
         // Shape rendering handled entirely in fragment shader
         GL::BindVertexArray(0);
         GL::UseProgram(0);
-    }
+	}
+
+	size_t ImmediateRenderer2D::GetDrawCallCounter()
+	{
+		return draw_call;
+	}
+
+	size_t ImmediateRenderer2D::GetDrawTextureCounter()
+	{
+		return texture_call;
+	}
+
 
     ImmediateRenderer2D::ImmediateRenderer2D(ImmediateRenderer2D&& other) noexcept
+		: quad(other.quad),												   // 1.
+		  texturingCombineShader(std::move(other.texturingCombineShader)), // 2.
+		  camera_uniform_buffer(other.camera_uniform_buffer),			   // 3.
+		  sdfBufferHandle(other.sdfBufferHandle),						   // 4.
+		  sdfShader(std::move(other.sdfShader)),						   // 5.
+		  sdfVeretexArrayHandle(other.sdfVeretexArrayHandle),			   // 6.
+		  camera_array(other.camera_array),								   // 7.
+		  currentCameraMatrix(other.currentCameraMatrix),				   // 8.
+		  draw_call(other.draw_call),									   // 9.
+		  texture_call(other.texture_call)								   // 10.
     {
-        //- Transfer all OpenGL handles (VAOs, buffers, shaders)
-        quad.positionBufferHandle = other.quad.positionBufferHandle;
-        quad.texCoordBufferHandle = other.quad.texCoordBufferHandle;
-        quad.indexBufferHandle    = other.quad.indexBufferHandle;
-        quad.indicesCount         = other.quad.indicesCount;
-        quad.modelHandle          = other.quad.modelHandle;
-        sdfBufferHandle           = other.sdfBufferHandle;
-        sdfShader                 = other.sdfShader;
-        sdfVeretexArrayHandle     = other.sdfVeretexArrayHandle;
+		other.quad.positionBufferHandle = 0;
+		other.quad.texCoordBufferHandle = 0;
+		other.quad.indexBufferHandle	= 0;
+		other.quad.indicesCount			= 0;
+		other.quad.modelHandle			= 0;
 
-        //- Move shader objects using std::move()
-        texturingCombineShader = std::move(other.texturingCombineShader);
+		other.texturingCombineShader = {};
+		other.camera_uniform_buffer	 = 0;
+		other.sdfBufferHandle		 = 0;
+		other.sdfShader				 = {};
+		other.sdfVeretexArrayHandle	 = 0;
 
-        //- Copy view projection matrix data
-        currentCameraMatrix = other.currentCameraMatrix;
-
-        // - Set source object's handles to zero/invalid
-        other.Shutdown();
+        other.draw_call	   = 0;
+		other.texture_call = 0;
     }
 
     ImmediateRenderer2D& ImmediateRenderer2D::operator=(ImmediateRenderer2D&& other) noexcept
@@ -264,26 +296,27 @@ namespace CS200
         //- Use std::swap to exchange all resources
         //- Safely handles self-assignment
 
-        std::swap(quad.positionBufferHandle, other.quad.positionBufferHandle);
-        std::swap(quad.texCoordBufferHandle, other.quad.texCoordBufferHandle);
-        std::swap(quad.indexBufferHandle, other.quad.indexBufferHandle);
-        std::swap(quad.indicesCount, other.quad.indicesCount);
-        std::swap(quad.modelHandle, other.quad.modelHandle);
-        std::swap(texturingCombineShader, other.texturingCombineShader);
-        std::swap(currentCameraMatrix, other.currentCameraMatrix);
-        std::swap(sdfBufferHandle, other.sdfBufferHandle);
-        std::swap(sdfShader, other.sdfShader);
-        std::swap(sdfVeretexArrayHandle, other.sdfVeretexArrayHandle);
+        if (this == &other)
+		{
+			return *this;
+		}
 
-        other.Shutdown();
+		std::swap(quad, other.quad);
+		std::swap(texturingCombineShader, other.texturingCombineShader);
+		std::swap(camera_uniform_buffer, other.camera_uniform_buffer);
+		std::swap(sdfBufferHandle, other.sdfBufferHandle);
+		std::swap(sdfShader, other.sdfShader);
+		std::swap(sdfVeretexArrayHandle, other.sdfVeretexArrayHandle);
+		std::swap(camera_array, other.camera_array);
+		std::swap(currentCameraMatrix, other.currentCameraMatrix);
+		std::swap(draw_call, other.draw_call);
+		std::swap(texture_call, other.texture_call);
 
-        return *this;
+		return *this;
     }
 
     ImmediateRenderer2D::~ImmediateRenderer2D()
     {
         Shutdown();
     }
-
-
 }

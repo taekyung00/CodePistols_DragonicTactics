@@ -10,20 +10,20 @@ Author:     Taekyung Ho
 Created:    May 6, 2025
 */
 #include "MainMenu.h"
-#include "../CS200/IRenderer2D.h"
-#include "../CS200/NDC.h"
-#include "../CS200/RenderingAPI.h"
-#include "../Engine/Engine.h"
-#include "../Engine/GameStateManager.h"
-#include "../Engine/Input.h"
-#include "../Engine/TextManager.h"
-#include "../Engine/Window.h"
-#include "../Engine/Matrix.h"
-#include "./Game/DragonicTactics/States/GamePlay.h"
+#include "CS200/IRenderer2D.h"
+#include "CS200/NDC.h"
+#include "CS200/RenderingAPI.h"
+#include "Engine/Engine.h"
+#include "Engine/GameStateManager.h"
+#include "Engine/Input.h"
+#include "Engine/TextManager.h"
+#include "Engine/Window.h"
+#include "Engine/Matrix.h"
+#include "Game/DragonicTactics/States/GamePlay.h"
 // #include "./Game/DragonicTactics/States/Test.h"
-#include "./Game/DragonicTactics/States/RenderingTest.h"
-#include "./Game/DragonicTactics/States/ConsoleTest.h"
-#include "./OpenGL/Environment.h"
+#include "Game/DragonicTactics/States/RenderingTest.h"
+#include "Game/DragonicTactics/States/ConsoleTest.h"
+#include "OpenGL/Environment.h"
 #include "States.h"
 
 
@@ -165,8 +165,8 @@ void MainMenu::Unload()
 void MainMenu::Draw()
 {
 	CS200::RenderingAPI::Clear();
-	auto& renderer_2d = Engine::GetRenderer2D();
-	renderer_2d.BeginScene(CS200::build_ndc_matrix(Engine::GetWindow().GetSize()));
+	auto		  renderer_2d		  = Engine::GetTextureManager().GetRenderer2D();
+	renderer_2d->BeginScene(CS200::build_ndc_matrix(Engine::GetWindow().GetSize()));
 
 	auto& text_manager = Engine::GetTextManager();
 
@@ -209,7 +209,7 @@ void MainMenu::Draw()
 		// );
 	}
 
-	renderer_2d.EndScene();
+	renderer_2d->EndScene();
 }
 
 gsl::czstring MainMenu::GetName() const
