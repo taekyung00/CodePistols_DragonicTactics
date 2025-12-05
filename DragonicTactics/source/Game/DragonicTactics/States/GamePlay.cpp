@@ -13,6 +13,7 @@ Created:    November 5, 2025
 #include "./CS200/NDC.h"
 #include "GamePlay.h"
 #include "pch.h"
+#include "Engine/Timer.h"
 
 #include "Game/MainMenu.h"
 
@@ -30,6 +31,7 @@ Created:    November 5, 2025
 #include "Game/DragonicTactics/StateComponents/GridSystem.h"
 #include "Game/DragonicTactics/StateComponents/SpellSystem.h"
 #include "Game/DragonicTactics/StateComponents/TurnManager.h"
+#include "Game/DragonicTactics/Factories/CharacterFactory.h"
 
 #include "../Debugger/DebugManager.h"
 
@@ -57,6 +59,7 @@ void GamePlay::Load()
   AddGSComponent(new DebugManager());
   AddGSComponent(new CharacterFactory());
   AddGSComponent(new DataRegistry());
+  AddGSComponent(new util::Timer());
 
   GetGSComponent<EventBus>()->Clear();
   GetGSComponent<DiceManager>()->SetSeed(100);
@@ -170,7 +173,7 @@ void GamePlay::Update(double dt)
   if (current != nullptr)
   {
 	m_input_handler->Update(dt, current, grid, combatSystem);
-	m_orchestrator->Update(dt, turnMgr, aiSystem, goMgr);
+	m_orchestrator->Update(dt, turnMgr, aiSystem);
 	m_ui_manager->Update(dt);
   }
 

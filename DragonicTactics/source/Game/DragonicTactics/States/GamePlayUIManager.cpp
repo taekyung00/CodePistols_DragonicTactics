@@ -43,7 +43,7 @@ void GamePlayUIManager::ShowDamageText(int damage, Math::vec2 position, Math::ve
         std::to_string(damage),
         position,
         size,
-        1.0  
+        0.5  
     };
     m_damage_texts.push_back(text);
 }

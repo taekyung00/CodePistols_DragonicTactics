@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 
 #include "DebugVisualizer.h"
 #include "DebugManager.h"
@@ -31,15 +31,10 @@ void DebugVisualizer::Init()
     });
     
     // Subscribe to movement events
-    event_bus->Subscribe<CharacterMovedEvent>([this](const CharacterMovedEvent& e) {
-        OnCharacterMoved(e);
+    event_bus->Subscribe<AIDecisionEvent>([this](const AIDecisionEvent& e) {
+        OnAIDecision(e);
     });
-    
-    // Subscribe to spell events
-    event_bus->Subscribe<SpellCastEvent>([this](const SpellCastEvent& e) {
-        OnSpellCast(e);
-    });
-    
+
     // Subscribe to turn events
     event_bus->Subscribe<TurnStartedEvent>([this](const TurnStartedEvent& e) {
         OnTurnStarted(e);
@@ -176,10 +171,6 @@ void DebugVisualizer::DrawImGuiDebugPanel(const GridSystem* grid)
     }
     ImGui::End();
 }
-
-// DrawDamageNumbers removed - damage info shown in ImGui panel only
-
-// DrawMovementPaths removed - movement info shown in ImGui panel only
 
 // DrawCharacterStatusBars removed - HP bars should be part of game UI, not debug
 // All debug info now shown in ImGui panel only
@@ -350,7 +341,7 @@ void DebugVisualizer::OnCharacterDamaged(const CharacterDamagedEvent& event)
     dmg.attacker = event.attacker;
     dmg.damage = event.damageAmount;
     dmg.position = event.target->GetGridPosition()->Get();
-    dmg.lifetime = 2.0; // Show for 2 seconds
+    dmg.lifetime = 5.0; // Show for 2 seconds
     
     recent_damage_.push_back(dmg);
     
@@ -371,27 +362,6 @@ void DebugVisualizer::OnCharacterDamaged(const CharacterDamagedEvent& event)
     }
 }
 
-void DebugVisualizer::OnCharacterMoved(const CharacterMovedEvent& event)
-{
-    if (event.character == nullptr) return;
-    
-    MovementInfo move;
-    move.character = event.character;
-    move.from = event.fromGrid;
-    move.to = event.toGrid;
-    move.timestamp = game_time_;
-    
-    recent_moves_.push_back(move);
-    
-    auto* debug_mgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
-    if (debug_mgr && debug_mgr->IsEventTracerEnabled()) {
-        std::string details = event.character->TypeName() + " moved from (" +
-            std::to_string(event.fromGrid.x) + "," + std::to_string(event.fromGrid.y) + ") to (" +
-            std::to_string(event.toGrid.x) + "," + std::to_string(event.toGrid.y) + ")";
-        Engine::GetLogger().LogDebug("[EVENT] " + details);
-    }
-}
-
 void DebugVisualizer::OnCharacterDeath(const CharacterDeathEvent& event)
 {
     if (event.character == nullptr) return;
@@ -401,25 +371,6 @@ void DebugVisualizer::OnCharacterDeath(const CharacterDeathEvent& event)
     
     EventLogEntry log;
     log.event_type = "Death";
-    log.details = details;
-    log.timestamp = game_time_;
-    event_log_.push_back(log);
-    
-    auto* debug_mgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
-    if (debug_mgr && debug_mgr->IsEventTracerEnabled()) {
-        Engine::GetLogger().LogDebug("[EVENT] " + details);
-    }
-}
-
-void DebugVisualizer::OnSpellCast(const SpellCastEvent& event)
-{
-    if (event.caster == nullptr) return;
-    
-    std::string details = event.caster->TypeName() + " cast " + event.spellName +
-                         " (Level " + std::to_string(event.spellLevel) + ")";
-    
-    EventLogEntry log;
-    log.event_type = "Spell";
     log.details = details;
     log.timestamp = game_time_;
     event_log_.push_back(log);
@@ -447,5 +398,89 @@ void DebugVisualizer::OnTurnStarted(const TurnStartedEvent& event)
     auto* debug_mgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
     if (debug_mgr && debug_mgr->IsEventTracerEnabled()) {
         Engine::GetLogger().LogDebug("[EVENT] " + details);
+    }
+}
+
+void DebugVisualizer::OnAIDecision(const AIDecisionEvent& event)
+{
+    AIDecisionLog log;
+    log.timestamp = game_time_;
+    log.actorName = event.actor ? event.actor->TypeName() : "Unknown";
+    log.actionType = GetDecisionTypeString(event.decision_type);
+    log.reasoning = event.decision_reasoning;
+    
+    // 타겟 정보 저장
+    if (event.decision_type == AIDecisionType::Attack || event.decision_type == AIDecisionType::UseAbility) {
+        log.targetName = event.decision_target ? event.decision_target->TypeName() : "None";
+        log.destination = { -1, -1 };
+    } 
+    else if (event.decision_type == AIDecisionType::Move) {
+        // Move 타입은 destination 정보가 필요하지만, 현재 이벤트 구조체에는 없을 수 있음.
+        // (필요하다면 AIDecisionEvent 구조체에 destination 필드 추가 권장)
+        log.targetName = "-";
+        // log.destination = event.destination; // 구조체에 추가 후 사용
+    }
+    else {
+        log.targetName = "-";
+    }
+
+    ai_decision_history_.push_back(log);
+    
+    std::string summary = "[AI] " + log.actorName + " decided to " + log.actionType;
+    EventLogEntry entry { "AI", summary, game_time_ };
+    event_log_.push_back(entry);
+}
+
+void DebugVisualizer::DrawImGuiAIDecisions()
+{
+    if (ImGui::Button("Clear Log")) {
+        ai_decision_history_.clear();
+    }
+    
+    // 테이블 컬럼 설정
+    if (ImGui::BeginTable("AITable", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable)) {
+        ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_WidthFixed, 60.0f);
+        ImGui::TableSetupColumn("Actor", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+        ImGui::TableSetupColumn("Decision", ImGuiTableColumnFlags_WidthFixed, 100.0f);
+        ImGui::TableSetupColumn("Reasoning (Why?)", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableHeadersRow();
+
+        // 최신 로그가 위에 오도록 역순 순회
+        for (auto it = ai_decision_history_.rbegin(); it != ai_decision_history_.rend(); ++it) {
+            ImGui::TableNextRow();
+            
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%.1fs", it->timestamp);
+            
+            ImGui::TableSetColumnIndex(1);
+            ImGui::TextColored(ImVec4(0.6f, 0.8f, 1.0f, 1.0f), "%s", it->actorName.c_str()); // 파란색
+            
+            ImGui::TableSetColumnIndex(2);
+            // 행동 타입에 따라 색상 다르게
+            ImVec4 typeColor = ImVec4(1, 1, 1, 1);
+            if (it->actionType == "Attack") typeColor = ImVec4(1.0f, 0.4f, 0.4f, 1.0f); // 빨강
+            else if (it->actionType == "Move") typeColor = ImVec4(1.0f, 1.0f, 0.4f, 1.0f); // 노랑
+            else if (it->actionType == "Heal") typeColor = ImVec4(0.4f, 1.0f, 0.4f, 1.0f); // 초록
+            
+            ImGui::TextColored(typeColor, "%s", it->actionType.c_str());
+            if (it->targetName != "-" && it->targetName != "None") {
+                ImGui::SameLine();
+                ImGui::TextDisabled("-> %s", it->targetName.c_str());
+            }
+            
+            ImGui::TableSetColumnIndex(3);
+            ImGui::TextWrapped("%s", it->reasoning.c_str());
+        }
+        ImGui::EndTable();
+    }
+}
+
+std::string DebugVisualizer::GetDecisionTypeString(AIDecisionType type) {
+    switch (type) {
+        case AIDecisionType::Move: return "Move";
+        case AIDecisionType::Attack: return "Attack";
+        case AIDecisionType::UseAbility: return "Ability";
+        case AIDecisionType::EndTurn: return "EndTurn";
+        default: return "None";
     }
 }
