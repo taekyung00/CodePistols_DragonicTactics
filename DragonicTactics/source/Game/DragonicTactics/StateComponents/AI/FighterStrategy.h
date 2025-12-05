@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file FighterStrategy.h
  * @author Sangyun Lee
  * @brief 파이터 전용 AI 전략 (드래곤 추적 및 근접 공격)
