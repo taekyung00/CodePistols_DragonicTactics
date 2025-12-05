@@ -8,39 +8,48 @@ Author:     Seungju Song
 Created:    November 24, 2025
 */
 #pragma once
-#include <memory>
 #include "Engine/Vec2.h"
+#include <memory>
 
 class Character;
 class Dragon;
 class GridSystem;
 class CombatSystem;
 
-class PlayerInputHandler {
-public:
-    enum class ActionState {
-        None,
-        SelectingMove,
-        Moving,
-        SelectingAction,
-        TargetingForAttack,
-        TargetingForSpell
-    };
+class PlayerInputHandler
+{
+  public:
+  enum class ActionState
+  {
+	None,
+	SelectingMove,
+	Moving,
+	SelectingAction,
+	TargetingForAttack,
+	TargetingForSpell
+  };
 
-    PlayerInputHandler();
-    ~PlayerInputHandler() = default;
+  PlayerInputHandler();
+  ~PlayerInputHandler() = default;
 
-    void Update(double dt, Character* current_character, GridSystem* grid, CombatSystem* combat_system);
-    
-    void CancelCurrentAction();
-    ActionState GetCurrentState() const { return m_state; }
+  void Update(double dt, Character* current_character, GridSystem* grid, CombatSystem* combat_system);
 
-    void SetState(ActionState new_state) { m_state = new_state; }
+  void CancelCurrentAction();
 
-private:
-    ActionState m_state = ActionState::None;
+  ActionState GetCurrentState() const
+  {
+	return m_state;
+  }
 
-    void HandleDragonInput(double dt, Dragon* dragon, GridSystem* grid, CombatSystem* combat_system);
-    void HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, GridSystem* grid, CombatSystem* combat_system);
-    void HandleRightClick(Dragon* dragon);
+  void SetState(ActionState new_state)
+  {
+	m_state = new_state;
+  }
+
+  private:
+  ActionState m_state = ActionState::None;
+
+  void HandleDragonInput(double dt, Dragon* dragon, GridSystem* grid, CombatSystem* combat_system);
+  void HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, GridSystem* grid, CombatSystem* combat_system);
+  void HandleRightClick(Dragon* dragon);
 };

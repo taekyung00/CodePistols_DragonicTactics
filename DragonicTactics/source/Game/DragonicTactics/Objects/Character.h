@@ -10,15 +10,15 @@ Updated:    Oct 09, 2025
 */
 
 #pragma once
-#include <map>
-#include <vector>
 #include "Engine/GameObject.h"
 #include "Engine/GameObjectManager.h"
-#include "Engine/Matrix.h"
 #include "Engine/Input.h"
-#include "Game/DragonicTactics/Types/GameTypes.h"
-#include "Game/DragonicTactics/Types/CharacterTypes.h"
+#include "Engine/Matrix.h"
 #include "Game/DragonicTactics/Objects/Actions/Action.h"
+#include "Game/DragonicTactics/Types/CharacterTypes.h"
+#include "Game/DragonicTactics/Types/GameTypes.h"
+#include <map>
+#include <vector>
 
 class GridSystem;
 class GridPosition;
@@ -33,74 +33,84 @@ class Action;
 class StatsComponent;
 class MovementComponent;
 
-class Character : public CS230::GameObject {
-public:
-    virtual ~Character() = default;
+class Character : public CS230::GameObject
+{
+  public:
+  virtual ~Character() = default;
 
-    void Update(double dt) override;
-    void Draw(Math::TransformationMatrix camera_matrix) override;
-    GameObjectTypes Type() override { return GameObjectTypes::Character; }
-    std::string TypeName() override = 0;
+  void Update(double dt) override;
+  void Draw(Math::TransformationMatrix camera_matrix) override;
 
-    virtual void OnTurnStart() = 0;
-    virtual void OnTurnEnd() = 0;
+  GameObjectTypes Type() override
+  {
+	return GameObjectTypes::Character;
+  }
 
-    // virtual void PerformAttack(Character* target);
-    virtual void PerformAction(Action* action, Character* target, Math::ivec2 tile_position);
-    virtual void TakeDamage(int damage, Character* attacker);
-    virtual void ReceiveHeal(int amount);
+  std::string TypeName() override = 0;
 
-    void SetPath(std::vector<Math::ivec2> path);
-    void SetGridSystem(GridSystem* grid);
+  virtual void OnTurnStart();
+  virtual void OnTurnEnd();
 
-    CharacterTypes GetCharacterType() const { return m_character_type; }
-    bool IsAlive();
-    const CharacterStats& GetStats();
-    int GetMovementRange();
-    int GetActionPoints();
-    bool HasSpellSlot(int level);
-    void RefreshActionPoints();
+  // virtual void PerformAttack(Character* target);
+  virtual void PerformAction(Action* action, Character* target, Math::ivec2 tile_position);
+  virtual void TakeDamage(int damage, Character* attacker);
+  virtual void ReceiveHeal(int amount);
 
-    GridPosition* GetGridPosition() ;
-    StatsComponent* GetStatsComponent() ;
-    ActionPoints* GetActionPointsComponent() ;
-    SpellSlots* GetSpellSlots() ;
-    void SetActionPoints(int new_points);
-    //StatusEffects* GetStatusEffects() const;
-    //GridFootprint* GetGridFootprint() const;
-    int GetSpellSlotCount(int level);
-    void SetSpellSlots(std::map<int, int> spellSlot);
-    void ConsumeSpell(int level);
+  void SetPath(std::vector<Math::ivec2> path);
+  void SetGridSystem(GridSystem* grid);
 
-    void SetGridPosition(Math::ivec2 new_coordinates);
-    int GetHP();
-    int GetMaxHP();
-    int GetAttackRange();
-    void SetAttackRange(int new_range);
-    void SetHP(int HP);
-    bool HasSpell(std::string spell_name);
+  CharacterTypes GetCharacterType() const
+  {
+	return m_character_type;
+  }
 
-protected:
-    Character(CharacterTypes charType, Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level);
+  bool					IsAlive();
+  const CharacterStats& GetStats();
+  int					GetMovementRange();
+  int					GetActionPoints();
+  bool					HasSpellSlot(int level);
+  void					RefreshActionPoints();
+
+  GridPosition*	  GetGridPosition();
+  StatsComponent* GetStatsComponent();
+  ActionPoints*	  GetActionPointsComponent();
+  SpellSlots*	  GetSpellSlots();
+  void			  SetActionPoints(int new_points);
+  // StatusEffects* GetStatusEffects() const;
+  // GridFootprint* GetGridFootprint() const;
+  int			  GetSpellSlotCount(int level);
+  void			  SetSpellSlots(std::map<int, int> spellSlot);
+  void			  ConsumeSpell(int level);
+
+  void SetGridPosition(Math::ivec2 new_coordinates);
+  int  GetHP();
+  int  GetMaxHP();
+  int  GetAttackRange();
+  void SetAttackRange(int new_range);
+  void SetHP(int HP);
+  bool HasSpell(std::string spell_name);
+
+  protected:
+  Character(CharacterTypes charType, Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level);
 
 
-    void InitializeComponents(Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level);
-    
-    
-    //virtual void                DecideAction()              = 0;
-    CharacterTypes              m_character_type;
-    GameObject*                 m_turn_target               = nullptr;
-    TurnGoal                    m_turn_goal                 = TurnGoal::None;
-    
+  void InitializeComponents(Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level);
 
-    GridSystem*                 m_gridSystem                = nullptr;
-    // void                        UpdateMovement(double dt);
-    // std::vector<Math::ivec2>    m_current_path;
-    // double                      m_moveTimer                 = 0.0;
-    // static constexpr double     MOVE_TIME_PER_TILE          = 0.2;
-   
-    MovementComponent*          m_movement_component        = nullptr;
-    std::vector<Action*> m_action_list;
 
-private:
+  // virtual void                DecideAction()              = 0;
+  CharacterTypes m_character_type;
+  GameObject*	 m_turn_target = nullptr;
+  TurnGoal		 m_turn_goal   = TurnGoal::None;
+
+
+  GridSystem* m_gridSystem = nullptr;
+  // void                        UpdateMovement(double dt);
+  // std::vector<Math::ivec2>    m_current_path;
+  // double                      m_moveTimer                 = 0.0;
+  // static constexpr double     MOVE_TIME_PER_TILE          = 0.2;
+
+  MovementComponent*   m_movement_component = nullptr;
+  std::vector<Action*> m_action_list;
+
+  private:
 };

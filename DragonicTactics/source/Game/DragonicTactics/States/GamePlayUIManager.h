@@ -9,24 +9,26 @@ Created:    November 24, 2025
 */
 
 #pragma once
-#include <vector>
-#include <string>
-#include "Engine/Vec2.h"
 #include "Engine/Matrix.h"
+#include "Engine/Vec2.h"
+#include <string>
+#include <vector>
 
-class GamePlayUIManager {
-public:
-    void ShowDamageText(int damage, Math::vec2 position, Math::vec2 size);
-    void Update(double dt);
-    void Draw(Math::TransformationMatrix camera_matrix);
+class GamePlayUIManager
+{
+  public:
+  void ShowDamageText(int damage, Math::vec2 position, Math::vec2 size);
+  void Update(double dt);
+  void Draw(Math::TransformationMatrix camera_matrix);
 
-private:
-    struct DamageText {
-        std::string text;
-        Math::vec2 position;
-        Math::vec2 size;
-        double lifetime;
-    };
+  private:
+  struct DamageText
+  {
+	std::string text;
+	Math::vec2	position;
+	Math::vec2	size;
+	double		lifetime;
+  };
 
-    std::vector<DamageText> m_damage_texts;
+  std::vector<DamageText> m_damage_texts;
 };

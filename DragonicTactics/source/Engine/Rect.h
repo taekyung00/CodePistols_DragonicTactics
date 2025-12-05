@@ -1,81 +1,83 @@
- /**
-  * \file
-  * \author Rudy Castan
-  * \author Jonathan Holmes
-  * \author Taekyung Ho
-  * \date 2025 Fall
-  * \par CS200 Computer Graphics I
-  * \copyright DigiPen Institute of Technology
-  */
+/**
+ * \file
+ * \author Rudy Castan
+ * \author Jonathan Holmes
+ * \author Taekyung Ho
+ * \date 2025 Fall
+ * \par CS200 Computer Graphics I
+ * \copyright DigiPen Institute of Technology
+ */
 
- #pragma once
- #include "Vec2.h"
- #include <algorithm>
+#pragma once
+#include "Vec2.h"
+#include <algorithm>
 
- namespace Math
- {
-     struct [[nodiscard]] rect
-     {
-         Math::vec2 point_1{ 0.0, 0.0 };
-         Math::vec2 point_2{ 0.0, 0.0 };
-         
-         double Left() const noexcept
-         {
-             return std::min(point_1.x, point_2.x);
-         }
+namespace Math
+{
+  struct [[nodiscard]] rect
+  {
+	Math::vec2 point_1{ 0.0, 0.0 };
+	Math::vec2 point_2{ 0.0, 0.0 };
 
-         double Right() const noexcept
-         {
-             return std::max(point_1.x, point_2.x);
-         }
+	double Left() const noexcept
+	{
+	  return std::min(point_1.x, point_2.x);
+	}
 
-         double Top() const noexcept
-         {
-             return std::max(point_1.y, point_2.y);
-         }
+	double Right() const noexcept
+	{
+	  return std::max(point_1.x, point_2.x);
+	}
 
-         double Bottom() const noexcept
-         {
-             return std::min(point_1.y, point_2.y);
-         }
+	double Top() const noexcept
+	{
+	  return std::max(point_1.y, point_2.y);
+	}
 
-         Math::vec2 Center() const noexcept{
-            return {(Left() + Right()) * 0.5, (Top() + Bottom()) * 0.5};
-         }
-         Math::vec2 Size() const noexcept
-         {
-             return { Right() - Left(), Top() - Bottom() };
-         }
-     };
+	double Bottom() const noexcept
+	{
+	  return std::min(point_1.y, point_2.y);
+	}
 
-     struct [[nodiscard]] irect
-     {
-         Math::ivec2 point_1{ 0, 0 };
-         Math::ivec2 point_2{ 0, 0 };
+	Math::vec2 Center() const noexcept
+	{
+	  return { (Left() + Right()) * 0.5, (Top() + Bottom()) * 0.5 };
+	}
 
-         int Left() const noexcept
-         {
-             return std::min(point_1.x, point_2.x);
-         }
+	Math::vec2 Size() const noexcept
+	{
+	  return { Right() - Left(), Top() - Bottom() };
+	}
+  };
 
-         int Right() const noexcept
-         {
-             return std::max(point_1.x, point_2.x);
-         }
+  struct [[nodiscard]] irect
+  {
+	Math::ivec2 point_1{ 0, 0 };
+	Math::ivec2 point_2{ 0, 0 };
 
-         int Top() const noexcept
-         {
-             return std::max(point_1.y, point_2.y);
-         }
+	int Left() const noexcept
+	{
+	  return std::min(point_1.x, point_2.x);
+	}
 
-         int Bottom() const noexcept
-         {
-             return std::min(point_1.y, point_2.y);
-         }
+	int Right() const noexcept
+	{
+	  return std::max(point_1.x, point_2.x);
+	}
 
-         Math::ivec2 Size() const noexcept
-         {
-             return { Right() - Left(), Top() - Bottom() };
-         }
-     };
- }
+	int Top() const noexcept
+	{
+	  return std::max(point_1.y, point_2.y);
+	}
+
+	int Bottom() const noexcept
+	{
+	  return std::min(point_1.y, point_2.y);
+	}
+
+	Math::ivec2 Size() const noexcept
+	{
+	  return { Right() - Left(), Top() - Bottom() };
+	}
+  };
+}

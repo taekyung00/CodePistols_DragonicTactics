@@ -12,6 +12,6 @@
 namespace assets
 {
 
-    std::filesystem::path get_base_path();
-    std::filesystem::path locate_asset(const std::filesystem::path& asset_path);
+  std::filesystem::path get_base_path();
+  std::filesystem::path locate_asset(const std::filesystem::path& asset_path);
 }

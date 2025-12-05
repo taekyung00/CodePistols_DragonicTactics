@@ -1,77 +1,83 @@
 #include "pch.h"
 
-#include "Fighter.h"
 #include "Engine/Engine.h"
 #include "Engine/GameObjectManager.h"
 #include "Engine/GameStateManager.h"
+#include "Fighter.h"
 #include "Game/DragonicTactics/Objects/Actions/ActionAttack.h"
 #include "Game/DragonicTactics/Objects/Components/ActionPoints.h"
 #include "Game/DragonicTactics/Objects/Components/StatsComponent.h"
 
 Fighter::Fighter(Math::ivec2 start_coordinates)
 	: Character(
-		  CharacterTypes::Fighter, start_coordinates, 2,
-		  {
-			  { 1, 2 },
-				{ 2, 2 }
+		CharacterTypes::Fighter, start_coordinates, 2,
+		{
+		  { 1, 2 },
+			{ 2, 2 }
 })
 {
-	CharacterStats fighter_stats;
-	fighter_stats.max_hp	   = 90;
-	fighter_stats.current_hp   = 90;
-	fighter_stats.speed		   = 3;
-	fighter_stats.base_attack  = 5;
-	fighter_stats.attack_dice  = "2d6";
-	fighter_stats.base_defend  = 0;
-	fighter_stats.defend_dice  = "1d10";
-	fighter_stats.attack_range = 1;
+  CharacterStats fighter_stats;
+  fighter_stats.max_hp		 = 90;
+  fighter_stats.current_hp	 = 90;
+  fighter_stats.speed		 = 3;
+  fighter_stats.base_attack	 = 5;
+  fighter_stats.attack_dice	 = "2d6";
+  fighter_stats.base_defend	 = 0;
+  fighter_stats.defend_dice	 = "1d10";
+  fighter_stats.attack_range = 1;
 
-	*GetStatsComponent() = StatsComponent(fighter_stats);
-	m_action_list.push_back(new ActionAttack());
+  *GetStatsComponent() = StatsComponent(fighter_stats);
+  m_action_list.push_back(new ActionAttack());
 }
 
 void Fighter::OnTurnStart()
 {
-	ActionPoints* ap = GetActionPointsComponent();
-	if (ap != nullptr)
-	{
-		ap->Refresh();
-	}
-	// DecideAction();
+  Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - BEGIN");
 
+  Character::OnTurnStart();
+ // ActionPoints* ap = GetActionPointsComponent();
+ // if (ap != nullptr)
+ // {
+	//ap->Refresh();
+ // }
+  // DecideAction();
+
+  Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - END");
 }
 
 void Fighter::Action()
 {
-	// If AI-controlled, make decisions
-	if (IsAIControlled())
-	{
-		AISystem* ai = Engine::GetGameStateManager().GetGSComponent<AISystem>();
-	
-		AIDecision decision = ai->MakeDecision(this);
-		ai->ExecuteDecision(this, decision);
-	}
+  // If AI-controlled, make decisions
+  if (IsAIControlled())
+  {
+	AISystem* ai = Engine::GetGameStateManager().GetGSComponent<AISystem>();
+
+	AIDecision decision = ai->MakeDecision(this);
+	ai->ExecuteDecision(this, decision);
+  }
 }
 
 bool Fighter::IsAIControlled() const
 {
-	// For Week 4: Fighter is always AI-controlled
-	// Week 5+: Player can control via manual mode
-	return true;
+  // For Week 4: Fighter is always AI-controlled
+  // Week 5+: Player can control via manual mode
+  return true;
 }
 
 void Fighter::OnTurnEnd()
 {
+  Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " called");
+  Character::OnTurnEnd();
 }
 
 void Fighter::Update(double dt)
 {
-	Character::Update(dt);
+  Character::Update(dt);
 }
 
 void Fighter::TakeDamage(int damage, Character* attacker)
 {
-	Character::TakeDamage(damage, attacker);
+  Character::TakeDamage(damage, attacker);
 }
 
 // void Fighter::DecideAction() {
@@ -111,12 +117,12 @@ void Fighter::TakeDamage(int damage, Character* attacker)
 // Ginam
 AbilityResult Fighter::PerformMeleeAttack(Character* target)
 {
-	// using basic melee attack ability
-	return meleeAttack.Use(this, target);
+  // using basic melee attack ability
+  return meleeAttack.Use(this, target);
 }
 
 AbilityResult Fighter::PerformShieldBash(Character* target)
 {
-	// using shield bash ability with knockback
-	return shieldBash.Use(this, target);
+  // using shield bash ability with knockback
+  return shieldBash.Use(this, target);
 }

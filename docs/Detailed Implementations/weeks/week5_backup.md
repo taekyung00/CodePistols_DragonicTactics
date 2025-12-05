@@ -60,48 +60,19 @@ Week 5는 게임의 **핵심 안정화** 및 **플레이어 경험 개선**에 �
 
 **목표**: 매 턴마다 실행되어야 하는 작업들의 명확한 정의 및 함수 일대일 대응
 
-**현재 코드 상황 분석**:
+**기초 지식**:
 
-```cpp
-// 현재 TurnManager::StartNextTurn() (TurnManager.cpp 라인 70-112)
-void TurnManager::StartNextTurn() {
-    Character* currentChar = turnOrder[currentTurnIndex];
-
-    // 문제: TurnManager가 직접 Refresh 호출 (책임 분리 위반!)
-    currentChar->RefreshActionPoints();        // 라인 103
-    StatsComponent* stats = currentChar->GetStatsComponent();
-    if (stats) {
-        stats->RefreshSpeed();                 // 라인 106
-    }
-    PublishTurnStartEvent();                   // 라인 109
-}
-
-// 현재 TurnManager::EndCurrentTurn() (TurnManager.cpp 라인 114-169)
-void TurnManager::EndCurrentTurn() {
-    PublishTurnEndEvent();                     // 라인 123
-    currentTurnIndex = (currentTurnIndex + 1) % turnOrder.size();
-    turnNumber++;
-    if (currentTurnIndex == 0) {
-        roundNumber++;
-    }
-    StartNextTurn();                           // 라인 168
-}
-
-// 핵심 문제점:
-// 1. Character::OnTurnStart() 함수가 존재하지 않음!
-// 2. Character::OnTurnEnd() 함수가 존재하지 않음!
-// 3. TurnManager가 Refresh 로직을 직접 관리 (Character의 책임을 침범)
-// 4. RefreshSpeed()는 StatsComponent에 있음 (MovementComponent 아님!)
-```
+- Week 3에서 TurnManager 구현 완료
+- 현재 문제: 함수 중복 호출, 누락된 작업, 호출 순서 불명확
 
 **파일 수정 목록**:
 
 ```
-DragonicTactics/source/pch.h (크로스 플랫폼 매크로 추가)
+DragonicTactics/source/Game/DragonicTactics/StateComponents/TurnManager.h/cpp
 DragonicTactics/source/Game/DragonicTactics/Objects/Character.h/cpp
 DragonicTactics/source/Game/DragonicTactics/Objects/Dragon.h/cpp
 DragonicTactics/source/Game/DragonicTactics/Objects/Fighter.h/cpp
-DragonicTactics/source/Game/DragonicTactics/StateComponents/TurnManager.cpp
+DragonicTactics/source/Game/DragonicTactics/Test/TestTurnFlow.h/cpp (신규)
 docs/turn-flow-chart.md (신규)
 ```
 
@@ -109,626 +80,603 @@ docs/turn-flow-chart.md (신규)
 
 ### 구현 작업 (턴 플로우 시스템)
 
-#### **Task 0: 크로스 플랫폼 함수 이름 매크로 추가** (Day 1 - 우선 작업)
+#### **Task 1: 턴 플로우 차트 작성** (Day 1-2)
 
-**목표**: GCC, Clang, MSVC, WebAssembly 모두에서 작동하는 함수 이름 매크로 추가
+**목표**: 턴 시스템의 모든 작업을 시각적으로 정리
 
-**문제점**:
+**단계**:
 
-- `__PRETTY_FUNCTION__`은 GCC/Clang 전용 (MSVC에서 컴파일 오류)
-- MSVC는 `__FUNCSIG__` 사용
-- 크로스 플랫폼 호환성 필요
-
-**Step 1: pch.h에 매크로 추가**
-
-`DragonicTactics/source/pch.h` 파일 맨 아래에 다음 추가:
-
-```cpp
-// Cross-platform function name macro
-#if defined(__GNUC__) || defined(__clang__)
-    #define FUNC_NAME __PRETTY_FUNCTION__
-#elif defined(_MSC_VER)
-    #define FUNC_NAME __FUNCSIG__
-#else
-    #define FUNC_NAME __func__
-#endif
-```
-
-**설명**:
-
-- `__GNUC__`: GCC 컴파일러 감지
-- `__clang__`: Clang 컴파일러 감지 (WebAssembly용 Emscripten 포함)
-- `_MSC_VER`: MSVC 컴파일러 감지
-- `__func__`: C99 표준 (fallback, 함수 이름만 제공)
-
-**사용 방법**:
-
-```cpp
-// 기존 코드 (MSVC에서 오류!)
-Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - BEGIN");
-
-// 새 코드 (모든 컴파일러에서 작동)
-Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - BEGIN");
-```
-
-**출력 예시**:
-
-- GCC/Clang: `virtual void Character::OnTurnStart() - BEGIN`
-- MSVC: `void __cdecl Character::OnTurnStart(void) - BEGIN`
-- Fallback: `OnTurnStart - BEGIN`
-
----
-
-#### **Task 1: 실제 턴 플로우 파악 및 문서화** (Day 1)
-
-**목표**: 현재 코드의 실제 동작 방식을 정확히 파악하고 문서화
-
-**Step 1: 현재 호출 체인 분석**
-
-```
-GamePlay::Load()
-  └─> TurnManager::InitializeTurnOrder() (라인 114)
-      └─> RollInitiative() - Speed 기반 정렬 ✅
-  └─> TurnManager::StartCombat() (라인 115)
-      └─> StartNextTurn() (라인 67)
-
-GamePlay::Update()
-  └─> BattleOrchestrator::Update() (BattleOrchestrator.cpp 라인 39)
-      └─> HandleAITurn() (AI 캐릭터만, 라인 79)
-          └─> AISystem::MakeDecision()
-          └─> AISystem::ExecuteDecision()
-          └─> TurnManager::EndCurrentTurn() (라인 99)
-
-TurnManager::StartNextTurn() (라인 70-112)
-  1. currentChar->RefreshActionPoints() (라인 103)
-  2. stats->RefreshSpeed() (라인 106)
-  3. PublishTurnStartEvent() (라인 109)
-
-TurnManager::EndCurrentTurn() (라인 114-169)
-  1. PublishTurnEndEvent() (라인 123)
-  2. currentTurnIndex++ (라인 126)
-  3. if (라운드 종료) roundNumber++ (라인 132)
-  4. StartNextTurn() (라인 168)
-```
-
-**Step 2: 문제점 식별**
-
-1. **OnTurnStart()/OnTurnEnd() 함수 없음**
+1. **턴 시작 시 필수 작업 목록 작성**
    
-   - Character.h/cpp에 virtual void OnTurnStart()가 없음
-   - TurnManager가 직접 Refresh 호출 → 캐릭터별 커스텀 로직 불가능
+   ```
+   1. Character::OnTurnStart() 호출 (캐릭터별 커스텀 로직 + Refresh 로직)
+      - ActionPoints::Refresh() 호출 (로그 포함)
+      - Speed Refresh (MovementComponent::ResetSpeed() 호출, 로그 포함)
+      - MovementComponent - 이동 가능 범위 초기화
+   2. EventBus - TurnStartedEvent 발행
+   ```
 
-2. **RefreshSpeed() 위치**
+2. **턴 진행 중 허용 작업**
    
-   - StatsComponent::RefreshSpeed() 사용 (라인 106)
-   - MovementComponent가 아닌 StatsComponent에 있음
+   ```
+   - 이동 (Speed 소모, AP 아님!)
+   - 공격 (AP 소모)
+   - 스펠 캐스팅 (AP + 스펠 슬롯 소모)
+   - 대기 (턴 종료)
+   ```
 
-3. **중복 가능성**
+3. **턴 종료 시 필수 작업**
    
-   - Character::RefreshActionPoints()가 이미 존재 (Character.cpp 라인 44-47)
-   - TurnManager가 이를 직접 호출 → Character에 OnTurnStart()를 만들면 중복
+   ```
+   1. Character::OnTurnEnd() 호출 (캐릭터별 커스텀 로직)
+   2. ActionPoints - 남은 AP 기록 (디버그용)
+   3. EventBus - TurnEndedEvent 발행
+   4. TurnManager - 다음 캐릭터로 이동
+   ```
 
-**Step 3: 턴 플로우 차트 작성**
+4. **라운드 전환 시 작업**
+   
+   ```
+   1. TurnManager - 라운드 번호 증가
+   2. EventBus - RoundStartedEvent 발행
+   3. BattleManager - 승리 조건 체크 (선택사항)
+   ```
 
-`docs/turn-flow-chart.md` 파일 생성:
+**플로우 차트 (Mermaid 형식)**:
+
+# docs/turn-flow-chart.md
+
+## 턴 플로우 차트
 
 ```mermaid
+%%{init: {
+  'theme': 'base',
+  'themeVariables': { 'fontSize': '13px', 'fontFamily': 'arial' },
+  'flowchart': { 'nodeSpacing': 50, 'rankSpacing': 50, 'padding': 15 }
+}}%%
 flowchart TD
-    A[전투 시작 - GamePlay::Load] --> B[TurnManager::InitializeTurnOrder<br/>Speed 기반 정렬]
-    B --> C[TurnManager::StartCombat]
-    C --> D[TurnManager::StartNextTurn]
+    %% graph 대신 flowchart를 쓰면 렌더링이 개선되어 글자가 덜 잘립니다.
 
-    D --> D1[현재: currentChar->RefreshActionPoints<br/>목표: currentChar->OnTurnStart]
-    D1 --> D2[현재: stats->RefreshSpeed<br/>목표: OnTurnStart 내부로 이동]
-    D2 --> D3[PublishTurnStartEvent]
+    A[전투 시작] --> B[TurnManager::InitializeTurnOrder - Speed 기반 정렬]
+    B --> C[라운드 1 시작]
+    C --> D{턴 시작}
 
-    D3 --> E{플레이어 or AI?}
-    E -->|플레이어<br/>Dragon| F[PlayerInputHandler::Update<br/>플레이어 입력 대기]
-    E -->|AI<br/>Fighter| G[BattleOrchestrator::HandleAITurn<br/>AISystem::MakeDecision]
+    D --> E[Character::OnTurnStart]
+    E --> E1[ActionPoints::Refresh + LOG]
+    E1 --> E2[MovementComponent::ResetSpeed + LOG]
+    E2 --> E3[MovementComponent::ResetMovementRange]
+    E3 --> F[EventBus::Publish TurnStartedEvent]
 
-    F --> H{행동 완료?}
-    G --> I[AISystem::ExecuteDecision<br/>Move/Attack/Spell]
-    I --> H
+    F --> G{플레이어 or AI?}
+    G -->|플레이어| H[플레이어 입력 대기]
+    G -->|AI| I[AISystem::ExecuteAITurn]
 
-    H -->|이동| J[MovementComponent::Move<br/>Speed 소모]
-    H -->|공격| K[CombatSystem::ExecuteAttack<br/>AP 소모]
-    H -->|스펠| L[SpellSystem::CastSpell<br/>AP 소모]
-    H -->|턴 종료| M[TurnManager::EndCurrentTurn]
+    H --> J{행동 선택}
+    I --> J
 
-    J --> H
-    K --> H
-    L --> H
+    J -->|이동| K[MovementComponent::Move - Speed 소모]
+    J -->|공격| L[CombatSystem::ExecuteAttack - AP 소모]
+    J -->|스펠| M[SpellSystem::CastSpell - AP 소모]
+    J -->|대기| N[턴 종료]
 
-    M --> M1[현재: PublishTurnEndEvent<br/>목표: currentChar->OnTurnEnd 추가]
-    M1 --> M2[currentTurnIndex++]
-    M2 --> M3{모든 캐릭터 턴 완료?}
+    K --> O{Speed 또는 AP 남음?}
+    L --> O
+    M --> O
 
-    M3 -->|No| D
-    M3 -->|Yes| N[roundNumber++]
-    N --> O[RollInitiative<br/>RollEachRound 모드시]
-    O --> D
+    O -->|Yes| J
+    O -->|No| N
+
+    N --> P[Character::OnTurnEnd]
+    P --> Q[EventBus::Publish TurnEndedEvent]
+    Q --> R[TurnManager::AdvanceTurn]
+
+    R --> S{모든 캐릭터 턴 완료?}
+    S -->|No| D
+    S -->|Yes| T[라운드 종료]
+
+    T --> U{전투 종료?}
+    U -->|No| C
+    U -->|Yes| V[전투 종료]
 ```
 
 **중요 원칙**:
 
 - 각 박스 = 하나의 함수 호출
 - 함수 중복 호출 금지
-- Character의 책임(Refresh)을 TurnManager가 침범하지 않음
+- 모든 경로에서 필수 작업 누락 없음
 
 ---
 
-#### **Task 2: Character에 OnTurnStart()/OnTurnEnd() 추가** (Day 2-3)
+#### **Task 2: 함수 일대일 대응** (Day 2-3)
 
-**목표**: 캐릭터별 턴 시작/종료 로직을 가상 함수로 캡슐화
+**목표**: 플로우 차트의 각 항목과 실제 함수를 1:1 매핑, 중복 제거
 
-**Step 1: Character.h 수정**
+**현재 문제**:
 
 ```cpp
-// Character.h에 추가 (public 섹션)
+// 문제 1: Character::OnTurnStart()에서 Refresh 로직 누락
+void Character::OnTurnStart() {
+    // ActionPoints와 Speed Refresh가 여기서 이루어져야 함!
+}
+
+// 문제 2: TurnManager에서 중복 호출
+void TurnManager::StartNextTurn() {
+    Character* current = GetCurrentCharacter();
+    current->RefreshActionPoints();  // ← Character::OnTurnStart()와 중복!
+}
+```
+
+**해결 방법**:
+
+**Step 1: Character::OnTurnStart()에 Refresh 로직 포함**
+
+```cpp
+// Character.h
 class Character : public CS230::GameObject {
 public:
-    // ... 기존 코드 ...
+    virtual void OnTurnStart() {
+        // 1. ActionPoints Refresh (로그 포함)
+        auto ap = GetGOComponent<ActionPoints>();
+        ap->Refresh();
+        Engine::GetLogger().LogEvent(TypeName() + " ActionPoints refreshed to " +
+                                      std::to_string(ap->GetCurrentAP()));
 
-    // 턴 관리 함수 (virtual - 파생 클래스에서 override 가능)
-    virtual void OnTurnStart();
-    virtual void OnTurnEnd();
-
-    // ... 기존 코드 ...
-};
-```
-
-**Step 2: Character.cpp 구현**
-
-```cpp
-// Character.cpp에 추가
-void Character::OnTurnStart() {
-    Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - BEGIN");
-
-    // 1. ActionPoints Refresh (기존 함수 재사용)
-    RefreshActionPoints();
-    Engine::GetLogger().LogEvent(TypeName() + " ActionPoints refreshed to " +
-                                  std::to_string(GetActionPoints()));
-
-    // 2. Speed Refresh (StatsComponent에 있음!)
-    StatsComponent* stats = GetStatsComponent();
-    if (stats) {
-        stats->RefreshSpeed();
+        // 2. Speed Refresh (로그 포함)
+        auto movement = GetGOComponent<MovementComponent>();
+        movement->ResetSpeed();
         Engine::GetLogger().LogEvent(TypeName() + " Speed refreshed to " +
-                                      std::to_string(stats->GetSpeed()));
+                                      std::to_string(movement->GetCurrentSpeed()));
+
+        // 3. MovementRange 초기화
+        movement->ResetMovementRange();
+
+        // 4. 캐릭터별 커스텀 로직 (파생 클래스에서 override)
     }
+};
+```
 
-    Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - END");
-}
+```cpp
+// TurnManager.cpp - Character::OnTurnStart()만 호출
+void TurnManager::StartNextTurn() {
+    Character* current = GetCurrentCharacter();
 
-void Character::OnTurnEnd() {
-    Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " called");
-    Engine::GetLogger().LogEvent(TypeName() + " turn ended");
+    // 1. 캐릭터의 턴 시작 로직 실행 (Refresh 포함)
+    current->OnTurnStart();
+
+    // 2. 이벤트 발행
+    TurnStartedEvent event{current, current_turn_, round_number_};
+    EventBus::Instance().Publish(event);
+
+    Engine::GetLogger().LogEvent("Turn started for " + current->TypeName());
 }
 ```
 
-**Step 3: Dragon.h/cpp 수정** (선택사항 - 커스텀 로직 필요시)
+**Step 2: 함수 호출 체크리스트 작성**
 
 ```cpp
-// Dragon.h
-class Dragon : public Character {
+// TurnManager.h - 체크리스트 주석 추가
+class TurnManager : public CS230::Component {
 public:
-    // ... 기존 코드 ...
+    void StartNextTurn();  // 턴 시작 체크리스트:
+                           // [1] Character::OnTurnStart() - AP/Speed Refresh 포함
+                           // [2] Publish TurnStartedEvent
 
-    void OnTurnStart() override;  // Dragon 전용 로직
-    void OnTurnEnd() override;
+    void EndCurrentTurn(); // 턴 종료 체크리스트:
+                           // [1] Character::OnTurnEnd (virtual)
+                           // [2] Publish TurnEndedEvent
+                           // [3] AdvanceTurn
 };
+```
 
-// Dragon.cpp
-void Dragon::OnTurnStart() {
+---
+
+#### **Task 3: 디버그 로깅 시스템** (Day 3-4)
+
+**목표**: `__PRETTY_FUNCTION__` 매크로로 함수 호출 추적
+
+**구현 예시**:
+
+```cpp
+// TurnManager.cpp
+void TurnManager::StartNextTurn() {
     Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - BEGIN");
 
-    // 부모 클래스의 기본 Refresh 먼저 실행
-    Character::OnTurnStart();
+    Character* current = GetCurrentCharacter();
 
-    // Dragon 전용 로직 (예: 드래곤 브레스 쿨다운 감소)
-    // cooldown_breath_--;
+    // 1. Character::OnTurnStart (AP/Speed Refresh 포함)
+    Engine::GetLogger().LogDebug("  [1/2] Character::OnTurnStart");
+    current->OnTurnStart();
+
+    // 2. Event
+    Engine::GetLogger().LogDebug("  [2/2] Publish TurnStartedEvent");
+    TurnStartedEvent event{current, current_turn_, round_number_};
+    EventBus::Instance().Publish(event);
+
+    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - END");
+}
+```
+
+**Character.cpp에도 적용**:
+
+```cpp
+void Character::OnTurnStart() {
+    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - BEGIN");
+
+    // 1. ActionPoints Refresh
+    auto ap = GetGOComponent<ActionPoints>();
+    ap->Refresh();
+    Engine::GetLogger().LogEvent(TypeName() + " ActionPoints refreshed to " +
+                                  std::to_string(ap->GetCurrentAP()));
+
+    // 2. Speed Refresh
+    auto movement = GetGOComponent<MovementComponent>();
+    movement->ResetSpeed();
+    Engine::GetLogger().LogEvent(TypeName() + " Speed refreshed to " +
+                                  std::to_string(movement->GetCurrentSpeed()));
+
+    // 3. MovementRange 초기화
+    movement->ResetMovementRange();
 
     Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - END");
 }
 
-void Dragon::OnTurnEnd() {
-    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " called");
-    Character::OnTurnEnd();
-    // Dragon 전용 턴 종료 로직
+void Dragon::OnTurnStart() {
+    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - BEGIN");
+
+    // 부모 클래스의 기본 Refresh 로직 먼저 호출
+    Character::OnTurnStart();
+
+    // Dragon 특수 로직 (예: 드래곤 브레스 쿨다운 감소)
+    Engine::GetLogger().LogDebug("Dragon special ability logic");
+
+    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - END");
+}
+
+void Fighter::OnTurnStart() {
+    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - BEGIN");
+
+    // 부모 클래스의 기본 Refresh 로직 먼저 호출
+    Character::OnTurnStart();
+
+    // Fighter 특수 로직 (예: 방어 태세 초기화)
+    Engine::GetLogger().LogDebug("Fighter special ability logic");
+
+    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - END");
 }
 ```
 
-**Step 4: Fighter.h/cpp 수정** (선택사항)
+**로그 출력 예시**:
+
+```
+[DEBUG] TurnManager::StartNextTurn - BEGIN
+[DEBUG]   [1/2] Character::OnTurnStart
+[DEBUG] Character::OnTurnStart - BEGIN
+[EVENT] Fighter ActionPoints refreshed to 2
+[EVENT] Fighter Speed refreshed to 30
+[DEBUG] Character::OnTurnStart - END
+[DEBUG] Fighter::OnTurnStart - BEGIN
+[DEBUG] Fighter special ability logic
+[DEBUG] Fighter::OnTurnStart - END
+[DEBUG]   [2/2] Publish TurnStartedEvent
+[DEBUG] TurnManager::StartNextTurn - END
+```
+
+---
+
+#### **Task 4: 테스트 및 검증** (Day 4-5)
+
+**테스트 파일**: `DragonicTactics/source/Game/DragonicTactics/Test/TestTurnFlow.h/cpp`
+
+**테스트 시나리오**:
 
 ```cpp
-// Fighter.h
-class Fighter : public Character {
-public:
-    // ... 기존 코드 ...
+// TestTurnFlow.cpp
+#include "pch.h"
+#include "TestTurnFlow.h"
+#include "../StateComponents/TurnManager.h"
+#include "../Objects/Dragon.h"
+#include "../Objects/Fighter.h"
 
-    void OnTurnStart() override;
-    void OnTurnEnd() override;
-};
+void TestTurnFlow::TestSingleTurn() {
+    // Setup
+    TurnManager* turn_mgr = GetGSComponent<TurnManager>();
+    Dragon* dragon = CreateTestDragon();
 
-// Fighter.cpp
-void Fighter::OnTurnStart() {
-    Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - BEGIN");
+    // 로그 활성화
+    Engine::GetLogger().SetLogLevel(LogLevel::Debug);
 
-    Character::OnTurnStart();
+    // Test
+    turn_mgr->StartNextTurn();
 
-    // Fighter 전용 로직 (예: 방어 태세 초기화)
-    // defensive_stance_ = false;
+    // Verify
+    // 1. ActionPoints가 리프레시되었는가?
+    auto ap = dragon->GetGOComponent<ActionPoints>();
+    assert(ap->GetCurrent() == 2);  // Dragon은 AP 2
 
-    Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - END");
+    // 2. Speed가 리프레시되었는가?
+    auto movement = dragon->GetGOComponent<MovementComponent>();
+    assert(movement->GetCurrentSpeed() == movement->GetMaxSpeed());
+
+    // 3. OnTurnStart가 호출되었는가? (로그 확인)
+    // 4. TurnStartedEvent가 발행되었는가?
+
+    turn_mgr->EndCurrentTurn();
+
+    // Verify
+    // 1. OnTurnEnd가 호출되었는가?
+    // 2. TurnEndedEvent가 발행되었는가?
+    // 3. 다음 캐릭터로 이동했는가?
 }
 
-void Fighter::OnTurnEnd() {
-    Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " called");
-    Character::OnTurnEnd();
+void TestTurnFlow::TestFullRound() {
+    // 전체 라운드 테스트 (Dragon → Fighter)
+    TurnManager* turn_mgr = GetGSComponent<TurnManager>();
+
+    // 턴 1: Dragon
+    turn_mgr->StartNextTurn();
+    turn_mgr->EndCurrentTurn();
+
+    // 턴 2: Fighter
+    turn_mgr->StartNextTurn();
+    turn_mgr->EndCurrentTurn();
+
+    // Verify: 라운드 2로 진행되었는가?
+    assert(turn_mgr->GetRoundNumber() == 2);
+}
+
+void TestTurnFlow::TestEdgeCases() {
+    // 엣지 케이스 테스트
+
+    // 1. 첫 턴 (라운드 1, 턴 1)
+    // 2. 마지막 턴 (모든 캐릭터 턴 완료 후)
+    // 3. 캐릭터 사망 시 (턴 스킵)
+}
+```
+
+**GamePlay.cpp에서 테스트 단축키 추가**:
+
+```cpp
+void GamePlay::Update(double dt) {
+    auto& input = Engine::GetInput();
+
+    if (input.IsKeyPressed(InputKey::F9)) {
+        // F9: 턴 플로우 테스트 실행
+        Engine::GetLogger().LogEvent("=== Turn Flow Test START ===");
+        TestTurnFlow::TestSingleTurn();
+        TestTurnFlow::TestFullRound();
+        TestTurnFlow::TestEdgeCases();
+        Engine::GetLogger().LogEvent("=== Turn Flow Test END ===");
+    }
+
+    // ...
 }
 ```
 
 ---
 
-#### **Task 3: TurnManager 수정** (Day 3-4)
+### 구현 예시 (턴 플로우 시스템)
 
-**목표**: TurnManager가 OnTurnStart()/OnTurnEnd()를 호출하도록 수정
-
-**Step 1: TurnManager::StartNextTurn() 수정**
+**파일**: `TurnManager.cpp` (개선된 버전)
 
 ```cpp
-// TurnManager.cpp의 StartNextTurn() 수정 (라인 70-112)
-void TurnManager::StartNextTurn()
-{
-    if (!combatActive)
-    {
-        Engine::GetLogger().LogError("TurnManager: Combat not active");
-        return;
-    }
+#include "pch.h"
+#include "TurnManager.h"
+#include "../Objects/Character.h"
+#include "EventBus.h"
 
-    if (turnOrder.empty())
-    {
-        Engine::GetLogger().LogError("TurnManager: No characters in turn order");
-        return;
-    }
-
-    // Get current character
-    Character* currentChar = turnOrder[currentTurnIndex];
-
-    // Skip dead characters
-    while (!currentChar->IsAlive())
-    {
-        currentTurnIndex = (currentTurnIndex + 1) % turnOrder.size();
-        currentChar = turnOrder[currentTurnIndex];
-
-        if (currentTurnIndex == 0)
-        {
-            Engine::GetLogger().LogEvent("TurnManager: All characters dead, ending combat");
-            EndCombat();
-            return;
-        }
-    }
-
-    // ===== 수정 부분 시작 =====
-    // 기존 코드 (삭제):
-    // currentChar->RefreshActionPoints();
-    // StatsComponent* stats = currentChar->GetStatsComponent();
-    // if (stats) {
-    //     stats->RefreshSpeed();
-    // }
-
-    // 새 코드 (추가):
-    Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - Calling OnTurnStart");
-    currentChar->OnTurnStart();  // ✅ 모든 Refresh 로직 포함
-    // ===== 수정 부분 종료 =====
-
-    // Publish turn start event (기존 유지)
-    PublishTurnStartEvent();
-
-    Engine::GetLogger().LogEvent("TurnManager: Turn " + std::to_string(turnNumber) + " - " + currentChar->TypeName() + "'s turn");
-}
-```
-
-**Step 2: TurnManager::EndCurrentTurn() 수정**
-
-```cpp
-// TurnManager.cpp의 EndCurrentTurn() 수정 (라인 114-169)
-void TurnManager::EndCurrentTurn()
-{
-    if (!combatActive)
-    {
-        Engine::GetLogger().LogError("TurnManager: Combat not active");
-        return;
-    }
-
-    // ===== 추가 부분 =====
-    Character* currentChar = turnOrder[currentTurnIndex];
-
-    // OnTurnEnd 호출
-    Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - Calling OnTurnEnd");
-    currentChar->OnTurnEnd();  // ✅ 새로 추가
-    // ===== 추가 부분 종료 =====
-
-    // Publish turn end event (기존 유지)
-    PublishTurnEndEvent();
-
-    // Advance to next character (기존 유지)
-    currentTurnIndex = (currentTurnIndex + 1) % turnOrder.size();
-    turnNumber++;
-
-    // Check if we completed a round (기존 유지)
-    if (currentTurnIndex == 0)
-    {
-        roundNumber++;
-        Engine::GetLogger().LogEvent("TurnManager: Round " + std::to_string(roundNumber) + " started");
-
-        // Re-roll initiative if variant mode enabled (기존 유지)
-        if (initiativeMode == InitiativeMode::RollEachRound)
-        {
-            // ... 기존 re-roll 로직 ...
-        }
-    }
-
-    // Start next turn (기존 유지)
-    StartNextTurn();
-}
-```
-
-**Step 3: 디버그 로깅 강화** (선택사항)
-
-```cpp
-// TurnManager.cpp 전체에 __PRETTY_FUNCTION__ 로깅 추가
 void TurnManager::StartNextTurn() {
     Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - BEGIN");
 
-    // ... 기존 로직 ...
-    currentChar->OnTurnStart();
-    PublishTurnStartEvent();
+    if (current_turn_index_ >= turn_order_.size()) {
+        StartNewRound();
+        return;
+    }
 
+    Character* current = turn_order_[current_turn_index_];
+
+    // 체크리스트 [1/2]: 캐릭터 OnTurnStart (AP/Speed Refresh 포함)
+    Engine::GetLogger().LogDebug("  [1/2] Character::OnTurnStart");
+    current->OnTurnStart();
+
+    // 체크리스트 [2/2]: 이벤트 발행
+    Engine::GetLogger().LogDebug("  [2/2] Publish TurnStartedEvent");
+    TurnStartedEvent event{
+        current,
+        static_cast<int>(current_turn_index_),
+        round_number_
+    };
+    EventBus::Instance().Publish(event);
+
+    is_turn_active_ = true;
+
+    Engine::GetLogger().LogEvent("Turn started: " + current->TypeName() +
+                                  " (Round " + std::to_string(round_number_) +
+                                  ", Turn " + std::to_string(current_turn_index_ + 1) + ")");
     Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - END");
 }
 
 void TurnManager::EndCurrentTurn() {
     Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - BEGIN");
 
-    // ... 기존 로직 ...
-    currentChar->OnTurnEnd();
-    PublishTurnEndEvent();
-
-    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - END");
-}
-```
-
----
-
-#### **Task 4: GamePlay.cpp에서 콘솔 로그로 검증** (Day 4-5)
-
-**목표**: 별도 테스트 파일 없이 GamePlay 실행으로 턴 플로우 검증
-
-**Step 1: 게임 실행 및 로그 확인**
-
-```bash
-# 빌드 및 실행
-cd DragonicTactics
-cmake --build --preset windows-debug
-build/windows-debug/dragonic_tactics.exe
-```
-
-**Step 2: 예상 콘솔 출력**
-
-```
-[EVENT] TurnManager: Turn order initialized with 2 characters
-[EVENT] TurnManager: Combat started
-[DEBUG] TurnManager::StartNextTurn - BEGIN
-[DEBUG] TurnManager::StartNextTurn - Calling OnTurnStart
-[DEBUG] Character::OnTurnStart - BEGIN
-[EVENT] Fighter ActionPoints refreshed to 2
-[EVENT] Fighter Speed refreshed to 30
-[DEBUG] Character::OnTurnStart - END
-[DEBUG] Fighter::OnTurnStart - BEGIN
-[DEBUG] Fighter::OnTurnStart - END
-[EVENT] TurnManager: Turn 1 - Fighter's turn
-
-... (전투 진행) ...
-
-[DEBUG] TurnManager::EndCurrentTurn - BEGIN
-[DEBUG] TurnManager::EndCurrentTurn - Calling OnTurnEnd
-[DEBUG] Character::OnTurnEnd called
-[EVENT] Fighter turn ended
-[DEBUG] Fighter::OnTurnEnd called
-[DEBUG] TurnManager::EndCurrentTurn - END
-[DEBUG] TurnManager::StartNextTurn - BEGIN
-[DEBUG] TurnManager::StartNextTurn - Calling OnTurnStart
-[DEBUG] Character::OnTurnStart - BEGIN
-[EVENT] Dragon ActionPoints refreshed to 2
-[EVENT] Dragon Speed refreshed to 40
-[DEBUG] Character::OnTurnStart - END
-[DEBUG] Dragon::OnTurnStart - BEGIN
-[DEBUG] Dragon::OnTurnStart - END
-[EVENT] TurnManager: Turn 2 - Dragon's turn
-```
-
-**Step 3: 검증 체크리스트**
-
-콘솔 로그에서 다음 항목 확인:
-
-- [ ] `Character::OnTurnStart` 로그가 매 턴마다 출력되는가?
-- [ ] `ActionPoints refreshed` 로그가 출력되는가?
-- [ ] `Speed refreshed` 로그가 출력되는가?
-- [ ] `Character::OnTurnEnd` 로그가 매 턴 종료 시 출력되는가?
-- [ ] Dragon과 Fighter의 `OnTurnStart`/`OnTurnEnd`가 각각 호출되는가?
-- [ ] 함수 호출 순서가 올바른가? (OnTurnStart → RefreshAP → RefreshSpeed)
-- [ ] 함수가 중복 호출되지 않는가? (한 턴에 OnTurnStart 1번만)
-
-**Step 4: 문제 발생 시 디버깅**
-
-```cpp
-// GamePlay.cpp의 Update()에서 상세 로그 활성화
-void GamePlay::Update(double dt) {
-    // ... 기존 코드 ...
-
-    // F9 키로 상세 디버그 로그 토글
-    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::F9)) {
-        static bool debug_mode = false;
-        debug_mode = !debug_mode;
-
-        if (debug_mode) {
-            Engine::GetLogger().SetLogLevel(LogLevel::Debug);
-            Engine::GetLogger().LogEvent("=== DEBUG MODE ON ===");
-        } else {
-            Engine::GetLogger().SetLogLevel(LogLevel::Event);
-            Engine::GetLogger().LogEvent("=== DEBUG MODE OFF ===");
-        }
-    }
-
-    // ... 기존 코드 ...
-}
-```
-
-**Step 5: 함수 호출 카운트 검증** (선택사항)
-
-```cpp
-// Character.cpp에 임시 카운터 추가 (디버깅용)
-static int s_on_turn_start_count = 0;
-static int s_on_turn_end_count = 0;
-
-void Character::OnTurnStart() {
-    s_on_turn_start_count++;
-    Engine::GetLogger().LogDebug("OnTurnStart call count: " + std::to_string(s_on_turn_start_count));
-
-    // ... 기존 로직 ...
-}
-
-void Character::OnTurnEnd() {
-    s_on_turn_end_count++;
-    Engine::GetLogger().LogDebug("OnTurnEnd call count: " + std::to_string(s_on_turn_end_count));
-
-    // ... 기존 로직 ...
-}
-```
-
-**Step 6: ActionPoints/Speed 값 검증**
-
-콘솔에서 다음 값들이 예상대로 출력되는지 확인:
-
-```
-Fighter ActionPoints refreshed to 2   ← Fighter의 max AP
-Fighter Speed refreshed to 30         ← Fighter의 max Speed
-Dragon ActionPoints refreshed to 2    ← Dragon의 max AP
-Dragon Speed refreshed to 40          ← Dragon의 max Speed
-```
-
-만약 값이 0이거나 이상하다면:
-
-1. CharacterFactory에서 초기 스탯 설정 확인
-2. DataRegistry JSON 파일 확인 (`Assets/Data/characters.json`)
-3. StatsComponent::RefreshSpeed() 구현 확인
-
----
-
-### 구현 예시 전체 코드
-
-**파일 1: Character.h**
-
-```cpp
-// Character.h
-class Character : public CS230::GameObject {
-public:
-    Character(CharacterTypes charType, Math::ivec2 start_coordinates,
-              int max_action_points, const std::map<int, int>& max_slots_per_level);
-
-    // 기존 함수들...
-    void RefreshActionPoints();
-
-    // ✅ 새로 추가
-    virtual void OnTurnStart();
-    virtual void OnTurnEnd();
-
-    // ... 나머지 코드 ...
-};
-```
-
-**파일 2: Character.cpp**
-
-```cpp
-// Character.cpp
-#include "pch.h"
-#include "Character.h"
-#include "./Engine/Logger.h"
-#include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
-#include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
-#include "./Engine/Engine.h"
-
-// ✅ 새로 추가
-void Character::OnTurnStart() {
-    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - BEGIN");
-
-    // 1. ActionPoints Refresh
-    RefreshActionPoints();  // 기존 함수 재사용 (Character.cpp 라인 44-47)
-    Engine::GetLogger().LogEvent(TypeName() + " ActionPoints refreshed to " +
-                                  std::to_string(GetActionPoints()));
-
-    // 2. Speed Refresh (StatsComponent에 있음!)
-    StatsComponent* stats = GetStatsComponent();
-    if (stats) {
-        stats->RefreshSpeed();
-        Engine::GetLogger().LogEvent(TypeName() + " Speed refreshed to " +
-                                      std::to_string(stats->GetSpeed()));
-    }
-
-    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - END");
-}
-
-void Character::OnTurnEnd() {
-    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " called");
-    Engine::GetLogger().LogEvent(TypeName() + " turn ended");
-}
-```
-
-**파일 3: TurnManager.cpp 수정 부분**
-
-```cpp
-// TurnManager.cpp의 StartNextTurn() 수정
-void TurnManager::StartNextTurn()
-{
-    // ... 기존 코드 (dead character skip 등) ...
-
-    Character* currentChar = turnOrder[currentTurnIndex];
-
-    // ===== 수정: 기존 코드 삭제 =====
-    // currentChar->RefreshActionPoints();
-    // StatsComponent* stats = currentChar->GetStatsComponent();
-    // if (stats) { stats->RefreshSpeed(); }
-
-    // ===== 수정: 새 코드 추가 =====
-    currentChar->OnTurnStart();  // ✅ 모든 Refresh 로직 포함
-
-    // Publish turn start event (기존 유지)
-    PublishTurnStartEvent();
-
-    Engine::GetLogger().LogEvent("TurnManager: Turn " + std::to_string(turnNumber) + " - " + currentChar->TypeName() + "'s turn");
-}
-
-// TurnManager.cpp의 EndCurrentTurn() 수정
-void TurnManager::EndCurrentTurn()
-{
-    if (!combatActive) {
-        Engine::GetLogger().LogError("TurnManager: Combat not active");
+    if (!is_turn_active_) {
+        Engine::GetLogger().LogWarning("EndCurrentTurn called but no turn is active");
         return;
     }
 
-    // ===== 추가: OnTurnEnd 호출 =====
-    Character* currentChar = turnOrder[currentTurnIndex];
-    currentChar->OnTurnEnd();  // ✅ 새로 추가
+    Character* current = turn_order_[current_turn_index_];
 
-    // Publish turn end event (기존 유지)
-    PublishTurnEndEvent();
+    // 체크리스트 [1/2]: 캐릭터별 OnTurnEnd (virtual)
+    Engine::GetLogger().LogDebug("  [1/2] Character::OnTurnEnd");
+    current->OnTurnEnd();
 
-    // Advance to next character (기존 유지)
-    currentTurnIndex = (currentTurnIndex + 1) % turnOrder.size();
-    turnNumber++;
+    // 체크리스트 [2/2]: 이벤트 발행
+    Engine::GetLogger().LogDebug("  [2/2] Publish TurnEndedEvent");
+    TurnEndedEvent event{
+        current,
+        static_cast<int>(current_turn_index_)
+    };
+    EventBus::Instance().Publish(event);
 
-    // ... 나머지 기존 코드 ...
+    is_turn_active_ = false;
+    current_turn_index_++;
+
+    Engine::GetLogger().LogEvent("Turn ended: " + current->TypeName());
+    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - END");
+}
+
+void TurnManager::StartNewRound() {
+    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - BEGIN");
+
+    round_number_++;
+    current_turn_index_ = 0;
+
+    Engine::GetLogger().LogEvent("=== Round " + std::to_string(round_number_) + " START ===");
+
+    RoundStartedEvent event{round_number_};
+    EventBus::Instance().Publish(event);
+
+    // 첫 캐릭터 턴 시작
+    StartNextTurn();
+
+    Engine::GetLogger().LogDebug(std::string(__PRETTY_FUNCTION__) + " - END");
+}
+```
+
+---
+
+### 엄격한 테스트 (턴 플로우 시스템)
+
+**테스트 목표**: 모든 필수 함수가 정확히 한 번씩 호출되는지 확인
+
+**방법 1: 로그 분석**
+
+```bash
+# 게임 실행 후 로그 파일 확인
+grep "PRETTY_FUNCTION" DragonicTactics/log.txt
+
+# 예상 출력:
+# TurnManager::StartNextTurn - BEGIN
+# TurnManager::StartNextTurn - END
+# Fighter::OnTurnStart
+# TurnManager::EndCurrentTurn - BEGIN
+# TurnManager::EndCurrentTurn - END
+```
+
+**방법 2: 이벤트 카운터**
+
+```cpp
+// TestTurnFlow.cpp
+class EventCounter {
+private:
+    int turn_started_count = 0;
+    int turn_ended_count = 0;
+
+public:
+    void Setup() {
+        EventBus::Instance().Subscribe<TurnStartedEvent>(
+            [this](const TurnStartedEvent&) {
+                turn_started_count++;
+            }
+        );
+
+        EventBus::Instance().Subscribe<TurnEndedEvent>(
+            [this](const TurnEndedEvent&) {
+                turn_ended_count++;
+            }
+        );
+    }
+
+    void Verify(int expected_starts, int expected_ends) {
+        assert(turn_started_count == expected_starts);
+        assert(turn_ended_count == expected_ends);
+    }
+};
+
+void TestTurnFlow::TestEventCounts() {
+    EventCounter counter;
+    counter.Setup();
+
+    TurnManager* turn_mgr = GetGSComponent<TurnManager>();
+
+    // 2턴 실행
+    turn_mgr->StartNextTurn();
+    turn_mgr->EndCurrentTurn();
+    turn_mgr->StartNextTurn();
+    turn_mgr->EndCurrentTurn();
+
+    // Verify: 2번의 Start, 2번의 End
+    counter.Verify(2, 2);
+}
+```
+
+**방법 3: ActionPoints 검증**
+
+```cpp
+void TestTurnFlow::TestActionPointsRefresh() {
+    Dragon* dragon = CreateTestDragon();
+    auto ap = dragon->GetGOComponent<ActionPoints>();
+
+    // 초기 상태: AP 2
+    assert(ap->GetCurrent() == 2);
+
+    // AP 소모
+    ap->Spend(2);
+    assert(ap->GetCurrent() == 0);
+
+    // 턴 시작 → AP 리프레시되어야 함
+    TurnManager::Instance().StartNextTurn();
+    assert(ap->GetCurrent() == 2);  // ✅ 리프레시 확인
+}
+```
+
+---
+
+### 사용 예시 (턴 플로우 시스템)
+
+**GamePlay.cpp에서 턴 관리**:
+
+```cpp
+void GamePlay::Update(double dt) {
+    TurnManager* turn_mgr = GetGSComponent<TurnManager>();
+    Character* current = turn_mgr->GetCurrentCharacter();
+
+    if (!current) return;
+
+    // 플레이어 턴 (Dragon)
+    if (current->GetCharacterType() == CharacterTypes::Dragon) {
+        // 플레이어 입력 처리
+        if (player_action_complete) {
+            turn_mgr->EndCurrentTurn();  // ✅ 체크리스트 자동 실행
+        }
+    }
+    // AI 턴 (Fighter)
+    else {
+        AISystem::Instance().ExecuteAITurn(current);
+        if (ai_action_complete) {
+            turn_mgr->EndCurrentTurn();  // ✅ 체크리스트 자동 실행
+        }
+    }
+}
+```
+
+**디버깅 예시**:
+
+```cpp
+// F9 키로 턴 플로우 테스트 실행
+if (Engine::GetInput().IsKeyPressed(InputKey::F9)) {
+    Engine::GetLogger().SetLogLevel(LogLevel::Debug);  // 상세 로그 활성화
+
+    TurnManager::Instance().StartNextTurn();
+    // 로그 확인:
+    // [DEBUG] TurnManager::StartNextTurn - BEGIN
+    // [DEBUG]   [1/5] ApplyStartOfTurnEffects
+    // ...
+    // [DEBUG] TurnManager::StartNextTurn - END
+
+    TurnManager::Instance().EndCurrentTurn();
+    // 로그 확인:
+    // [DEBUG] TurnManager::EndCurrentTurn - BEGIN
+    // ...
 }
 ```
 
@@ -736,18 +684,17 @@ void TurnManager::EndCurrentTurn()
 
 ### 일일 작업 분배 (개발자 A)
 
-| 일차    | 작업                       | 예상 시간 | 산출물                          |
-| ----- | ------------------------ | ----- | ---------------------------- |
-| Day 1 | 실제 코드 분석 및 플로우 차트 작성     | 4h    | turn-flow-chart.md           |
-| Day 1 | 문제점 식별 및 해결 방안 설계        | 4h    | 문서화                          |
-| Day 2 | Character.h/cpp 수정       | 4h    | OnTurnStart/OnTurnEnd 추가     |
-| Day 2 | Dragon/Fighter 수정 (선택사항) | 2h    | 커스텀 로직 추가 (필요시)              |
-| Day 3 | TurnManager.cpp 수정       | 4h    | StartNextTurn/EndCurrentTurn |
-| Day 3 | 디버그 로깅 추가                | 2h    | __PRETTY_FUNCTION__ 로깅       |
-| Day 4 | GamePlay 실행 및 로그 검증      | 4h    | 콘솔 출력 확인                     |
-| Day 4 | 버그 수정 및 최종 검증            | 4h    | 안정화                          |
+| 일차      | 작업           | 예상 시간 | 산출물                |
+| ------- | ------------ | ----- | ------------------ |
+| Day 1   | 턴 플로우 차트 작성  | 4h    | turn-flow-chart.md |
+| Day 1-2 | 필수 작업 목록 정리  | 4h    | 체크리스트 문서           |
+| Day 2   | 중복 함수 제거     | 4h    | TurnManager.cpp 수정 |
+| Day 3   | 함수 일대일 대응 완료 | 4h    | Character.cpp 수정   |
+| Day 3   | 디버그 로깅 추가    | 4h    | 모든 함수에 로깅          |
+| Day 4   | 테스트 코드 작성    | 4h    | TestTurnFlow.cpp   |
+| Day 4-5 | 통합 테스트 및 검증  | 8h    | 테스트 레포트            |
 
-**총 예상 시간**: 28시간 (3.5일)
+**총 예상 시간**: 32시간 (4일)
 
 ---
 

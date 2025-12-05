@@ -13,47 +13,47 @@
 
 namespace CS230
 {
-    class GameState
-    {
-    public:
-        virtual void          Load()            = 0;
-        virtual void          Update(double dt) = 0;
-        virtual void          Unload()          = 0;
-        virtual void          Draw()            = 0;
-        virtual void          DrawImGui()       = 0;
-        virtual gsl::czstring GetName() const   = 0;
-        virtual ~GameState()                    = default;
+  class GameState
+  {
+public:
+	virtual void		  Load()			= 0;
+	virtual void		  Update(double dt) = 0;
+	virtual void		  Unload()			= 0;
+	virtual void		  Draw()			= 0;
+	virtual void		  DrawImGui()		= 0;
+	virtual gsl::czstring GetName() const	= 0;
+	virtual ~GameState()					= default;
 
-        template <typename T>
-        T* GetGSComponent()
-        {
-            return componentmanager.GetComponent<T>();
-        }
+	template <typename T>
+	T* GetGSComponent()
+	{
+	  return componentmanager.GetComponent<T>();
+	}
 
-    protected:
-        void AddGSComponent(Component* component)
-        {
-            componentmanager.AddComponent(component);
-        }
+protected:
+	void AddGSComponent(Component* component)
+	{
+	  componentmanager.AddComponent(component);
+	}
 
-        void UpdateGSComponents(double dt)
-        {
-            componentmanager.UpdateAll(dt);
-        }
+	void UpdateGSComponents(double dt)
+	{
+	  componentmanager.UpdateAll(dt);
+	}
 
-        template <typename T>
-        void RemoveGSComponent()
-        {
-            componentmanager.RemoveComponent<T>();
-        }
+	template <typename T>
+	void RemoveGSComponent()
+	{
+	  componentmanager.RemoveComponent<T>();
+	}
 
-        void ClearGSComponents()
-        {
-            componentmanager.Clear();
-        }
+	void ClearGSComponents()
+	{
+	  componentmanager.Clear();
+	}
 
-    private:
-        ComponentManager componentmanager;
-    };
+private:
+	ComponentManager componentmanager;
+  };
 
 }

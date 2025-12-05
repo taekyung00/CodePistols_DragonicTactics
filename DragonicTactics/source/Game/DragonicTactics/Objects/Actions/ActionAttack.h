@@ -11,15 +11,30 @@ Created:    Oct 15, 2025
 #pragma once
 #include "Action.h"
 
-class ActionAttack : public Action {
-public:
+class ActionAttack : public Action
+{
+  public:
 
-    std::string GetName() const override { return "Basic Attack"; }
+  std::string GetName() const override
+  {
+	return "Basic Attack";
+  }
 
-    int GetActionPointCost() const override { return 1; }
-    int GetSpellSlotCost() const override { return 0; }
-    int GetSpellLevel() const override { return 0; }
+  int GetActionPointCost() const override
+  {
+	return 1;
+  }
 
-    bool CanExecute(Character* performer, CS230::GameState* context) const override;
-    void Execute(Character* performer, Character* target, Math::ivec2 tile_position) override;
+  int GetSpellSlotCost() const override
+  {
+	return 0;
+  }
+
+  int GetSpellLevel() const override
+  {
+	return 0;
+  }
+
+  bool CanExecute(Character* performer, CS230::GameState* context) const override;
+  void Execute(Character* performer, Character* target, Math::ivec2 tile_position) override;
 };

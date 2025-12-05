@@ -8,10 +8,10 @@ Author:     Jonathan Holmes
 Created:    March 8, 2023
 */
 
-#include "pch.h"
 #include "Camera.h"
 #include "Engine.h"
 #include "Matrix.h"
+#include "pch.h"
 
 namespace
 {
@@ -179,9 +179,8 @@ Math::TransformationMatrix CS230::Camera::GetMatrix(size_t camera_index)
   {
 	if (cameras[camera_index].is_position_outdated || cameras[camera_index].is_scale_outdated)
 	{
-	  cameras[camera_index].camera_matrix =
-		Math::TranslationMatrix(cameras[camera_index].position - cameras[camera_index].offset) * Math::ScaleMatrix(cameras[camera_index].scale);
-	  cameras[camera_index].view_matrix = cameras[camera_index].camera_matrix;
+	  cameras[camera_index].camera_matrix = Math::TranslationMatrix(cameras[camera_index].position - cameras[camera_index].offset) * Math::ScaleMatrix(cameras[camera_index].scale);
+	  cameras[camera_index].view_matrix	  = cameras[camera_index].camera_matrix;
 	  std::swap(cameras[camera_index].view_matrix[0][1], cameras[camera_index].view_matrix[1][0]);
 	  cameras[camera_index].view_matrix[0][2] =
 		-(cameras[camera_index].camera_matrix[0][0] * cameras[camera_index].camera_matrix[0][2] + cameras[camera_index].camera_matrix[1][0] * cameras[camera_index].camera_matrix[1][2]);

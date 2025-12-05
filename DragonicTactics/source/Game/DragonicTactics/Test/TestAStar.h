@@ -4,12 +4,12 @@ bool TestPathfindingAroundObstacle();
 bool TestPathfindingNoPath();
 bool TestPathfindingAlreadyAtGoal();
 
-//bool TestGetPathLengthDirect();
-//bool TestGetPathLengthNoPath();
+// bool TestGetPathLengthDirect();
+// bool TestGetPathLengthNoPath();
 //
-//bool TestGetReachableTilesCenterGrid();
-//bool TestGetReachableTilesCornerGrid();
-//bool TestGetReachableTilesWithObstacles();
+// bool TestGetReachableTilesCenterGrid();
+// bool TestGetReachableTilesCornerGrid();
+// bool TestGetReachableTilesWithObstacles();
 
 bool TestPathfindingInvalidStart();
 bool TestPathfindingInvalidGoal();

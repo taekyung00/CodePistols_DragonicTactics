@@ -9,23 +9,25 @@ Created:    March 29, 2025
 */
 
 #pragma once
-#include "../Engine/Engine.h"
-#include "../Engine/Texture.h"
 #include "../Engine/Camera.h"
 #include "../Engine/Component.h"
+#include "../Engine/Engine.h"
+#include "../Engine/Texture.h"
 
-class Background : public CS230::Component{
-public:
-    void Add(const std::filesystem::path& texture_path, double speed);
-    void Unload();
-    void Draw(const CS230::Camera& camera);
-    Math::ivec2 GetSize();
-private:
-    struct ParallaxLayer {
-        std::shared_ptr<CS230::Texture> texture;
-        double speed = 1;
-    };
+class Background : public CS230::Component
+{
+  public:
+  void		  Add(const std::filesystem::path& texture_path, double speed);
+  void		  Unload();
+  void		  Draw(const CS230::Camera& camera);
+  Math::ivec2 GetSize();
 
-    std::vector<ParallaxLayer> backgrounds;
+  private:
+  struct ParallaxLayer
+  {
+	std::shared_ptr<CS230::Texture> texture;
+	double							speed = 1;
+  };
+
+  std::vector<ParallaxLayer> backgrounds;
 };
-

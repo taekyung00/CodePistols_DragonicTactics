@@ -5,33 +5,33 @@
 #include "CS200/IRenderer2D.h"
 #include "CS200/NDC.h"
 
-#include "Game/DragonicTactics/StateComponents/GridSystem.h"
-#include "Game/DragonicTactics/Factories/CharacterFactory.h"
 #include "../StateComponents/DataRegistry.h"
+#include "Game/DragonicTactics/Factories/CharacterFactory.h"
+#include "Game/DragonicTactics/StateComponents/GridSystem.h"
+#include "Game/DragonicTactics/Test/TestAI.h"
 #include "Game/DragonicTactics/Test/TestAStar.h"
-#include "Game/DragonicTactics/Test/TestEventBus.h"
-#include "Game/DragonicTactics/Test/TestSpellSystem.h"
 #include "Game/DragonicTactics/Test/TestCombatSystem.h"
 #include "Game/DragonicTactics/Test/TestDataRegistry.h"
 #include "Game/DragonicTactics/Test/TestDiceManager.h"
+#include "Game/DragonicTactics/Test/TestEventBus.h"
+#include "Game/DragonicTactics/Test/TestMemory.h"
+#include "Game/DragonicTactics/Test/TestNew.h"
+#include "Game/DragonicTactics/Test/TestSpellSystem.h"
 #include "Game/DragonicTactics/Test/TestTurnInit.h"
 #include "Game/DragonicTactics/Test/TestTurnManager.h"
-#include "Game/DragonicTactics/Test/TestAI.h"
-#include "Game/DragonicTactics/Test/TestNew.h"
-#include "Game/DragonicTactics/Test/TestMemory.h"
 #include "Game/MainMenu.h"
 
 
-bool TestAStar	  = false;
-bool TestEventBus = false;
-bool TestSpellSystem = false;
+bool TestAStar		  = false;
+bool TestEventBus	  = false;
+bool TestSpellSystem  = false;
 bool TestDataRegistry = false;
-bool TestDiceManager = false;
+bool TestDiceManager  = false;
 bool TestCombatSystem = false;
-bool TestTrunManager = false;
-bool TestAI = false;
-bool TestNewFile = false;
-bool TestMemory = false;
+bool TestTrunManager  = false;
+bool TestAI			  = false;
+bool TestNewFile	  = false;
+bool TestMemory		  = false;
 
 ConsoleTest::ConsoleTest()
 {
@@ -43,223 +43,225 @@ void ConsoleTest::Load()
 
 void ConsoleTest::Update([[maybe_unused]] double dt)
 {
-	if (Engine::GetInput().KeyJustReleased(CS230::Input::Keys::Escape))
-	{
-		Engine::GetGameStateManager().PopState();
-		Engine::GetGameStateManager().PushState<MainMenu>();
-	}
+  if (Engine::GetInput().KeyJustReleased(CS230::Input::Keys::Escape))
+  {
+	Engine::GetGameStateManager().PopState();
+	Engine::GetGameStateManager().PushState<MainMenu>();
+  }
 
-	if (TestAStar) // astar test
-	{
-		AddGSComponent(new GridSystem());
+  if (TestAStar) // astar test
+  {
+	AddGSComponent(new GridSystem());
 
-		TestPathfindingStraightLine();
-		TestPathfindingAroundObstacle();
-		TestPathfindingNoPath();
-		TestPathfindingAlreadyAtGoal();
+	TestPathfindingStraightLine();
+	TestPathfindingAroundObstacle();
+	TestPathfindingNoPath();
+	TestPathfindingAlreadyAtGoal();
 
 
-		TestPathfindingInvalidStart();
-		TestPathfindingInvalidGoal();
-		TestPathfindingUnwalkableGoal();
+	TestPathfindingInvalidStart();
+	TestPathfindingInvalidGoal();
+	TestPathfindingUnwalkableGoal();
 
-		RemoveGSComponent<GridSystem>();
+	RemoveGSComponent<GridSystem>();
 
-		TestAStar = false;
-	}
+	TestAStar = false;
+  }
 
-	if (TestEventBus) // EventBus test
-	{
-		test_subscribe_publish_singleSubscriber();
-		test_multiple_subscribers_sameEvent();
-		test_multiple_different_events();
-		test_EventData_CompleteTransfer();
-		test_EventData_MultiplePublishes();
+  if (TestEventBus) // EventBus test
+  {
+	test_subscribe_publish_singleSubscriber();
+	test_multiple_subscribers_sameEvent();
+	test_multiple_different_events();
+	test_EventData_CompleteTransfer();
+	test_EventData_MultiplePublishes();
 
-		TestEventBus = false;
-	}
+	TestEventBus = false;
+  }
 
-	if(TestSpellSystem){
-		AddGSComponent(new GridSystem());
+  if (TestSpellSystem)
+  {
+	AddGSComponent(new GridSystem());
 
-		RunSpellSystemTests();
+	RunSpellSystemTests();
 
-		RemoveGSComponent<GridSystem>();
+	RemoveGSComponent<GridSystem>();
 
-		TestSpellSystem = false;
-	}
-	// ===== DataRegistry Tests =====
-	if (TestDataRegistry)
-	{
-		Engine::GetLogger().LogEvent("========== DataRegistry Tests ==========");
+	TestSpellSystem = false;
+  }
+  // ===== DataRegistry Tests =====
+  if (TestDataRegistry)
+  {
+	Engine::GetLogger().LogEvent("========== DataRegistry Tests ==========");
 
-		AddGSComponent(new DataRegistry());
-		// Basic Loading Tests
-		TestDataRegistry_LoadJSON();
-		TestDataRegistry_GetValue();
-		TestDataRegistry_HasKey();
-		
-		// Character Data Tests
-		TestDataRegistry_GetCharacterData();
-		TestDataRegistry_GetArray();
-		TestDataRegistry_DragonStats();
-		TestDataRegistry_FighterStats();
+	AddGSComponent(new DataRegistry());
+	// Basic Loading Tests
+	TestDataRegistry_LoadJSON();
+	TestDataRegistry_GetValue();
+	TestDataRegistry_HasKey();
 
-		// Hot-Reload Tests
-		TestDataRegistry_ReloadAll();
-		TestDataRegistry_FileModificationDetection();
+	// Character Data Tests
+	TestDataRegistry_GetCharacterData();
+	TestDataRegistry_GetArray();
+	TestDataRegistry_DragonStats();
+	TestDataRegistry_FighterStats();
 
-		// Validation Tests
-		TestDataRegistry_ValidateCharacterJSON();
-		TestDataRegistry_InvalidJSONHandling();
+	// Hot-Reload Tests
+	TestDataRegistry_ReloadAll();
+	TestDataRegistry_FileModificationDetection();
 
-		Engine::GetLogger().LogEvent("========== All DataRegistry Tests Complete ==========");
-		TestDataRegistry = false;
-		RemoveGSComponent<DataRegistry>();
-	}
+	// Validation Tests
+	TestDataRegistry_ValidateCharacterJSON();
+	TestDataRegistry_InvalidJSONHandling();
 
-	// ===== DiceManager Tests =====
-	if (TestDiceManager)
-	{
-		Engine::GetLogger().LogEvent("========== DiceManager Tests ==========");
+	Engine::GetLogger().LogEvent("========== All DataRegistry Tests Complete ==========");
+	TestDataRegistry = false;
+	RemoveGSComponent<DataRegistry>();
+  }
 
-		// Basic Dice Rolling Tests
-		TestDiceManager_RollDice();
-		TestDiceManager_RollMultipleDice();
-		TestDiceManager_RollFromString();
+  // ===== DiceManager Tests =====
+  if (TestDiceManager)
+  {
+	Engine::GetLogger().LogEvent("========== DiceManager Tests ==========");
 
-		// Dice String Parsing Tests
-		TestDiceManager_ParseSimpleDice();
-		TestDiceManager_ParseDiceWithModifier();
-		TestDiceManager_ParseInvalidString();
+	// Basic Dice Rolling Tests
+	TestDiceManager_RollDice();
+	TestDiceManager_RollMultipleDice();
+	TestDiceManager_RollFromString();
 
-		// Seed and Determinism Tests
-		TestDiceManager_SetSeed();
-		TestDiceManager_DeterministicRolls();
-		TestDiceManager_DifferentSeeds();
+	// Dice String Parsing Tests
+	TestDiceManager_ParseSimpleDice();
+	TestDiceManager_ParseDiceWithModifier();
+	TestDiceManager_ParseInvalidString();
 
-		// Range Tests
-		TestDiceManager_RollRange();
-		TestDiceManager_MaxRoll();
-		TestDiceManager_MinRoll();
+	// Seed and Determinism Tests
+	TestDiceManager_SetSeed();
+	TestDiceManager_DeterministicRolls();
+	TestDiceManager_DifferentSeeds();
 
-		Engine::GetLogger().LogEvent("========== All DiceManager Tests Complete ==========");
-		TestDiceManager = false;
-	}
+	// Range Tests
+	TestDiceManager_RollRange();
+	TestDiceManager_MaxRoll();
+	TestDiceManager_MinRoll();
 
-	if (TestCombatSystem)
-    {
-        Test_CombatSystem_CalculateDamage();
-        Test_CombatSystem_CalculateDamage_MinRoll();
-        Test_CombatSystem_CalculateDamage_MaxRoll();
-        Test_CombatSystem_ApplyDamage();
-        Test_CombatSystem_ApplyDamage_Negative();
-        Test_CombatSystem_ExecuteAttack_Valid();
-        Test_CombatSystem_ExecuteAttack_OutOfRange();
-        Test_CombatSystem_ExecuteAttack_NotEnoughAP();
-        Test_CombatSystem_IsInRange_Adjacent();
-        Test_CombatSystem_IsInRange_TooFar();
-        Test_CombatSystem_GetDistance();
+	Engine::GetLogger().LogEvent("========== All DiceManager Tests Complete ==========");
+	TestDiceManager = false;
+  }
 
-        // Run all initiative tests
-        //RunTurnManagerInitiativeTests();
+  if (TestCombatSystem)
+  {
+	Test_CombatSystem_CalculateDamage();
+	Test_CombatSystem_CalculateDamage_MinRoll();
+	Test_CombatSystem_CalculateDamage_MaxRoll();
+	Test_CombatSystem_ApplyDamage();
+	Test_CombatSystem_ApplyDamage_Negative();
+	Test_CombatSystem_ExecuteAttack_Valid();
+	Test_CombatSystem_ExecuteAttack_OutOfRange();
+	Test_CombatSystem_ExecuteAttack_NotEnoughAP();
+	Test_CombatSystem_IsInRange_Adjacent();
+	Test_CombatSystem_IsInRange_TooFar();
+	Test_CombatSystem_GetDistance();
 
-		TestCombatSystem = false;
-    }
+	// Run all initiative tests
+	// RunTurnManagerInitiativeTests();
 
-	if(TestTrunManager)
-	{
-		test_turnmanager_all();
-		TestTrunManager = false;
-	}
+	TestCombatSystem = false;
+  }
 
-	if(TestAI) {
-        AddGSComponent(new GridSystem());
-        //AddGSComponent(new AISystem());
-        RunFighterAITests();
-        TestAI = false;
-        RemoveGSComponent<GridSystem>();
-    }
+  if (TestTrunManager)
+  {
+	test_turnmanager_all();
+	TestTrunManager = false;
+  }
 
-	if(TestNewFile)
-	{
-		TestNewFunction();
-		TestNewFile = false;
-	}
+  if (TestAI)
+  {
+	AddGSComponent(new GridSystem());
+	// AddGSComponent(new AISystem());
+	RunFighterAITests();
+	TestAI = false;
+	RemoveGSComponent<GridSystem>();
+  }
 
-	if(TestMemory)
-	{
-		AddGSComponent(new CS230::GameObjectManager());
-		AddGSComponent(new CharacterFactory());
-		AddGSComponent(new DataRegistry());
-		TestOwnershipTransfer();
-		TestUnloadNoLeak();
-		RemoveGSComponent<CS230::GameObjectManager>();
-		RemoveGSComponent<CharacterFactory>();
-		RemoveGSComponent<DataRegistry>();
-		TestMemory = false;
-	}
+  if (TestNewFile)
+  {
+	TestNewFunction();
+	TestNewFile = false;
+  }
+
+  if (TestMemory)
+  {
+	AddGSComponent(new CS230::GameObjectManager());
+	AddGSComponent(new CharacterFactory());
+	AddGSComponent(new DataRegistry());
+	TestOwnershipTransfer();
+	TestUnloadNoLeak();
+	RemoveGSComponent<CS230::GameObjectManager>();
+	RemoveGSComponent<CharacterFactory>();
+	RemoveGSComponent<DataRegistry>();
+	TestMemory = false;
+  }
 }
 
 void ConsoleTest::Draw()
 {
-	Engine::GetWindow().Clear(0x1a1a1aff);
-	auto		  renderer_2d		  = Engine::GetTextureManager().GetRenderer2D();
+  Engine::GetWindow().Clear(0x1a1a1aff);
+  auto renderer_2d = Engine::GetTextureManager().GetRenderer2D();
 
-	renderer_2d->BeginScene(CS200::build_ndc_matrix(Engine::GetWindow().GetSize()));
+  renderer_2d->BeginScene(CS200::build_ndc_matrix(Engine::GetWindow().GetSize()));
 
 
-	renderer_2d->EndScene();
+  renderer_2d->EndScene();
 }
 
 void ConsoleTest::DrawImGui()
 {
-	ImGui::Begin("Tests");
-	if (ImGui::Button("TestAStar"))
-	{
-		TestAStar = true;
-	}
-	if (ImGui::Button("TestEventBus"))
-	{
-		TestEventBus = true;
-	}
-	if (ImGui::Button("TestSpellSystem"))
-	{
-		TestSpellSystem = true;
-	}
+  ImGui::Begin("Tests");
+  if (ImGui::Button("TestAStar"))
+  {
+	TestAStar = true;
+  }
+  if (ImGui::Button("TestEventBus"))
+  {
+	TestEventBus = true;
+  }
+  if (ImGui::Button("TestSpellSystem"))
+  {
+	TestSpellSystem = true;
+  }
 
-	if (ImGui::Button("TestCombatSystem"))
-	{
-		TestCombatSystem = true;
-	}
-	if (ImGui::Button("TestDiceManager"))
-	{
-		TestDiceManager = true;
-	}
-	if (ImGui::Button("TestDataRegistry"))
-	{
-		TestDataRegistry = true;
-	}
+  if (ImGui::Button("TestCombatSystem"))
+  {
+	TestCombatSystem = true;
+  }
+  if (ImGui::Button("TestDiceManager"))
+  {
+	TestDiceManager = true;
+  }
+  if (ImGui::Button("TestDataRegistry"))
+  {
+	TestDataRegistry = true;
+  }
 
-	if (ImGui::Button("TestTrunManager"))
-	{
-		TestTrunManager = true;
-	}
+  if (ImGui::Button("TestTrunManager"))
+  {
+	TestTrunManager = true;
+  }
 
-	if (ImGui::Button("TestAI"))
-	{
-		TestAI = true;
-	}
-	if (ImGui::Button("TestNewFile"))
-	{
-		TestNewFile = true;
-	}
-	if (ImGui::Button("TestMemory"))
-	{
-		TestMemory = true;
-	}
+  if (ImGui::Button("TestAI"))
+  {
+	TestAI = true;
+  }
+  if (ImGui::Button("TestNewFile"))
+  {
+	TestNewFile = true;
+  }
+  if (ImGui::Button("TestMemory"))
+  {
+	TestMemory = true;
+  }
 
-	ImGui::End();
+  ImGui::End();
 }
 
 void ConsoleTest::Unload()

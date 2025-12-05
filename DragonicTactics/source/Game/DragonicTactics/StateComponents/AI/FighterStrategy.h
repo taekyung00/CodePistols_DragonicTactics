@@ -9,12 +9,13 @@
 
 class GridSystem;
 
-class FighterStrategy : public IAIStrategy {
-public:
-    AIDecision MakeDecision(Character* actor) override;
+class FighterStrategy : public IAIStrategy
+{
+  public:
+  AIDecision MakeDecision(Character* actor) override;
 
-private:
-    Character* FindDragon();
+  private:
+  Character* FindDragon();
 
-    Math::ivec2 FindNextMovePos(Character* actor, Character* target, GridSystem* grid);
+  Math::ivec2 FindNextMovePos(Character* actor, Character* target, GridSystem* grid);
 };

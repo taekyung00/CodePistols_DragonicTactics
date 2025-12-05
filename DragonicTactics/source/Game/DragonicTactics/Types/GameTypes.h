@@ -10,16 +10,21 @@ Created:    Oct 08, 2025
 
 #pragma once
 
-enum class Direction {
-    North, West, East, South
+enum class Direction
+{
+  North,
+  West,
+  East,
+  South
 };
 
-enum class TurnGoal {
-    Attack,
-    DebuffEnemy,
-    HealAlly,
-    BuffAlly,
-    Reposition,
-    Flee,
-    None
+enum class TurnGoal
+{
+  Attack,
+  DebuffEnemy,
+  HealAlly,
+  BuffAlly,
+  Reposition,
+  Flee,
+  None
 };

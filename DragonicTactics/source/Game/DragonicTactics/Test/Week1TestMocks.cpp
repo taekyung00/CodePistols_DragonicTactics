@@ -2,77 +2,74 @@
 
 #include "Week1TestMocks.h"
 
-MockCharacter::MockCharacter(const std::string& _name) 
-    : name(_name), hp(100), maxHP(100), gridPos{ 0, 0 }, speed(10)
+MockCharacter::MockCharacter(const std::string& _name) : name(_name), hp(100), maxHP(100), gridPos{ 0, 0 }, speed(10)
 {
-    statsComp = new MockStatsComponent(speed);
+  statsComp = new MockStatsComponent(speed);
 }
 
 MockCharacter::~MockCharacter()
 {
-    delete statsComp;
+  delete statsComp;
 }
 
 std::string MockCharacter::TypeName() const
 {
-    return name;
+  return name;
 }
 
 int MockCharacter::GetCurrentHP() const
 {
-    return hp;
+  return hp;
 }
 
 int MockCharacter::GetMaxHP() const
 {
-    return maxHP;
+  return maxHP;
 }
 
 void MockCharacter::SetHP(int newHP)
 {
-    hp = newHP;
+  hp = newHP;
 }
 
 Math::vec2 MockCharacter::GetGridPosition() const
 {
-    return gridPos;
+  return gridPos;
 }
 
 void MockCharacter::SetGridPosition(Math::vec2 pos)
 {
-    gridPos = pos;
+  gridPos = pos;
 }
 
 void MockLogger::LogEvent(const std::string& msg)
 {
-    events.push_back(msg);
+  events.push_back(msg);
 }
 
 void MockLogger::LogError(const std::string& msg)
 {
-    errors.push_back(msg);
+  errors.push_back(msg);
 }
 
 void MockLogger::LogDebug(const std::string& msg)
 {
-    debug.push_back(msg);
+  debug.push_back(msg);
 }
 
 std::vector<std::string> MockLogger::GetEvents() const
 {
-    return events;
+  return events;
 }
 
 std::vector<std::string> MockLogger::GetErrors() const
 {
-    return errors;
+  return errors;
 }
 
 void MockLogger::Clear()
 {
-    events.clear();
-    errors.clear();
-    debug.clear();
+  events.clear();
+  errors.clear();
+  debug.clear();
 }
-
-

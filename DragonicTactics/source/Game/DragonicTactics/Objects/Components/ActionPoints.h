@@ -10,17 +10,22 @@ Created:    Oct 12, 2025
 #pragma once
 #include "./Engine/Component.h"
 
-class ActionPoints : public CS230::Component {
-public:
-	ActionPoints(int _max_points);
-	void Refresh();
-	bool Consume(int amount = 1);
-	int GetCurrentPoints() const;
-	int GetMaxPoints() const;
-	void SetPoints(int new_point);
-	bool HasEnough(int amount) const;
-	void Update([[maybe_unused]] double dt) override{}
-private:
-	int max_points;
-	int current_points;
+class ActionPoints : public CS230::Component
+{
+  public:
+  ActionPoints(int _max_points);
+  void Refresh();
+  bool Consume(int amount = 1);
+  int  GetCurrentPoints() const;
+  int  GetMaxPoints() const;
+  void SetPoints(int new_point);
+  bool HasEnough(int amount) const;
+
+  void Update([[maybe_unused]] double dt) override
+  {
+  }
+
+  private:
+  int max_points;
+  int current_points;
 };

@@ -11,50 +11,72 @@ Created:    Oct 08, 2025
 Updated:    Oct 10, 2025
 */
 
-#include "Character.h"
+#include "./Engine/Engine.h"
 #include "./Engine/GameObject.h"
 #include "./Engine/Logger.h"
 #include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
+#include "./Game/DragonicTactics/Objects/Components/MovementComponent.h"
 #include "./Game/DragonicTactics/Objects/Components/SpellSlots.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
-#include "./Game/DragonicTactics/Objects/Components/MovementComponent.h"
-#include "./Game/DragonicTactics/StateComponents/GridSystem.h"
 #include "./Game/DragonicTactics/StateComponents/DiceManager.h"
+#include "./Game/DragonicTactics/StateComponents/GridSystem.h"
+#include "Character.h"
 #include "Components/GridPosition.h"
-#include "./Engine/Engine.h"
-
 
 Character::Character(CharacterTypes charType, Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level)
-    : CS230::GameObject(Math::vec2{ 0, 0 }), m_character_type(charType)
+	: CS230::GameObject(Math::vec2{ 0, 0 }), m_character_type(charType)
 {
-    InitializeComponents(start_coordinates, max_action_points, max_slots_per_level);
+  InitializeComponents(start_coordinates, max_action_points, max_slots_per_level);
 }
 
 void Character::InitializeComponents(Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level)
 {
-    CharacterStats initial_stats;
+  CharacterStats initial_stats;
 
-    AddGOComponent(new StatsComponent(initial_stats));
-    AddGOComponent(new GridPosition(start_coordinates));
-    AddGOComponent(new ActionPoints(max_action_points));
-    AddGOComponent(new SpellSlots(max_slots_per_level));
-    AddGOComponent(new MovementComponent(this));
+  AddGOComponent(new StatsComponent(initial_stats));
+  AddGOComponent(new GridPosition(start_coordinates));
+  AddGOComponent(new ActionPoints(max_action_points));
+  AddGOComponent(new SpellSlots(max_slots_per_level));
+  AddGOComponent(new MovementComponent(this));
 }
 
 void Character::RefreshActionPoints()
 {
-    GetGOComponent<ActionPoints>()->Refresh();
+  GetGOComponent<ActionPoints>()->Refresh();
 }
 
 void Character::Update(double dt)
 {
-
-    CS230::GameObject::Update(dt);
+  CS230::GameObject::Update(dt);
 }
 
 void Character::Draw(Math::TransformationMatrix camera_matrix)
 {
-    CS230::GameObject::Draw(camera_matrix);
+  CS230::GameObject::Draw(camera_matrix);
+}
+
+void Character::OnTurnStart()
+{
+  Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - BEGIN");
+
+  RefreshActionPoints();
+
+  Engine::GetLogger().LogEvent(TypeName() + " ActionPoints refreshed to " + std::to_string(GetActionPoints()));
+
+  StatsComponent* stats = GetStatsComponent();
+  if (stats)
+  {
+	stats->RefreshSpeed();
+	Engine::GetLogger().LogEvent(TypeName() + " Speed refreshed to " + std::to_string(stats->GetSpeed()));
+  }
+
+  Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - END");
+}
+
+void Character::OnTurnEnd()
+{
+  Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " called");
+  Engine::GetLogger().LogEvent(TypeName() + " turn ended");
 }
 
 // void Character::PerformAttack(Character* target)
@@ -72,7 +94,7 @@ void Character::Draw(Math::TransformationMatrix camera_matrix)
 //         return;
 //     }
 
-    
+
 //     int total_damage = 10 + Engine::GetDiceManager().RollDiceFromString("4d6");
 
 //     Engine::GetLogger().LogEvent(TypeName() + " attacks " + target->TypeName() + " for " + std::to_string(total_damage) + " damage.");
@@ -85,151 +107,161 @@ void Character::PerformAction([[maybe_unused]] Action* action, [[maybe_unused]] 
 
 void Character::SetGridSystem(GridSystem* grid)
 {
-    m_gridSystem = grid; 
-    
-    MovementComponent* move_comp = GetGOComponent<MovementComponent>();
-    if (move_comp != nullptr)
-    {
-        move_comp->SetGridSystem(grid);
-    }
-    else
-    {
-        Engine::GetLogger().LogError(TypeName() + " is missing MovementComponent! Cannot set GridSystem for it.");
-    }
+  m_gridSystem = grid;
+
+  MovementComponent* move_comp = GetGOComponent<MovementComponent>();
+  if (move_comp != nullptr)
+  {
+	move_comp->SetGridSystem(grid);
+  }
+  else
+  {
+	Engine::GetLogger().LogError(TypeName() + " is missing MovementComponent! Cannot set GridSystem for it.");
+  }
 }
 
 void Character::SetPath(std::vector<Math::ivec2> path)
 {
-    if (m_movement_component == nullptr) {
-        m_movement_component = GetGOComponent<MovementComponent>();
-    }
-    if (m_movement_component)
-    {
-        m_movement_component->SetPath(std::move(path));
-    }
+  if (m_movement_component == nullptr)
+  {
+	m_movement_component = GetGOComponent<MovementComponent>();
+  }
+  if (m_movement_component)
+  {
+	m_movement_component->SetPath(std::move(path));
+  }
 }
 
 void Character::ReceiveHeal(int amount)
 {
-    if (GetStatsComponent() != nullptr)
-    {
-        GetStatsComponent()->Heal(amount);
-    }
+  if (GetStatsComponent() != nullptr)
+  {
+	GetStatsComponent()->Heal(amount);
+  }
 }
 
 void Character::TakeDamage(int damage, [[maybe_unused]] Character* attacker)
 {
-    if (GetStatsComponent() != nullptr)
-    {
-        GetStatsComponent()->TakeDamage(damage);
-    }
+  if (GetStatsComponent() != nullptr)
+  {
+	GetStatsComponent()->TakeDamage(damage);
+  }
 
-    if (IsAlive() == false)
-    {
-        // Die();
-    }
+  if (IsAlive() == false)
+  {
+	// Die();
+  }
 }
 
 bool Character::IsAlive()
 {
-    const StatsComponent* stats = GetStatsComponent();
-    return (stats != nullptr) ? stats->IsAlive() : false;
+  const StatsComponent* stats = GetStatsComponent();
+  return (stats != nullptr) ? stats->IsAlive() : false;
 }
 
 const CharacterStats& Character::GetStats()
 {
-    return GetStatsComponent()->GetAllStats();
+  return GetStatsComponent()->GetAllStats();
 }
 
 int Character::GetMovementRange()
 {
-    const StatsComponent* stats = GetStatsComponent();
-    return (stats != nullptr) ? stats->GetSpeed() : 0;
+  const StatsComponent* stats = GetStatsComponent();
+  return (stats != nullptr) ? stats->GetSpeed() : 0;
 }
 
 int Character::GetActionPoints()
 {
-    const ActionPoints* ap = GetActionPointsComponent();
-    return (ap != nullptr) ? ap->GetCurrentPoints() : 0;
+  const ActionPoints* ap = GetActionPointsComponent();
+  return (ap != nullptr) ? ap->GetCurrentPoints() : 0;
 }
 
 bool Character::HasSpellSlot(int level)
 {
-    const SpellSlots* ss = GetSpellSlots();
-    return (ss != nullptr) ? ss->HasSlot(level) : false;
+  const SpellSlots* ss = GetSpellSlots();
+  return (ss != nullptr) ? ss->HasSlot(level) : false;
 }
 
 StatsComponent* Character::GetStatsComponent()
 {
-    return GetGOComponent<StatsComponent>();
+  return GetGOComponent<StatsComponent>();
 }
-
 
 int Character::GetHP()
 {
-    return GetGOComponent<StatsComponent>()->GetCurrentHP();
+  return GetGOComponent<StatsComponent>()->GetCurrentHP();
 }
 
 int Character::GetMaxHP()
 {
-    return GetGOComponent<StatsComponent>()->GetMaxHP();
+  return GetGOComponent<StatsComponent>()->GetMaxHP();
 }
 
-int Character::GetAttackRange() {
-    return GetGOComponent<StatsComponent>()->GetAttackRange();
+int Character::GetAttackRange()
+{
+  return GetGOComponent<StatsComponent>()->GetAttackRange();
 }
 
 GridPosition* Character::GetGridPosition()
 {
-    return GetGOComponent<GridPosition>();
+  return GetGOComponent<GridPosition>();
 }
 
 ActionPoints* Character::GetActionPointsComponent()
 {
-    return GetGOComponent<ActionPoints>();
+  return GetGOComponent<ActionPoints>();
 }
 
 SpellSlots* Character::GetSpellSlots()
 {
-    return GetGOComponent<SpellSlots>();
+  return GetGOComponent<SpellSlots>();
 }
 
-int Character::GetSpellSlotCount(int level) {
-    return GetGOComponent<SpellSlots>()->GetSpellSlotCount(level);
+int Character::GetSpellSlotCount(int level)
+{
+  return GetGOComponent<SpellSlots>()->GetSpellSlotCount(level);
 }
 
-void Character::SetSpellSlots(std::map<int, int> spellSlot) {
-    GetGOComponent<SpellSlots>()->SetSpellSlots(spellSlot);
+void Character::SetSpellSlots(std::map<int, int> spellSlot)
+{
+  GetGOComponent<SpellSlots>()->SetSpellSlots(spellSlot);
 }
 
-void Character::ConsumeSpell(int level) {    // REALLY? WHAT THE FUCK? WHERE IS THE USE OF CONSUME IN MD FILE? 
-    GetGOComponent<SpellSlots>()->Consume(level);
+void Character::ConsumeSpell(int level)
+{ // REALLY? WHAT THE FUCK? WHERE IS THE USE OF CONSUME IN MD FILE?
+  GetGOComponent<SpellSlots>()->Consume(level);
 }
+
 // void Character::RefreshActionPoints()
 // {
 //     GetGOComponent<ActionPoints>()->Refresh();
 // }
-// void Character::SetCurrentHP(int hp) 
+// void Character::SetCurrentHP(int hp)
 // {
-    
+
 // }
 
-void Character::SetGridPosition(Math::ivec2 new_coordinates) {
-    GetGOComponent<GridPosition>()->Set(new_coordinates);
+void Character::SetGridPosition(Math::ivec2 new_coordinates)
+{
+  GetGOComponent<GridPosition>()->Set(new_coordinates);
 }
 
-void Character::SetHP(int HP) {
-    GetGOComponent<StatsComponent>()->SetHP(HP);
+void Character::SetHP(int HP)
+{
+  GetGOComponent<StatsComponent>()->SetHP(HP);
 }
 
-void Character::SetAttackRange(int new_range) {
-    GetGOComponent<StatsComponent>()->SetAttackRange(new_range);
+void Character::SetAttackRange(int new_range)
+{
+  GetGOComponent<StatsComponent>()->SetAttackRange(new_range);
 }
 
-bool Character::HasSpell([[maybe_unused]] std::string spell_name) {
-    return false;  //TODO modify it to return actual spell name(type)
+bool Character::HasSpell([[maybe_unused]] std::string spell_name)
+{
+  return false; // TODO modify it to return actual spell name(type)
 }
 
-void Character::SetActionPoints(int new_points) {
-    return GetGOComponent<ActionPoints>()->SetPoints(new_points);
+void Character::SetActionPoints(int new_points)
+{
+  return GetGOComponent<ActionPoints>()->SetPoints(new_points);
 }

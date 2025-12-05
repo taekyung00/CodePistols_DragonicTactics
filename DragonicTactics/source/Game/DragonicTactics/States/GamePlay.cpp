@@ -9,11 +9,10 @@ Project:    CS230 Engine
 Author:     Seungju Song
 Created:    November 5, 2025
 */
-#include "./CS200/IRenderer2D.h"
-#include "./CS200/NDC.h"
-#include "GamePlay.h"
-#include "pch.h"
+#include "CS200/IRenderer2D.h"
+#include "CS200/NDC.h"
 #include "Engine/Timer.h"
+#include "GamePlay.h"
 
 #include "Game/MainMenu.h"
 
@@ -31,7 +30,6 @@ Created:    November 5, 2025
 #include "Game/DragonicTactics/StateComponents/GridSystem.h"
 #include "Game/DragonicTactics/StateComponents/SpellSystem.h"
 #include "Game/DragonicTactics/StateComponents/TurnManager.h"
-#include "Game/DragonicTactics/Factories/CharacterFactory.h"
 
 #include "../Debugger/DebugManager.h"
 
@@ -211,7 +209,7 @@ void GamePlay::Unload()
 void GamePlay::Draw()
 {
   Engine::GetWindow().Clear(0x1a1a1aff);
-  auto		  renderer_2d		  = Engine::GetTextureManager().GetRenderer2D();
+  auto renderer_2d = Engine::GetTextureManager().GetRenderer2D();
 
   Math::TransformationMatrix camera_matrix = CS200::build_ndc_matrix(Engine::GetWindow().GetSize());
   renderer_2d->BeginScene(camera_matrix);

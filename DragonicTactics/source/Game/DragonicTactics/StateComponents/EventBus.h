@@ -1,57 +1,64 @@
 #pragma once
+#include "./Engine/Component.h"
 #include <functional>
 #include <map>
+#include <string>
 #include <typeindex>
 #include <vector>
-#include <string>
-#include "./Engine/Component.h"
 
-class EventBus : public CS230::Component {
-public:
-    EventBus() = default;
-    ~EventBus() = default;
-    
-    // Subscribe to event type T with callback function
-    template<typename T>
-    void Subscribe(std::function<void(const T&)> callback) {
-        auto typeIndex = std::type_index(typeid(T));
-        subscribers[typeIndex].push_back([callback](const void* data) {
-            callback(*static_cast<const T*>(data));
-            });
-    }
+class EventBus : public CS230::Component
+{
+  public:
+  EventBus()  = default;
+  ~EventBus() = default;
 
-    // Publish event of type T
-    template<typename T>
-    void Publish(const T& event) {
-        auto typeIndex = std::type_index(typeid(T));
+  // Subscribe to event type T with callback function
+  template <typename T>
+  void Subscribe(std::function<void(const T&)> callback)
+  {
+	auto typeIndex = std::type_index(typeid(T));
+	subscribers[typeIndex].push_back([callback](const void* data) { callback(*static_cast<const T*>(data)); });
+  }
 
-        // Optional: Log event for debugging
-        if (loggingEnabled) {
-            LogEvent(typeid(T).name(), &event);
-        }
+  // Publish event of type T
+  template <typename T>
+  void Publish(const T& event)
+  {
+	auto typeIndex = std::type_index(typeid(T));
 
-        // Call all subscribers for this event type
-        if (subscribers.find(typeIndex) != subscribers.end()) {
-            for (auto& callback : subscribers[typeIndex]) {
-                callback(&event);
-            }
-        }
-    }
+	// Optional: Log event for debugging
+	if (loggingEnabled)
+	{
+	  LogEvent(typeid(T).name(), &event);
+	}
 
-    // Unsubscribe all listeners (used for cleanup)
-    void Clear();
+	// Call all subscribers for this event type
+	if (subscribers.find(typeIndex) != subscribers.end())
+	{
+	  for (auto& callback : subscribers[typeIndex])
+	  {
+		callback(&event);
+	  }
+	}
+  }
 
-    // Enable/disable event logging
-    void SetLogging(bool enabled) { loggingEnabled = enabled; }
+  // Unsubscribe all listeners (used for cleanup)
+  void Clear();
 
-private:
-    // Type-erased callback wrapper
-    using CallbackWrapper = std::function<void(const void*)>;
+  // Enable/disable event logging
+  void SetLogging(bool enabled)
+  {
+	loggingEnabled = enabled;
+  }
 
-    // Map of event type -> list of callbacks
-    std::map<std::type_index, std::vector<CallbackWrapper>> subscribers;
+  private:
+  // Type-erased callback wrapper
+  using CallbackWrapper = std::function<void(const void*)>;
 
-    bool loggingEnabled = false;
+  // Map of event type -> list of callbacks
+  std::map<std::type_index, std::vector<CallbackWrapper>> subscribers;
 
-    void LogEvent(const std::string& eventType, const void* eventData);
+  bool loggingEnabled = false;
+
+  void LogEvent(const std::string& eventType, const void* eventData);
 };

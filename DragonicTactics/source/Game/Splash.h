@@ -14,17 +14,17 @@ Created:    March 12, 2025
 
 class Splash : public CS230::GameState
 {
-public:
-    // Splash();
-    void          Load() override;
-    void          Update(double dt) override;
-    void          Unload() override;
-    void          Draw() override;
-    void          DrawImGui() override;
-    gsl::czstring GetName() const override;
+  public:
+  // Splash();
+  void			Load() override;
+  void			Update(double dt) override;
+  void			Unload() override;
+  void			Draw() override;
+  void			DrawImGui() override;
+  gsl::czstring GetName() const override;
 
 
-private:
-    double                          counter = 0;
-    std::shared_ptr<CS230::Texture> texture;
+  private:
+  double						  counter = 0;
+  std::shared_ptr<CS230::Texture> texture;
 };
