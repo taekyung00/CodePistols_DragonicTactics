@@ -40,6 +40,39 @@ void Character::InitializeComponents(Math::ivec2 start_coordinates, int max_acti
   AddGOComponent(new MovementComponent(this));
 }
 
+float Character::GetHPPercentage()
+{
+  const StatsComponent* stats = GetGOComponent<StatsComponent>();
+  if (stats == nullptr)
+	return 0.0f;
+
+  return stats->GetHealthPercentage();
+}
+
+int Character::GetAvailableSpellSlots(int level)
+{
+  SpellSlots* slots = GetGOComponent<SpellSlots>();
+  if (slots == nullptr)
+	return 0;
+
+  return slots->GetSpellSlotCount(level);
+}
+
+bool Character::HasAnySpellSlot()
+{
+  SpellSlots* slots = GetGOComponent<SpellSlots>();
+  if (slots == nullptr)
+	return false;
+
+  // 레벨 1-5 중 하나라도 슬롯이 있는지 체크
+  for (int level = 1; level <= 5; ++level)
+  {
+	if (slots->HasSlot(level))
+	  return true;
+  }
+  return false;
+}
+
 void Character::RefreshActionPoints()
 {
   GetGOComponent<ActionPoints>()->Refresh();

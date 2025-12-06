@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 
 /*
 Copyright (C) 2023 DigiPen Institute of Technology
@@ -71,7 +71,9 @@ void GamePlay::Load()
   GridSystem*				grid_system		  = GetGSComponent<GridSystem>();
   CharacterFactory*			character_factory = GetGSComponent<CharacterFactory>();
 
-  const std::vector<std::string> map_data = { "wwwwwwww", "weefeeew", "weeeeeew", "weeeeeew", "weeeeeew", "weeeeeew", "weedeeew", "wwwwwwww" };
+  const std::vector<std::string> map_data = { "wwwwwwww",
+											  "xeefeeew", // new exit tile 'x'
+											  "weeeeeew", "weeeeeew", "weeeeeew", "weeeeeew", "weedeeew", "wwwwwwww" };
 
   for (int y = 0; y < map_data.size(); ++y)
   {
@@ -83,6 +85,11 @@ void GamePlay::Load()
 	  {
 		case 'w': grid_system->SetTileType(current_pos, GridSystem::TileType::Wall); break;
 		case 'e': grid_system->SetTileType(current_pos, GridSystem::TileType::Empty); break;
+		case 'x': // 'x'를 출구로 사용 (exit)
+		  grid_system->SetTileType(current_pos, GridSystem::TileType::Exit);
+		  grid_system->SetExitPosition(current_pos);
+		  Engine::GetLogger().LogEvent("Exit set at position: " + std::to_string(current_pos.x) + ", " + std::to_string(current_pos.y));
+		  break;
 		case 'f':
 		  grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
 		  // fighter = new Fighter(current_pos);
@@ -114,7 +121,24 @@ void GamePlay::Load()
   turnMgr->StartCombat();
 
   GetGSComponent<EventBus>()->Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& event) { this->OnCharacterDamaged(event); });
-  GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>([this]([[maybe_unused]] const CharacterDeathEvent& event) { this->game_end = true; });
+  GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>(
+	  [this]([[maybe_unused]] const CharacterDeathEvent& event)
+	  {
+		this->game_end = true;
+        std::string msg = "Game Over: ";
+        msg += event.character->TypeName();
+        msg += " has died.";
+		Engine::GetLogger().LogDebug(msg);
+	  });
+  GetGSComponent<EventBus>()->Subscribe<CharacterEscapedEvent>(
+	  [this]([[maybe_unused]] const CharacterEscapedEvent& event)
+	  {
+		this->game_end = true;
+        std::string msg = "Game Over: ";
+        msg += event.character->TypeName();
+        msg += " has escaped.";
+		Engine::GetLogger().LogDebug(msg);
+	  });
 }
 
 void GamePlay::OnCharacterDamaged(const CharacterDamagedEvent& event)

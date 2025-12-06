@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file AISystem.cpp
  * @author Sangyun Lee
  * @brief

@@ -47,6 +47,13 @@ Week 5는 게임의 **핵심 안정화** 및 **플레이어 경험 개선**에 �
 - **UI 명확화**: ImGui (디버그용) vs 게임 UI (플레이용) 구분
 - **메모리 관리**: Raw 포인터 → 스마트 포인터 전환
 
+### ⚠️ 중요: Ability 시스템 미구현
+
+- **Ability 시스템은 Week 6+에 구현 예정입니다**
+- ShieldBash, MeleeAttack, Heal 등의 어빌리티 사용 불가
+- 현재는 **기본 공격(Attack)만 지원**됩니다
+- AI Strategy 코드에서 `UseAbility` 관련 부분은 임시로 주석 처리되어 있습니다
+
 ### 통합 목표 (금요일)
 
 - **플레이 가능한 데모**: Dragon vs Fighter 전투가 완전히 플레이 가능
@@ -755,6 +762,12 @@ void TurnManager::EndCurrentTurn()
 
 **목표**: 4명의 모험가 캐릭터에 대한 robust한 AI 구현
 
+**⚠️ 중요 제약사항**:
+- **Ability 시스템은 아직 구현되지 않았습니다** (Week 6+ 구현 예정)
+- ShieldBash, MeleeAttack, Heal 등의 어빌리티는 사용 불가
+- 현재는 기본 공격(Attack)만 지원됩니다
+- AI 코드에서 `AIDecisionType::UseAbility`는 임시로 주석 처리하거나 `Attack`으로 대체해야 합니다
+
 **파일 수정 목록**:
 
 ```
@@ -1002,6 +1015,990 @@ void AISystem::ScoreActions(
     });
 }
 ```
+
+---
+
+#### **Task 2-1: AI Strategy 패턴으로 리팩토링** (Day 3-4)
+
+**목표**: 기존 AISystem 로직을 Strategy 패턴으로 분리하여 캐릭터별 AI 전략 구현
+
+**배경**:
+- 기존 `ExecuteFighterAI()` 방식은 모든 AI 로직이 AISystem 내부에 집중되어 확장성 부족
+- Strategy 패턴을 사용하여 각 캐릭터별 AI 로직을 독립적인 클래스로 분리
+- Mermaid 플로우차트로 의사결정 로직 시각화 (architecture/character_flowchart/)
+
+**파일 구조**:
+
+```
+DragonicTactics/source/Game/DragonicTactics/StateComponents/AI/
+├── IAIStrategy.h          # AI 전략 인터페이스
+├── FighterStrategy.h/cpp  # 전사 AI 전략
+├── ClericStrategy.h/cpp   # 성직자 AI 전략 (향후)
+├── WizardStrategy.h/cpp   # 마법사 AI 전략 (향후)
+└── RogueStrategy.h/cpp    # 도적 AI 전략 (향후)
+
+architecture/character_flowchart/
+├── fighter.mmd   # 전사 AI 플로우차트
+├── cleric.mmd    # 성직자 AI 플로우차트
+├── wizard.mmd    # 마법사 AI 플로우차트
+└── rouge.mmd     # 도적 AI 플로우차트
+```
+
+**Step 1: IAIStrategy 인터페이스 정의**
+
+```cpp
+// IAIStrategy.h
+#pragma once
+#include "Engine/Vec2.h"
+#include <string>
+
+class Character;
+
+// 1. 의사결정 종류
+enum class AIDecisionType
+{
+    Move,       // 이동
+    Attack,     // 공격
+    UseAbility, // 스킬 (⚠️ Week 6+ 구현 예정)
+    EndTurn,    // 대기
+    None
+};
+
+// 2. 의사결정 데이터 (명령서)
+struct AIDecision
+{
+    AIDecisionType type = AIDecisionType::None;
+    Character* target = nullptr;           // 대상
+    Math::ivec2 destination = {0, 0};      // 목적지
+    std::string abilityName = "";          // 스킬명 (⚠️ Week 6+ 구현 예정)
+    std::string reasoning = "";            // 디버그용 메모
+};
+
+// 3. 전략 인터페이스
+class IAIStrategy
+{
+public:
+    virtual ~IAIStrategy() = default;
+
+    // 상황을 판단하여 행동을 결정하는 핵심 함수
+    virtual AIDecision MakeDecision(Character* actor) = 0;
+};
+```
+
+**Step 2-A-1: GridSystem에 출구 위치 관리 기능 추가**
+
+**GridSystem.h에 추가**:
+
+```cpp
+// GridSystem.h
+public:
+    enum class TileType
+    {
+        Empty,
+        Wall,
+        Lava,
+        Difficult,
+        Exit,      // 🆕 출구 타일 추가
+        Invalid
+    };
+
+    // 🆕 출구 위치 관리
+    void SetExitPosition(Math::ivec2 pos) { exit_position_ = pos; }
+    Math::ivec2 GetExitPosition() const { return exit_position_; }
+    bool HasExit() const { return exit_position_ != Math::ivec2{-1, -1}; }
+
+private:
+    Math::ivec2 exit_position_ = {-1, -1};  // 출구 위치 (-1, -1은 없음)
+```
+
+**GridSystem.cpp 생성자 및 Reset()에 추가**:
+
+```cpp
+// GridSystem.cpp
+GridSystem::GridSystem()
+{
+    Reset();
+}
+
+void GridSystem::Reset()
+{
+    for (int y = 0; y < MAP_HEIGHT; ++y)
+    {
+        for (int x = 0; x < MAP_WIDTH; ++x)
+        {
+            tile_grid[y][x] = TileType::Empty;
+            character_grid[y][x] = nullptr;
+        }
+    }
+    exit_position_ = {-1, -1};  // 리셋 시 출구 위치 초기화
+}
+```
+
+**GamePlay.cpp의 맵 로딩에 출구 처리 추가**:
+
+```cpp
+// GamePlay.cpp - Load()
+const std::vector<std::string> map_data = {
+    "wwwwwwww",
+    "xeefeeew",  // 🆕 왼쪽 상단에 출구 (x)
+    "weeeeeew",
+    "weeeeeew",
+    "weeeeeew",
+    "weeeeeew",
+    "weedeeew",
+    "wwwwwwww"
+};
+
+for (int y = 0; y < map_data.size(); ++y)
+{
+    for (int x = 0; x < map_data[y].length(); ++x)
+    {
+        char tile_char = map_data[y][x];
+        Math::ivec2 current_pos = {x, static_cast<int>(map_data.size()) - 1 - y};
+
+        switch (tile_char)
+        {
+            case 'w': grid_system->SetTileType(current_pos, GridSystem::TileType::Wall); break;
+            case 'e': grid_system->SetTileType(current_pos, GridSystem::TileType::Empty); break;
+
+            // 🆕 출구 타일 처리
+            case 'x':  // 'x'를 출구로 사용 (exit)
+                grid_system->SetTileType(current_pos, GridSystem::TileType::Exit);
+                grid_system->SetExitPosition(current_pos);
+                Engine::GetLogger().LogEvent("Exit set at position: " +
+                    std::to_string(current_pos.x) + ", " + std::to_string(current_pos.y));
+                break;
+
+            case 'f':
+                // Fighter 생성 로직...
+                break;
+
+            case 'd':
+                // Dragon 생성 로직...
+                break;
+        }
+    }
+}
+```
+
+**GridSystem::Draw()에 출구 시각화 추가** (선택사항):
+
+```cpp
+// GridSystem.cpp - Draw()
+for (int y = 0; y < MAP_HEIGHT; ++y)
+{
+    for (int x = 0; x < MAP_WIDTH; ++x)
+    {
+        int screen_x = x * TILE_SIZE + TILE_SIZE;
+        int screen_y = y * TILE_SIZE + TILE_SIZE;
+
+        switch (tile_grid[y][x])
+        {
+            case TileType::Wall:
+                renderer_2d->DrawRectangle(..., CS200::BROWN, 0U);
+                break;
+
+            // 🆕 출구 시각화 (녹색)
+            case TileType::Exit:
+                renderer_2d->DrawRectangle(..., CS200::GREEN, 0U);
+                break;
+
+            case TileType::Empty:
+                break;
+
+            default:
+                break;
+        }
+        // ...
+    }
+}
+```
+
+**Step 2-A-2: Character 클래스에 팩트 쿼리 메서드 추가**
+
+**하이브리드 접근**: 기본 상태 쿼리는 Character에, 전략별 판단은 Strategy에
+
+**Character.h에 추가**:
+
+```cpp
+// Character.h (public 섹션에 추가)
+public:
+    // ========================================
+    // 상태 쿼리 메서드 (Fact Queries)
+    // AI 전략 및 다른 시스템에서 사용
+    // ========================================
+
+    /// @brief HP 백분율 조회 (0.0 ~ 1.0)
+    /// @return 현재 HP / 최대 HP, StatsComponent 없으면 0.0
+    float GetHPPercentage() const;
+
+    /// @brief 보물 소유 여부 조회
+    /// @return true if has treasure
+    bool HasTreasure() const { return has_treasure_; }
+
+    /// @brief 보물 소유 상태 설정 (보물 시스템에서 호출)
+    void SetTreasure(bool value) { has_treasure_ = value; }
+
+    /// @brief 특정 레벨의 주문 슬롯 잔여량 조회
+    /// @param level 주문 레벨 (1-9)
+    /// @return 잔여 슬롯 개수, SpellSlots 없으면 0
+    int GetAvailableSpellSlots(int level) const;
+
+    /// @brief 모든 레벨의 주문 슬롯 중 1개라도 있는지
+    /// @return true if has any spell slots
+    bool HasAnySpellSlot() const;
+
+    // TODO: Week 6+ StatusEffect 시스템 구현 후 추가
+    // bool HasBuff(const std::string& buff_name) const;
+    // bool HasDebuff(const std::string& debuff_name) const;
+
+private:
+    bool has_treasure_ = false;  // 보물 소유 여부
+```
+
+**Character.cpp에 구현 추가**:
+
+```cpp
+// Character.cpp
+float Character::GetHPPercentage() const
+{
+    const StatsComponent* stats = GetStatsComponent();
+    if (stats == nullptr)
+        return 0.0f;
+
+    return stats->GetHealthPercentage();
+}
+
+int Character::GetAvailableSpellSlots(int level) const
+{
+    const SpellSlots* slots = GetSpellSlots();
+    if (slots == nullptr)
+        return 0;
+
+    return slots->GetSpellSlotCount(level);
+}
+
+bool Character::HasAnySpellSlot() const
+{
+    const SpellSlots* slots = GetSpellSlots();
+    if (slots == nullptr)
+        return false;
+
+    // 레벨 1-5 중 하나라도 슬롯이 있는지 체크
+    for (int level = 1; level <= 5; ++level)
+    {
+        if (slots->HasSlot(level))
+            return true;
+    }
+    return false;
+}
+```
+
+**⚠️ 중요: ActionPoints vs MovementRange (Speed)**
+
+D&D 스타일 게임에서 이 두 개념을 혼동하지 말 것:
+
+| 개념 | 용도 | Character 메서드 | 예시 |
+|------|------|------------------|------|
+| **ActionPoints** | 턴당 **행동 횟수** (공격, 스킬 등) | `GetActionPoints()` | 공격 1회 = AP 1 소모 |
+| **Speed (MovementRange)** | 턴당 **이동 가능 타일 수** | `GetMovementRange()` | Speed 3 = 3타일 이동 가능 |
+
+**잘못된 예**:
+```cpp
+// ❌ 이동 체크에 ActionPoints 사용 (잘못됨!)
+if (actor->GetActionPoints() > 0)  // 공격용 포인트를 이동 체크에 사용
+{
+    // 이동 로직
+}
+```
+
+**올바른 예**:
+```cpp
+// ✅ 이동 체크에 MovementRange (Speed) 사용
+if (actor->GetMovementRange() > 0)  // Speed (이동력) 체크
+{
+    // 이동 로직
+}
+
+// ✅ 공격 체크에 ActionPoints 사용
+if (actor->GetActionPoints() > 0)  // 행동력 체크
+{
+    // 공격 로직
+}
+```
+
+**Step 2-B: FighterStrategy 구현** (플로우차트 기반, 하이브리드 접근)
+
+**플로우차트 참고**: `architecture/character_flowchart/fighter.mmd`
+
+**FighterStrategy.h**:
+
+```cpp
+/**
+ * @file FighterStrategy.h
+ * @author Sangyun Lee
+ * @brief 파이터 전용 AI 전략 (드래곤 추적 및 근접 공격)
+ * @date 2025-12-06
+ */
+#pragma once
+#include "IAIStrategy.h"
+
+class GridSystem;
+
+class FighterStrategy : public IAIStrategy
+{
+public:
+    AIDecision MakeDecision(Character* actor) override;
+
+private:
+    // 타겟 찾기
+    Character* FindDragon();
+    Character* FindCleric();  // TODO: Cleric 구현 후 활성화
+
+    // 전략별 판단 헬퍼 (Decision Helpers)
+    // Character의 팩트 쿼리를 사용하여 Fighter만의 기준으로 판단
+    bool IsInDanger(Character* actor) const;  // Fighter: HP 30% 이하
+    bool ShouldUseSpellAttack(Character* actor, Character* target) const;
+
+    // 이동 계산
+    Math::ivec2 FindNextMovePos(Character* actor, Character* target, GridSystem* grid);
+
+    // 공격 전략
+    AIDecision DecideAttackAction(Character* actor, Character* target, int distance);
+};
+```
+
+**FighterStrategy.cpp** (플로우차트 완벽 반영):
+
+```cpp
+/**
+ * @file FighterStrategy.cpp
+ * @author Sangyun Lee
+ * @brief 파이터 AI 구현: 플로우차트 기반 의사결정
+ * @date 2025-12-06
+ */
+#include "pch.h"
+#include "FighterStrategy.h"
+
+#include "../../Objects/Components/ActionPoints.h"
+#include "../../Objects/Components/GridPosition.h"
+#include "../../Objects/Components/SpellSlots.h"
+#include "../../Objects/Components/StatsComponent.h"
+#include "../../StateComponents/CombatSystem.h"
+#include "../../StateComponents/GridSystem.h"
+#include "Engine/Engine.h"
+#include "Engine/GameStateManager.h"
+#include "Game/DragonicTactics/Types/CharacterTypes.h"
+
+AIDecision FighterStrategy::MakeDecision(Character* actor)
+{
+    GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+
+    // ============================================================
+    // 1단계: 타겟 설정 (플로우차트: SettingTarget)
+    // ============================================================
+
+    Character* target = nullptr;
+    std::string target_type = "";
+
+    // [조건 1] 보물을 가지고 있는가?
+    if (actor->HasTreasure())  // ← Character의 팩트 쿼리
+    {
+        // → Yes → 목표 = 출구
+        target_type = "Exit";
+
+        // GridSystem에서 출구 위치 가져오기 (하드코딩 제거!)
+        if (!grid->HasExit())
+        {
+            Engine::GetLogger().LogWarning("Fighter has treasure but no exit found!");
+            return {AIDecisionType::EndTurn, nullptr, {}, "", "No exit available"};
+        }
+
+        Math::ivec2 exitPos = grid->GetExitPosition();
+
+        // 출구에 도달했는가?
+        if (actor->GetGridPosition()->Get() == exitPos)
+        {
+            // 게임 패배 (적 탈출 성공)
+            return {AIDecisionType::EndTurn, nullptr, {}, "", "Escaped with treasure!"};
+        }
+
+        // 출구로 이동
+        return {AIDecisionType::Move, nullptr, exitPos, "", "Escaping with treasure"};
+    }
+
+    // [조건 2] 내 체력이 30% 이하인가?
+    if (IsInDanger(actor))  // ← Character의 GetHPPercentage() 사용
+    {
+        // → Yes → 클레릭이 살아 있는가?
+        Character* cleric = FindCleric();
+        if (cleric != nullptr)
+        {
+            // → Yes → 목표 = 클레릭
+            target = cleric;
+            target_type = "Cleric";
+        }
+        else
+        {
+            // → No → 목표 = 드래곤
+            target = FindDragon();
+            target_type = "Dragon";
+        }
+    }
+    else
+    {
+        // → No → 목표 = 드래곤
+        target = FindDragon();
+        target_type = "Dragon";
+    }
+
+    // 타겟이 없으면 턴 종료
+    if (target == nullptr)
+    {
+        return {AIDecisionType::EndTurn, nullptr, {}, "", "No valid target found"};
+    }
+
+    // ============================================================
+    // 2단계: 행동 시작 (플로우차트: MoveStart)
+    // ============================================================
+
+    // 거리 계산
+    int distance = grid->ManhattanDistance(
+        actor->GetGridPosition()->Get(),
+        target->GetGridPosition()->Get()
+    );
+
+    int attackRange = actor->GetAttackRange();
+    bool onTarget = false;
+
+    // 목표에 도달했나? (출구: 타일 위, 그 외: 사거리 내)
+    if (target_type == "Exit")
+    {
+        onTarget = (distance == 0);  // 출구는 정확히 같은 타일
+    }
+    else
+    {
+        onTarget = (distance <= attackRange);  // 사거리 내
+    }
+
+    // ============================================================
+    // 3단계: 목표 도달 시 행동 분기
+    // ============================================================
+
+    if (onTarget)
+    {
+        // [분기] 현재 목표가 무엇인가?
+        if (target_type == "Exit")
+        {
+            // → 출구 → 게임 패배 (적 탈출 성공)
+            Engine::GetEventBus().Publish<CharacterEscapedEvent>(actor);
+            return {AIDecisionType::EndTurn, nullptr, {}, "", "Reached exit!"};
+        }
+        else if (target_type == "Cleric")
+        {
+            // → 클레릭 → 치료 대기 (턴 종료)
+            return {AIDecisionType::EndTurn, nullptr, {}, "", "Waiting for heal from Cleric"};
+        }
+        else if (target_type == "Dragon")
+        {
+            // → 드래곤 → 공격 가능한가? (행동력 AND 공격 범위)
+            if (actor->GetActionPoints() > 0 && distance <= attackRange)
+            {
+                return DecideAttackAction(actor, target, distance);
+            }
+            else
+            {
+                // 공격 불가 (행동력 부족 또는 사거리 밖) → 이동 가능한가? (Speed 체크!)
+                if (actor->GetMovementRange() > 0)  // ✅ Speed (이동력) 체크
+                {
+                    Math::ivec2 movePos = FindNextMovePos(actor, target, grid);
+                    if (movePos != actor->GetGridPosition()->Get())
+                    {
+                        return {AIDecisionType::Move, nullptr, movePos, "", "Moving closer"};
+                    }
+                }
+
+                // 이동도 불가 → 턴 종료
+                return {AIDecisionType::EndTurn, nullptr, {}, "", "No movement left"};
+            }
+        }
+    }
+
+    // ============================================================
+    // 4단계: 목표 미도달 시 이동
+    // ============================================================
+
+    // 이동력이 1 이상인가? (Speed 체크!)
+    if (actor->GetMovementRange() > 0)  // ✅ Speed (이동력) 체크
+    {
+        // → Yes → 목표로 1칸 이동
+        Math::ivec2 movePos = FindNextMovePos(actor, target, grid);
+
+        if (movePos != actor->GetGridPosition()->Get())
+        {
+            return {AIDecisionType::Move, nullptr, movePos, "",
+                    "Moving towards " + target_type};
+        }
+    }
+
+    // → No → 턴 종료
+    return {AIDecisionType::EndTurn, nullptr, {}, "", "No movement left"};
+}
+
+// ============================================================
+// 공격 결정 로직 (플로우차트: 공격 전략 분기)
+// ============================================================
+
+AIDecision FighterStrategy::DecideAttackAction(
+    Character* actor,
+    Character* target,
+    int distance
+)
+{
+    // [조건 1] 클레릭이 살아 있는가?
+    Character* cleric = FindCleric();
+
+    if (cleric != nullptr)
+    {
+        // → Yes → 주문 공격 사용 조건인가?
+        if (ShouldUseSpellAttack(actor, target))  // ← 전략별 판단 헬퍼
+        {
+            // ⚠️ TODO (Week 6+): Ability 시스템 구현 후 활성화
+            // if (distance == 1 && actor->HasSpell("Shield Bash"))
+            // {
+            //     return {AIDecisionType::UseAbility, target, {},
+            //             "Shield Bash", "Stunning Dragon (buffed)"};
+            // }
+
+            // 현재는 주문 슬롯을 사용하는 강화된 일반 공격
+            return {AIDecisionType::Attack, target, {}, "",
+                    "Enhanced attack (buffed, using spell slot)"};
+        }
+        else
+        {
+            // → No → 일반 공격 (주문 아끼기)
+            return {AIDecisionType::Attack, target, {}, "",
+                    "Basic attack (saving spell slots)"};
+        }
+    }
+    else
+    {
+        // → No (클레릭 없음) → 주문 슬롯이 1개 이상인가?
+        if (actor->HasAnySpellSlot())  // ← Character의 팩트 쿼리
+        {
+            // ⚠️ TODO (Week 6+): Ability 시스템 구현 후 활성화
+            // if (distance == 1 && actor->HasSpell("Shield Bash"))
+            // {
+            //     return {AIDecisionType::UseAbility, target, {},
+            //             "Shield Bash", "Stunning Dragon"};
+            // }
+
+            // 현재는 주문 슬롯을 사용하는 강화된 일반 공격
+            return {AIDecisionType::Attack, target, {}, "",
+                    "Max damage attack (using spell slot)"};
+        }
+        else
+        {
+            // → No → 일반 공격
+            return {AIDecisionType::Attack, target, {}, "",
+                    "Basic attack"};
+        }
+    }
+}
+
+// ============================================================
+// 헬퍼 함수들
+// ============================================================
+
+Character* FighterStrategy::FindDragon()
+{
+    GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    auto allChars = grid->GetAllCharacters();
+
+    for (auto* c : allChars)
+    {
+        if (c && c->IsAlive() && c->GetCharacterType() == CharacterTypes::Dragon)
+        {
+            return c;
+        }
+    }
+    return nullptr;
+}
+
+Character* FighterStrategy::FindCleric()
+{
+    // TODO: Cleric 구현 후 활성화
+    // GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    // auto allChars = grid->GetAllCharacters();
+    //
+    // for (auto* c : allChars)
+    // {
+    //     if (c && c->IsAlive() && c->GetCharacterType() == CharacterTypes::Cleric)
+    //     {
+    //         return c;
+    //     }
+    // }
+    return nullptr;  // 현재는 null 반환
+}
+
+// ============================================================
+// 전략별 판단 헬퍼 (Decision Helpers)
+// Character의 팩트 쿼리를 사용하여 Fighter만의 기준으로 판단
+// ============================================================
+
+bool FighterStrategy::IsInDanger(Character* actor) const
+{
+    // Fighter 전략: HP 30% 이하를 위험으로 판단
+    // (Cleric은 50% 이하, Rogue는 40% 이하 등 전략마다 다름)
+    return (actor->GetHPPercentage() <= 0.3f);
+}
+
+bool FighterStrategy::ShouldUseSpellAttack(Character* actor, Character* target) const
+{
+    // Fighter 전략: 클레릭이 있을 때는 버프/디버프 확인 후 주문 사용
+    // 조건: 내가 버프 받고, 드래곤이 디버프 받고, 주문 슬롯이 있을 때
+
+    // TODO: Week 6+ StatusEffect 시스템 구현 후 활성화
+    // bool iBuffed = actor->HasBuff("Blessed");
+    // bool targetDebuffed = target->HasDebuff("Weakened");
+    // bool hasSlots = actor->HasAnySpellSlot();
+    // return iBuffed && targetDebuffed && hasSlots;
+
+    // 현재는 주문 슬롯만 체크
+    return actor->HasAnySpellSlot();
+}
+
+Math::ivec2 FighterStrategy::FindNextMovePos(
+    Character* actor,
+    Character* target,
+    GridSystem* grid
+)
+{
+    Math::ivec2 targetPos = target->GetGridPosition()->Get();
+    Math::ivec2 myPos = actor->GetGridPosition()->Get();
+
+    std::vector<Math::ivec2> bestPath;
+    int bestPathCost = 999999;
+
+    // 드래곤의 상하좌우 4방향 중 갈 수 있는 가장 가까운 곳 탐색
+    static const Math::ivec2 offsets[4] = {
+        { 0,  1},
+        { 0, -1},
+        {-1,  0},
+        { 1,  0}
+    };
+
+    for (const auto& offset : offsets)
+    {
+        Math::ivec2 attackPos = targetPos + offset;
+
+        // 맵 밖이거나 막힌 곳이면 패스
+        if (!grid->IsValidTile(attackPos) || !grid->IsWalkable(attackPos))
+        {
+            continue;
+        }
+
+        // 해당 위치까지 경로 계산 (A*)
+        std::vector<Math::ivec2> currentPath = grid->FindPath(myPos, attackPos);
+
+        // 경로가 있고 더 짧다면 갱신
+        if (!currentPath.empty() && (int)currentPath.size() < bestPathCost)
+        {
+            bestPathCost = (int)currentPath.size();
+            bestPath = currentPath;
+        }
+    }
+
+    // 경로가 존재한다면
+    if (!bestPath.empty())
+    {
+        // 내 이동력(Speed) 한계 내에서 가장 멀리 갈 수 있는 칸 선택
+        int maxReach = std::min((int)bestPath.size(), actor->GetMovementRange());
+        int destIndex = maxReach - 1;
+
+        if (destIndex >= 0)
+        {
+            return bestPath[destIndex];
+        }
+    }
+
+    return myPos;  // 갈 곳 없으면 제자리 반환
+}
+```
+
+**Step 3: AISystem에서 Strategy 사용**
+
+```cpp
+// AISystem.cpp
+void AISystem::ExecuteAITurn(Character* character)
+{
+    if (!character || !character->IsAlive())
+    {
+        return;
+    }
+
+    // Strategy 패턴 사용
+    std::unique_ptr<IAIStrategy> strategy = nullptr;
+
+    switch (character->GetCharacterType())
+    {
+        case CharacterTypes::Fighter:
+            strategy = std::make_unique<FighterStrategy>();
+            break;
+
+        case CharacterTypes::Cleric:
+            // strategy = std::make_unique<ClericStrategy>();  // TODO
+            break;
+
+        case CharacterTypes::Wizard:
+            // strategy = std::make_unique<WizardStrategy>();  // TODO
+            break;
+
+        case CharacterTypes::Rogue:
+            // strategy = std::make_unique<RogueStrategy>();   // TODO
+            break;
+
+        default:
+            Engine::GetLogger().LogWarning("Unknown character type for AI");
+            return;
+    }
+
+    if (strategy)
+    {
+        AIDecision decision = strategy->MakeDecision(character);
+        ExecuteDecision(character, decision);
+    }
+}
+
+void AISystem::ExecuteDecision(Character* character, const AIDecision& decision)
+{
+    Engine::GetLogger().LogEvent("AI Decision: " + decision.reasoning);
+
+    switch (decision.type)
+    {
+        case AIDecisionType::Move:
+            // 이동 실행
+            GridSystem::Instance().MoveCharacter(character, decision.destination);
+            character->SetActionPoints(character->GetActionPoints() - 1);
+            break;
+
+        case AIDecisionType::Attack:
+            // 공격 실행
+            if (decision.target)
+            {
+                CombatSystem::Instance().ExecuteAttack(character, decision.target);
+                character->SetActionPoints(character->GetActionPoints() - 1);
+            }
+            break;
+
+        case AIDecisionType::UseAbility:
+            // ⚠️ TODO (Week 6+): Ability 시스템 구현 후 활성화
+            // 현재는 이 분기에 도달하지 않음 (위 코드에서 Attack으로 변경됨)
+            if (decision.target)
+            {
+                Engine::GetLogger().LogWarning("Ability system not implemented yet!");
+                // TODO: 어빌리티 시스템 연동
+                // Engine::GetLogger().LogEvent("Using ability: " + decision.abilityName);
+                // character->SetActionPoints(character->GetActionPoints() - 1);
+            }
+            break;
+
+        case AIDecisionType::EndTurn:
+            // 턴 종료
+            break;
+
+        default:
+            break;
+    }
+}
+```
+
+**Step 4: 플로우차트 작성** (architecture/character_flowchart/fighter.mmd)
+
+플로우차트는 이미 작성되어 있으므로, 코드와 일치 여부를 확인합니다.
+
+**플로우차트 주요 노드**:
+- ✅ 보물 체크 → 출구 이동
+- ✅ HP 30% 이하 체크 → 클레릭 찾기
+- ✅ 목표 도달 시 행동 분기 (출구/클레릭/드래곤)
+- ✅ 공격 시 버프/디버프 체크
+- ✅ 주문 슬롯 기반 공격 선택
+- ✅ A* 경로 찾기 기반 이동
+
+**테스트 체크리스트**:
+
+```cpp
+// TestFighterStrategy.cpp
+void TestFighterStrategy()
+{
+    // 1. 보물 탈출 테스트
+    Fighter* fighter = CreateTestFighter({1, 1});
+    // fighter->SetHasTreasure(true);  // TODO: 보물 시스템
+    // AIDecision decision = strategy->MakeDecision(fighter);
+    // assert(decision.type == AIDecisionType::Move);
+    // assert(decision.destination == Math::ivec2{0, 0});  // 출구
+
+    // 2. 위험 시 클레릭 찾기 테스트
+    fighter->SetHP(30);  // HP 30% 이하
+    // Cleric* cleric = CreateTestCleric({3, 3});  // TODO: Cleric
+    // decision = strategy->MakeDecision(fighter);
+    // assert(decision.target == cleric);
+
+    // 3. 드래곤 공격 테스트
+    Dragon* dragon = CreateTestDragon({4, 4});
+    fighter->SetHP(100);  // HP 충분
+    FighterStrategy strategy;
+    AIDecision decision = strategy.MakeDecision(fighter);
+
+    // 거리가 멀면 이동
+    assert(decision.type == AIDecisionType::Move);
+
+    // 거리가 가까우면 공격
+    fighter->SetGridPosition({4, 3});  // 드래곤 인접
+    decision = strategy.MakeDecision(fighter);
+    assert(decision.type == AIDecisionType::Attack ||
+           decision.type == AIDecisionType::UseAbility);
+}
+```
+
+**구현 우선순위**:
+
+1. ✅ **Week 4-5 (현재)**: FighterStrategy 완성 (클레릭 없이 드래곤만 상대)
+2. 🔜 **Week 6**: ClericStrategy 구현 후 Fighter AI와 연동
+3. 🔜 **Week 7**: WizardStrategy, RogueStrategy 구현
+4. 🔜 **Week 8**: 보물 시스템, 버프/디버프 시스템 연동
+
+---
+
+**🎯 하이브리드 접근 방식의 장점**
+
+위 구현은 **Fact Query (Character)** + **Decision Helper (Strategy)** 하이브리드 접근을 사용합니다.
+
+**1. Character 클래스의 팩트 쿼리 (Fact Queries)**
+
+```cpp
+// Character에 추가한 메서드들
+float GetHPPercentage() const;           // HP 백분율
+bool HasTreasure() const;                // 보물 소유 여부
+int GetAvailableSpellSlots(int level);   // 주문 슬롯 개수
+bool HasAnySpellSlot() const;            // 주문 슬롯 1개라도 있는지
+```
+
+**장점**:
+- ✅ **코드 재사용**: 모든 AI 전략이 동일한 메서드 사용
+- ✅ **중앙화된 상태 쿼리**: Character 단위 테스트 가능
+- ✅ **다른 시스템 활용**: UI, 디버그 도구에서도 사용 가능
+- ✅ **Null Safety**: 컴포넌트 검증을 한 곳에서 처리
+
+**2. FighterStrategy의 판단 헬퍼 (Decision Helpers)**
+
+```cpp
+// FighterStrategy의 전략별 판단
+bool IsInDanger(Character* actor) const
+{
+    return (actor->GetHPPercentage() <= 0.3f);  // Fighter: 30% 기준
+}
+
+bool ShouldUseSpellAttack(Character* actor, Character* target) const
+{
+    // Fighter만의 주문 사용 로직
+    // TODO: 버프/디버프 체크 추가
+    return actor->HasAnySpellSlot();
+}
+```
+
+**장점**:
+- ✅ **전략별 커스터마이징**: 각 캐릭터마다 다른 판단 기준
+  - Fighter: HP 30% 이하를 위험으로 판단
+  - Cleric: HP 50% 이하를 위험으로 판단 (더 보수적)
+  - Rogue: HP 40% 이하를 위험으로 판단
+- ✅ **명확한 책임 분리**: Character는 사실만 제공, Strategy가 의사결정
+- ✅ **확장성**: 새 전략 추가 시 기존 코드 수정 불필요
+
+**3. 비교: 다른 접근 방식들**
+
+| 접근 방식 | 장점 | 단점 |
+|----------|------|------|
+| **모두 Strategy에** | 전략이 자체 포함적 | 코드 중복, 유지보수 어려움 |
+| **모두 Character에** | 코드 재사용 극대화 | 전략별 커스터마이징 어려움 |
+| **하이브리드 (현재)** | 재사용 + 커스터마이징 균형 | 설계 복잡도 약간 증가 |
+
+**4. 향후 확장 예시: ClericStrategy**
+
+```cpp
+// ClericStrategy.cpp
+bool ClericStrategy::IsInDanger(Character* actor) const
+{
+    // Cleric은 더 보수적 (50% 이하를 위험으로 판단)
+    return (actor->GetHPPercentage() <= 0.5f);
+}
+
+bool ClericStrategy::ShouldHealAlly(Character* ally) const
+{
+    // Cleric의 힐 판단: 아군 HP 60% 이하
+    return (ally->GetHPPercentage() <= 0.6f);
+}
+
+AIDecision ClericStrategy::MakeDecision(Character* actor)
+{
+    // 1. 내가 위험한가?
+    if (IsInDanger(actor))  // ← Cleric만의 50% 기준
+    {
+        // 도망 로직
+    }
+
+    // 2. 치료가 필요한 아군이 있는가?
+    Character* injuredAlly = FindInjuredAlly();
+    if (injuredAlly && ShouldHealAlly(injuredAlly))  // ← Cleric만의 60% 기준
+    {
+        // ⚠️ TODO (Week 6+): Ability 시스템 구현 후 활성화
+        // return {AIDecisionType::UseAbility, injuredAlly, {}, "Heal", "Healing ally"};
+
+        // 현재는 임시로 대기 (Heal 어빌리티 미구현)
+        return {AIDecisionType::EndTurn, nullptr, {}, "", "Waiting to heal (ability not implemented)"};
+    }
+
+    // ...
+}
+```
+
+**5. Week 6+에서 추가할 것들**
+
+```cpp
+// Character.h (Week 6+)
+bool HasBuff(const std::string& buff_name) const;
+bool HasDebuff(const std::string& debuff_name) const;
+std::vector<std::string> GetActiveBuffs() const;
+std::vector<std::string> GetActiveDebuffs() const;
+```
+
+```cpp
+// FighterStrategy.cpp (Week 6+ 업그레이드)
+bool FighterStrategy::ShouldUseSpellAttack(Character* actor, Character* target) const
+{
+    // 완전한 구현: 버프/디버프 확인
+    bool iBuffed = actor->HasBuff("Blessed");
+    bool targetDebuffed = target->HasDebuff("Weakened");
+    bool hasSlots = actor->HasAnySpellSlot();
+
+    return iBuffed && targetDebuffed && hasSlots;
+}
+```
+
+**6. 핵심 설계 원칙**
+
+> **"사실은 Character가, 판단은 Strategy가"**
+
+- Character: `GetHPPercentage()` → 사실 (0.25f)
+- Strategy: `IsInDanger()` → 판단 (0.25f <= 0.3f → true)
+
+이렇게 하면:
+- 재사용성 ✅
+- 커스터마이징 ✅
+- 테스트 용이성 ✅
+- 확장성 ✅
+
+모두 확보할 수 있습니다!
 
 ---
 

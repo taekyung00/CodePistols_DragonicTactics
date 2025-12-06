@@ -7,6 +7,21 @@
 #include "GridSystem.h"
 #include <cassert>
 
+void GridSystem::SetExitPosition(Math::ivec2 pos)
+{
+  exit_position_ = pos;
+}
+
+Math::ivec2 GridSystem::GetExitPosition() const
+{
+  return exit_position_;
+}
+
+bool GridSystem::HasExit() const
+{
+  return exit_position_ != Math::ivec2{ -1, -1 };
+}
+
 GridSystem::GridSystem()
 {
   Reset();
@@ -22,6 +37,7 @@ void GridSystem::Reset()
 	  character_grid[y][x] = nullptr;
 	}
   }
+  exit_position_ = { -1, -1 };
 }
 
 bool GridSystem::IsValidTile(Math::ivec2 pos) const
@@ -74,6 +90,9 @@ void GridSystem::Draw() const
 		case TileType::Wall:
 		  renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), CS200::BROWN, 0U);
 		  // renderer_2d.DrawRectangle(, TILE_SIZE, TILE_SIZE, BROWN);
+		  break;
+		case TileType::Exit:
+		  renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), CS200::GREEN, 0U);
 		  break;
 		case TileType::Empty: break;
 		default: break;

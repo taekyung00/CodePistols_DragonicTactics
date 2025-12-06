@@ -34,6 +34,7 @@ flowchart TD
         CanIAttack--"Yes"                               --> IsClericAlive2("클레릭이 살아 있는가?")
         CanIAttack--"No"                                --> CanIMove("이동력이 1 이상인가?")
         
+        
         IsClericAlive2--"Yes<br>"                       --> DoIHaveBuffAndDoesDragonHasDebuff("내가 버프를 받고,<br>드래곤이 디버프를 받고있는가?")
         DoIHaveBuffAndDoesDragonHasDebuff--"Yes"        --> DoIHaveSpellSlot("주문 슬롯이 1개 이상인가?")
         DoIHaveBuffAndDoesDragonHasDebuff--"No"         --> AttackDragon("드래곤에게 일반 공격사용<br>(주문 아끼기)")

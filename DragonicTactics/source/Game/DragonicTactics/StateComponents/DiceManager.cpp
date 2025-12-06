@@ -48,9 +48,9 @@ int DiceManager::RollDice(int count, int sides)
 int DiceManager::RollDiceFromString(const std::string& notation)
 {
   std::string NdS = notation;
-  NdS.erase(std::remove_if(NdS.begin(), NdS.end(), ::isspace), NdS.end()); // 공백제거
+  NdS.erase(std::remove_if(NdS.begin(), NdS.end(), ::isspace), NdS.end()); // Remove whitespace
 
-  size_t dD = NdS.find_first_of("dD"); // d또는 D의 위치 찾기.
+  size_t dD = NdS.find_first_of("dD"); // Find 'd' or 'D' position
   if (dD == std::string::npos)
   {
 	lastRolls.clear();
@@ -64,25 +64,25 @@ int DiceManager::RollDiceFromString(const std::string& notation)
 
   try
   {
-	count = std::stoi(NdS.substr(0, dD)); // stoi= string -> int로 변환시키기. 주사위 갯수. NdS에서 N부분과 d이후 뒤에부분 분리.
+	count = std::stoi(NdS.substr(0, dD)); // Parse count (NdS)
 	if (count <= 0)
 	{
 	  throw;
 	}
 
-	// NdS뒤에 오는 부호가 뭔지 찾기.
+	// Find '+' or '-' modifier sign after 'd'
 	size_t sign = NdS.find('+', dD + 1);
 	if (sign == std::string::npos)
 	  sign = NdS.find('-', dD + 1);
 
 	if (sign == std::string::npos)
 	{
-	  // 따로 부호 없는 경우. ex) 3d6
+	  // No modifier sign (e.g., 3d6)
 	  sides = std::stoi(NdS.substr(dD + 1));
 	}
 	else
 	{
-	  // 부호 있는 경우 3d6 + 2
+	  // Has modifier (e.g., 3d6+2)
 	  sides = std::stoi(NdS.substr(dD + 1, sign - (dD + 1)));
 	  mod	= std::stoi(NdS.substr(sign));
 	}
@@ -95,7 +95,7 @@ int DiceManager::RollDiceFromString(const std::string& notation)
 
   catch (...)
   {
-	// 만약 입력에 오류가 났을 경우.
+	// Invalid input format
 	lastRolls.clear();
 	LogRoll(notation, 0);
 	return 0;

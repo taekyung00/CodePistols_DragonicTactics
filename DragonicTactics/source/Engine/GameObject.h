@@ -57,7 +57,7 @@ public:
 	double							  GetRotation() const;
 
 	template <typename T>
-	T* GetGOComponent()
+	T* GetGOComponent() 
 	{
 	  return componentmanager.GetComponent<T>();
 	}

@@ -48,6 +48,11 @@ struct CharacterHealedEvent
   Character* healer; // Who cast healing spell (can be self)
 };
 
+struct CharacterEscapedEvent
+{
+  Character* character;
+};
+
 struct CharacterDeathEvent
 {
   Character* character;

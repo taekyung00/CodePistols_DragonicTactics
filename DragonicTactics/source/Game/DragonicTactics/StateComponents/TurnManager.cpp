@@ -129,7 +129,7 @@ void TurnManager::EndCurrentTurn()
 
   Character* currentChar = turnOrder[currentTurnIndex];
 
-  // OnTurnEnd È£Ãâ
+  // Call OnTurnEnd
   Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - Calling OnTurnEnd");
   currentChar->OnTurnEnd();
 
