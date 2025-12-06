@@ -5,6 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 프로젝트 개요
 
 **Dragonic Tactics**: D&D 스타일 턴제 전술 RPG
+
 - **엔진**: 커스텀 C++20 OpenGL 엔진 (CMake 빌드 시스템)
 - **기간**: 26주 개발 계획
 - **현재 상태**: Week 1-3 완료, Milestone 3 완료, Week 4-5 진행 중
@@ -38,6 +39,7 @@ build/windows-debug/dragonic_tactics.exe
 ```
 
 ### 빌드 프리셋
+
 - `windows-debug` - 디버그 빌드 (콘솔 출력 활성화)
 - `windows-developer-release` - 최적화 + 디버그 심볼 + 콘솔
 - `windows-release` - 완전 최적화 (콘솔 비활성화)
@@ -46,6 +48,7 @@ build/windows-debug/dragonic_tactics.exe
 - `web-debug` / `web-developer-release` / `web-release` - Web 빌드 (Emscripten)
 
 ### 테스트 단축키 (GamePlay 상태에서)
+
 - **F**: EventBus 테스트
 - **E**: DiceManager 테스트
 - **T**: Dragon 턴 상태 표시
@@ -149,6 +152,7 @@ CodePistols_DragonicTactics/
 **중요**: 모든 시스템은 `StateComponents/` 디렉토리에 위치하며, GameState 컴포넌트로 구현됨
 
 ### 1. 이벤트 시스템 (EventBus)
+
 **GameState 컴포넌트**, 타입 안전 이벤트 디스패치
 
 ```cpp
@@ -165,6 +169,7 @@ EventBus::Instance().Publish(event);
 ```
 
 ### 2. 주사위 시스템 (DiceManager)
+
 **GameState 컴포넌트**, D&D 주사위 표기법 지원
 
 ```cpp
@@ -176,19 +181,23 @@ int result = DiceManager::Instance().RollDiceFromString("2d8+5");
 ```
 
 ### 3. 캐릭터 시스템 (Character)
+
 **GameObject 상속**, 컴포넌트 기반 아키텍처
 
 **컴포넌트**:
+
 - `GridPosition` - 8x8 그리드 좌표
 - `StatsComponent` - HP, 공격력, 방어력, 속도
 - `ActionPoints` - 턴당 행동 포인트
 - `SpellSlots` - 마법 시스템 (레벨 1-9)
 
 **구현된 캐릭터**:
+
 - `Dragon` - 플레이어 캐릭터
 - `Fighter` - 적 캐릭터 (근접 전투)
 
 ### 4. 그리드 시스템 (GridSystem)
+
 **GameState 컴포넌트**, 8x8 전술 그리드
 
 ```cpp
@@ -202,6 +211,7 @@ Character* GetCharacterAt(Math::ivec2 position) const;
 ```
 
 ### 5. 턴 관리 (TurnManager)
+
 **GameState 컴포넌트**, 속도 기반 이니셔티브
 
 ```cpp
@@ -216,6 +226,7 @@ Character* GetCurrentCharacter() const;
 ```
 
 ### 6. 전투 시스템 (CombatSystem)
+
 **GameState 컴포넌트**, 주사위 기반 데미지 계산
 
 ```cpp
@@ -232,6 +243,7 @@ int distance = CombatSystem::Instance().GetDistance(pos1, pos2);
 ```
 
 ### 7. 마법 시스템 (SpellSystem)
+
 **GameState 컴포넌트**, D&D 스펠 슬롯 및 캐스팅
 
 ```cpp
@@ -243,6 +255,7 @@ bool hasSlot = character->GetSpellSlots()->HasSlot(spell_level);
 ```
 
 ### 8. AI 시스템 (AISystem)
+
 **GameState 컴포넌트**, 적 AI 의사결정
 
 ```cpp
@@ -251,6 +264,7 @@ AISystem::Instance().ExecuteAITurn(character);
 ```
 
 ### 9. 데이터 레지스트리 (DataRegistry)
+
 **GameState 컴포넌트**, JSON 기반 캐릭터 데이터 로딩
 
 ```cpp
@@ -264,12 +278,14 @@ auto charData = DataRegistry::Instance().GetCharacterData("Dragon");
 ## 개발 패턴
 
 ### 네임스페이스
+
 - **CS230**: 엔진 코어 (Engine, GameObject, GameState, Component)
 - **CS200**: 렌더링 추상화 (IRenderer2D, RenderingAPI)
 - **OpenGL**: 저수준 OpenGL 래퍼
 - **Math**: 수학 유틸리티 (vec2, ivec2, TransformationMatrix)
 
 ### StateComponent 시스템 접근
+
 모든 게임 시스템은 GameState 컴포넌트로 구현되며, Instance() 메서드로 접근:
 
 ```cpp
@@ -294,6 +310,7 @@ GridSystem::Instance().MoveCharacter(character, position);
 ```
 
 ### 엔진 서브시스템 접근
+
 ```cpp
 Engine::GetLogger().LogEvent("메시지");
 Engine::GetInput().IsKeyPressed(InputKey::Space);
@@ -302,10 +319,12 @@ Engine::GetGameStateManager().SetNextGameState<BattleState>();
 ```
 
 **중요**: GameState와 GameObject는 서로 다른 컴포넌트 시스템 사용:
+
 - **GameState**: `AddGSComponent()`, `GetGSComponent<T>()`, `UpdateGSComponents(dt)`
 - **GameObject**: `AddGOComponent()`, `GetGOComponent<T>()` (Update는 GameObject::Update에서 자동 호출)
 
 ### GameObject 개발
+
 ```cpp
 class MyCharacter : public CS230::GameObject {
 public:
@@ -323,6 +342,7 @@ public:
 ```
 
 ### 컴포넌트 개발
+
 ```cpp
 class MyComponent : public CS230::Component {
 public:
@@ -343,6 +363,7 @@ void MyGameObject::Update(double dt) {
 ```
 
 ### GameState 개발
+
 ```cpp
 class MyGameState : public CS230::GameState {
 public:
@@ -373,18 +394,21 @@ public:
 ### 렌더링 모드
 
 1. **ImmediateRenderer2D** (기본)
+   
    - 즉시 모드 렌더링
    - 각 Draw 호출마다 즉시 GPU에 전송
    - 단순하고 디버깅이 쉬움
    - 성능: 낮음 (많은 draw call)
 
 2. **BatchRenderer2D**
+   
    - 배치 렌더링
    - 동일한 텍스처를 사용하는 여러 쿼드를 하나의 draw call로 묶음
    - CPU에서 정점 데이터를 모아서 한 번에 GPU로 전송
    - 성능: 중간 (draw call 감소)
 
 3. **InstancedRenderer2D**
+   
    - 인스턴스 렌더링
    - GPU 인스턴싱을 활용하여 동일한 메시를 여러 번 그림
    - 각 인스턴스는 다른 변환 행렬과 텍스처 좌표 사용
@@ -447,6 +471,7 @@ size_t GetDrawTextureCounter();
 ## 기술 스택
 
 ### 빌드 시스템
+
 - **CMake 3.21+** (C++20 표준)
 - **Visual Studio 2022** (Platform Toolset v143)
 - **경고 레벨**: Level 4, 경고를 오류로 처리
@@ -454,7 +479,9 @@ size_t GetDrawTextureCounter();
 - **소스 파일 수집**: GLOB_RECURSE로 자동 감지 (CMakeLists.txt 수동 업데이트 불필요)
 
 ### 외부 의존성 (자동 다운로드)
+
 CMake FetchContent로 자동 관리:
+
 - **OpenGL** - 그래픽 API
 - **GLEW** - OpenGL 확장
 - **SDL2** - 윈도우, 입력, 플랫폼 추상화 (v2.28.5+)
@@ -464,12 +491,14 @@ CMake FetchContent로 자동 관리:
 - **nlohmann/json** - JSON 파싱 (json.hpp in External/)
 
 ### 플랫폼 지원
+
 - **Windows (Native)**: MSVC, OpenGL 직접 렌더링
 - **WebAssembly**: Emscripten, SDL2 + OpenGL ES
 
 ## 개발 프로세스
 
 ### 계획 문서 관리
+
 프로젝트는 유연한 계획 관리 방식을 따릅니다:
 
 1. **architecture.md**: 전체 게임 아키텍처 및 시스템 설계 (변경 없음)
@@ -485,7 +514,9 @@ CMake FetchContent로 자동 관리:
    - 5명의 개발자 역할 분담 포함
 
 ### 작업 우선순위 설정
+
 새로운 우선순위를 설정할 때:
+
 1. 구현하고 싶은 기능/개선사항 나열
 2. Claude와 함께 기술적 타당성 평가
 3. 합의 후 implementation-plan.md 재작성
@@ -496,6 +527,7 @@ CMake FetchContent로 자동 관리:
 자세한 설계 문서는 [docs/index.md](docs/index.md) 참조:
 
 ### 시스템 설계
+
 - [docs/architecture.md](docs/architecture.md) - 전체 아키텍처
 - [docs/systems/characters.md](docs/systems/characters.md) - 캐릭터 시스템
 - [docs/systems/singletons.md](docs/systems/singletons.md) - 싱글톤 서비스
@@ -503,12 +535,14 @@ CMake FetchContent로 자동 관리:
 - [docs/systems/game-object-components.md](docs/systems/game-object-components.md) - 컴포넌트
 
 ### 구현 가이드
+
 - [docs/implementation-plan.md](docs/implementation-plan.md) - 26주 개발 계획
 - [docs/Detailed Implementations/weeks/week1.md](docs/Detailed%20Implementations/weeks/week1.md) - Week 1 가이드 (완료)
 - [docs/Detailed Implementations/weeks/week2.md](docs/Detailed%20Implementations/weeks/week2.md) - Week 2 가이드 (완료)
 - [docs/Detailed Implementations/weeks/week3.md](docs/Detailed%20Implementations/weeks/week3.md) - Week 3 가이드 (완료)
 
 ### 디버그 도구
+
 - [docs/debug/tools.md](docs/debug/tools.md) - 디버그 시스템
 - [docs/debug/commands.md](docs/debug/commands.md) - 콘솔 명령어
 - [docs/debug/ui.md](docs/debug/ui.md) - 디버그 UI
@@ -518,6 +552,7 @@ CMake FetchContent로 자동 관리:
 ### ✅ 완료 (Week 1-3, Milestone 3)
 
 - **렌더링 시스템**
+  
   - IRenderer2D 인터페이스
   - ImmediateRenderer2D (즉시 모드)
   - BatchRenderer2D (배치 렌더링)
@@ -525,6 +560,7 @@ CMake FetchContent로 자동 관리:
   - 런타임 렌더러 전환 기능
 
 - **핵심 시스템** (모두 StateComponents로 구현)
+  
   - EventBus (이벤트 시스템)
   - DiceManager (주사위 굴림)
   - CombatSystem (전투 해결)
@@ -535,25 +571,30 @@ CMake FetchContent로 자동 관리:
   - DataRegistry (JSON 데이터 로딩)
 
 - **캐릭터 시스템**
+  
   - Character 베이스 클래스
   - Dragon 캐릭터 (플레이어)
   - Fighter 캐릭터 (적)
   - 컴포넌트: StatsComponent, ActionPoints, SpellSlots, GridPosition, MovementComponent
 
 - **어빌리티 시스템**
+  
   - AbilityBase 인터페이스
   - MeleeAttack, ShieldBash
 
 - **액션 시스템**
+  
   - Action 베이스 클래스
   - ActionAttack
 
 - **디버그 도구**
+  
   - DebugConsole (콘솔 명령어)
   - DebugManager (디버그 모드 관리)
   - DebugVisualizer (그리드 시각화)
 
 ### ⏳ 진행 중 (Week 4-5)
+
 - **턴 플로우 개선**: 각 턴 시작/진행/종료 시 필수 작업들의 명확한 정의 및 함수 일대일 대응
 - **AI 시스템 강화**: 4명의 모험가 캐릭터에 대한 robust한 AI 구현
 - **디버그 UI 개선**: ImGui 기반 정보 표시, 런타임 토글 기능
@@ -562,6 +603,7 @@ CMake FetchContent로 자동 관리:
 - **맵 데이터 로딩**: JSON 기반 맵 데이터 파싱 및 타일 정보 설정
 
 ### 📋 계획 (Week 6+)
+
 - 더 많은 캐릭터 클래스
 - 더 많은 어빌리티
 - 고급 AI 행동
@@ -571,21 +613,25 @@ CMake FetchContent로 자동 관리:
 ## 핵심 파일
 
 ### 엔트리 포인트
+
 - [DragonicTactics/source/main.cpp](DragonicTactics/source/main.cpp)
 
 ### 엔진 코어
+
 - [Engine.hpp](DragonicTactics/source/Engine/Engine.hpp) - 엔진 싱글톤
 - [GameObject.h](DragonicTactics/source/Engine/GameObject.h) - 엔티티 베이스
 - [GameState.hpp](DragonicTactics/source/Engine/GameState.hpp) - 상태 인터페이스
 - [TextureManager.h](DragonicTactics/source/Engine/TextureManager.h) - 텍스처 및 렌더러 관리
 
 ### 렌더링 시스템 (CS200)
+
 - [IRenderer2D.h](DragonicTactics/source/CS200/IRenderer2D.h) - 렌더러 인터페이스
 - [ImmediateRenderer2D.h](DragonicTactics/source/CS200/ImmediateRenderer2D.h) - 즉시 모드 렌더러
 - [BatchRenderer2D.h](DragonicTactics/source/CS200/BatchRenderer2D.h) - 배치 렌더러
 - [InstancedRenderer2D.h](DragonicTactics/source/CS200/InstancedRenderer2D.h) - 인스턴스 렌더러
 
 ### 게임 시스템 (StateComponents)
+
 - [Character.h](DragonicTactics/source/Game/DragonicTactics/Objects/Character.h) - 캐릭터 베이스
 - [EventBus.h](DragonicTactics/source/Game/DragonicTactics/StateComponents/EventBus.h) - 이벤트 시스템
 - [GridSystem.h](DragonicTactics/source/Game/DragonicTactics/StateComponents/GridSystem.h) - 그리드 시스템
@@ -629,13 +675,16 @@ build/windows-debug/dragonic_tactics.exe
 ```
 
 **테스트 파일 위치**: `DragonicTactics/source/Game/DragonicTactics/Test/`
+
 - 각 시스템별로 Test*.h/cpp 파일 존재
 - GamePlay.cpp에서 키보드 입력으로 테스트 함수 호출
 
 ## 일반적인 개발 워크플로우
 
 ### 디버깅 및 함수 호출 추적
+
 턴 관리 및 시스템 통합 디버깅 시:
+
 1. `__PRETTY_FUNCTION__` 매크로와 Logger 사용하여 함수 호출 확인
 2. 중복되는 기능 제거 (예: `OnTurnStart()` vs `RefreshActionPoints()`)
 3. 각 턴 단계별 필수 작업을 플로우차트로 정리
@@ -650,6 +699,7 @@ void Character::OnTurnStart() {
 ```
 
 ### 새 캐릭터 클래스 추가
+
 1. `Objects/` 에 `MyCharacter.h/cpp` 생성 (첫 줄에 `#include "pch.h"` 추가)
 2. `Character` 상속 및 필요한 컴포넌트 추가
 3. CMake가 자동으로 파일 감지 (CMakeLists.txt 수동 편집 불필요)
@@ -658,6 +708,7 @@ void Character::OnTurnStart() {
 6. 빌드 후 테스트
 
 **예시**:
+
 ```cpp
 // CharacterFactory.cpp에 추가
 Wizard* CharacterFactory::CreateWizard(Math::ivec2 position) {
@@ -671,6 +722,7 @@ Character* wizard = CharacterFactory::Create(CharacterTypes::Wizard, position);
 ```
 
 ### 새 어빌리티 추가
+
 1. `Abilities/` 에 `MyAbility.h/cpp` 생성
 2. `AbilityBase` 인터페이스 구현
 3. `Character::abilities_` 벡터에 추가
@@ -678,12 +730,14 @@ Character* wizard = CharacterFactory::Create(CharacterTypes::Wizard, position);
 5. 빌드 후 GamePlay에서 테스트
 
 ### 새 이벤트 타입 추가
+
 1. `Types/Events.h`에 이벤트 구조체 정의
 2. 발행자에서 `EventBus::Instance().Publish(event)` 호출
 3. 구독자에서 `EventBus::Instance().Subscribe<EventType>(callback)` 호출
 4. 테스트 시 `EventBus::Instance().SetLogging(true)` 활성화
 
 ### JSON 데이터 수정
+
 1. `Assets/Data/characters.json` 편집
 2. 게임 실행 후 **R** 키로 리로드
 3. **L** 키로 로드된 데이터 확인
@@ -701,6 +755,7 @@ Character* wizard = CharacterFactory::Create(CharacterTypes::Wizard, position);
 ## 문제 해결
 
 ### 빌드 실패
+
 ```bash
 # CMake 캐시 정리 후 재구성
 cd DragonicTactics
@@ -710,15 +765,18 @@ cmake --build --preset windows-debug
 ```
 
 ### 실행 파일이 Assets을 찾지 못함
+
 - 실행 파일은 항상 `DragonicTactics/` 디렉토리에서 실행해야 함
 - Assets 폴더는 `DragonicTactics/Assets/`에 위치
 
 ### Visual Studio에서 빌드 시
+
 - CMake 프리셋을 사용하거나
 - VS에서 "Open Folder"로 DragonicTactics 폴더 열기
 - CMakePresets.json이 자동으로 인식됨
 
 ### 링커 오류 (unresolved external symbol)
+
 - `source/CMakeLists.txt`의 `SOURCE_CODE`에 .cpp 파일 추가 확인
 - CMake 재구성: `cmake --preset windows-debug`
 
@@ -735,11 +793,13 @@ cmake --build --preset windows-debug
 ## 추가 참고 문서
 
 ### 아키텍처 및 리팩토링
+
 - [architecture/engine-game-separation-plan.md](architecture/engine-game-separation-plan.md) - 🎯 **엔진-게임 분리 계획** (4-Phase 마이그레이션 가이드)
 - [architecture/REFACTORING_TODO.md](architecture/REFACTORING_TODO.md) - 현재 진행 중인 리팩토링 작업
 - [architecture/dragonic_tactics.md](architecture/dragonic_tactics.md) - 게임 디자인 문서 (한글)
 - [architecture/game_architecture_rules.md](architecture/game_architecture_rules.md) - 아키텍처 원칙
 
 ### 구현 가이드
+
 - [docs/implementation-plan.md](docs/implementation-plan.md) - 유연한 구현 계획 (우선순위 기반)
 - [docs/Detailed Implementations/weeks/](docs/Detailed%20Implementations/weeks/) - 주차별 상세 구현 가이드 (한글)
