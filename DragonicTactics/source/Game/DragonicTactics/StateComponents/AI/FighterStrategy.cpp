@@ -127,24 +127,14 @@ AIDecision FighterStrategy::MakeDecision(Character* actor)
 	else if (target_type == "Dragon")
 	{
 	  // → 드래곤 → 공격 가능한가? (행동력 AND 공격 범위)
-	  if (actor->GetActionPoints() > 0 && distance <= attackRange)
+	  if (actor->GetActionPoints() > 0)
 	  {
 		return DecideAttackAction(actor, target, distance);
 	  }
 	  else
 	  {
-		// 공격 불가 (행동력 부족 또는 사거리 밖) → 이동 가능한가? (Speed 체크!)
-		if (actor->GetMovementRange() > 0) // Speed (이동력) 체크
-		{
-		  Math::ivec2 movePos = FindNextMovePos(actor, target, grid);
-		  if (movePos != actor->GetGridPosition()->Get())
-		  {
-			return { AIDecisionType::Move, nullptr, movePos, "", "Moving closer" };
-		  }
-		}
-
-		// 이동도 불가 → 턴 종료
-		return { AIDecisionType::EndTurn, nullptr, {}, "", "No movement left" };
+		//턴 종료
+		return { AIDecisionType::EndTurn, nullptr, {}, "", "No AttackPoint left" };
 	  }
 	}
   }
