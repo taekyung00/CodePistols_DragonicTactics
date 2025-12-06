@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 ﻿/**
+=======
+/**
+>>>>>>> main
  * \file
  * \author Rudy Castan
  * \date 2025 Fall
@@ -12,8 +16,15 @@
 
 namespace CS200::RenderingAPI
 {
+<<<<<<< HEAD
     void Init() noexcept;
     void SetClearColor(CS200::RGBA color) noexcept;
     void Clear() noexcept;
     void SetViewport(Math::ivec2 size, Math::ivec2 anchor_left_bottom = { 0, 0 }) noexcept;
+=======
+  void Init() noexcept;
+  void SetClearColor(CS200::RGBA color) noexcept;
+  void Clear() noexcept;
+  void SetViewport(Math::ivec2 size, Math::ivec2 anchor_left_bottom = { 0, 0 }) noexcept;
+>>>>>>> main
 }

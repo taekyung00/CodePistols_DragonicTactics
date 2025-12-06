@@ -11,6 +11,7 @@ Created:    May 29, 2025
 
 #include "../Engine/GameObject.h"
 #include "../Engine/Vec2.h"
+<<<<<<< HEAD
 class Score : public CS230::Component {
 public:
 	Score(int value);
@@ -19,4 +20,21 @@ public:
 	const int& Value() const { return value; }
 private:
 	int value;
+=======
+
+class Score : public CS230::Component
+{
+  public:
+  Score(int value);
+  void Add(int dv = 1);
+  void Sub(int dv = 1);
+
+  const int& Value() const
+  {
+	return value;
+  }
+
+  private:
+  int value;
+>>>>>>> main
 };

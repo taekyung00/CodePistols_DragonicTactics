@@ -10,6 +10,7 @@ Created:    May 17, 2025
 #pragma once
 #include "Component.h"
 #include "Engine.h"
+<<<<<<< HEAD
 namespace CS230 {
     class ShowCollision : public CS230::Component {
     public:
@@ -19,4 +20,19 @@ namespace CS230 {
     private:
         bool enabled;
     };
+=======
+
+namespace CS230
+{
+  class ShowCollision : public CS230::Component
+  {
+public:
+	ShowCollision();
+	void Update(double dt) override;
+	bool Enabled();
+
+private:
+	bool enabled;
+  };
+>>>>>>> main
 }

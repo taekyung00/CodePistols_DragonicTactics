@@ -8,8 +8,9 @@ Author:     Taekyung Ho
 Created:    May 5, 2025
 */
 #pragma once
-enum Fonts {
-    Simple,
-    Outlined
-};
 
+enum Fonts
+{
+  Simple,
+  Outlined
+};

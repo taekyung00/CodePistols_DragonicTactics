@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 ﻿/**
+=======
+/**
+>>>>>>> main
  * \file
  * \author Rudy Castan
  * \author Jonathan Holmes
@@ -13,6 +17,7 @@
 
 namespace CS230
 {
+<<<<<<< HEAD
     class GameState
     {
     public:
@@ -55,5 +60,49 @@ namespace CS230
     private:
         ComponentManager componentmanager;
     };
+=======
+  class GameState
+  {
+public:
+	virtual void		  Load()			= 0;
+	virtual void		  Update(double dt) = 0;
+	virtual void		  Unload()			= 0;
+	virtual void		  Draw()			= 0;
+	virtual void		  DrawImGui()		= 0;
+	virtual gsl::czstring GetName() const	= 0;
+	virtual ~GameState()					= default;
+
+	template <typename T>
+	T* GetGSComponent()
+	{
+	  return componentmanager.GetComponent<T>();
+	}
+
+protected:
+	void AddGSComponent(Component* component)
+	{
+	  componentmanager.AddComponent(component);
+	}
+
+	void UpdateGSComponents(double dt)
+	{
+	  componentmanager.UpdateAll(dt);
+	}
+
+	template <typename T>
+	void RemoveGSComponent()
+	{
+	  componentmanager.RemoveComponent<T>();
+	}
+
+	void ClearGSComponents()
+	{
+	  componentmanager.Clear();
+	}
+
+private:
+	ComponentManager componentmanager;
+  };
+>>>>>>> main
 
 }

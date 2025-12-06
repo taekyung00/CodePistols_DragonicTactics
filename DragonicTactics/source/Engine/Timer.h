@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 ﻿/**
+=======
+/**
+>>>>>>> main
  * \file
  * \author Rudy Castan
  * \date 2025 Fall
@@ -7,6 +11,7 @@
  */
 #pragma once
 
+<<<<<<< HEAD
 #include <chrono>
 #include "Component.h"
 namespace util
@@ -33,4 +38,34 @@ namespace util
             return std::chrono::duration_cast<second_t>(clock_t::now() - timeStamp).count();
         }
     };
+=======
+#include "Component.h"
+#include <chrono>
+
+namespace util
+{
+  class [[nodiscard]] Timer : public CS230::Component
+  {
+private:
+	using clock_t  = std::chrono::steady_clock;
+	using second_t = std::chrono::duration<double, std::ratio<1>>;
+
+	std::chrono::time_point<clock_t> timeStamp;
+
+public:
+	Timer() noexcept : timeStamp(clock_t::now())
+	{
+	}
+
+	void ResetTimeStamp() noexcept
+	{
+	  timeStamp = clock_t::now();
+	}
+
+	double GetElapsedSeconds() const noexcept
+	{
+	  return std::chrono::duration_cast<second_t>(clock_t::now() - timeStamp).count();
+	}
+  };
+>>>>>>> main
 }

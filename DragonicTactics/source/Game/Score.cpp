@@ -11,16 +11,16 @@ Created:    May 29, 2025
 */
 #include "Score.h"
 
-
-Score::Score( int _value) 
-	:  value(_value){}
+Score::Score(int _value) : value(_value)
+{
+}
 
 void Score::Add(int dv)
 {
-	value += dv;
+  value += dv;
 }
 
 void Score::Sub(int dv)
 {
-    value -= dv;
+  value -= dv;
 }

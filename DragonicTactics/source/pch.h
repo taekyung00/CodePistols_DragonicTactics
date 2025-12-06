@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-
 #include <vector>
 #include <string>
 #include <memory>
@@ -15,7 +14,10 @@
 #include <sstream>
 #include <cmath>
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> main
 #include "Engine/Engine.h"
 #include "Engine/GameObject.h"
 #include "Engine/GameState.h"
@@ -30,20 +32,37 @@
 #include "Engine/Sprite.h"
 #include "Engine/Animation.h"
 
+<<<<<<< HEAD
 
 #include "Engine/Vec2.h"
 #include "Engine/Matrix.h"
 #include "Engine/Rect.h"
 
+=======
+#include "Engine/Vec2.h"
+#include "Engine/Matrix.h"
+#include "Engine/Rect.h"
+>>>>>>> main
 
 #include "Game/DragonicTactics/Types/GameTypes.h"
 #include "Game/DragonicTactics/Types/CharacterTypes.h"
 #include "Game/DragonicTactics/Types/GameObjectTypes.h"
 #include "Game/DragonicTactics/Types/Events.h"
 
-
 #include <SDL.h>
 #include <imgui.h>
 
-
 #include <gsl/gsl>
+
+<<<<<<< HEAD
+#include <gsl/gsl>
+=======
+// Cross-platform function name macro
+#if defined(__GNUC__) || defined(__clang__)
+#  define FUNC_NAME __PRETTY_FUNCTION__
+#elif defined(_MSC_VER)
+#  define FUNC_NAME __FUNCSIG__
+#else
+#  define FUNC_NAME __func__
+#endif
+>>>>>>> main

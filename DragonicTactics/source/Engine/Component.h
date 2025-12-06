@@ -9,11 +9,12 @@ Created:    May 17, 2025
 */
 #pragma once
 
-namespace CS230 {
-    class Component {
-    public:
-        virtual ~Component() {};
-        virtual void Update([[maybe_unused]] double dt) {};
-    };
+namespace CS230
+{
+  class Component
+  {
+public:
+	virtual ~Component() { };
+	virtual void Update([[maybe_unused]] double dt) { };
+  };
 }
-

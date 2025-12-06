@@ -1,0 +1,36 @@
+flowchart TD
+    %% Nodes for wizard
+    SettingTarget("목표 설정")
+    SettingTarget           --> AreWeInDanger("도망쳐야하는 상황인가?")
+
+    AreWeInDanger -- "Yes"   --> TargetExit("목표 = 출구")
+    AreWeInDanger -- "No"    --> TargetSafePlace("목표 = 안전지대<br>(최대 사거리 또는 엄폐 위치)")
+
+    TargetSafePlace         --> MoveStart("행동 시작")
+    TargetExit              --> MoveStart("행동 시작")
+
+    MoveStart               --> AmIOnTarget("목표(안전지대)에 도달했나?")
+    AmIOnTarget   -- "Yes"   --> CanIAct("행동력이 1 이상인가?")
+    AmIOnTarget   -- "No"    --> CanIMove("이동력이 1 이상인가?")
+
+    CanIMove      -- "Yes"   --> MoveToTarget("목표로 1칸 이동")
+    CanIMove      -- "No"    --> CanIAct("행동력이 1 이상인가?")
+
+    MoveToTarget            --> DecreaseMovePoint("이동력을 1 소모")
+    DecreaseMovePoint       --> AmIOnTarget
+
+    CanIAct       -- "No"    --> TurnEnd("턴 종료")
+    CanIAct       -- "Yes"   --> IsDragonInRange("드래곤이 공격 범위 안에 있는가?")
+
+    IsDragonInRange -- "No" --> TurnEnd("턴 종료") 
+    IsDragonInRange -- "Yes" --> DoIHaveSpellSlot("주문 슬롯이 1개 이상인가?") 
+
+    %% --- 공격 실행 및 루프 로직 ---
+    DoIHaveSpellSlot -- "Yes" --> SpellAttackDragon("드래곤에게<br>가장 강력한 주문 사용")
+    DoIHaveSpellSlot -- "No"  --> AttackDragon("드래곤에게 일반 공격")
+
+    SpellAttackDragon       --> DecreaseSpellSlot("주문 슬롯을 1 소모")
+    AttackDragon            --> DecreaseActionPoints("행동력을 1 소모")
+    DecreaseSpellSlot       --> DecreaseActionPoints("행동력을 1 소모")
+
+    DecreaseActionPoints    --> AmIOnTarget("목표에 도달했나?")
