@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 
 #include "./CS200/IRenderer2D.h"
 #include "./Engine/Engine.h"

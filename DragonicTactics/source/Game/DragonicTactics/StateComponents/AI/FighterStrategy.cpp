@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file FighterStrategy.cpp
  * @author Sangyun Lee
  * @brief 파이터 AI 구현: 드래곤에게 접근하여 공격
