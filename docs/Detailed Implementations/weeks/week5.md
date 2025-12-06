@@ -1501,9 +1501,15 @@ AIDecision FighterStrategy::MakeDecision(Character* actor)
         }
         else if (target_type == "Dragon")
         {
-            // → 드래곤 → 공격 가능한가? (행동력 AND 공격 범위)
+            // → 드래곤 → 공격 루프 시작
+            // 플로우차트: "행동력이 1 이상이며 드래곤이 내 공격 범위 안에 있나?"
+            // 공격 후 다시 이 조건으로 돌아와서 행동력이 남아있으면 계속 공격
+
             if (actor->GetActionPoints() > 0 && distance <= attackRange)
             {
+                // 공격 가능 → 공격 결정 반환
+                // AISystem이 이 공격을 실행한 후, 행동력을 소모하고
+                // 다음 턴에 다시 MakeDecision()을 호출하면 이 루프로 돌아옴
                 return DecideAttackAction(actor, target, distance);
             }
             else
