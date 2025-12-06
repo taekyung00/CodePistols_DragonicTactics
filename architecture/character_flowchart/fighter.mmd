@@ -1,7 +1,7 @@
 flowchart TD
     %% Nodes for fighter
-        SettingTarget("목표 설정")
-        SettingTarget                                       --> AreWeInDanger("도망쳐야하는 상황인가?")
+        SettingTarget("파이터 목표 설정")
+        SettingTarget                                       --> AreWeInDanger("보물을 가지고 있는가?")
         
         AreWeInDanger                       --      "Yes"   --> TargetExit("목표 = 출구")
         AreWeInDanger                       --      "No"    --> AmIInDanger("내 체력이 30% 이하인가?")
