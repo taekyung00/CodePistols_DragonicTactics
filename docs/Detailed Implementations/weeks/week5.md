@@ -3856,5 +3856,815 @@ renderer->DrawRectangle(
 
 ---
 
+## 🎮 추가 구현: 캐릭터 이동 범위 시각화 (Movement Range Visualization)
+
+**목표**: 이동 버튼 클릭 시 이동 가능 타일을 시각화하고, 마우스 호버 시 경로를 표시
+
+**요구사항**:
+
+1. **이동 버튼 클릭 시**: 이동 가능한 타일들을 낮은 알파값의 초록색으로 표시
+2. **마우스 호버 시**: 마우스 커서 위치까지의 최적 경로를 진한 초록색으로 표시 (혹은 화살표)
+3. **마우스 클릭 시**: 표시된 경로를 따라 캐릭터 이동
+
+**구현 위치**: GridSystem에서 시각화 데이터 관리, GridSystem::Draw()에서 렌더링
+
+---
+
+### 구현 작업
+
+#### **Step 1: GridSystem.h 확장**
+
+**파일**: [GridSystem.h](../../../DragonicTactics/source/Game/DragonicTactics/StateComponents/GridSystem.h)
+
+**추가할 내용**:
+
+```cpp
+// GridSystem.h
+#pragma once
+#include "./Engine/Component.h"
+#include "./Engine/Vec2.h"
+#include "./Game/DragonicTactics/Objects/Character.h"
+#include <map>
+#include <set>
+
+class GridSystem : public CS230::Component
+{
+public:
+  enum class TileType { /* ... 기존 코드 ... */ };
+
+  // ... 기존 메서드들 ...
+
+  // ========================================
+  // 🆕 신규 추가: 이동 범위 시각화
+  // ========================================
+
+  /// @brief 이동 가능한 타일들을 계산 (BFS 기반)
+  /// @param start 시작 위치
+  /// @param max_distance 최대 이동 거리 (Speed)
+  /// @return 이동 가능한 타일 목록
+  std::vector<Math::ivec2> GetReachableTiles(Math::ivec2 start, int max_distance);
+
+  /// @brief 이동 모드 활성화 (이동 가능 타일 계산 및 저장)
+  /// @param character_pos 캐릭터 현재 위치
+  /// @param movement_range 캐릭터 이동 범위
+  void EnableMovementMode(Math::ivec2 character_pos, int movement_range);
+
+  /// @brief 이동 모드 비활성화 (시각화 데이터 초기화)
+  void DisableMovementMode();
+
+  /// @brief 마우스 호버 위치 설정 (경로 계산)
+  /// @param hovered_tile 마우스가 위치한 타일
+  void SetHoveredTile(Math::ivec2 hovered_tile);
+
+  /// @brief 마우스 호버 해제
+  void ClearHoveredTile();
+
+  /// @brief 이동 모드 활성화 여부
+  bool IsMovementModeActive() const { return movement_mode_active_; }
+
+  /// @brief 특정 타일이 이동 가능한지 확인
+  bool IsReachable(Math::ivec2 tile) const;
+
+private:
+  // ... 기존 멤버 변수들 ...
+
+  // ========================================
+  // 🆕 신규 추가: 시각화 데이터
+  // ========================================
+  bool movement_mode_active_ = false;              // 이동 모드 활성화 여부
+  Math::ivec2 movement_source_pos_ = {-1, -1};     // 이동 시작 위치
+  std::set<Math::ivec2> reachable_tiles_;          // 이동 가능한 타일 집합
+  std::vector<Math::ivec2> hovered_path_;          // 마우스 호버 시 경로
+  Math::ivec2 hovered_tile_ = {-1, -1};            // 현재 마우스 호버 타일
+
+public:
+  void Draw() const;  // 기존 메서드 (시각화 추가)
+};
+
+// ========================================
+// Math::ivec2 비교 연산자 (std::set 사용을 위해 필요)
+// ========================================
+inline bool operator<(const Math::ivec2& a, const Math::ivec2& b)
+{
+  if (a.x != b.x) return a.x < b.x;
+  return a.y < b.y;
+}
+
+inline bool operator==(const Math::ivec2& a, const Math::ivec2& b)
+{
+  return a.x == b.x && a.y == b.y;
+}
+
+inline bool operator!=(const Math::ivec2& a, const Math::ivec2& b)
+{
+  return !(a == b);
+}
+```
+
+---
+
+#### **Step 2: GridSystem.cpp 구현**
+
+**파일**: [GridSystem.cpp](../../../DragonicTactics/source/Game/DragonicTactics/StateComponents/GridSystem.cpp)
+
+**추가할 헤더**:
+
+```cpp
+#include "pch.h"
+// ... 기존 헤더들 ...
+#include <queue>
+#include <set>
+#include <algorithm>
+```
+
+**신규 메서드 구현**:
+
+```cpp
+// ========================================
+// BFS 기반 이동 가능 타일 계산
+// ========================================
+std::vector<Math::ivec2> GridSystem::GetReachableTiles(Math::ivec2 start, int max_distance)
+{
+  std::vector<Math::ivec2> reachable;
+
+  if (!IsValidTile(start))
+  {
+    Engine::GetLogger().LogError("GetReachableTiles: Invalid start position");
+    return reachable;
+  }
+
+  // BFS 탐색
+  std::queue<std::pair<Math::ivec2, int>> queue; // {position, distance}
+  std::set<Math::ivec2> visited;
+
+  queue.push({start, 0});
+  visited.insert(start);
+
+  while (!queue.empty())
+  {
+    auto [current_pos, distance] = queue.front();
+    queue.pop();
+
+    // 시작 위치는 제외 (현재 위치이므로 이동할 수 없음)
+    if (current_pos != start)
+    {
+      reachable.push_back(current_pos);
+    }
+
+    // 최대 거리 도달 시 더 이상 탐색 안 함
+    if (distance >= max_distance)
+    {
+      continue;
+    }
+
+    // 인접 타일 탐색
+    std::vector<Math::ivec2> neighbors = GetNeighbors(current_pos);
+    for (const auto& neighbor : neighbors)
+    {
+      // 방문하지 않았고, 걸을 수 있는 타일만 추가
+      if (visited.find(neighbor) == visited.end() &&
+          GetTileType(neighbor) == TileType::Empty &&
+          !IsOccupied(neighbor))
+      {
+        visited.insert(neighbor);
+        queue.push({neighbor, distance + 1});
+      }
+    }
+  }
+
+  Engine::GetLogger().LogEvent("GetReachableTiles: Found " + std::to_string(reachable.size()) + " reachable tiles");
+  return reachable;
+}
+
+// ========================================
+// 이동 모드 활성화
+// ========================================
+void GridSystem::EnableMovementMode(Math::ivec2 character_pos, int movement_range)
+{
+  movement_mode_active_ = true;
+  movement_source_pos_ = character_pos;
+
+  // 이동 가능한 타일 계산
+  std::vector<Math::ivec2> reachable = GetReachableTiles(character_pos, movement_range);
+  reachable_tiles_.clear();
+  for (const auto& tile : reachable)
+  {
+    reachable_tiles_.insert(tile);
+  }
+
+  Engine::GetLogger().LogEvent("GridSystem: Movement mode enabled at (" +
+    std::to_string(character_pos.x) + ", " + std::to_string(character_pos.y) +
+    ") with range " + std::to_string(movement_range));
+}
+
+// ========================================
+// 이동 모드 비활성화
+// ========================================
+void GridSystem::DisableMovementMode()
+{
+  movement_mode_active_ = false;
+  movement_source_pos_ = {-1, -1};
+  reachable_tiles_.clear();
+  hovered_path_.clear();
+  hovered_tile_ = {-1, -1};
+
+  Engine::GetLogger().LogEvent("GridSystem: Movement mode disabled");
+}
+
+// ========================================
+// 마우스 호버 타일 설정 (경로 계산)
+// ========================================
+void GridSystem::SetHoveredTile(Math::ivec2 hovered_tile)
+{
+  // 이미 호버 중인 타일이면 무시
+  if (hovered_tile_ == hovered_tile)
+  {
+    return;
+  }
+
+  hovered_tile_ = hovered_tile;
+
+  // 이동 가능한 타일이 아니면 경로 초기화
+  if (!IsReachable(hovered_tile))
+  {
+    hovered_path_.clear();
+    return;
+  }
+
+  // A* 경로 찾기
+  hovered_path_ = FindPath(movement_source_pos_, hovered_tile);
+
+  if (!hovered_path_.empty())
+  {
+    Engine::GetLogger().LogDebug("GridSystem: Path to (" +
+      std::to_string(hovered_tile.x) + ", " + std::to_string(hovered_tile.y) +
+      ") calculated (" + std::to_string(hovered_path_.size()) + " tiles)");
+  }
+}
+
+// ========================================
+// 마우스 호버 해제
+// ========================================
+void GridSystem::ClearHoveredTile()
+{
+  hovered_tile_ = {-1, -1};
+  hovered_path_.clear();
+}
+
+// ========================================
+// 특정 타일이 이동 가능한지 확인
+// ========================================
+bool GridSystem::IsReachable(Math::ivec2 tile) const
+{
+  return reachable_tiles_.find(tile) != reachable_tiles_.end();
+}
+```
+
+**기존 Draw() 메서드 수정** (시각화 추가):
+
+```cpp
+void GridSystem::Draw() const
+{
+  auto renderer_2d = Engine::GetTextureManager().GetRenderer2D();
+
+  // 1. 기존 타일 및 캐릭터 그리기 (생략 - 기존 코드 유지)
+  for (int y = 0; y < MAP_HEIGHT; ++y)
+  {
+    for (int x = 0; x < MAP_WIDTH; ++x)
+    {
+      int screen_x = x * TILE_SIZE + TILE_SIZE;
+      int screen_y = y * TILE_SIZE + TILE_SIZE;
+
+      // ... 기존 타일 렌더링 코드 ...
+    }
+  }
+
+  // ========================================
+  // 🆕 2. 이동 가능 타일 시각화 (낮은 알파 초록색)
+  // ========================================
+  if (movement_mode_active_)
+  {
+    for (const auto& tile : reachable_tiles_)
+    {
+      int screen_x = tile.x * TILE_SIZE + TILE_SIZE;
+      int screen_y = tile.y * TILE_SIZE + TILE_SIZE;
+
+      // 반투명 초록색 오버레이
+      renderer_2d->DrawRectangle(
+        Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) *
+        Math::ScaleMatrix(TILE_SIZE),
+        CS200::RGBA{ 0, 255, 0, 80 },  // 낮은 알파 초록색 (fill_color)
+        0U,  // line_color: 없음
+        0.0,  // line_width
+        0.2f  // depth
+      );
+    }
+  }
+
+  // ========================================
+  // 🆕 3. 마우스 호버 경로 시각화 (진한 초록색)
+  // ========================================
+  if (!hovered_path_.empty())
+  {
+    for (const auto& tile : hovered_path_)
+    {
+      int screen_x = tile.x * TILE_SIZE + TILE_SIZE;
+      int screen_y = tile.y * TILE_SIZE + TILE_SIZE;
+
+      // 진한 초록색 오버레이
+      renderer_2d->DrawRectangle(
+        Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) *
+        Math::ScaleMatrix(TILE_SIZE),
+        CS200::RGBA{ 0, 200, 0, 150 },  // 진한 초록색 (fill_color)
+        CS200::RGBA{ 0, 255, 0, 255 },  // 밝은 초록색 테두리 (line_color)
+        2.0,  // line_width
+        0.1f  // depth (경로가 이동 가능 타일보다 위에 그려지도록)
+      );
+    }
+  }
+}
+```
+
+---
+
+#### **Step 3: PlayerInputHandler.cpp 통합**
+
+**파일**: [PlayerInputHandler.cpp](../../../DragonicTactics/source/Game/DragonicTactics/States/PlayerInputHandler.cpp)
+
+**HandleDragonInput() 수정** (마우스 호버 처리):
+
+```cpp
+void PlayerInputHandler::HandleDragonInput([[maybe_unused]] double dt, Dragon* dragon, GridSystem* grid, CombatSystem* combat_system)
+{
+  auto& input = Engine::GetInput();
+  bool is_clicking_ui = ImGui::GetIO().WantCaptureMouse;
+
+  // 🆕 1. 이동 모드일 때 마우스 호버 처리
+  if (m_state == ActionState::SelectingMove)
+  {
+    Math::vec2 mouse_pos = input.GetMousePos();
+    Math::ivec2 grid_pos = ConvertScreenToGrid(mouse_pos);
+
+    // 유효한 타일이고 이동 가능한 타일이면 경로 표시
+    if (grid->IsValidTile(grid_pos) && grid->IsReachable(grid_pos))
+    {
+      grid->SetHoveredTile(grid_pos);
+    }
+    else
+    {
+      grid->ClearHoveredTile();
+    }
+  }
+
+  // 우클릭 처리
+  if (input.MouseJustPressed(2))
+  {
+    HandleRightClick(dragon);
+    return;
+  }
+
+  // 좌클릭 처리
+  if (input.MouseJustPressed(0) && !is_clicking_ui)
+  {
+    Math::vec2 mouse_pos = input.GetMousePos();
+    HandleMouseClick(mouse_pos, dragon, grid, combat_system);
+  }
+}
+```
+
+**HandleMouseClick() 수정** (이동 시 경로 사용):
+
+```cpp
+void PlayerInputHandler::HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, GridSystem* grid, CombatSystem* combat_system)
+{
+  Math::ivec2 grid_pos = ConvertScreenToGrid(mouse_pos);
+
+  switch (m_state)
+  {
+    case ActionState::SelectingMove:
+      // 🆕 이동 가능한 타일인지 확인
+      if (grid->IsReachable(grid_pos))
+      {
+        // A* 경로 찾기 (이미 계산된 경로 사용 가능)
+        auto path = grid->FindPath(dragon->GetGridPosition()->Get(), grid_pos);
+
+        if (!path.empty())
+        {
+          dragon->SetPath(std::move(path));
+          m_state = ActionState::Moving;
+
+          Engine::GetLogger().LogEvent("Dragon moving to (" +
+            std::to_string(grid_pos.x) + ", " + std::to_string(grid_pos.y) + ")");
+
+          // 🆕 이동 모드 비활성화
+          grid->DisableMovementMode();
+        }
+      }
+      else
+      {
+        Engine::GetLogger().LogDebug("Cannot move to (" +
+          std::to_string(grid_pos.x) + ", " + std::to_string(grid_pos.y) + "): Not reachable");
+      }
+      break;
+
+    // ... 다른 케이스들 (기존 코드 유지) ...
+  }
+}
+```
+
+**HandleRightClick() 수정** (이동 모드 취소):
+
+```cpp
+void PlayerInputHandler::HandleRightClick(Dragon* dragon)
+{
+  // 🆕 이동 모드 비활성화
+  if (m_state == ActionState::SelectingMove)
+  {
+    // GridSystem 접근이 필요한 경우 GamePlay에서 전달받아야 함
+    Engine::GetLogger().LogEvent("Movement mode cancelled by right-click");
+  }
+
+  if (m_state == ActionState::Moving)
+  {
+    dragon->GetGOComponent<MovementComponent>()->ClearPath();
+  }
+
+  m_state = ActionState::None;
+}
+```
+
+**CancelCurrentAction() 수정**:
+
+```cpp
+void PlayerInputHandler::CancelCurrentAction()
+{
+  // 🆕 이동 모드였다면 GridSystem에도 알려야 함
+  if (m_state == ActionState::SelectingMove)
+  {
+    Engine::GetLogger().LogEvent("Movement mode cancelled");
+    // GridSystem::DisableMovementMode() 호출 필요
+    // GamePlay에서 처리하도록 수정
+  }
+
+  m_state = ActionState::None;
+}
+```
+
+---
+
+#### **Step 4: GamePlay.cpp 통합**
+
+**파일**: [GamePlay.cpp](../../../DragonicTactics/source/Game/DragonicTactics/States/GamePlay.cpp)
+
+**DrawImGui() 수정** (Move 버튼 클릭 시 이동 모드 활성화):
+
+```cpp
+void GamePlay::DrawImGui()
+{
+  // ... 기존 코드 ...
+
+  // Move Button
+  const char* move_text = (currentState == ActionState::SelectingMove) ? "Cancel Move" : "Move";
+  bool is_move_disabled = (currentState != ActionState::None && currentState != ActionState::SelectingMove);
+
+  if (is_move_disabled)
+    ImGui::BeginDisabled();
+
+  if (ImGui::Button(move_text))
+  {
+    if (currentState == ActionState::SelectingMove)
+    {
+      m_input_handler->CancelCurrentAction();
+
+      // 🆕 이동 모드 비활성화
+      GridSystem* grid = GetGSComponent<GridSystem>();
+      if (grid)
+      {
+        grid->DisableMovementMode();
+      }
+
+      Engine::GetLogger().LogEvent("UI: 'Cancel Move' button clicked.");
+    }
+    else
+    {
+      m_input_handler->SetState(ActionState::SelectingMove);
+
+      // 🆕 이동 모드 활성화
+      TurnManager* turnMgr = GetGSComponent<TurnManager>();
+      GridSystem* grid = GetGSComponent<GridSystem>();
+
+      if (turnMgr && grid)
+      {
+        Character* current = turnMgr->GetCurrentCharacter();
+        if (current)
+        {
+          Math::ivec2 current_pos = current->GetGridPosition()->Get();
+          int movement_range = current->GetMovementRange();
+
+          grid->EnableMovementMode(current_pos, movement_range);
+
+          Engine::GetLogger().LogEvent("UI: 'Move' button clicked. Movement mode enabled.");
+        }
+      }
+    }
+  }
+
+  if (is_move_disabled)
+    ImGui::EndDisabled();
+
+  // ... 나머지 버튼들 ...
+}
+```
+
+**Update() 수정** (우클릭 시 이동 모드 비활성화):
+
+```cpp
+void GamePlay::Update(double dt)
+{
+  // ... 기존 코드 ...
+
+  // 🆕 우클릭 시 이동 모드 비활성화 처리
+  if (Engine::GetInput().MouseJustPressed(2) &&
+      m_input_handler->GetCurrentState() == PlayerInputHandler::ActionState::SelectingMove)
+  {
+    GridSystem* grid = GetGSComponent<GridSystem>();
+    if (grid)
+    {
+      grid->DisableMovementMode();
+    }
+  }
+
+  // ... 기존 코드 ...
+}
+```
+
+---
+
+### 테스트 방법 (로그 및 시각적 검증)
+
+**테스트는 GamePlay 상태를 실행하면서 콘솔 로그와 화면으로 검증합니다.**
+
+#### **검증 항목 1: Move 버튼 클릭 시 이동 가능 타일 표시**
+
+**시나리오**: ImGui에서 "Move" 버튼 클릭
+
+**예상 로그**:
+
+```
+[EVENT] UI: 'Move' button clicked. Movement mode enabled.
+[EVENT] GridSystem: Movement mode enabled at (3, 6) with range 6
+[EVENT] GetReachableTiles: Found 24 reachable tiles
+```
+
+**예상 화면**:
+
+- Dragon 주변 이동 가능한 타일들이 **낮은 알파 초록색**으로 표시됨
+- 벽 타일이나 Fighter가 있는 타일은 표시되지 않음
+- Dragon의 현재 위치는 표시되지 않음 (이미 그 위치에 있으므로)
+
+**검증 방법**:
+
+1. 게임 실행
+2. ImGui "Player Actions" 패널에서 "Move" 버튼 클릭
+3. 콘솔에서 위 로그 확인
+4. 화면에서 초록색 타일들 확인 (Dragon 주변 6칸 이내)
+
+---
+
+#### **검증 항목 2: 마우스 호버 시 경로 표시**
+
+**시나리오**: Move 모드에서 이동 가능한 타일에 마우스 올리기
+
+**예상 로그**:
+
+```
+[DEBUG] GridSystem: Path to (5, 4) calculated (3 tiles)
+```
+
+**예상 화면**:
+
+- 마우스 커서가 위치한 타일까지의 경로가 **진한 초록색 + 밝은 초록색 테두리**로 표시됨
+- 경로는 Dragon의 현재 위치에서 마우스 위치까지의 최단 경로
+- 마우스를 다른 타일로 이동하면 경로가 실시간으로 업데이트됨
+
+**검증 방법**:
+
+1. Move 모드 활성화 상태에서
+2. 마우스를 초록색 타일 위로 이동
+3. 콘솔에서 경로 계산 로그 확인
+4. 화면에서 진한 초록색 경로 확인
+5. 마우스를 여러 타일로 이동하며 경로가 변경되는지 확인
+
+---
+
+#### **검증 항목 3: 이동 불가능한 타일에 호버 시**
+
+**시나리오**: Move 모드에서 이동 불가능한 타일(벽, 적 위치, 범위 밖)에 마우스 올리기
+
+**예상 동작**:
+
+- 경로가 표시되지 않음
+- 로그에 경로 계산 메시지 없음
+
+**검증 방법**:
+
+1. Move 모드 활성화
+2. 마우스를 벽 타일이나 Fighter 위치로 이동
+3. 경로가 표시되지 않는지 확인
+4. 마우스를 이동 범위 밖으로 이동
+5. 여전히 경로가 표시되지 않는지 확인
+
+---
+
+#### **검증 항목 4: 타일 클릭 시 이동**
+
+**시나리오**: Move 모드에서 이동 가능한 타일 클릭
+
+**예상 로그**:
+
+```
+[EVENT] Dragon moving to (5, 4)
+[EVENT] GridSystem: Movement mode disabled
+```
+
+**예상 동작**:
+
+1. Dragon이 표시된 경로를 따라 이동 시작
+2. 초록색 타일 하이라이트가 모두 사라짐
+3. 이동 완료 후 상태가 None으로 복귀
+
+**검증 방법**:
+
+1. Move 모드에서 초록색 타일 클릭
+2. 콘솔에서 이동 로그 및 모드 비활성화 로그 확인
+3. Dragon이 실제로 이동하는지 확인
+4. 초록색 하이라이트가 사라지는지 확인
+
+---
+
+#### **검증 항목 5: Cancel Move (우클릭 또는 버튼)**
+
+**시나리오**: Move 모드에서 우클릭 또는 "Cancel Move" 버튼 클릭
+
+**예상 로그**:
+
+```
+[EVENT] Movement mode cancelled by right-click
+[EVENT] GridSystem: Movement mode disabled
+```
+
+또는
+
+```
+[EVENT] UI: 'Cancel Move' button clicked.
+[EVENT] GridSystem: Movement mode disabled
+```
+
+**예상 동작**:
+
+- 초록색 타일 하이라이트가 모두 사라짐
+- 경로 표시도 사라짐
+- 상태가 None으로 복귀
+
+**검증 방법**:
+
+1. Move 모드 활성화
+2. 우클릭 (또는 "Cancel Move" 버튼 클릭)
+3. 콘솔에서 로그 확인
+4. 초록색 하이라이트가 모두 사라지는지 확인
+
+---
+
+#### **검증 항목 6: 이동 불가능한 타일 클릭 시**
+
+**시나리오**: Move 모드에서 이동 불가능한 타일(벽, 적, 범위 밖) 클릭
+
+**예상 로그**:
+
+```
+[DEBUG] Cannot move to (0, 0): Not reachable
+```
+
+**예상 동작**:
+
+- Dragon이 이동하지 않음
+- 이동 모드가 계속 유지됨 (초록색 하이라이트 그대로)
+
+**검증 방법**:
+
+1. Move 모드 활성화
+2. 벽이나 Fighter가 있는 타일 클릭
+3. 콘솔에서 "Not reachable" 로그 확인
+4. Dragon이 이동하지 않는지 확인
+5. 초록색 하이라이트가 여전히 표시되는지 확인
+
+---
+
+### 추가 개선 사항 (선택 사항)
+
+#### **1. 화살표로 경로 표시**
+
+텍스트 대신 화살표로 경로를 표시할 수 있습니다:
+
+```cpp
+// GridSystem::Draw() 내부
+// 경로의 각 타일에 화살표 방향 계산
+for (size_t i = 0; i < hovered_path_.size(); ++i)
+{
+  Math::ivec2 current = hovered_path_[i];
+
+  // 다음 타일 방향 계산
+  if (i + 1 < hovered_path_.size())
+  {
+    Math::ivec2 next = hovered_path_[i + 1];
+    Math::ivec2 direction = next - current;
+
+    // 방향에 따라 화살표 회전
+    float rotation = 0.0f;
+    if (direction.x > 0) rotation = 0.0f;        // 오른쪽
+    else if (direction.x < 0) rotation = 180.0f; // 왼쪽
+    else if (direction.y > 0) rotation = 90.0f;  // 위
+    else if (direction.y < 0) rotation = 270.0f; // 아래
+
+    // 화살표 텍스처 그리기 (텍스처가 있다면)
+    // renderer_2d->DrawQuad(..., arrow_texture, rotation);
+  }
+}
+```
+
+#### **2. 이동 거리에 따른 색상 변화**
+
+시작점에서 멀수록 다른 색상으로 표시:
+
+```cpp
+// GetReachableTiles() 수정하여 거리 정보도 반환
+std::map<Math::ivec2, int> reachable_tiles_with_distance_;
+
+// Draw()에서 거리에 따라 알파값 조정
+for (const auto& [tile, distance] : reachable_tiles_with_distance_)
+{
+  // 거리가 멀수록 알파값 감소
+  int alpha = 150 - (distance * 15); // 예: 6칸이면 알파 60
+  renderer_2d->DrawRectangle(..., CS200::RGBA{ 0, 255, 0, alpha });
+}
+```
+
+#### **3. 애니메이션 효과**
+
+이동 가능 타일에 펄스 효과 추가:
+
+```cpp
+// GridSystem에 타이머 추가
+private:
+  double pulse_timer_ = 0.0;
+
+// Update()에서 타이머 증가
+void GridSystem::Update(double dt)
+{
+  if (movement_mode_active_)
+  {
+    pulse_timer_ += dt;
+  }
+  else
+  {
+    pulse_timer_ = 0.0;
+  }
+}
+
+// Draw()에서 sin 함수로 알파값 변화
+int alpha = static_cast<int>(80 + 40 * std::sin(pulse_timer_ * 3.0));
+renderer_2d->DrawRectangle(..., CS200::RGBA{ 0, 255, 0, alpha });
+```
+
+---
+
+### 최종 체크리스트
+
+**구현 완료 확인**:
+
+- [ ] `GridSystem.h`에 이동 범위 시각화 메서드 선언 추가
+- [ ] `GridSystem.h`에 `operator<`, `operator==` 추가 (std::set 사용)
+- [ ] `GridSystem.cpp`에 `GetReachableTiles()`, `EnableMovementMode()`, `DisableMovementMode()` 구현
+- [ ] `GridSystem.cpp`에 `SetHoveredTile()`, `ClearHoveredTile()`, `IsReachable()` 구현
+- [ ] `GridSystem::Draw()`에 이동 가능 타일 및 경로 시각화 추가
+- [ ] `PlayerInputHandler::HandleDragonInput()`에 마우스 호버 처리 추가
+- [ ] `PlayerInputHandler::HandleMouseClick()`에 이동 가능 여부 확인 로직 추가
+- [ ] `GamePlay::DrawImGui()`에서 Move 버튼 클릭 시 `EnableMovementMode()` 호출
+- [ ] `GamePlay::DrawImGui()`에서 Cancel Move 버튼 클릭 시 `DisableMovementMode()` 호출
+- [ ] 빌드 성공 (CMake 재구성 후 빌드)
+
+**테스트 완료 확인**:
+
+- [ ] Move 버튼 클릭 시 초록색 타일 하이라이트 확인
+- [ ] 마우스 호버 시 경로 표시 확인
+- [ ] 마우스를 다른 타일로 이동 시 경로 실시간 업데이트 확인
+- [ ] 이동 불가능한 타일에 호버 시 경로 미표시 확인
+- [ ] 타일 클릭 시 Dragon 이동 확인
+- [ ] 이동 시 하이라이트 자동 해제 확인
+- [ ] Cancel Move (우클릭/버튼) 시 하이라이트 해제 확인
+- [ ] 이동 불가능한 타일 클릭 시 무시되는지 확인
+
+---
+
 **최종 업데이트**: 2025-12-07
 **다음 단계**: Week 5 완료 후 우선순위 재논의 (Week 6 계획)
