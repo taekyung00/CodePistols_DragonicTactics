@@ -48,22 +48,56 @@ void GamePlayUIManager::ShowDamageText(int damage, Math::vec2 position, Math::ve
   m_damage_texts.push_back(text);
 }
 
+void GamePlayUIManager::ShowDamageLog(std::string str, Math::vec2 position, Math::vec2 size) 
+{
+    DamageText text{ str, position, size, 1.0 };
+    m_damage_log.push_back(text);
+}
+
+void GamePlayUIManager::ShowGameEnd(std::string&& text)
+{
+    game_end_text = std::make_unique<std::string>(text);
+}
+
 void GamePlayUIManager::Update(double dt)
 {
   for (auto& text : m_damage_texts)
   {
 	text.lifetime -= dt;
   }
+  for (auto& text : m_damage_log)
+  {
+	text.lifetime -= dt;
+  }
 
   m_damage_texts.erase(std::remove_if(m_damage_texts.begin(), m_damage_texts.end(), [](const DamageText& text) { return text.lifetime <= 0; }), m_damage_texts.end());
+  
+  m_damage_log.erase(
+		std::remove_if(m_damage_log.begin(), m_damage_log.end(),
+			[](const DamageText& text) { return text.lifetime <= 0; }),
+		m_damage_log.end()
+	);
 }
 
 void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_matrix)
 {
-  for (const auto& text : m_damage_texts)
-  {
-	Engine::GetTextManager().DrawText(text.text, text.position, Fonts::Outlined, text.size, CS200::VIOLET);
-  }
+	auto& textMng = Engine::GetTextManager();
+	for (const auto& text : m_damage_texts)
+	{
+		textMng.DrawText(text.text, text.position, Fonts::Outlined, text.size, CS200::VIOLET);
+	}
+
+  	int i = 0;
+	for (const auto& text : m_damage_log) {
+		textMng.DrawText(text.text, text.position + Math::vec2{ 0.0, 30.0 * i },Fonts::Outlined, text.size, CS200::RED);
+		++i;
+	}
+
+	if(game_end_text) {
+		auto size = Engine::GetWindow().GetSize();
+		textMng.DrawText(*game_end_text, Math::ivec2{ 0, size.y / 2 }, Fonts::Outlined, Math::vec2{GAME_END_TEXT_SIZE, GAME_END_TEXT_SIZE}, CS200::WHITE);
+	}
+
   DrawCharacterStatsPanel(camera_matrix);
 }
 
