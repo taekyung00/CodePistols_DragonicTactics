@@ -8,62 +8,56 @@ Author:     Seungju Song
 Created:    November 5, 2025
 */
 #pragma once
-#include "Engine/GameState.h"
-#include <memory>
+#include "../../../CS200/RGBA.hpp"
+#include "../../../Engine/Engine.hpp"
+#include "../../../Engine/Fonts.h"
+#include "../../../Engine/GameState.hpp"
+#include "../../../Engine/Texture.hpp"
+#include "../StateComponents/GridSystem.h"
+#include "../Types/Events.h"
 
-class PlayerInputHandler;
-class GamePlayUIManager;
-class BattleOrchestrator;
-class Fighter;
 class Dragon;
-struct CharacterDamagedEvent;
+class Fighter;
 
 class GamePlay : public CS230::GameState
 {
-  public:
-  GamePlay();
-  virtual ~GamePlay() = default;
+public:
+	GamePlay();
+	void		  Load() override;
+	void		  Update(double dt) override;
+	void		  Unload() override;
+	void		  Draw() override;
+	void		  DrawImGui() override;
+	gsl::czstring GetName() const override;
 
-  void			Load() override;
-  void			Update(double dt) override;
-  void			Draw() override;
-  void			Unload() override;
-  void			DrawImGui() override;
-  gsl::czstring GetName() const override;
+private:
+    enum class PlayerActionState
+    {
+        None,          
+        SelectingMove,  
+        Moving,
+        SelectingAction, 
+        TargetingForAttack,
+        TargetingForSpell
+    };
+    PlayerActionState currentPlayerState = PlayerActionState::None;
 
-  enum class MapSource
-  {
-    First,
-    Json
-  };
+	struct DamageText
+	{
+		std::string text;
+		Math::vec2	position = { 0, 0 };
+		Math::vec2	size	 = { 0, 0 };
+		double		lifetime;
+	};
 
-  static MapSource s_next_map_source;
-  static int s_next_map_index;
-  static bool s_should_restart;
+	std::vector<DamageText> damage_texts;
 
-  private:
-  static constexpr Math::ivec2				  default_window_size = { 1200, 800 };
-  std::unique_ptr<PlayerInputHandler> m_input_handler;
-  std::unique_ptr<GamePlayUIManager>  m_ui_manager;
-  std::unique_ptr<BattleOrchestrator> m_orchestrator;
+	void OnCharacterDamaged(const CharacterDamagedEvent& event);
 
-  void OnCharacterDamaged(const CharacterDamagedEvent& event);
+	Fighter* fighter;
+	Dragon*	 dragon;
+	bool	 game_end = false;
+	int pre_round = 0;
 
-  // Fighter* fighter = nullptr;
-  // Dragon* dragon  = nullptr;
-  Character* player	  = nullptr;
-  Character* enemy	  = nullptr;
-  bool		 game_end = false;
-
-  MapSource current_map_source_ = MapSource::First;
-  int selected_json_map_index_ = 0;
-  std::vector<std::string> available_json_maps_;
-
-  void LoadFirstMap();
-  void LoadJSONMap(const std::string& map_id);
+	// std::vector<Math::ivec2> CalculateSimplePath(Math::ivec2 start, Math::ivec2 end);
 };
-
-namespace CS230
-{
-
-}

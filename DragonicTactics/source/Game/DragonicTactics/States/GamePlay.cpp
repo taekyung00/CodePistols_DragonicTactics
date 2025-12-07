@@ -1,5 +1,3 @@
-﻿#include "pch.h"
-
 /*
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
@@ -9,541 +7,498 @@ Project:    CS230 Engine
 Author:     Seungju Song
 Created:    November 5, 2025
 */
-#include "CS200/IRenderer2D.h"
-#include "CS200/NDC.h"
-#include "Engine/Timer.h"
-#include "OpenGL/Environment.h"
 #include "GamePlay.h"
-
-#include "Game/MainMenu.h"
-
-#include "Game/DragonicTactics/Objects/Components/GridPosition.h"
-#include "Game/DragonicTactics/Objects/Components/StatsComponent.h"
-#include "Game/DragonicTactics/Objects/Dragon.h"
-#include "Game/DragonicTactics/Objects/Fighter.h"
-
-#include "Game/DragonicTactics/Factories/CharacterFactory.h"
-#include "Game/DragonicTactics/StateComponents/AISystem.h"
-#include "Game/DragonicTactics/StateComponents/CombatSystem.h"
-#include "Game/DragonicTactics/StateComponents/DataRegistry.h"
-#include "Game/DragonicTactics/StateComponents/DiceManager.h"
-#include "Game/DragonicTactics/StateComponents/EventBus.h"
-#include "Game/DragonicTactics/StateComponents/GridSystem.h"
-#include "Game/DragonicTactics/StateComponents/SpellSystem.h"
-#include "Game/DragonicTactics/StateComponents/TurnManager.h"
-#include "Game/DragonicTactics/StateComponents/MapDataRegistry.h"
+#include "./CS200/IRenderer2D.hpp"
+#include "./CS200/NDC.hpp"
+#include "./Engine/Engine.hpp"
+#include "./Engine/GameObjectManager.h"
+#include "./Engine/GameStateManager.hpp"
+#include "./Engine/Logger.hpp"
+#include "./Engine/TextManager.hpp"
+#include "./Engine/Window.hpp"
 
 #include "../Debugger/DebugManager.h"
+#include "../StateComponents/GridSystem.h"
+#include "../StateComponents/TurnManager.h"
+#include "Game/DragonicTactics/Objects/Actions/ActionAttack.h"
+#include "Game/DragonicTactics/Objects/Components/ActionPoints.h"
+#include "Game/DragonicTactics/Objects/Components/MovementComponent.h"
+#include "Game/DragonicTactics/Objects/Components/SpellSlots.h"
+#include "Game/DragonicTactics/Objects/Components/StatsComponent.h"
+#include "Game/DragonicTactics/StateComponents/CombatSystem.h"
+#include "Game/DragonicTactics/StateComponents/DiceManager.h"
+#include "Game/DragonicTactics/StateComponents/EventBus.h"
+#include "Game/MainMenu.h"
 
-#include "BattleOrchestrator.h"
-#include "GamePlayUIManager.h"
-#include "PlayerInputHandler.h"
+#include "Engine/Input.hpp"
+#include "Game/DragonicTactics/Objects/Components/GridPosition.h"
+#include "Game/DragonicTactics/Objects/Dragon.h"
+#include "Game/DragonicTactics/Objects/Fighter.h"
+#include "Game/DragonicTactics/StateComponents/SpellSystem.h"
+#include "Game/DragonicTactics/StateComponents/DataRegistry.h"
+#include "Game/DragonicTactics/Factories/CharacterFactory.h"
+#include <imgui.h>
 
-GamePlay::MapSource GamePlay::s_next_map_source = GamePlay::MapSource::First;
-int GamePlay::s_next_map_index = 0;
-bool GamePlay::s_should_restart = false;
-
-GamePlay::GamePlay() // : fighter(nullptr), dragon(nullptr)
+GamePlay::GamePlay() : fighter(nullptr), dragon(nullptr)
 {
 }
 
 void GamePlay::Load()
 {
+	AddGSComponent(new EventBus());
+	GetGSComponent<EventBus>()->Clear();
 
-	if (!OpenGL::IsWebGL)
-  {
-	Engine::GetWindow().ForceResize(default_window_size.x, default_window_size.y);
-	Engine::GetWindow().SetWindowPosition(SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-  }
-  m_input_handler = std::make_unique<PlayerInputHandler>();
-  m_ui_manager	  = std::make_unique<GamePlayUIManager>();
-  m_orchestrator  = std::make_unique<BattleOrchestrator>();
+	AddGSComponent(new DiceManager());
+	GetGSComponent<DiceManager>()->SetSeed(100);
+	
+	AddGSComponent(new CombatSystem());
+	AddGSComponent(new AISystem());
+	AddGSComponent(new SpellSystem());
 
-  AddGSComponent(new EventBus());
-  AddGSComponent(new DiceManager());
-  AddGSComponent(new AISystem());
-  AddGSComponent(new CombatSystem());
-  AddGSComponent(new CS230::GameObjectManager());
-  AddGSComponent(new GridSystem());
-  AddGSComponent(new TurnManager());
-  AddGSComponent(new DebugManager());
-  AddGSComponent(new CharacterFactory());
-  AddGSComponent(new DataRegistry());
-  AddGSComponent(new util::Timer());
-  AddGSComponent(new MapDataRegistry());
+	AddGSComponent(new DataRegistry());
+	GetGSComponent<DataRegistry>()->LoadAllCharacterData("Assets/Data/characters.json");
+	
+	AddGSComponent(new CS230::GameObjectManager());
 
-  GetGSComponent<EventBus>()->Clear();
-  GetGSComponent<DiceManager>()->SetSeed(100);
-  GetGSComponent<DebugManager>()->Init();
-  GetGSComponent<CombatSystem>()->SetDiceManager(GetGSComponent<DiceManager>());
-  GetGSComponent<DataRegistry>()->LoadFromFile("Assets/Data/characters.json");
-  GetGSComponent<DataRegistry>()->LoadAllCharacterData("Assets/Data/characters.json");
-  // GetGSComponent<SpellSystem>()->SetEventBus(GetGSComponent<EventBus>());
+	// Inject dependencies for runtime
+	GetGSComponent<CombatSystem>()->SetDiceManager(GetGSComponent<DiceManager>());
+	GetGSComponent<SpellSystem>()->SetEventBus(GetGSComponent<EventBus>());
 
-  current_map_source_ = s_next_map_source;
-  selected_json_map_index_ = s_next_map_index;
+	AddGSComponent(new GridSystem());
+	CS230::GameObjectManager* go_manager = GetGSComponent<CS230::GameObjectManager>();
 
-  auto* map_registry = GetGSComponent<MapDataRegistry>();
-  map_registry->LoadMaps("Assets/Data/maps.json");
-  available_json_maps_ = map_registry->GetAllMapIds();
+	GridSystem* grid_system = GetGSComponent<GridSystem>();
 
-  Engine::GetLogger().LogEvent("Available maps: " + std::to_string(available_json_maps_.size()));
-  if (current_map_source_ == MapSource::First)
-  {
-    Engine::GetLogger().LogEvent("Loading First map");
-    LoadFirstMap();
-  }
-  else
-  {
-    if (!available_json_maps_.empty() && selected_json_map_index_ < available_json_maps_.size())
-    {
-      std::string selected_map_id = available_json_maps_[selected_json_map_index_];
-      Engine::GetLogger().LogEvent("Loading JSON map: " + selected_map_id);
-      LoadJSONMap(selected_map_id);
-    }
-    else
-    {
-      Engine::GetLogger().LogError("Invalid JSON map selection, falling back to hardcoded");
-      LoadFirstMap();
-    }
-  }
+	const std::vector<std::string> map_data = { "wwwwwwww", "weefeeew", "weeeeeew", "weeeeeew", "weeeeeew", "weeeeeew", "weedeeew", "wwwwwwww" };
 
+	for (int y = 0; y < map_data.size(); ++y)
+	{
+		for (int x = 0; x < map_data[y].length(); ++x)
+		{
+			char		tile_char	= map_data[y][x];
+			Math::ivec2 current_pos = { x, static_cast<int>(map_data.size()) - 1 - y };
+			switch (tile_char)
+			{
+				case 'w': grid_system->SetTileType(current_pos, GridSystem::TileType::Wall); break;
+				case 'e': grid_system->SetTileType(current_pos, GridSystem::TileType::Empty); break;
+				case 'f':
+				grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
+				fighter = static_cast<Fighter*>(
+				 CharacterFactory::Create(CharacterTypes::Fighter, current_pos)
+				);
+				fighter->SetGridSystem(grid_system);
+				go_manager->Add(fighter);
+				grid_system->AddCharacter(fighter, current_pos);
+				break;
+				case 'd':
+				grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
+				dragon = static_cast<Dragon*>(
+				 CharacterFactory::Create(CharacterTypes::Dragon, current_pos)
+				);
+				dragon->SetGridSystem(grid_system);
+				go_manager->Add(dragon);
+				grid_system->AddCharacter(dragon, current_pos);
+				break;
+			}
+		}
+	}
 
-  TurnManager* turnMgr = GetGSComponent<TurnManager>();
-  turnMgr->SetEventBus(GetGSComponent<EventBus>());
-  turnMgr->InitializeTurnOrder(std::vector<Character*>{ player, enemy });
-  turnMgr->StartCombat();
+	AddGSComponent(new TurnManager());
+	GetGSComponent<TurnManager>()->SetEventBus(GetGSComponent<EventBus>());
+	GetGSComponent<TurnManager>()->InitializeTurnOrder({ dragon, fighter });
+	GetGSComponent<TurnManager>()->StartCombat();
 
-  // 신규 추가: UI Manager에 캐릭터 등록
-  m_ui_manager->SetCharacters({ player, enemy });
-  Engine::GetLogger().LogEvent("GamePlay::Load - Characters registered to UI Manager");
+	AddGSComponent(new DebugManager());
+	GetGSComponent<DebugManager>()->Init();
 
-  GetGSComponent<EventBus>()->Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& event) { this->OnCharacterDamaged(event); });
-  GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>(
-	  [this]([[maybe_unused]] const CharacterDeathEvent& event)
-	  {
-		this->game_end = true;
-        std::string msg = "Game Over: ";
-        msg += event.character->TypeName();
-        msg += " has died.";
-		Engine::GetLogger().LogDebug(msg);
-	  });
-  GetGSComponent<EventBus>()->Subscribe<CharacterEscapedEvent>(
-	  [this]([[maybe_unused]] const CharacterEscapedEvent& event)
-	  {
-		this->game_end = true;
-        std::string msg = "Game Over: ";
-        msg += event.character->TypeName();
-        msg += " has escaped.";
-		Engine::GetLogger().LogDebug(msg);
-	  });
+	GetGSComponent<EventBus>()->Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& event) { this->OnCharacterDamaged(event); });
+	GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>([this]([[maybe_unused]]const CharacterDeathEvent& event) { this->game_end = true;});
 }
 
 void GamePlay::OnCharacterDamaged(const CharacterDamagedEvent& event)
 {
-  Engine::GetLogger().LogDebug("Damage Event! " + std::to_string(event.damageAmount));
-  Math::vec2 size = { 1.0f, 1.0f };
-  if (event.target != nullptr)
-  {
-	const StatsComponent* stats = event.target->GetStatsComponent();
-	if (stats != nullptr && stats->GetMaxHP() > 0)
-	{
-	  float damage_ratio = static_cast<float>(event.damageAmount) / static_cast<float>(stats->GetMaxHP());
-	  if (damage_ratio >= 0.5)
-		size = { 2.5, 2.5 };
-	  else if (damage_ratio >= 0.33)
-		size = { 2.0, 2.0 };
-	  else if (damage_ratio >= 0.2)
-		size = { 1.5, 1.5 };
-	  else if (damage_ratio >= 0.1)
-		size = { 1.2, 1.2 };
-	}
-  }
-  Math::vec2 text_position = event.target->GetGridPosition()->Get();
-  text_position *= GridSystem::TILE_SIZE;
+	Engine::GetLogger().LogDebug("Damage Event! " + std::to_string(event.damageAmount));
 
-  m_ui_manager->ShowDamageText(event.damageAmount, text_position, size);
+	Math::vec2 size = { 1.0f, 1.0f }; // Default size
+	if (event.target != nullptr)
+	{
+		const StatsComponent* stats = event.target->GetStatsComponent();
+		if (stats != nullptr && stats->GetMaxHP() > 0)
+		{
+			float damage_ratio = static_cast<float>(event.damageAmount) / static_cast<float>(stats->GetMaxHP());
+
+			if (damage_ratio >= 0.5)
+			{
+				size = { 2.5, 2.5 };
+			}
+			else if (damage_ratio >= 0.33)
+			{
+				size = { 2.0, 2.0 };
+			}
+			else if (damage_ratio >= 0.2)
+			{
+				size = { 1.5, 1.5 };
+			}
+			else if (damage_ratio >= 0.1)
+			{
+				size = { 1.2, 1.2 };
+			}
+		}
+	}
+
+	Math::vec2 text_position = event.target->GetGridPosition()->Get();
+	text_position *= GridSystem::TILE_SIZE; // Appear above the character
+	DamageText temp = { std::to_string(event.damageAmount), text_position, size, 1.0 };
+	damage_texts.push_back(temp);
 }
 
-// Math::ivec2 ConvertScreenToGrid(Math::vec2 world_pos)
-// {
-// 	int grid_x = static_cast<int>(world_pos.x / GridSystem::TILE_SIZE);
-// 	int grid_y = static_cast<int>(world_pos.y / GridSystem::TILE_SIZE);
-// 	return { grid_x, grid_y };
-// }
+Math::ivec2 ConvertScreenToGrid(Math::vec2 world_pos)
+{
+	int grid_x = static_cast<int>(world_pos.x / GridSystem::TILE_SIZE);
+	int grid_y = static_cast<int>(world_pos.y / GridSystem::TILE_SIZE);
+	return { grid_x, grid_y };
+}
 
 void GamePlay::Update(double dt)
 {
-  // 재시작 플래그 체크 (Update 시작 시)
-  if (s_should_restart)
-  {
-    s_should_restart = false;
-    Engine::GetLogger().LogEvent("=== RESTARTING GAMEPLAY ===");
-    Engine::GetGameStateManager().PopState();
-    Engine::GetGameStateManager().PushState<GamePlay>();
-    return;
-  }
+	TurnManager* turnMgr		  = GetGSComponent<TurnManager>();
+	Character*	 currentCharacter = nullptr;
+	// 업데이트 시작
 
-  TurnManager*				turnMgr		 = GetGSComponent<TurnManager>();
-  GridSystem*				grid		 = GetGSComponent<GridSystem>();
-  CombatSystem*				combatSystem = GetGSComponent<CombatSystem>();
-  AISystem*					aiSystem	 = GetGSComponent<AISystem>();
-  CS230::GameObjectManager* goMgr		 = GetGSComponent<CS230::GameObjectManager>();
-  DebugManager*				debugMgr	 = GetGSComponent<DebugManager>();
+	GetGSComponent<DebugManager>()->Update(dt);
 
-  Character* current = nullptr;
-  if (turnMgr && turnMgr->IsCombatActive())
-  {
-	current = turnMgr->GetCurrentCharacter();
-  }
+	CS230::Input& input			 = Engine::GetInput();
+	bool		  is_clicking_ui = ImGui::GetIO().WantCaptureMouse;
 
-  if (debugMgr)
-	debugMgr->Update(dt);
+	if (turnMgr && turnMgr->IsCombatActive())
+	{
+		currentCharacter = turnMgr->GetCurrentCharacter();
+	}
 
-  if (current != nullptr)
-  {
-	m_input_handler->Update(dt, current, grid, combatSystem);
-	m_orchestrator->Update(dt, turnMgr, aiSystem);
-	m_ui_manager->Update(dt);
-  }
+	if(game_end)
+	{
+		// currentCharacter = nullptr;
+		turnMgr->EndCombat();
+		Engine::GetGameStateManager().PopState();
+		Engine::GetGameStateManager().PushState<MainMenu>();
+		return;
+	}
 
-  goMgr->UpdateAll(dt);
-  UpdateGSComponents(dt);
+	if(turnMgr->GetRoundNumber() != pre_round){
+		fighter->OnTurnStart();
+		pre_round = turnMgr->GetRoundNumber();
+	}
 
-  if (game_end || Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Escape))
-  {
-	if (turnMgr)
-	  turnMgr->EndCombat();
-	Engine::GetGameStateManager().PopState();
-	Engine::GetGameStateManager().PushState<MainMenu>();
-	return;
-  }
+
+	switch (currentCharacter->GetCharacterType())
+	{
+		case CharacterTypes::Dragon:
+			if (input.MouseJustPressed(2))
+			{
+				if (currentPlayerState != PlayerActionState::None)
+				{
+					Engine::GetLogger().LogEvent("Action cancelled via Right Click.");
+
+					if (currentPlayerState == PlayerActionState::Moving)
+					{
+						MovementComponent* move_comp = dragon->GetGOComponent<MovementComponent>();
+						if (move_comp != nullptr)
+						{
+							move_comp->ClearPath();
+						}
+					}
+					currentPlayerState = PlayerActionState::None;
+				}
+			}
+			if (currentPlayerState == PlayerActionState::Moving)
+			{
+				MovementComponent* move_comp = dragon->GetGOComponent<MovementComponent>();
+				if (move_comp != nullptr && !move_comp->IsMoving())
+				{
+					Engine::GetLogger().LogEvent("Movement finished. State returning to None.");
+					currentPlayerState = PlayerActionState::None;
+				}
+
+				break;
+			}
+			if (input.MouseJustPressed(0))
+			{
+				Engine::GetLogger().LogEvent("Map clicked at (" + std::to_string(input.GetMousePos().x) + ", " + std::to_string(input.GetMousePos().y) + ")");
+
+				if (!is_clicking_ui)
+				{
+					Math::vec2	mouse_pos = input.GetMousePos();
+					Math::ivec2 grid_pos  = ConvertScreenToGrid(mouse_pos);
+
+					GridSystem* grid_system = GetGSComponent<GridSystem>();
+					switch (currentPlayerState)
+					{
+						case PlayerActionState::SelectingMove:
+							Engine::GetLogger().LogEvent("Map clicked while in SelectingMove state.");
+
+							if (grid_system->IsWalkable(grid_pos))
+							{
+								std::vector<Math::ivec2> new_path = grid_system->FindPath(dragon->GetGridPosition()->Get(), grid_pos);
+
+								MovementComponent* move_comp = dragon->GetGOComponent<MovementComponent>();
+
+								if (move_comp != nullptr)
+								{
+									move_comp->SetPath(std::move(new_path));
+
+									currentPlayerState = PlayerActionState::Moving;
+									Engine::GetLogger().LogEvent("Path set. State changing to Moving.");
+								}
+								else
+								{
+									Engine::GetLogger().LogError("Dragon is missing MovementComponent!");
+									currentPlayerState = PlayerActionState::None;
+								}
+							}
+
+							break;
+						case PlayerActionState::SelectingAction:
+							Engine::GetLogger().LogEvent("Map clicked while in SelectingAction state.");
+							// player->PerformAction(grid_pos);
+							// currentPlayerState = PlayerActionState::None;
+							break;
+						case PlayerActionState::TargetingForAttack:
+							{
+								Engine::GetLogger().LogEvent("Map clicked for Attack at (" + std::to_string(grid_pos.x) + ", " + std::to_string(grid_pos.y) + ")");
+								Character* target = grid_system->GetCharacterAt(grid_pos);
+
+								if (target != nullptr && target != dragon)
+								{
+									GetGSComponent<CombatSystem>()->ExecuteAttack(dragon, target);
+									currentPlayerState = PlayerActionState::None;
+								}
+								else
+								{
+									Engine::GetLogger().LogEvent("Attack FAILED. Invalid target.");
+								}
+								break;
+							}
+
+						case PlayerActionState::TargetingForSpell:
+							{
+								Engine::GetLogger().LogEvent("Map clicked for Spell at (" + std::to_string(grid_pos.x) + ", " + std::to_string(grid_pos.y) + ")");
+
+								if (grid_system->IsWalkable(grid_pos))
+								{
+									Engine::GetLogger().LogEvent("Spell CAST! On tile.");
+
+									// grid_system->ApplyEffectToTile(grid_pos, "Fire");
+
+									currentPlayerState = PlayerActionState::None;
+								}
+								else
+								{
+									Engine::GetLogger().LogEvent("Spell FAILED. Invalid tile.");
+								}
+								break;
+							}
+						case PlayerActionState::None: break;
+					}
+				}
+			}
+
+			if (input.MouseJustPressed(2))
+			{
+				if (currentPlayerState != PlayerActionState::None)
+				{
+					Engine::GetLogger().LogEvent("Action cancelled via Right Click.");
+					currentPlayerState = PlayerActionState::None;
+				}
+			}
+
+			break;
+		case CharacterTypes::Fighter:
+			fighter->Action();
+			if (!GetGSComponent<AISystem>()->ShouldAttack(fighter,dragon) && !GetGSComponent<AISystem>()->ShouldMoveCloser(fighter,dragon) /* && !GetGSComponent<AISystem>()->ShouldUseAbility(fighter,dragon) */)
+			{
+				turnMgr->EndCurrentTurn();
+			}
+			break;
+		case CharacterTypes::Wizard: break;
+		case CharacterTypes::Rogue: break;
+		case CharacterTypes::Cleric: break;
+	}
+
+
+	// if (dragon != nullptr && dragon->IsAlive()) {
+	//     Math::ivec2 current_pos    = dragon->GetGridPosition()->Get();
+	//     Math::ivec2 target_pos     = current_pos;
+	//     bool        move_requested = false;
+
+	//    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Up)) {
+	//        target_pos.y++; move_requested = true;
+	//    }
+	//    else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Down)) {
+	//        target_pos.y--; move_requested = true;
+	//    }
+	//    else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Left)) {
+	//        target_pos.x--; move_requested = true;
+	//    }
+	//    else if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Right)) {
+	//        target_pos.x++; move_requested = true;
+	//    }
+
+	//    if (move_requested) {
+	//        GridSystem* grid = GetGSComponent<GridSystem>();
+	//        if (grid != nullptr && grid->IsWalkable(target_pos)) {
+	//            grid->MoveCharacter(current_pos, target_pos);
+	//            dragon->GetGridPosition()->Set(target_pos);
+	//            dragon->SetPosition({ static_cast<double>(target_pos.x * GridSystem::TILE_SIZE), static_cast<double>(target_pos.y * GridSystem::TILE_SIZE) });
+	//            Engine::GetLogger().LogEvent("Dragon moved to (" + std::to_string(target_pos.x) + ", " + std::to_string(target_pos.y) + ")");
+	//
+	//        }
+	//        else {
+	//            Engine::GetLogger().LogEvent("Dragon cannot move there! (Wall or Occupied)");
+	//        }
+	//    }
+	//}
+
+	if (Engine::GetInput().KeyJustReleased(CS230::Input::Keys::Escape))
+	{
+		Engine::GetGameStateManager().PopState();
+		Engine::GetGameStateManager().PushState<MainMenu>();
+	}
+
+	for (auto& damage_text : damage_texts)
+	{
+		damage_text.lifetime -= dt;
+	}
+	std::erase_if(damage_texts, [](const DamageText& damage_text) { return damage_text.lifetime <= 0.0; });
+
+	GetGSComponent<CS230::GameObjectManager>()->UpdateAll(dt);
 }
 
 void GamePlay::Unload()
 {
-  if (auto goMgr = GetGSComponent<CS230::GameObjectManager>())
-  {
-	goMgr->Unload();
-  }
-
-  ClearGSComponents();
-
-  m_input_handler.reset();
-  m_ui_manager.reset();
-  m_orchestrator.reset();
-
-
-  enemy	 = nullptr;
-  player = nullptr;
+	GetGSComponent<CS230::GameObjectManager>()->Unload();
+	fighter = nullptr;
+	dragon	= nullptr;
 }
 
 void GamePlay::Draw()
 {
-  Engine::GetWindow().Clear(0x1a1a1aff);
-  auto renderer_2d = Engine::GetTextureManager().GetRenderer2D();
+	Engine::GetWindow().Clear(0x1a1a1aff);
+	auto& renderer_2d  = Engine::GetRenderer2D();
+	auto& text_manager = Engine::GetTextManager();
 
-  Math::TransformationMatrix camera_matrix = CS200::build_ndc_matrix(Engine::GetWindow().GetSize());
-  renderer_2d->BeginScene(camera_matrix);
+	renderer_2d.BeginScene(CS200::build_ndc_matrix(Engine::GetWindow().GetSize()));
 
-  GridSystem* grid_system = GetGSComponent<GridSystem>();
-  if (grid_system != nullptr)
-  {
-	grid_system->Draw();
-  }
+	GridSystem* grid_system = GetGSComponent<GridSystem>();
+	if (grid_system != nullptr)
+	{
+		grid_system->Draw();
+	}
 
-  CS230::GameObjectManager* goMgr = GetGSComponent<CS230::GameObjectManager>();
-  if (goMgr)
-  {
-	goMgr->DrawAll(camera_matrix);
-  }
+	for (const auto& damage_text : damage_texts)
+	{
+		text_manager.DrawText(damage_text.text, damage_text.position, Fonts::Outlined, damage_text.size, CS200::VIOLET);
+	}
 
-  m_ui_manager->Draw(camera_matrix);
+	GetGSComponent<DebugManager>()->Draw(grid_system);
 
-  GetGSComponent<DebugManager>()->Draw(grid_system);
-
-  renderer_2d->EndScene();
+	renderer_2d.EndScene();
 }
 
 void GamePlay::DrawImGui()
 {
-  GridSystem* grid_system = GetGSComponent<GridSystem>();
-  GetGSComponent<DebugManager>()->DrawImGui(grid_system);
+	GridSystem* grid_system = GetGSComponent<GridSystem>();
+	GetGSComponent<DebugManager>()->DrawImGui(grid_system);
 
-  ImGui::Begin("Map Selection");
+	ImGui::Begin("Player Actions");
+	TurnManager* turnMgr = GetGSComponent<TurnManager>();
+	if (turnMgr && turnMgr->IsCombatActive())
+	{
+		ImGui::Begin("Combat Status");
+		Character* current = turnMgr->GetCurrentCharacter();
+		if (current)
+		{
+			ImGui::Text("Current Turn: %s", current->TypeName().c_str());
+			ImGui::Text("Turn #%d | Round #%d", turnMgr->GetCurrentTurnNumber(), turnMgr->GetRoundNumber());
+			// ImGui::Text("Initiative: %d", turnMgr->GetInitiativeValue(current));
+		}
+		ImGui::End();
+	}
+	const char* move_text		 = (currentPlayerState == PlayerActionState::SelectingMove) ? "Cancel Move" : "Move";
+	bool		is_move_disabled = (currentPlayerState != PlayerActionState::None && currentPlayerState != PlayerActionState::SelectingMove);
+	if (is_move_disabled)
+		ImGui::BeginDisabled();
+	if (ImGui::Button(move_text))
+	{
+		if (currentPlayerState == PlayerActionState::SelectingMove)
+		{
+			currentPlayerState = PlayerActionState::None;
+			Engine::GetLogger().LogEvent("UI: 'Cancel Move' button clicked.");
+		}
+		else
+		{
+			currentPlayerState = PlayerActionState::SelectingMove;
+			Engine::GetLogger().LogEvent("UI: 'Move' button clicked.");
+		}
+	}
+	if (is_move_disabled)
+		ImGui::EndDisabled();
 
-  const char* current_source = (current_map_source_ == MapSource::First) ? "First" : "JSON";
-  ImGui::Text("Current Map: %s", current_source);
+	const char* action_text		   = (currentPlayerState == PlayerActionState::SelectingAction) ? "Cancel Action" : "Action";
+	bool		is_action_disabled = (currentPlayerState != PlayerActionState::None && currentPlayerState != PlayerActionState::SelectingAction);
+	if (is_action_disabled)
+		ImGui::BeginDisabled();
+	if (ImGui::Button(action_text))
+	{
+		if (currentPlayerState == PlayerActionState::SelectingAction)
+		{
+			currentPlayerState = PlayerActionState::None;
+			Engine::GetLogger().LogEvent("UI: 'Cancel Action' button clicked.");
+		}
+		else
+		{
+			currentPlayerState = PlayerActionState::SelectingAction;
+			Engine::GetLogger().LogEvent("UI: 'Action' button clicked.");
+		}
+	}
+	if (is_action_disabled)
+		ImGui::EndDisabled();
 
-  if (current_map_source_ == MapSource::Json && selected_json_map_index_ < available_json_maps_.size())
-  {
-    ImGui::Text("Map ID: %s", available_json_maps_[selected_json_map_index_].c_str());
-  }
+	bool is_end_turn_disabled = (currentPlayerState != PlayerActionState::None);
+	if (is_end_turn_disabled)
+		ImGui::BeginDisabled();
+	if (ImGui::Button("End Turn"))
+	{
+		Engine::GetLogger().LogEvent("UI: 'End Turn' button clicked.");
+		if (turnMgr && turnMgr->IsCombatActive())
+		{
+			turnMgr->EndCurrentTurn();
+		}
+	}
+	if (is_end_turn_disabled)
+		ImGui::EndDisabled();
 
-  ImGui::Separator();
+	ImGui::End();
+	if (currentPlayerState == PlayerActionState::SelectingAction)
+	{
+		ImGui::Begin("Action List");
 
-  bool is_first_selected = (s_next_map_source == MapSource::First);
-  if (is_first_selected)
-  {
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.6f, 0.2f, 1.0f));
-  }
+		if (ImGui::Button("Attack"))
+		{
+			Engine::GetLogger().LogEvent("UI: 'Attack' selected. Now targeting.");
+			currentPlayerState = PlayerActionState::TargetingForAttack;
+		}
 
-  if (ImGui::Button("First Map"))
-  {
-    s_next_map_source = MapSource::First;
-    Engine::GetLogger().LogEvent("Selected: First map (click Restart to apply)");
-  }
+		if (ImGui::Button("Spell"))
+		{
+			Engine::GetLogger().LogEvent("UI: 'Spell' selected. Now targeting.");
+			currentPlayerState = PlayerActionState::TargetingForSpell;
+		}
 
-  if (is_first_selected)
-  {
-    ImGui::PopStyleColor();
-  }
-
-  ImGui::Separator();
-
-  ImGui::Text("JSON Maps:");
-
-  for (int i = 0; i < available_json_maps_.size(); ++i)
-  {
-    const std::string& map_id = available_json_maps_[i];
-
-    bool is_selected = (s_next_map_source == MapSource::Json && s_next_map_index == i);
-    if (is_selected)
-    {
-      ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.6f, 0.2f, 1.0f));
-    }
-
-    if (ImGui::Button(map_id.c_str()))
-    {
-      s_next_map_source = MapSource::Json;
-      s_next_map_index = i;
-      Engine::GetLogger().LogEvent("Selected JSON map: " + map_id + " (click Restart to apply)");
-    }
-
-    if (is_selected)
-    {
-      ImGui::PopStyleColor();
-    }
-  }
-
-  ImGui::Separator();
-
-  if (ImGui::Button("Restart with Selected Map"))
-  {
-    Engine::GetLogger().LogEvent("Restart requested - will execute on next frame");
-    s_should_restart = true;
-  }
-
-  ImGui::End();
-
-  ImGui::Begin("Player Actions");
-  TurnManager* turnMgr = GetGSComponent<TurnManager>();
-
-  if (turnMgr && turnMgr->IsCombatActive())
-  {
-    ImGui::Begin("Combat Status");
-    Character* current = turnMgr->GetCurrentCharacter();
-    if (current)
-    {
-      ImGui::Text("Current Turn: %s", current->TypeName().c_str());
-      ImGui::Text("Turn #%d | Round #%d", turnMgr->GetCurrentTurnNumber(), turnMgr->GetRoundNumber());
-    }
-    ImGui::End();
-  }
-
-  using ActionState = PlayerInputHandler::ActionState;
-  ActionState currentState = m_input_handler->GetCurrentState();
-
-  const char* move_text = (currentState == ActionState::SelectingMove) ? "Cancel Move" : "Move";
-  bool is_move_disabled = (currentState != ActionState::None && currentState != ActionState::SelectingMove);
-
-  if (is_move_disabled)
-    ImGui::BeginDisabled();
-  if (ImGui::Button(move_text))
-  {
-    if (currentState == ActionState::SelectingMove)
-    {
-      m_input_handler->CancelCurrentAction();
-      Engine::GetLogger().LogEvent("UI: 'Cancel Move' button clicked.");
-    }
-    else
-    {
-      m_input_handler->SetState(ActionState::SelectingMove);
-      Engine::GetLogger().LogEvent("UI: 'Move' button clicked.");
-    }
-  }
-  if (is_move_disabled)
-    ImGui::EndDisabled();
-
-  const char* action_text = (currentState == ActionState::SelectingAction) ? "Cancel Action" : "Action";
-  bool is_action_disabled = (currentState != ActionState::None && currentState != ActionState::SelectingAction);
-
-  if (is_action_disabled)
-    ImGui::BeginDisabled();
-  if (ImGui::Button(action_text))
-  {
-    if (currentState == ActionState::SelectingAction)
-    {
-      m_input_handler->CancelCurrentAction();
-      Engine::GetLogger().LogEvent("UI: 'Cancel Action' button clicked.");
-    }
-    else
-    {
-      m_input_handler->SetState(ActionState::SelectingAction);
-      Engine::GetLogger().LogEvent("UI: 'Action' button clicked.");
-    }
-  }
-  if (is_action_disabled)
-    ImGui::EndDisabled();
-
-  bool is_end_turn_disabled = (currentState != ActionState::None);
-  if (is_end_turn_disabled)
-    ImGui::BeginDisabled();
-  if (ImGui::Button("End Turn"))
-  {
-    Engine::GetLogger().LogEvent("UI: 'End Turn' button clicked.");
-    if (turnMgr && turnMgr->IsCombatActive())
-    {
-      turnMgr->EndCurrentTurn();
-    }
-  }
-  if (is_end_turn_disabled)
-    ImGui::EndDisabled();
-
-  ImGui::End();
-
-  if (currentState == ActionState::SelectingAction)
-  {
-    ImGui::Begin("Action List");
-
-    if (ImGui::Button("Attack"))
-    {
-      Engine::GetLogger().LogEvent("UI: 'Attack' selected. Now targeting.");
-      m_input_handler->SetState(ActionState::TargetingForAttack);
-    }
-
-    if (ImGui::Button("Spell"))
-    {
-      Engine::GetLogger().LogEvent("UI: 'Spell' selected. Now targeting.");
-      m_input_handler->SetState(ActionState::TargetingForSpell);
-    }
-
-    ImGui::End();
-  }
+		ImGui::End();
+	}
 }
 
 gsl::czstring GamePlay::GetName() const
 {
-  return "GamePlay";
-}
-
-
-void GamePlay::LoadFirstMap()
-{
-  Engine::GetLogger().LogEvent("LoadHardcodedMap - BEGIN");
-
-  CS230::GameObjectManager* go_manager		  = GetGSComponent<CS230::GameObjectManager>();
-  GridSystem*				grid_system		  = GetGSComponent<GridSystem>();
-  CharacterFactory*			character_factory = GetGSComponent<CharacterFactory>();
-
-  const std::vector<std::string> map_data = { "wwwwwwww",
-											  "xeefeeew", // new exit tile 'x'
-											  "weeeeeew", "weeeeeew", "weeeeeew", "weeeeeew", "weedeeew", "wwwwwwww" };
-
-  for (int y = 0; y < map_data.size(); ++y)
-  {
-	for (int x = 0; x < map_data[y].length(); ++x)
-	{
-	  char		  tile_char	  = map_data[y][x];
-	  Math::ivec2 current_pos = { x, static_cast<int>(map_data.size()) - 1 - y };
-	  switch (tile_char)
-	  {
-		case 'w': grid_system->SetTileType(current_pos, GridSystem::TileType::Wall); break;
-		case 'e': grid_system->SetTileType(current_pos, GridSystem::TileType::Empty); break;
-		case 'x': // 'x'를 출구로 사용 (exit)
-		  grid_system->SetTileType(current_pos, GridSystem::TileType::Exit);
-		  grid_system->SetExitPosition(current_pos);
-		  Engine::GetLogger().LogEvent("Exit set at position: " + std::to_string(current_pos.x) + ", " + std::to_string(current_pos.y));
-		  break;
-		case 'f':
-		  grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
-		  // fighter = new Fighter(current_pos);
-		  {
-			auto enemy_ptr = character_factory->Create(CharacterTypes::Fighter, current_pos);
-			enemy		   = enemy_ptr.get();
-			enemy->SetGridSystem(grid_system);
-			go_manager->Add(std::move(enemy_ptr));
-			grid_system->AddCharacter(enemy, current_pos);
-		  }
-		  break;
-		case 'd':
-		  grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
-		  {
-			auto player_ptr = character_factory->Create(CharacterTypes::Dragon, current_pos);
-			player			= player_ptr.get();
-			player->SetGridSystem(grid_system);
-			go_manager->Add(std::move(player_ptr));
-			grid_system->AddCharacter(player, current_pos);
-		  }
-		  break;
-	  }
-	}
-  }
-  Engine::GetLogger().LogEvent("First map loaded.");
-}
-
-void GamePlay::LoadJSONMap(const std::string& map_id)
-{
-  Engine::GetLogger().LogEvent("LoadJSONMap - BEGIN: " + map_id);
-
-  CS230::GameObjectManager* go_manager = GetGSComponent<CS230::GameObjectManager>();
-  GridSystem* grid_system = GetGSComponent<GridSystem>();
-  CharacterFactory* character_factory = GetGSComponent<CharacterFactory>();
-  MapDataRegistry* map_registry = GetGSComponent<MapDataRegistry>();
-
-  MapData map_data = map_registry->GetMapData(map_id);
-
-  if (map_data.id.empty())
-  {
-    Engine::GetLogger().LogError("Failed to load map: " + map_id + ", falling back to hardcoded");
-    LoadFirstMap();
-    return;
-  }
-
-  grid_system->LoadMap(map_data);
-
-  auto dragon_spawn_it = map_data.spawn_points.find("dragon");
-  if (dragon_spawn_it != map_data.spawn_points.end())
-  {
-    Math::ivec2 dragon_spawn = dragon_spawn_it->second;
-    auto player_ptr = character_factory->Create(CharacterTypes::Dragon, dragon_spawn);
-    player = player_ptr.get();
-    player->SetGridSystem(grid_system);
-    go_manager->Add(std::move(player_ptr));
-    grid_system->AddCharacter(player, dragon_spawn);
-    Engine::GetLogger().LogEvent("Dragon spawned at: " + std::to_string(dragon_spawn.x) + ", " + std::to_string(dragon_spawn.y));
-  }
-  else
-  {
-    Engine::GetLogger().LogError("No dragon spawn point in map: " + map_id);
-  }
-
-  // Fighter
-  auto fighter_spawn_it = map_data.spawn_points.find("fighter");
-  if (fighter_spawn_it != map_data.spawn_points.end())
-  {
-    Math::ivec2 fighter_spawn = fighter_spawn_it->second;
-    auto enemy_ptr = character_factory->Create(CharacterTypes::Fighter, fighter_spawn);
-    enemy = enemy_ptr.get();
-    enemy->SetGridSystem(grid_system);
-    go_manager->Add(std::move(enemy_ptr));
-    grid_system->AddCharacter(enemy, fighter_spawn);
-    Engine::GetLogger().LogEvent("Fighter spawned at: " + std::to_string(fighter_spawn.x) + ", " + std::to_string(fighter_spawn.y));
-  }
-  else
-  {
-    Engine::GetLogger().LogError("No fighter spawn point in map: " + map_id);
-  }
-
-  Engine::GetLogger().LogEvent("LoadJSONMap - END: " + map_data.name);
+	return "GamePlay";
 }
