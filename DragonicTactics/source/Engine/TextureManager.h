@@ -39,7 +39,7 @@ public:
 
 
 private:
-	RendererType									  current_renderer_type = RendererType::Instanced;
+	RendererType									  current_renderer_type = RendererType::Batch;
 	inline static std::unique_ptr<CS200::IRenderer2D> renderer2D{};
 
 	std::map<std::filesystem::path, std::shared_ptr<Texture>> textures;
