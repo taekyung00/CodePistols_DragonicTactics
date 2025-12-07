@@ -32,6 +32,7 @@ class GamePlay : public CS230::GameState
   gsl::czstring GetName() const override;
 
   private:
+  static constexpr Math::ivec2				  default_window_size = { 1200, 800 };
   std::unique_ptr<PlayerInputHandler> m_input_handler;
   std::unique_ptr<GamePlayUIManager>  m_ui_manager;
   std::unique_ptr<BattleOrchestrator> m_orchestrator;

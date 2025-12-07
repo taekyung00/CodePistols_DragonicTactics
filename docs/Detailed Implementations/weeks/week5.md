@@ -3856,6 +3856,528 @@ renderer->DrawRectangle(
 
 ---
 
+## 🔧 개선: 캐릭터 스탯 패널 정렬 문제 해결
+
+**문제점**: 현재 구현에서 텍스트들이 각각 다른 X 위치에 그려져 정렬이 맞지 않음
+
+**원인 분석**:
+
+```cpp
+// 현재 코드의 문제점 (GamePlayUIManager.cpp 라인 119-138)
+Engine::GetTextManager().DrawText(name, Math::vec2{ text_x_pos + 40, ... });     // +40
+Engine::GetTextManager().DrawText(hp_text, Math::vec2{ text_x_pos, ... });       // +0
+Engine::GetTextManager().DrawText(ap_text, Math::vec2{ text_x_pos + 50, ... });  // +50
+Engine::GetTextManager().DrawText(speed_text, Math::vec2{ text_x_pos + 30, ... }); // +30
+```
+
+각 줄마다 **임의의 X 오프셋**이 추가되어 있어 정렬이 어긋남.
+
+---
+
+### 해결 방법 1: 완전 왼쪽 정렬 (권장)
+
+**모든 텍스트를 동일한 X 위치에 정렬**
+
+```cpp
+// GamePlayUIManager.cpp의 DrawCharacterStatsPanel() 수정
+
+void GamePlayUIManager::DrawCharacterStatsPanel([[maybe_unused]] Math::TransformationMatrix camera_matrix)
+{
+  if (m_characters.empty())
+  {
+    return;
+  }
+
+  Math::ivec2 window_size = Engine::GetWindow().GetSize();
+
+  // 패널 위치: 화면 오른쪽 상단
+  const float panel_x = static_cast<float>(window_size.x) - 250.0f;
+  const float panel_start_y = static_cast<float>(window_size.y) - 100.0f;
+
+  // 각 캐릭터당 패널 높이
+  const float panel_height_per_char = 120.0f;
+  const float panel_width = 230.0f;
+
+  // 텍스트 정렬 설정
+  const float text_left_margin = 10.0f;  // 패널 왼쪽에서 텍스트까지의 여백
+  const float line_height = 25.0f;       // 줄 간격
+  const Math::vec2 text_scale = { 1.0f, 1.0f };  // 폰트 크기
+
+  float current_y = panel_start_y;
+
+  for (Character* character : m_characters)
+  {
+    if (character == nullptr)
+    {
+      continue;
+    }
+
+    // ========================================
+    // 1. 패널 배경 그리기 (반투명 검정)
+    // ========================================
+    auto* renderer = Engine::GetTextureManager().GetRenderer2D();
+
+    Math::TransformationMatrix bg_transform = Math::TransformationMatrix::build_translation({ panel_x, current_y });
+
+    renderer->DrawRectangle(
+      bg_transform * Math::TransformationMatrix::build_scale({ panel_width, panel_height_per_char }),
+      CS200::RGBA{ 30, 30, 30, 180 },  // fill_color: 반투명 어두운 회색
+      CS200::RGBA{ 100, 100, 100, 255 }, // line_color: 밝은 회색 테두리
+      2.0,  // line_width
+      0.5f  // depth
+    );
+
+    // ========================================
+    // 텍스트 X 위치 통일 (왼쪽 정렬)
+    // ========================================
+    float text_x = panel_x + text_left_margin;
+
+    // ========================================
+    // 2. 캐릭터 이름 표시
+    // ========================================
+    std::string name = character->TypeName();
+    float name_y = current_y + panel_height_per_char - 20.0f;
+
+    Engine::GetTextManager().DrawText(
+      name,
+      Math::vec2{ text_x, name_y },
+      Fonts::Outlined,
+      Math::vec2{ 1.5f, 1.5f },  // 이름은 크게
+      CS200::WHITE
+    );
+
+    // ========================================
+    // 3. HP 표시 (이름 아래)
+    // ========================================
+    int current_hp = character->GetHP();
+    int max_hp = character->GetMaxHP();
+    std::string hp_text = "HP: " + std::to_string(current_hp) + " / " + std::to_string(max_hp);
+    float hp_y = name_y - line_height;
+
+    Engine::GetTextManager().DrawText(
+      hp_text,
+      Math::vec2{ text_x, hp_y },
+      Fonts::Outlined,
+      text_scale,
+      CS200::RED
+    );
+
+    // ========================================
+    // 4. Action Points 표시 (HP 아래)
+    // ========================================
+    int current_ap = character->GetActionPoints();
+    std::string ap_text = "AP: " + std::to_string(current_ap);
+    float ap_y = hp_y - line_height;
+
+    Engine::GetTextManager().DrawText(
+      ap_text,
+      Math::vec2{ text_x, ap_y },
+      Fonts::Outlined,
+      text_scale,
+      CS200::YELLOW
+    );
+
+    // ========================================
+    // 5. Speed (Movement Range) 표시 (AP 아래)
+    // ========================================
+    int speed = character->GetMovementRange();
+    std::string speed_text = "Speed: " + std::to_string(speed);
+    float speed_y = ap_y - line_height;
+
+    Engine::GetTextManager().DrawText(
+      speed_text,
+      Math::vec2{ text_x, speed_y },
+      Fonts::Outlined,
+      text_scale,
+      CS200::GREEN
+    );
+
+    // 다음 캐릭터 패널 위치로 이동
+    current_y -= panel_height_per_char + 10.0f; // 10px 간격
+  }
+}
+```
+
+**변경 사항**:
+- ✅ **모든 텍스트의 X 좌표를 `text_x`로 통일** (임의의 오프셋 제거)
+- ✅ **Y 좌표를 명확하게 계산** (`name_y`, `hp_y`, `ap_y`, `speed_y`)
+- ✅ **line_height로 줄 간격 일관성 유지**
+- ✅ **패널 배경 추가** (가독성 향상)
+
+**예상 결과**:
+
+```
+┌─────────────────────────┐
+│ Dragon                  │
+│ HP: 140 / 140           │
+│ AP: 3                   │
+│ Speed: 5                │
+└─────────────────────────┘
+
+┌─────────────────────────┐
+│ Fighter                 │
+│ HP: 90 / 90             │
+│ AP: 2                   │
+│ Speed: 3                │
+└─────────────────────────┘
+```
+
+---
+
+### 해결 방법 2: 2단 레이아웃 (더 콤팩트)
+
+**이름은 크게, HP/AP/Speed는 2단으로 배치**
+
+```cpp
+void GamePlayUIManager::DrawCharacterStatsPanel([[maybe_unused]] Math::TransformationMatrix camera_matrix)
+{
+  if (m_characters.empty())
+  {
+    return;
+  }
+
+  Math::ivec2 window_size = Engine::GetWindow().GetSize();
+
+  const float panel_x = static_cast<float>(window_size.x) - 250.0f;
+  const float panel_start_y = static_cast<float>(window_size.y) - 100.0f;
+
+  const float panel_height_per_char = 80.0f;  // 더 작게
+  const float panel_width = 230.0f;
+
+  const float text_left_margin = 10.0f;
+  const float column_gap = 115.0f;  // 좌우 컬럼 간격
+  const float line_height = 25.0f;
+  const Math::vec2 text_scale = { 1.0f, 1.0f };
+
+  float current_y = panel_start_y;
+
+  for (Character* character : m_characters)
+  {
+    if (character == nullptr)
+    {
+      continue;
+    }
+
+    // 배경 그리기
+    auto* renderer = Engine::GetTextureManager().GetRenderer2D();
+    Math::TransformationMatrix bg_transform = Math::TransformationMatrix::build_translation({ panel_x, current_y });
+
+    renderer->DrawRectangle(
+      bg_transform * Math::TransformationMatrix::build_scale({ panel_width, panel_height_per_char }),
+      CS200::RGBA{ 30, 30, 30, 180 },
+      CS200::RGBA{ 100, 100, 100, 255 },
+      2.0,
+      0.5f
+    );
+
+    // 텍스트 X 위치
+    float text_x_left = panel_x + text_left_margin;
+    float text_x_right = text_x_left + column_gap;
+
+    // 1. 이름 (상단 중앙)
+    std::string name = character->TypeName();
+    float name_y = current_y + panel_height_per_char - 15.0f;
+
+    Engine::GetTextManager().DrawText(
+      name,
+      Math::vec2{ text_x_left + 50.0f, name_y },  // 중앙 정렬 (대략)
+      Fonts::Outlined,
+      Math::vec2{ 1.5f, 1.5f },
+      CS200::WHITE
+    );
+
+    // 2단 레이아웃
+    float stats_y = name_y - line_height - 5.0f;
+
+    // 왼쪽 컬럼: HP
+    int current_hp = character->GetHP();
+    int max_hp = character->GetMaxHP();
+    std::string hp_text = "HP: " + std::to_string(current_hp) + "/" + std::to_string(max_hp);
+
+    Engine::GetTextManager().DrawText(
+      hp_text,
+      Math::vec2{ text_x_left, stats_y },
+      Fonts::Outlined,
+      text_scale,
+      CS200::RED
+    );
+
+    // 오른쪽 컬럼: AP
+    int current_ap = character->GetActionPoints();
+    std::string ap_text = "AP: " + std::to_string(current_ap);
+
+    Engine::GetTextManager().DrawText(
+      ap_text,
+      Math::vec2{ text_x_right, stats_y },
+      Fonts::Outlined,
+      text_scale,
+      CS200::YELLOW
+    );
+
+    // 하단: Speed (중앙)
+    int speed = character->GetMovementRange();
+    std::string speed_text = "Speed: " + std::to_string(speed);
+    float speed_y = stats_y - line_height;
+
+    Engine::GetTextManager().DrawText(
+      speed_text,
+      Math::vec2{ text_x_left + 60.0f, speed_y },  // 중앙 정렬 (대략)
+      Fonts::Outlined,
+      text_scale,
+      CS200::GREEN
+    );
+
+    current_y -= panel_height_per_char + 10.0f;
+  }
+}
+```
+
+**레이아웃**:
+
+```
+┌─────────────────────────┐
+│        Dragon           │
+│ HP: 140/140    AP: 3    │
+│      Speed: 5           │
+└─────────────────────────┘
+
+┌─────────────────────────┐
+│        Fighter          │
+│ HP: 90/90      AP: 2    │
+│      Speed: 3           │
+└─────────────────────────┘
+```
+
+---
+
+### 해결 방법 3: 아이콘 스타일 (가장 깔끔)
+
+**레이블과 값을 분리하여 표 형식으로 정렬**
+
+```cpp
+void GamePlayUIManager::DrawCharacterStatsPanel([[maybe_unused]] Math::TransformationMatrix camera_matrix)
+{
+  if (m_characters.empty())
+  {
+    return;
+  }
+
+  Math::ivec2 window_size = Engine::GetWindow().GetSize();
+
+  const float panel_x = static_cast<float>(window_size.x) - 200.0f;
+  const float panel_start_y = static_cast<float>(window_size.y) - 100.0f;
+
+  const float panel_height_per_char = 100.0f;
+  const float panel_width = 180.0f;
+
+  const float text_left_margin = 10.0f;
+  const float value_offset = 50.0f;  // 레이블과 값 사이 간격
+  const float line_height = 22.0f;
+  const Math::vec2 label_scale = { 0.9f, 0.9f };
+  const Math::vec2 value_scale = { 1.1f, 1.1f };
+
+  float current_y = panel_start_y;
+
+  for (Character* character : m_characters)
+  {
+    if (character == nullptr)
+    {
+      continue;
+    }
+
+    // 배경 그리기
+    auto* renderer = Engine::GetTextureManager().GetRenderer2D();
+    Math::TransformationMatrix bg_transform = Math::TransformationMatrix::build_translation({ panel_x, current_y });
+
+    renderer->DrawRectangle(
+      bg_transform * Math::TransformationMatrix::build_scale({ panel_width, panel_height_per_char }),
+      CS200::RGBA{ 30, 30, 30, 200 },
+      CS200::RGBA{ 100, 100, 100, 255 },
+      2.0,
+      0.5f
+    );
+
+    float text_x = panel_x + text_left_margin;
+    float value_x = text_x + value_offset;
+
+    // 1. 이름
+    std::string name = character->TypeName();
+    float name_y = current_y + panel_height_per_char - 15.0f;
+
+    Engine::GetTextManager().DrawText(
+      name,
+      Math::vec2{ text_x, name_y },
+      Fonts::Outlined,
+      Math::vec2{ 1.4f, 1.4f },
+      CS200::WHITE
+    );
+
+    // 2. HP (레이블 + 값)
+    int current_hp = character->GetHP();
+    int max_hp = character->GetMaxHP();
+    std::string hp_text = std::to_string(current_hp) + " / " + std::to_string(max_hp);
+    float hp_y = name_y - line_height - 5.0f;
+
+    Engine::GetTextManager().DrawText(
+      "HP",
+      Math::vec2{ text_x, hp_y },
+      Fonts::Outlined,
+      label_scale,
+      CS200::RGBA{ 150, 150, 150, 255 }  // 회색 레이블
+    );
+
+    Engine::GetTextManager().DrawText(
+      hp_text,
+      Math::vec2{ value_x, hp_y },
+      Fonts::Outlined,
+      value_scale,
+      CS200::RED
+    );
+
+    // 3. AP
+    int current_ap = character->GetActionPoints();
+    std::string ap_text = std::to_string(current_ap);
+    float ap_y = hp_y - line_height;
+
+    Engine::GetTextManager().DrawText(
+      "AP",
+      Math::vec2{ text_x, ap_y },
+      Fonts::Outlined,
+      label_scale,
+      CS200::RGBA{ 150, 150, 150, 255 }
+    );
+
+    Engine::GetTextManager().DrawText(
+      ap_text,
+      Math::vec2{ value_x, ap_y },
+      Fonts::Outlined,
+      value_scale,
+      CS200::YELLOW
+    );
+
+    // 4. Speed
+    int speed = character->GetMovementRange();
+    std::string speed_text = std::to_string(speed);
+    float speed_y = ap_y - line_height;
+
+    Engine::GetTextManager().DrawText(
+      "SPD",
+      Math::vec2{ text_x, speed_y },
+      Fonts::Outlined,
+      label_scale,
+      CS200::RGBA{ 150, 150, 150, 255 }
+    );
+
+    Engine::GetTextManager().DrawText(
+      speed_text,
+      Math::vec2{ value_x, speed_y },
+      Fonts::Outlined,
+      value_scale,
+      CS200::GREEN
+    );
+
+    current_y -= panel_height_per_char + 10.0f;
+  }
+}
+```
+
+**레이아웃**:
+
+```
+┌──────────────────┐
+│ Dragon           │
+│ HP  140 / 140    │
+│ AP  3            │
+│ SPD 5            │
+└──────────────────┘
+
+┌──────────────────┐
+│ Fighter          │
+│ HP  90 / 90      │
+│ AP  2            │
+│ SPD 3            │
+└──────────────────┘
+```
+
+---
+
+### 권장 사항
+
+**해결 방법 1 (완전 왼쪽 정렬)**을 권장합니다:
+- ✅ 가장 단순하고 명확
+- ✅ 모든 텍스트가 동일한 X 좌표에서 시작
+- ✅ 수정이 쉬움 (Y 좌표만 `line_height`로 계산)
+- ✅ 가독성 우수
+
+**빠른 수정 (현재 코드 기반)**:
+
+현재 코드의 라인 115-138을 다음과 같이 수정:
+
+```cpp
+// 텍스트 X 위치 통일
+float text_x = panel_x + text_left_margin;
+
+// Y 좌표 계산
+float name_y = current_y + panel_height_per_char - first_line_y;
+float hp_y = name_y - line_height;
+float ap_y = hp_y - line_height;
+float speed_y = ap_y - line_height;
+
+// 1. 이름 (모든 오프셋 제거)
+Engine::GetTextManager().DrawText(
+  name,
+  Math::vec2{ text_x, name_y },
+  Fonts::Outlined, text_scale, CS200::WHITE
+);
+
+// 2. HP (오프셋 제거)
+Engine::GetTextManager().DrawText(
+  hp_text,
+  Math::vec2{ text_x, hp_y },
+  Fonts::Outlined, text_scale, CS200::RED
+);
+
+// 3. AP (오프셋 제거)
+Engine::GetTextManager().DrawText(
+  ap_text,
+  Math::vec2{ text_x, ap_y },
+  Fonts::Outlined, text_scale, CS200::YELLOW
+);
+
+// 4. Speed (오프셋 제거)
+Engine::GetTextManager().DrawText(
+  speed_text,
+  Math::vec2{ text_x, speed_y },
+  Fonts::Outlined, text_scale, CS200::GREEN
+);
+```
+
+**핵심 변경**: `text_x_pos + 40`, `text_x_pos + 50`, `text_x_pos + 30` → 모두 `text_x`로 통일
+
+---
+
+### 테스트 검증
+
+**수정 후 예상 화면**:
+
+```
+화면 오른쪽 상단:
+
+Dragon
+HP: 140 / 140
+AP: 3
+Speed: 5
+
+Fighter
+HP: 90 / 90
+AP: 2
+Speed: 3
+```
+
+모든 텍스트가 **왼쪽 정렬**되어 깔끔하게 표시됨.
+
+---
+
 ## 🎮 추가 구현: 캐릭터 이동 범위 시각화 (Movement Range Visualization)
 
 **목표**: 이동 버튼 클릭 시 이동 가능 타일을 시각화하고, 마우스 호버 시 경로를 표시

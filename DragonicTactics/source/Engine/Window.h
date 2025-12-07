@@ -60,8 +60,8 @@ private:
 	void setupOpenGL();
 
 
-	const int					  default_width		 = 800;
-	const int					  default_height	 = 600;
+	const int					  default_width		 = 1200;
+	const int					  default_height	 = 800;
 	Math::ivec2					  window_size		 = { default_width, default_height };
 	static constexpr unsigned int default_background = UINT_MAX;
 	static constexpr CS200::RGBA  default_background1{ CS200::WHITE };
