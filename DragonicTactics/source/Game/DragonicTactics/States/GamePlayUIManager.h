@@ -8,11 +8,14 @@ Author:     Seungju Song
 Created:    November 24, 2025
 */
 
+// GamePlayUIManager.h
 #pragma once
 #include "Engine/Matrix.h"
 #include "Engine/Vec2.h"
 #include <string>
 #include <vector>
+
+class Character;
 
 class GamePlayUIManager
 {
@@ -20,6 +23,12 @@ class GamePlayUIManager
   void ShowDamageText(int damage, Math::vec2 position, Math::vec2 size);
   void Update(double dt);
   void Draw(Math::TransformationMatrix camera_matrix);
+
+
+
+  void SetCharacters(const std::vector<Character*>& characters);
+
+  void DrawCharacterStatsPanel(Math::TransformationMatrix camera_matrix);
 
   private:
   struct DamageText
@@ -31,4 +40,6 @@ class GamePlayUIManager
   };
 
   std::vector<DamageText> m_damage_texts;
+
+  std::vector<Character*> m_characters; 
 };

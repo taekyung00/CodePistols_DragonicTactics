@@ -120,6 +120,10 @@ void GamePlay::Load()
   turnMgr->InitializeTurnOrder(std::vector<Character*>{ player, enemy });
   turnMgr->StartCombat();
 
+  // 신규 추가: UI Manager에 캐릭터 등록
+  m_ui_manager->SetCharacters({ player, enemy });
+  Engine::GetLogger().LogEvent("GamePlay::Load - Characters registered to UI Manager");
+
   GetGSComponent<EventBus>()->Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& event) { this->OnCharacterDamaged(event); });
   GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>(
 	  [this]([[maybe_unused]] const CharacterDeathEvent& event)
