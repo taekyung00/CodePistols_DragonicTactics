@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-﻿#include "pch.h"
-=======
-﻿/**
+/**
  * @file AISystem.cpp
  * @author Sangyun Lee
  * @brief
@@ -10,7 +7,6 @@
 
 #include "AISystem.h"
 #include "pch.h"
->>>>>>> main
 
 /* have to include characters IA */
 
@@ -25,10 +21,6 @@
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
 #include "./Game/DragonicTactics/Objects/Components/MovementComponent.h"
 #include "EventBus.h"
-<<<<<<< HEAD
-#include "./Engine/GameStateManager.h"
-=======
->>>>>>> main
 
 AISystem::AISystem()
 {

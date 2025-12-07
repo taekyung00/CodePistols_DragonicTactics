@@ -15,8 +15,16 @@ class GridSystem : public CS230::Component
 	Wall,
 	Lava,
 	Difficult,
+	Exit,
 	Invalid
   };
+
+  //출구 위치 관리
+  void SetExitPosition(Math::ivec2 pos);
+
+  Math::ivec2 GetExitPosition() const;
+
+  bool HasExit() const;
 
   private:
   static const int MAP_WIDTH  = 8;
@@ -42,6 +50,8 @@ class GridSystem : public CS230::Component
 	{
 	}
   };
+
+  Math::ivec2 exit_position_ = {-1, -1};  // 출구 위치 (-1, -1은 없음)
 
   public:
   static const int TILE_SIZE = MAP_WIDTH * MAP_HEIGHT;
