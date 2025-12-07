@@ -9,66 +9,62 @@ Created:    May 17, 2025
 */
 #pragma once
 #include <algorithm>
-#include <vector>
-#include <stdexcept>
 #include <memory>
+#include <stdexcept>
+#include <vector>
 
 #include "Component.h"
 
 namespace CS230
 {
-    class ComponentManager
-    {
-    public:
-       
-        void UpdateAll(double dt)
-        {
-           for (const auto& component : components)
-            {
-                component->Update(dt);
-            }
-        }
+  class ComponentManager
+  {
+public:
 
-        void AddComponent(Component* component)
-        {
-           components.emplace_back(component);
-        }
+	void UpdateAll(double dt)
+	{
+	  for (const auto& component : components)
+	  {
+		component->Update(dt);
+	  }
+	}
 
-        template <typename T>
-        T* GetComponent()
-        {
-            for (const auto& component : components)
-            {
-                T* ptr = dynamic_cast<T*>(component.get());
-                if (ptr != nullptr) 
-                {
-                    return ptr;
-                }
-            }
-            return nullptr;
-        }
+	void AddComponent(Component* component)
+	{
+	  components.emplace_back(component);
+	}
 
-        template <typename T>
-        void RemoveComponent()
-        {
-           auto it = std::find_if(components.begin(), components.end(), 
-                [](const std::unique_ptr<Component>& component) 
-                { 
-                    return dynamic_cast<T*>(component.get()) != nullptr;
-                });
+	template <typename T>
+	T* GetComponent()
+	{
+	  for (const auto& component : components)
+	  {
+		T* ptr = dynamic_cast<T*>(component.get());
+		if (ptr != nullptr)
+		{
+		  return ptr;
+		}
+	  }
+	  return nullptr;
+	}
 
-            if (it != components.end()) 
-            {
-                components.erase(it);
-            }
-        }
+	template <typename T>
+	void RemoveComponent()
+	{
+	  auto it = std::find_if(components.begin(), components.end(), [](const std::unique_ptr<Component>& component) { return dynamic_cast<T*>(component.get()) != nullptr; });
 
-        void Clear()
-        {
-            components.clear();
-        }
+	  if (it != components.end())
+	  {
+		components.erase(it);
+	  }
+	}
 
-    private:
-        std::vector<std::unique_ptr<Component>> components;
-    };
+	void Clear()
+	{
+	  components.clear();
+	}
+
+private:
+	std::vector<std::unique_ptr<Component>> components;
+  };
 }

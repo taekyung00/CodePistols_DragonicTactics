@@ -12,13 +12,19 @@ Created:    November 24, 2025
 class TurnManager;
 class Character;
 class AISystem;
-namespace CS230 { class GameObjectManager; }
 
-class BattleOrchestrator {
-public:
-    void Update(double dt, TurnManager* turn_manager, AISystem* ai_system);
-    bool CheckVictoryCondition();
-private:
-    void HandleAITurn(Character* ai_character, TurnManager* turn_manager, AISystem* ai_system);
-    int m_previous_round = 0;
+namespace CS230
+{
+  class GameObjectManager;
+}
+
+class BattleOrchestrator
+{
+  public:
+  void Update(double dt, TurnManager* turn_manager, AISystem* ai_system);
+  bool CheckVictoryCondition();
+
+  private:
+  void HandleAITurn(Character* ai_character, TurnManager* turn_manager, AISystem* ai_system);
+  int  m_previous_round = 0;
 };

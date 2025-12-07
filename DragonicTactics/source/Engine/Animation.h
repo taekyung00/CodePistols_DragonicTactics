@@ -9,68 +9,93 @@ Created:    April 16, 2025
 */
 
 #pragma once
-#include <vector>
-#include <filesystem>
 #include "Engine.h"
+#include <filesystem>
+#include <vector>
 
-namespace CS230 {
-    class Animation {
-    public:
-        Animation();
-        Animation(const std::filesystem::path& animation_file);
-        ~Animation();
+namespace CS230
+{
+  class Animation
+  {
+public:
+	Animation();
+	Animation(const std::filesystem::path& animation_file);
+	~Animation();
 
-        void Update(double dt);
-        size_t CurrentFrame();
-        void Reset();
-        bool Ended();
-    private:
-        enum class CommandType {
-            PlayFrame,
-            Loop,
-            End,
-        };
-        class Command {
-        public:
-            virtual ~Command() {}
-            virtual CommandType Type() = 0;
-        };
+	void   Update(double dt);
+	size_t CurrentFrame();
+	void   Reset();
+	bool   Ended();
 
+private:
+	enum class CommandType
+	{
+	  PlayFrame,
+	  Loop,
+	  End,
+	};
 
-        class End : public Command {
-        public:
-            virtual CommandType Type() override { return CommandType::End; }
-        private:
-        };
+	class Command
+	{
+  public:
+	  virtual ~Command()
+	  {
+	  }
 
+	  virtual CommandType Type() = 0;
+	};
 
-        class Loop : public Command {
-        public:
-            Loop(size_t loop_index);
-            virtual CommandType Type() override { return CommandType::Loop; }
-            size_t LoopIndex();
-        private:
-            size_t loop_index;
-        };
+	class End : public Command
+	{
+  public:
+	  virtual CommandType Type() override
+	  {
+		return CommandType::End;
+	  }
 
-        class PlayFrame : public Command {
-        public:
-            PlayFrame(size_t frame, double duration);
-            virtual CommandType Type() override { return CommandType::PlayFrame; }
-            void Update(double dt);
-            bool Ended();
-            void ResetTime();
-            size_t Frame();
-        private:
-            size_t frame;
-            double target_time;
-            double timer;
-        };
+  private:
+	};
 
-        size_t current_command;
-        std::vector<Command*> commands;
-        bool ended;
-        PlayFrame* current_frame;
-    };
+	class Loop : public Command
+	{
+  public:
+	  Loop(size_t loop_index);
+
+	  virtual CommandType Type() override
+	  {
+		return CommandType::Loop;
+	  }
+
+	  size_t LoopIndex();
+
+  private:
+	  size_t loop_index;
+	};
+
+	class PlayFrame : public Command
+	{
+  public:
+	  PlayFrame(size_t frame, double duration);
+
+	  virtual CommandType Type() override
+	  {
+		return CommandType::PlayFrame;
+	  }
+
+	  void	 Update(double dt);
+	  bool	 Ended();
+	  void	 ResetTime();
+	  size_t Frame();
+
+  private:
+	  size_t frame;
+	  double target_time;
+	  double timer;
+	};
+
+	size_t				  current_command;
+	std::vector<Command*> commands;
+	bool				  ended;
+	PlayFrame*			  current_frame;
+  };
 }
-

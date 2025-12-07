@@ -8,36 +8,38 @@ Author:     Seungju Song
 Created:    November 24, 2025
 */
 
+// GamePlayUIManager.h
 #pragma once
-#include <vector>
-#include <string>
-#include <memory>
-#include "Engine/Vec2.h"
 #include "Engine/Matrix.h"
+#include "Engine/Vec2.h"
+#include <string>
+#include <vector>
 
 class Character;
 
-class GamePlayUIManager {
-public:
-    void ShowDamageText(int damage, Math::vec2 position, Math::vec2 size);
-    void ShowDamageLog(std::string str, Math::vec2 position, Math::vec2 size);
-    void ShowGameEnd(std::string&& text);
-    void Update(double dt);
-    void Draw(Math::TransformationMatrix camera_matrix);
+class GamePlayUIManager
+{
+  public:
+  void ShowDamageText(int damage, Math::vec2 position, Math::vec2 size);
+  void Update(double dt);
+  void Draw(Math::TransformationMatrix camera_matrix);
 
-private:
-    struct DamageText {
-        std::string text;
-        Math::vec2 position;
-        Math::vec2 size;
-        double lifetime;
-    };
 
-    std::vector<DamageText> m_damage_texts;
 
-    std::vector<DamageText> m_damage_log;
+  void SetCharacters(const std::vector<Character*>& characters);
 
-    const double GAME_END_TEXT_SIZE = 2.0;
+  void DrawCharacterStatsPanel(Math::TransformationMatrix camera_matrix);
 
-    std::unique_ptr<std::string> game_end_text = nullptr;
+  private:
+  struct DamageText
+  {
+	std::string text;
+	Math::vec2	position;
+	Math::vec2	size;
+	double		lifetime;
+  };
+
+  std::vector<DamageText> m_damage_texts;
+
+  std::vector<Character*> m_characters; 
 };

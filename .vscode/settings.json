@@ -82,5 +82,6 @@
         "xtr1common": "cpp",
         "xtree": "cpp",
         "xutility": "cpp"
-    }
+    },
+    "cmake.sourceDirectory": "C:/Users/taek0/Desktop/25fall_semester/GAM200/CodePistols_DragonicTactics/DragonicTactics"
 }

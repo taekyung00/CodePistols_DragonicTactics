@@ -9,49 +9,55 @@ Created:    March 19, 2025
 */
 
 #pragma once
-#include <string>
-#include "Vec2.h"
-#include "Texture.h"
-#include "Matrix.h"
-#include "Engine.h"
 #include "Animation.h"
-#include "Component.h"
 #include "Collision.h"
+#include "Component.h"
+#include "Engine.h"
+#include "Matrix.h"
+#include "Texture.h"
+#include "Vec2.h"
+#include <string>
 
+namespace CS230
+{
+  class GameObject;
 
-namespace CS230 {
-    class GameObject;
-    class Sprite : public Component {
-    public:
-        Sprite(const std::filesystem::path& sprite_file,GameObject* given_object);
-        ~Sprite();
+  class Sprite : public Component
+  {
+public:
+	Sprite(const std::filesystem::path& sprite_file, GameObject* given_object);
+	~Sprite();
 
-        Sprite(const Sprite&) = delete;
-        Sprite& operator=(const Sprite&) = delete;
+	Sprite(const Sprite&)			 = delete;
+	Sprite& operator=(const Sprite&) = delete;
 
-        Sprite(Sprite&& temporary) noexcept;
-        Sprite& operator=(Sprite&& temporary) noexcept;
-        void Update(double dt) override;
-        void Load(const std::filesystem::path& sprite_file, GameObject* _given_object);
-        void Draw(Math::TransformationMatrix display_matrix);
-        Math::ivec2 GetHotSpot(size_t index);
-        Math::ivec2 GetFrameSize();
+	Sprite(Sprite&& temporary) noexcept;
+	Sprite&		operator=(Sprite&& temporary) noexcept;
+	void		Update(double dt) override;
+	void		Load(const std::filesystem::path& sprite_file, GameObject* _given_object);
+	void		Draw(Math::TransformationMatrix display_matrix);
+	Math::ivec2 GetHotSpot(size_t index);
+	Math::ivec2 GetFrameSize();
 
-        void PlayAnimation(size_t animation);
-        bool AnimationEnded();
+	void PlayAnimation(size_t animation);
+	bool AnimationEnded();
 
-        const size_t& CurrentAnimation() const { return current_animation; }
-    private:
-        Math::ivec2 GetFrameTexel(size_t index) const;
-        // Texture* texture;
-        std::shared_ptr<CS230::Texture> texture;
-        std::vector<Math::ivec2> hotspots;
+	const size_t& CurrentAnimation() const
+	{
+	  return current_animation;
+	}
 
-        size_t current_animation;
-        Math::ivec2 frame_size;
-        std::vector<Math::ivec2> frame_texels;
-        std::vector<Animation*> animations;
+private:
+	Math::ivec2						GetFrameTexel(size_t index) const;
+	// Texture* texture;
+	std::shared_ptr<CS230::Texture> texture;
+	std::vector<Math::ivec2>		hotspots;
 
-        GameObject* given_object;
-    };
+	size_t					 current_animation;
+	Math::ivec2				 frame_size;
+	std::vector<Math::ivec2> frame_texels;
+	std::vector<Animation*>	 animations;
+
+	GameObject* given_object;
+  };
 }

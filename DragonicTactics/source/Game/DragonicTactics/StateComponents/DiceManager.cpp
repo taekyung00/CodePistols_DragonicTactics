@@ -1,112 +1,126 @@
 #include "pch.h"
 
-#include "DiceManager.h"
 #include "./Engine/Logger.h"
+#include "DiceManager.h"
 #include <cctype>
 
-DiceManager::DiceManager() {
-    std::random_device rand;
-    rng.seed(rand());
+DiceManager::DiceManager()
+{
+  std::random_device rand;
+  rng.seed(rand());
 }
 
-
-
-void DiceManager::SetSeed(int seed) {
-    rng.seed(static_cast<unsigned int>(seed));
+void DiceManager::SetSeed(int seed)
+{
+  rng.seed(static_cast<unsigned int>(seed));
 }
 
-const std::vector<int>& DiceManager::GetLastRolls() const {
-    return lastRolls;
+const std::vector<int>& DiceManager::GetLastRolls() const
+{
+  return lastRolls;
 }
 
-int DiceManager::RollDice(int count, int sides) {
-    lastRolls.clear();
-    if (count <= 0 || sides <= 0) {
-        lastRolls.clear();
-        return 0;
-    }
-    
-    std::uniform_int_distribution<int> dice(1, sides);
-    lastRolls.clear();
-    int sum = 0;
+int DiceManager::RollDice(int count, int sides)
+{
+  lastRolls.clear();
+  if (count <= 0 || sides <= 0)
+  {
+	lastRolls.clear();
+	return 0;
+  }
 
-    for (int i = 0; i < count; i++) {
-        int roll = dice(rng);
-        lastRolls.push_back(roll);
-        sum += roll;
-    }
-    return sum;
+  std::uniform_int_distribution<int> dice(1, sides);
+  lastRolls.clear();
+  int sum = 0;
+
+  for (int i = 0; i < count; i++)
+  {
+	int roll = dice(rng);
+	lastRolls.push_back(roll);
+	sum += roll;
+  }
+  return sum;
 }
 
-//bool DiceManager::ParseDiceString(const std::string& s, int& count, int& sides, int& mod) {
-//}
+// bool DiceManager::ParseDiceString(const std::string& s, int& count, int& sides, int& mod) {
+// }
 
-int DiceManager::RollDiceFromString(const std::string& notation) {
-    std::string NdS = notation;
-    NdS.erase(std::remove_if(NdS.begin(), NdS.end(), ::isspace), NdS.end());    //공백제거
-    
-    size_t dD = NdS.find_first_of("dD");    //d또는 D의 위치 찾기.
-    if (dD == std::string::npos) {
-        lastRolls.clear();
-        LogRoll(notation, 0);
-        return 0;
-    }
+int DiceManager::RollDiceFromString(const std::string& notation)
+{
+  std::string NdS = notation;
+  NdS.erase(std::remove_if(NdS.begin(), NdS.end(), ::isspace), NdS.end()); // Remove whitespace
 
-    int count = 0;
-    int sides = 0;
-    int mod = 0;
-    
-    try {
-        count = std::stoi(NdS.substr(0, dD));   // stoi= string -> int로 변환시키기. 주사위 갯수. NdS에서 N부분과 d이후 뒤에부분 분리.
-        if (count <= 0) {
-            throw;
-        }
+  size_t dD = NdS.find_first_of("dD"); // Find 'd' or 'D' position
+  if (dD == std::string::npos)
+  {
+	lastRolls.clear();
+	LogRoll(notation, 0);
+	return 0;
+  }
 
-        //NdS뒤에 오는 부호가 뭔지 찾기.
-        size_t sign = NdS.find('+', dD + 1);
-        if (sign == std::string::npos)
-            sign = NdS.find('-', dD + 1);
+  int count = 0;
+  int sides = 0;
+  int mod	= 0;
 
-        if (sign == std::string::npos) {
-            //따로 부호 없는 경우. ex) 3d6
-            sides = std::stoi(NdS.substr(dD + 1));
-        }
-        else {
-            //부호 있는 경우 3d6 + 2
-            sides = std::stoi(NdS.substr(dD + 1, sign - (dD + 1)));
-            mod = std::stoi(NdS.substr(sign));
-        }
+  try
+  {
+	count = std::stoi(NdS.substr(0, dD)); // Parse count (NdS)
+	if (count <= 0)
+	{
+	  throw;
+	}
 
-        if (sides <= 0) {
-            throw;
-        }
+	// Find '+' or '-' modifier sign after 'd'
+	size_t sign = NdS.find('+', dD + 1);
+	if (sign == std::string::npos)
+	  sign = NdS.find('-', dD + 1);
 
-    }
+	if (sign == std::string::npos)
+	{
+	  // No modifier sign (e.g., 3d6)
+	  sides = std::stoi(NdS.substr(dD + 1));
+	}
+	else
+	{
+	  // Has modifier (e.g., 3d6+2)
+	  sides = std::stoi(NdS.substr(dD + 1, sign - (dD + 1)));
+	  mod	= std::stoi(NdS.substr(sign));
+	}
 
-    catch (...) {
-        //만약 입력에 오류가 났을 경우.
-        lastRolls.clear();
-        LogRoll(notation, 0);
-        return 0;
-    }
+	if (sides <= 0)
+	{
+	  throw;
+	}
+  }
 
-    int total = RollDice(count, sides) + mod;
-    LogRoll(notation, total);
-    return total;
+  catch (...)
+  {
+	// Invalid input format
+	lastRolls.clear();
+	LogRoll(notation, 0);
+	return 0;
+  }
+
+  int total = RollDice(count, sides) + mod;
+  LogRoll(notation, total);
+  return total;
 }
 
-void DiceManager::LogRoll(const std::string& notation, int total) const {
-    std::string log = "[Dice] " + notation + " => " + std::to_string(total);
+void DiceManager::LogRoll(const std::string& notation, int total) const
+{
+  std::string log = "[Dice] " + notation + " => " + std::to_string(total);
 
-    if (!lastRolls.empty()) {
-        log += " [";
-        for (size_t i = 0; i < lastRolls.size(); i++) {
-            log += std::to_string(lastRolls[i]);
-            if (i + 1 < lastRolls.size())
-                log += ", ";
-        }
-        log += "]";
-    }
+  if (!lastRolls.empty())
+  {
+	log += " [";
+	for (size_t i = 0; i < lastRolls.size(); i++)
+	{
+	  log += std::to_string(lastRolls[i]);
+	  if (i + 1 < lastRolls.size())
+		log += ", ";
+	}
+	log += "]";
+  }
 
-    Engine::GetLogger().LogDebug(log);
+  Engine::GetLogger().LogDebug(log);
 }

@@ -9,17 +9,22 @@ Project:    CS230 Engine
 Author:     Taekyung Ho
 Created:    May 17, 2025
 */
-#include "ShowCollision.h"
 #include "Input.h"
+#include "ShowCollision.h"
 
-CS230::ShowCollision::ShowCollision() : enabled(true) {}
-
-void CS230::ShowCollision::Update([[maybe_unused]]double dt) {
-    if (Engine::GetInput().KeyJustReleased(CS230::Input::Keys::Tab) == true) {
-        enabled = !enabled;
-    }
+CS230::ShowCollision::ShowCollision() : enabled(true)
+{
 }
 
-bool CS230::ShowCollision::Enabled() {
-    return enabled;
+void CS230::ShowCollision::Update([[maybe_unused]] double dt)
+{
+  if (Engine::GetInput().KeyJustReleased(CS230::Input::Keys::Tab) == true)
+  {
+	enabled = !enabled;
+  }
+}
+
+bool CS230::ShowCollision::Enabled()
+{
+  return enabled;
 }

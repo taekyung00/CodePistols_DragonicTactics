@@ -11,6 +11,6 @@
 
 namespace OpenGL
 {
-    // OpenGL uses GLuint for handles
-    using Handle = GLuint;
+  // OpenGL uses GLuint for handles
+  using Handle = GLuint;
 }

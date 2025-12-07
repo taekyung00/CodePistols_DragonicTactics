@@ -1,98 +1,110 @@
 #pragma once
 #include "../Objects/Character.h"
+#include "../Test/Week1TestMocks.h"
 #include "../Types/Events.h"
 #include "./EventBus.h"
-#include "../Test/Week1TestMocks.h"
-#include <vector>
 #include <queue>
+#include <vector>
 
 // Forward declarations
 class EventBus;
 
 // ===== Week 4: Initiative System (NEW) =====
 // Initiative tracking structure
-struct InitiativeEntry {
-    Character* character;
-    MockCharacter* mockCharacter;  // For testing
-	int			   speed;
+struct InitiativeEntry
+{
+  Character*	 character;
+  MockCharacter* mockCharacter; // For testing
+  int			 speed;
 
-    // Constructor for real characters
-    InitiativeEntry(Character* ch, int sp)
-        : character(ch), mockCharacter(nullptr), speed(sp) {}
+  // Constructor for real characters
+  InitiativeEntry(Character* ch, int sp) : character(ch), mockCharacter(nullptr), speed(sp)
+  {
+  }
 
-    // Constructor for mock characters (testing)
-	InitiativeEntry(MockCharacter* ch, int sp)
-        : character(nullptr), mockCharacter(ch), speed (sp){}
+  // Constructor for mock characters (testing)
+  InitiativeEntry(MockCharacter* ch, int sp) : character(nullptr), mockCharacter(ch), speed(sp)
+  {
+  }
 };
 
 // Initiative mode options
-enum class InitiativeMode {
-    RollOnce,      // Roll at combat start (D&D 5e default)
-    RollEachRound  // Re-roll each round (variant rule)
+enum class InitiativeMode
+{
+  RollOnce,		// Roll at combat start (D&D 5e default)
+  RollEachRound // Re-roll each round (variant rule)
 };
+
 // ===== End Sangyun Initiative System =====
 
 class TurnManager : public CS230::Component
 {
-public:
-    TurnManager();
+  public:
+  TurnManager();
 
-    // Dependency injection for testing
-    void SetEventBus(EventBus* bus) { eventBus = bus; }
+  // Dependency injection for testing
+  void SetEventBus(EventBus* bus)
+  {
+	eventBus = bus;
+  }
 
-    // Turn management
-    void InitializeTurnOrder(const std::vector<Character*>& characters);
-    void InitializeTurnOrder(const std::vector<MockCharacter*>& characters);
-    void StartNextTurn();
-    void EndCurrentTurn();
+  // Turn management
+  void InitializeTurnOrder(const std::vector<Character*>& characters);
+  void InitializeTurnOrder(const std::vector<MockCharacter*>& characters);
+  void StartNextTurn();
+  void EndCurrentTurn();
 
-    // ===== Sangyun: Initiative System (NEW) =====
-    void RollInitiative(const std::vector<Character*>& characters);
-    void ResetInitiative();
-    //int GetInitiativeValue(Character* character) const;
-    void SetInitiativeMode(InitiativeMode mode) { initiativeMode = mode; }
+  // ===== Sangyun: Initiative System (NEW) =====
+  void RollInitiative(const std::vector<Character*>& characters);
+  void ResetInitiative();
 
-    // Test support (MockCharacter overloads)
+  // int GetInitiativeValue(Character* character) const;
+  void SetInitiativeMode(InitiativeMode mode)
+  {
+	initiativeMode = mode;
+  }
 
-    // ===== End Sangyun Initiative System =====
+  // Test support (MockCharacter overloads)
 
-    // Turn state
-    Character* GetCurrentCharacter() const;
-    int GetCurrentTurnNumber() const;
-    int GetRoundNumber() const;
-    bool IsCombatActive() const;
+  // ===== End Sangyun Initiative System =====
 
-    // Turn order
-    std::vector<Character*> GetTurnOrder() const;
-    int GetCharacterTurnIndex(Character* character) const;
+  // Turn state
+  Character* GetCurrentCharacter() const;
+  int		 GetCurrentTurnNumber() const;
+  int		 GetRoundNumber() const;
+  bool		 IsCombatActive() const;
 
-    // Combat state
-    void StartCombat();
-    void EndCombat();
-    void Reset();
+  // Turn order
+  std::vector<Character*> GetTurnOrder() const;
+  int					  GetCharacterTurnIndex(Character* character) const;
 
-private:
-    TurnManager(const TurnManager&) = delete;
-    TurnManager& operator=(const TurnManager&) = delete;
+  // Combat state
+  void StartCombat();
+  void EndCombat();
+  void Reset();
 
-    std::vector<Character*> turnOrder;
-    int currentTurnIndex;
-    int turnNumber;
-    int roundNumber;
-    bool combatActive;
+  private:
+  TurnManager(const TurnManager&)			 = delete;
+  TurnManager& operator=(const TurnManager&) = delete;
 
-    // Dependency injection
-    EventBus* eventBus = nullptr;
+  std::vector<Character*> turnOrder;
+  int					  currentTurnIndex;
+  int					  turnNumber;
+  int					  roundNumber;
+  bool					  combatActive;
 
-    // ===== Sangyun: Initiative System (NEW) =====
-    std::vector<InitiativeEntry> initiativeOrder;
-    InitiativeMode initiativeMode;
-    // ===== End Sangyun Initiative System =====
+  // Dependency injection
+  EventBus* eventBus = nullptr;
 
-    void PublishTurnStartEvent();
-    void PublishTurnEndEvent();
+  // ===== Sangyun: Initiative System (NEW) =====
+  std::vector<InitiativeEntry> initiativeOrder;
+  InitiativeMode			   initiativeMode;
+  // ===== End Sangyun Initiative System =====
 
-    // ===== Sangyun: Initiative Helper Methods (NEW) =====
-    void SortInitiativeOrder();
-    // ===== End Sangyun Initiative System =====
+  void PublishTurnStartEvent();
+  void PublishTurnEndEvent();
+
+  // ===== Sangyun: Initiative Helper Methods (NEW) =====
+  void SortInitiativeOrder();
+  // ===== End Sangyun Initiative System =====
 };

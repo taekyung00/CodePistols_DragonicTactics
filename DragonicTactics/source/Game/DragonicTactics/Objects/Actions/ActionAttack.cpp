@@ -10,32 +10,38 @@ Author:     Seungju Song
 Created:    Oct 15, 2025
 */
 
-#include "ActionAttack.h"
 #include "../Character.h"
-#include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
 #include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
+#include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
+#include "ActionAttack.h"
+
 // #include "DamageCalculator.h"
 
-bool ActionAttack::CanExecute(Character* performer, [[maybe_unused]]CS230::GameState* context) const {
-    if (performer == nullptr) return false;
+bool ActionAttack::CanExecute(Character* performer, [[maybe_unused]] CS230::GameState* context) const
+{
+  if (performer == nullptr)
+	return false;
 
-    ActionPoints* ap = performer->GetActionPointsComponent();
-    if (ap == nullptr || ap->HasEnough(GetActionPointCost()) == false) {
-        return false;
-    }
+  ActionPoints* ap = performer->GetActionPointsComponent();
+  if (ap == nullptr || ap->HasEnough(GetActionPointCost()) == false)
+  {
+	return false;
+  }
 
-    // TODO
+  // TODO
 
-    return true;
+  return true;
 }
 
-void ActionAttack::Execute(Character* performer, Character* target, [[maybe_unused]]Math::ivec2 tile_position) {
-    if (performer == nullptr || target == nullptr) return;
+void ActionAttack::Execute(Character* performer, Character* target, [[maybe_unused]] Math::ivec2 tile_position)
+{
+  if (performer == nullptr || target == nullptr)
+	return;
 
-    performer->GetActionPointsComponent()->Consume(GetActionPointCost());
+  performer->GetActionPointsComponent()->Consume(GetActionPointCost());
 
-    int damage = performer->GetStatsComponent()->GetBaseAttack();
+  int damage = performer->GetStatsComponent()->GetBaseAttack();
 
-    target->TakeDamage(damage, performer);
+  target->TakeDamage(damage, performer);
 }

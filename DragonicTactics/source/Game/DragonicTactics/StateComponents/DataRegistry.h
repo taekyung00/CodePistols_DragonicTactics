@@ -1,86 +1,88 @@
 #pragma once
-#include <string>
-#include <map>
-#include <ctime>
 #include "./Engine/Component.h"
 #include "./Game/DragonicTactics/External/json.hpp"
 #include "./Game/DragonicTactics/Types/CharacterTypes.h"
+#include <ctime>
+#include <map>
+#include <string>
 
-class DataRegistry : public CS230::Component{
-public:
-    DataRegistry() = default;
-    ~DataRegistry() = default;
+class DataRegistry : public CS230::Component
+{
+  public:
+  DataRegistry()  = default;
+  ~DataRegistry() = default;
 
-    // ===== Basic Loading =====
-    
-    void LoadFromFile(const std::string& filepath);
-    // Load JSON file and merge into registry
+  // ===== Basic Loading =====
 
-    template<typename T>
-    T GetValue(const std::string& key, const T& defaultValue) const;
-     
-    // Get typed value from registry with fallback
+  void LoadFromFile(const std::string& filepath);
+  // Load JSON file and merge into registry
 
-    bool HasKey(const std::string& key) const;
-    // Check if key exists in registry
+  template <typename T>
+  T GetValue(const std::string& key, const T& defaultValue) const;
 
-    // ===== Hot Reload =====
+  // Get typed value from registry with fallback
 
-    void ReloadAll();
-    //Reload All Json
-    
-    void ReloadCharacters();
-    //Reload only characters
+  bool HasKey(const std::string& key) const;
+  // Check if key exists in registry
 
-    void ReloadSpells();
-    //Reload only spells
+  // ===== Hot Reload =====
 
-    // ===== Complex Data Access =====
-    
-    nlohmann::json GetJSON(const std::string& key) const;
-    // Get raw JSON object for complex nested data
+  void ReloadAll();
+  // Reload All Json
 
-    template<typename T>
-    std::vector<T> GetArray(const std::string& key) const;
-     
-    // Get array values from registry
+  void ReloadCharacters();
+  // Reload only characters
 
-    // ===== Week 4: Structured Data Access =====
-    
-    CharacterData GetCharacterData(const std::string& name);
-    SpellData GetSpellData(const std::string& name);
+  void ReloadSpells();
+  // Reload only spells
 
-    // ===== Debug & Validation =====
-    
-    bool ValidateSchema(const std::string& filepath);
-    // Check if JSON file has valid structure
+  // ===== Complex Data Access =====
 
-    bool ValidateCharacterJSON(const std::string& filepath);
-    // Validate character JSON structure
-    
-    bool ValidateSpellJSON(const std::string& filepath);
-    // Validate spell JSON structure
-    
-    void LogAllKeys() const;
-    // Debug: print all keys in registry
-    
-    bool LoadAllCharacterData(const std::string& filepath);
-private:
-    
-    nlohmann::json data;
-    std::map<std::string, long long> fileTimestamps;  // For hot-reload tracking
-    
-    nlohmann::json FindValue(const std::string& key) const;
-    // Navigate nested JSON by dot-separated path (2 levels max for now)
-    
-    long long GetFileModifiedTime(const std::string& filepath) const;
-    // Helper for hot-reload system
+  nlohmann::json GetJSON(const std::string& key) const;
+  // Get raw JSON object for complex nested data
 
-    // ===== Week 4: Data Storage =====
-    std::map<std::string, CharacterData> characterDatabase;
-    std::map<std::string, SpellData> spellDatabase;
-    
-    // ===== Week 4: Helper Functions =====
+  template <typename T>
+  std::vector<T> GetArray(const std::string& key) const;
+
+  // Get array values from registry
+
+  // ===== Week 4: Structured Data Access =====
+
+  CharacterData GetCharacterData(const std::string& name);
+  SpellData		GetSpellData(const std::string& name);
+
+  // ===== Debug & Validation =====
+
+  bool ValidateSchema(const std::string& filepath);
+  // Check if JSON file has valid structure
+
+  bool ValidateCharacterJSON(const std::string& filepath);
+  // Validate character JSON structure
+
+  bool ValidateSpellJSON(const std::string& filepath);
+  // Validate spell JSON structure
+
+  void LogAllKeys() const;
+  // Debug: print all keys in registry
+
+  bool LoadAllCharacterData(const std::string& filepath);
+
+  private:
+
+  nlohmann::json				   data;
+  std::map<std::string, long long> fileTimestamps; // For hot-reload tracking
+
+  nlohmann::json FindValue(const std::string& key) const;
+  // Navigate nested JSON by dot-separated path (2 levels max for now)
+
+  long long GetFileModifiedTime(const std::string& filepath) const;
+  // Helper for hot-reload system
+
+  // ===== Week 4: Data Storage =====
+  std::map<std::string, CharacterData> characterDatabase;
+  std::map<std::string, SpellData>	   spellDatabase;
+
+  // ===== Week 4: Helper Functions =====
 };
 
 #include "DataRegistry.ini"
