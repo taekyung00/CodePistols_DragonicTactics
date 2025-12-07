@@ -3380,5 +3380,481 @@ void GamePlay::Load() {
 
 ---
 
-**최종 업데이트**: 2025-11-27
+## 🎯 추가 구현: 지속적 캐릭터 스탯 표시 (Persistent Character Stats Display)
+
+**목표**: 화면 오른쪽에 모든 캐릭터의 HP/ActionPoints/Speed를 지속적으로 표시
+
+**기존 구현 vs 신규 구현 차이점**:
+
+| 항목 | 기존 (DamageText) | 신규 (Persistent Stats) |
+|------|-------------------|-------------------------|
+| **표시 위치** | 캐릭터 위치에 표시 | 화면 오른쪽 고정 패널 |
+| **표시 시간** | 일시적 (0.5초 후 사라짐) | 지속적 (게임 내내 표시) |
+| **업데이트 방식** | 이벤트 발생 시 생성 | 매 프레임 실시간 조회 |
+| **데이터 저장** | DamageText 구조체 벡터 | 저장 불필요 (직접 조회) |
+
+---
+
+### 구현 작업
+
+#### **Step 1: GamePlayUIManager.h 확장**
+
+**파일**: [GamePlayUIManager.h](../../../DragonicTactics/source/Game/DragonicTactics/States/GamePlayUIManager.h)
+
+**추가할 내용**:
+
+```cpp
+// GamePlayUIManager.h
+#pragma once
+#include "Engine/Matrix.h"
+#include "Engine/Vec2.h"
+#include <string>
+#include <vector>
+
+class Character; // 전방 선언 추가
+
+class GamePlayUIManager
+{
+public:
+  void ShowDamageText(int damage, Math::vec2 position, Math::vec2 size);
+  void Update(double dt);
+  void Draw(Math::TransformationMatrix camera_matrix);
+
+  // ========================================
+  // 🆕 신규 추가: 지속적 스탯 표시
+  // ========================================
+
+  /// @brief 추적할 캐릭터들 설정 (GamePlay::Load에서 호출)
+  void SetCharacters(const std::vector<Character*>& characters);
+
+  /// @brief 화면 오른쪽에 모든 캐릭터의 스탯 패널 그리기
+  void DrawCharacterStatsPanel(Math::TransformationMatrix camera_matrix);
+
+private:
+  struct DamageText
+  {
+    std::string text;
+    Math::vec2  position;
+    Math::vec2  size;
+    double      lifetime;
+  };
+
+  std::vector<DamageText> m_damage_texts;
+
+  // ========================================
+  // 🆕 신규 추가: 캐릭터 추적
+  // ========================================
+  std::vector<Character*> m_characters; // 추적할 캐릭터 목록
+};
+```
+
+---
+
+#### **Step 2: GamePlayUIManager.cpp 구현**
+
+**파일**: [GamePlayUIManager.cpp](../../../DragonicTactics/source/Game/DragonicTactics/States/GamePlayUIManager.cpp)
+
+**추가할 헤더**:
+
+```cpp
+#include "pch.h" // 이미 있어야 함
+#include "./CS200/IRenderer2D.h"
+#include "./CS200/NDC.h"
+#include "./Engine/Engine.h"
+#include "./Engine/TextManager.h"
+#include "./Engine/Window.h"
+#include "GamePlayUIManager.h"
+
+// 🆕 신규 추가
+#include "../Objects/Character.h"
+#include "../Objects/Components/StatsComponent.h"
+#include "../Objects/Components/ActionPoints.h"
+```
+
+**신규 메서드 구현**:
+
+```cpp
+// ========================================
+// 캐릭터 설정
+// ========================================
+void GamePlayUIManager::SetCharacters(const std::vector<Character*>& characters)
+{
+  m_characters = characters;
+  Engine::GetLogger().LogEvent("GamePlayUIManager: Tracking " + std::to_string(m_characters.size()) + " characters for stats display");
+}
+
+// ========================================
+// 캐릭터 스탯 패널 그리기 (화면 오른쪽)
+// ========================================
+void GamePlayUIManager::DrawCharacterStatsPanel(Math::TransformationMatrix camera_matrix)
+{
+  if (m_characters.empty())
+  {
+    return; // 추적할 캐릭터 없음
+  }
+
+  // 화면 크기 가져오기
+  Math::ivec2 window_size = Engine::GetWindow().GetSize();
+
+  // 패널 위치: 화면 오른쪽 상단
+  const float panel_x = static_cast<float>(window_size.x) - 250.0f; // 오른쪽에서 250px 떨어진 곳
+  const float panel_start_y = static_cast<float>(window_size.y) - 100.0f; // 위에서 100px 아래
+
+  // 각 캐릭터당 패널 높이
+  const float panel_height_per_char = 120.0f;
+  const float panel_width = 230.0f;
+
+  float current_y = panel_start_y;
+
+  for (Character* character : m_characters)
+  {
+    if (character == nullptr)
+    {
+      continue;
+    }
+
+    // ========================================
+    // 1. 패널 배경 그리기 (반투명 검정)
+    // ========================================
+    auto* renderer = Engine::GetTextureManager().GetRenderer2D();
+
+    Math::TransformationMatrix bg_transform = Math::TransformationMatrix::build_translation({ panel_x, current_y });
+
+    renderer->DrawRectangle(
+      bg_transform * Math::TransformationMatrix::build_scale({ panel_width, panel_height_per_char }),
+      CS200::RGBA{ 30, 30, 30, 180 },  // fill_color: 반투명 어두운 회색
+      CS200::RGBA{ 100, 100, 100, 255 }, // line_color: 밝은 회색 테두리
+      2.0,  // line_width
+      0.5f  // depth
+    );
+
+    // ========================================
+    // 2. 캐릭터 이름 표시
+    // ========================================
+    std::string name = character->TypeName();
+    Engine::GetTextManager().DrawText(
+      name,
+      Math::vec2{ panel_x + 10.0f, current_y + panel_height_per_char - 20.0f },
+      Fonts::Outlined,
+      Math::vec2{ 1.5f, 1.5f },  // 크기
+      CS200::WHITE
+    );
+
+    // ========================================
+    // 3. HP 표시 (빨간색)
+    // ========================================
+    int current_hp = character->GetHP();
+    int max_hp = character->GetMaxHP();
+    std::string hp_text = "HP: " + std::to_string(current_hp) + " / " + std::to_string(max_hp);
+
+    Engine::GetTextManager().DrawText(
+      hp_text,
+      Math::vec2{ panel_x + 10.0f, current_y + panel_height_per_char - 50.0f },
+      Fonts::Outlined,
+      Math::vec2{ 1.2f, 1.2f },
+      CS200::RED
+    );
+
+    // ========================================
+    // 4. Action Points 표시 (노란색)
+    // ========================================
+    int current_ap = character->GetActionPoints();
+    std::string ap_text = "AP: " + std::to_string(current_ap);
+
+    Engine::GetTextManager().DrawText(
+      ap_text,
+      Math::vec2{ panel_x + 10.0f, current_y + panel_height_per_char - 75.0f },
+      Fonts::Outlined,
+      Math::vec2{ 1.2f, 1.2f },
+      CS200::YELLOW
+    );
+
+    // ========================================
+    // 5. Speed (Movement Range) 표시 (초록색)
+    // ========================================
+    int speed = character->GetMovementRange();
+    std::string speed_text = "Speed: " + std::to_string(speed);
+
+    Engine::GetTextManager().DrawText(
+      speed_text,
+      Math::vec2{ panel_x + 10.0f, current_y + panel_height_per_char - 100.0f },
+      Fonts::Outlined,
+      Math::vec2{ 1.2f, 1.2f },
+      CS200::GREEN
+    );
+
+    // 다음 캐릭터 패널 위치로 이동
+    current_y -= panel_height_per_char + 10.0f; // 10px 간격
+  }
+}
+```
+
+**기존 Draw() 메서드 수정**:
+
+```cpp
+void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_matrix)
+{
+  // 기존 데미지 텍스트 그리기
+  for (const auto& text : m_damage_texts)
+  {
+    Engine::GetTextManager().DrawText(text.text, text.position, Fonts::Outlined, text.size, CS200::VIOLET);
+  }
+
+  // 🆕 신규 추가: 캐릭터 스탯 패널 그리기
+  DrawCharacterStatsPanel(camera_matrix);
+}
+```
+
+---
+
+#### **Step 3: GamePlay.cpp 통합**
+
+**파일**: [GamePlay.cpp](../../../DragonicTactics/source/Game/DragonicTactics/States/GamePlay.cpp)
+
+**GamePlay::Load() 수정** (캐릭터 생성 후):
+
+```cpp
+void GamePlay::Load()
+{
+  // ... (기존 코드: EventBus, DiceManager, GridSystem 등 초기화)
+
+  // ... (기존 코드: 맵 데이터 로딩 및 캐릭터 생성)
+
+  // TurnManager 초기화
+  TurnManager* turnMgr = GetGSComponent<TurnManager>();
+  turnMgr->SetEventBus(GetGSComponent<EventBus>());
+  turnMgr->InitializeTurnOrder(std::vector<Character*>{ player, enemy });
+  turnMgr->StartCombat();
+
+  // 🆕 신규 추가: UI Manager에 캐릭터 등록
+  m_ui_manager->SetCharacters({ player, enemy });
+  Engine::GetLogger().LogEvent("GamePlay::Load - Characters registered to UI Manager");
+
+  // ... (기존 코드: 이벤트 구독)
+}
+```
+
+---
+
+### 테스트 방법 (로그 기반 검증)
+
+**테스트는 별도의 테스트 함수를 만들지 않고, GamePlay 상태를 실행하면서 콘솔 로그로 검증합니다.**
+
+#### **검증 항목 1: 초기화 로그 확인**
+
+**예상 로그**:
+
+```
+[EVENT] GamePlay::Load - Characters registered to UI Manager
+[EVENT] GamePlayUIManager: Tracking 2 characters for stats display
+```
+
+**검증 방법**:
+
+1. 게임 실행 (`build/windows-debug/dragonic_tactics.exe`)
+2. GamePlay 상태 진입
+3. 콘솔에서 위 로그 확인
+
+---
+
+#### **검증 항목 2: 화면 표시 확인**
+
+**예상 화면**:
+
+```
+화면 오른쪽 상단:
+
+┌─────────────────────────┐
+│ Dragon                  │
+│ HP: 50 / 50            │ (빨간색)
+│ AP: 2                  │ (노란색)
+│ Speed: 6               │ (초록색)
+└─────────────────────────┘
+
+┌─────────────────────────┐
+│ Fighter                 │
+│ HP: 30 / 30            │ (빨간색)
+│ AP: 1                  │ (노란색)
+│ Speed: 4               │ (초록색)
+└─────────────────────────┘
+```
+
+**검증 방법**:
+
+1. 게임 실행 후 화면 오른쪽 확인
+2. 패널이 2개 표시되는지 확인
+3. 각 패널의 캐릭터 이름, HP, AP, Speed 확인
+
+---
+
+#### **검증 항목 3: 실시간 업데이트 확인**
+
+**시나리오**: Dragon이 Fighter를 공격하여 데미지 입힘
+
+**예상 동작**:
+
+1. **공격 전**: `Fighter HP: 30 / 30`
+2. **공격 후** (예: 10 데미지):
+   - 데미지 텍스트가 Fighter 위에 잠시 표시 (`"10"`, 보라색, 0.5초 후 사라짐)
+   - 오른쪽 패널의 Fighter HP가 **즉시 업데이트**: `Fighter HP: 20 / 30` (빨간색)
+
+**검증 방법**:
+
+1. ImGui "Player Actions" 패널에서 "Action" → "Attack" 선택
+2. Fighter 클릭하여 공격
+3. **콘솔 로그 확인**:
+   ```
+   [DEBUG] Damage Event! 10
+   ```
+4. **화면 확인**:
+   - Fighter 위에 보라색 "10" 텍스트가 잠시 표시
+   - 오른쪽 패널의 Fighter HP가 `20 / 30`으로 변경
+
+---
+
+#### **검증 항목 4: 턴 종료 시 AP/Speed 업데이트**
+
+**시나리오**: "End Turn" 버튼 클릭 → 새 턴 시작 → AP/Speed 갱신
+
+**예상 동작**:
+
+1. **턴 종료 전**: `Dragon AP: 0` (행동을 다 사용한 상태)
+2. **턴 종료 후** (Dragon의 다음 턴):
+   - `Dragon AP: 2` (갱신됨)
+   - `Dragon Speed: 6` (갱신됨)
+
+**예상 로그**:
+
+```
+[EVENT] TurnManager: Ending turn for Dragon
+[EVENT] TurnManager: Starting turn for Fighter
+[EVENT] Character::OnTurnStart called (Fighter)
+[EVENT] TurnManager: Ending turn for Fighter
+[EVENT] TurnManager: Starting turn for Dragon
+[EVENT] Character::OnTurnStart called (Dragon)
+```
+
+**검증 방법**:
+
+1. "End Turn" 버튼 클릭
+2. 콘솔에서 턴 로그 확인
+3. 오른쪽 패널에서 AP/Speed가 갱신되는지 확인
+
+---
+
+#### **검증 항목 5: 캐릭터 사망 시 HP 0 표시**
+
+**시나리오**: Fighter를 여러 번 공격하여 HP를 0으로 만듦
+
+**예상 동작**:
+
+1. **사망 전**: `Fighter HP: 5 / 30`
+2. **사망 후** (HP 0):
+   - `Fighter HP: 0 / 30` (빨간색으로 표시됨)
+   - 콘솔에 사망 로그 출력
+
+**예상 로그**:
+
+```
+[DEBUG] Damage Event! 15
+[DEBUG] Game Over: Fighter has died.
+```
+
+**검증 방법**:
+
+1. Fighter를 반복 공격하여 HP를 0으로 만듦
+2. 콘솔에서 "Game Over" 로그 확인
+3. 오른쪽 패널에서 `Fighter HP: 0 / 30` 확인
+
+---
+
+### 추가 개선 사항 (선택 사항)
+
+#### **1. HP 바 시각화**
+
+텍스트만 표시하는 것이 아니라, HP 바를 추가로 그릴 수 있습니다:
+
+```cpp
+// DrawCharacterStatsPanel() 내부에 추가
+// HP 바 그리기 (텍스트 아래)
+float hp_ratio = static_cast<float>(current_hp) / static_cast<float>(max_hp);
+float bar_width = 200.0f;
+float bar_height = 10.0f;
+
+// 배경 (빨간색)
+Math::TransformationMatrix bar_bg_transform = Math::TransformationMatrix::build_translation(
+  { panel_x + 10.0f, current_y + panel_height_per_char - 65.0f }
+);
+renderer->DrawRectangle(
+  bar_bg_transform * Math::TransformationMatrix::build_scale({ bar_width, bar_height }),
+  CS200::RGBA{ 100, 0, 0, 255 },  // 어두운 빨강
+  CS200::CLEAR,
+  0.0,
+  0.4f
+);
+
+// HP 바 (밝은 빨강)
+Math::TransformationMatrix hp_bar_transform = Math::TransformationMatrix::build_translation(
+  { panel_x + 10.0f, current_y + panel_height_per_char - 65.0f }
+);
+renderer->DrawRectangle(
+  hp_bar_transform * Math::TransformationMatrix::build_scale({ bar_width * hp_ratio, bar_height }),
+  CS200::RGBA{ 255, 0, 0, 255 },  // 밝은 빨강
+  CS200::CLEAR,
+  0.0,
+  0.3f
+);
+```
+
+---
+
+#### **2. 현재 턴 캐릭터 하이라이트**
+
+현재 턴인 캐릭터의 패널을 노란색 테두리로 강조:
+
+```cpp
+// DrawCharacterStatsPanel() 내부 수정
+// TurnManager에서 현재 턴 캐릭터 가져오기
+TurnManager* turnMgr = GetGSComponent<TurnManager>();
+Character* current_turn_char = turnMgr ? turnMgr->GetCurrentCharacter() : nullptr;
+
+// 패널 배경 그리기 시 테두리 색상 변경
+CS200::RGBA border_color = (character == current_turn_char)
+  ? CS200::RGBA{ 255, 255, 0, 255 }  // 노란색 (현재 턴)
+  : CS200::RGBA{ 100, 100, 100, 255 }; // 회색 (대기 중)
+
+renderer->DrawRectangle(
+  bg_transform * Math::TransformationMatrix::build_scale({ panel_width, panel_height_per_char }),
+  CS200::RGBA{ 30, 30, 30, 180 },
+  border_color,  // 🆕 조건부 테두리 색상
+  3.0,  // 두꺼운 테두리
+  0.5f
+);
+```
+
+**주의**: 이를 구현하려면 `GamePlayUIManager`가 `TurnManager`에 접근할 수 있어야 합니다. `GamePlay.cpp`에서 `m_ui_manager`에 `TurnManager` 포인터를 전달하거나, `GetGSComponent<TurnManager>()`를 사용해야 합니다.
+
+---
+
+### 최종 체크리스트
+
+**구현 완료 확인**:
+
+- [ ] `GamePlayUIManager.h`에 `SetCharacters()`, `DrawCharacterStatsPanel()` 선언 추가
+- [ ] `GamePlayUIManager.cpp`에 위 메서드 구현
+- [ ] `GamePlayUIManager::Draw()`에서 `DrawCharacterStatsPanel()` 호출
+- [ ] `GamePlay::Load()`에서 `m_ui_manager->SetCharacters()` 호출
+- [ ] 빌드 성공 (CMake 재구성 후 빌드)
+
+**테스트 완료 확인**:
+
+- [ ] 게임 실행 시 초기화 로그 출력 확인
+- [ ] 화면 오른쪽에 캐릭터 스탯 패널 2개 표시 확인
+- [ ] 공격 시 HP가 실시간으로 업데이트되는지 확인
+- [ ] 턴 종료 시 AP/Speed가 갱신되는지 확인
+- [ ] 캐릭터 사망 시 HP 0 표시 확인
+
+---
+
+**최종 업데이트**: 2025-12-07
 **다음 단계**: Week 5 완료 후 우선순위 재논의 (Week 6 계획)
