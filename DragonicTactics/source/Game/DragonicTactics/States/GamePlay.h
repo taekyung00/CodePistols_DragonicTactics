@@ -35,12 +35,15 @@ private:
 	std::unique_ptr<GamePlayUIManager>  m_ui_manager;
 	std::unique_ptr<BattleOrchestrator> m_orchestrator;
 
-	void OnCharacterDamaged(const CharacterDamagedEvent& event);
+	void DisplayDamageAmount(const CharacterDamagedEvent& event);
+	void DisplayDamageLog(const CharacterDamagedEvent& event);
+
+	void CheckGameEnd(const CharacterDeathEvent& event);
 
 	// Fighter* fighter = nullptr;
 	// Dragon* dragon  = nullptr;
 	Character* player = nullptr;
-	Character* enemy = nullptr;
+	Character* enemy = nullptr;		//TODO : we have to make it vector
 	bool     game_end = false;
 };
 namespace CS230 {

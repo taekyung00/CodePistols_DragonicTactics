@@ -11,12 +11,17 @@ Created:    November 24, 2025
 #pragma once
 #include <vector>
 #include <string>
+#include <memory>
 #include "Engine/Vec2.h"
 #include "Engine/Matrix.h"
+
+class Character;
 
 class GamePlayUIManager {
 public:
     void ShowDamageText(int damage, Math::vec2 position, Math::vec2 size);
+    void ShowDamageLog(std::string str, Math::vec2 position, Math::vec2 size);
+    void ShowGameEnd(std::string&& text);
     void Update(double dt);
     void Draw(Math::TransformationMatrix camera_matrix);
 
@@ -29,4 +34,10 @@ private:
     };
 
     std::vector<DamageText> m_damage_texts;
+
+    std::vector<DamageText> m_damage_log;
+
+    const double GAME_END_TEXT_SIZE = 2.0;
+
+    std::unique_ptr<std::string> game_end_text = nullptr;
 };

@@ -106,14 +106,17 @@ void GamePlay::Load()
     turnMgr->StartCombat();
 
 	GetGSComponent<EventBus>()->Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& event) { 
-            this->OnCharacterDamaged(event); 
+        this->DisplayDamageAmount(event); 
+        //this->DisplayDamageLog(event);
     });
-    GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>([this]([[maybe_unused]]const CharacterDeathEvent& event) { 
-        this->game_end = true;
+    GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>([this](const CharacterDeathEvent& event) { 
+        this->CheckGameEnd(event);
     });
 }
 
-void GamePlay::OnCharacterDamaged(const CharacterDamagedEvent& event)
+
+
+void GamePlay::DisplayDamageAmount(const CharacterDamagedEvent& event)
 {
     Engine::GetLogger().LogDebug("Damage Event! " + std::to_string(event.damageAmount));
     Math::vec2 size = { 1.0f, 1.0f };
@@ -135,12 +138,30 @@ void GamePlay::OnCharacterDamaged(const CharacterDamagedEvent& event)
     m_ui_manager->ShowDamageText(event.damageAmount, text_position, size);
 }
 
-// Math::ivec2 ConvertScreenToGrid(Math::vec2 world_pos)
-// {
-// 	int grid_x = static_cast<int>(world_pos.x / GridSystem::TILE_SIZE);
-// 	int grid_y = static_cast<int>(world_pos.y / GridSystem::TILE_SIZE);
-// 	return { grid_x, grid_y };
-// }
+void GamePlay::DisplayDamageLog(const CharacterDamagedEvent& event){
+    event.attacker;
+    event.damageAmount;
+    event.remainingHP;
+    event.target;
+    event.wasCritical;
+    m_ui_manager->ShowDamageLog(event.damageAmount);
+}
+
+//  ======== TODO : we have to make it for loop to check all enemy is retired ========
+void GamePlay::CheckGameEnd(const CharacterDeathEvent& event){
+    if (event.character == player){
+        m_ui_manager->ShowGameEnd("Invader Win");
+        game_end = true;
+        return;
+    }
+
+    if(event.character == enemy) {
+        m_ui_manager->ShowGameEnd("Player Win");
+        game_end = true;
+    }
+}
+
+
 
 void GamePlay::Update(double dt)
 {
@@ -150,6 +171,21 @@ void GamePlay::Update(double dt)
     AISystem* aiSystem         		= GetGSComponent<AISystem>();
     CS230::GameObjectManager* goMgr = GetGSComponent<CS230::GameObjectManager>();
     DebugManager* debugMgr     		= GetGSComponent<DebugManager>();
+
+    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Escape))
+    {
+        if (turnMgr) turnMgr->EndCombat();
+        Engine::GetGameStateManager().PopState();
+        Engine::GetGameStateManager().PushState<MainMenu>();
+        return;
+    }
+
+    if (game_end)
+    {
+        return;
+    }
+
+
 
 	Character* current = nullptr;
 	if (turnMgr && turnMgr->IsCombatActive())
@@ -170,14 +206,6 @@ void GamePlay::Update(double dt)
     
     goMgr->UpdateAll(dt);
 	UpdateGSComponents(dt);
-	
-    if(game_end || Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Escape))
-    {
-        if (turnMgr) turnMgr->EndCombat();
-        Engine::GetGameStateManager().PopState();
-        Engine::GetGameStateManager().PushState<MainMenu>();
-        return;
-    }
 }
 
 void GamePlay::Unload()
