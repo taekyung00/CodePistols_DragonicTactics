@@ -1,0 +1,63 @@
+#include "pch.h"
+
+/*
+Copyright (C) 2023 DigiPen Institute of Technology
+Reproduction or distribution of this file or its contents without
+prior written consent is prohibited
+File Name:  Splash.cpp
+Project:    CS230 Engine
+Author:     Taekyung Ho
+Created:    March 12, 2025
+*/
+#include "CS200/IRenderer2D.h"
+#include "CS200/NDC.h"
+#include "CS200/RenderingAPI.h"
+#include "Engine/Engine.h"
+#include "Engine/GameStateManager.h"
+#include "Engine/Logger.h"
+#include "Engine/TextureManager.h"
+#include "Engine/Window.h"
+#include "MainMenu.h"
+#include "Splash.h"
+
+void Splash::Load()
+{
+  counter = 0.0;
+  texture = Engine::GetTextureManager().Load("Assets/images/Splash/DigiPen.png");
+  Math::ivec2 window_size = Engine::GetWindow().GetSize();
+  Engine::GetLogger().LogDebug("Window Size: " + std::to_string(window_size.x) + ", " + std::to_string(window_size.y));
+}
+
+void Splash::Update([[maybe_unused]] double dt)
+{
+  Engine::GetLogger().LogDebug(std::to_string(counter));
+  if (counter >= 0.3)
+  {
+	Engine::GetGameStateManager().PopState();
+	Engine::GetGameStateManager().PushState<MainMenu>();
+  }
+  counter += dt;
+}
+
+void Splash::Unload()
+{
+}
+
+void Splash::Draw()
+{
+  CS200::RenderingAPI::Clear();
+  auto renderer_2d = Engine::GetTextureManager().GetRenderer2D();
+  renderer_2d->BeginScene(CS200::build_ndc_matrix(Engine::GetWindow().GetSize()));
+  texture->Draw(Math::TranslationMatrix({ (Engine::GetWindow().GetSize() - texture->GetSize()) / 2 }));
+
+  renderer_2d->EndScene();
+}
+
+void Splash::DrawImGui()
+{
+}
+
+gsl::czstring Splash::GetName() const
+{
+  return "Splash";
+}
