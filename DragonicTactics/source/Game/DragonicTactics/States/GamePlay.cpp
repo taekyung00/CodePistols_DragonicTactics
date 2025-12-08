@@ -210,6 +210,15 @@ void GamePlay::Update(double dt)
 	m_ui_manager->Update(dt);
   }
 
+  // 우클릭 시 이동 모드 비활성화 처리
+  if (Engine::GetInput().MouseJustPressed(2) && m_input_handler->GetCurrentState() == PlayerInputHandler::ActionState::SelectingMove)
+  {
+	if (grid)
+	{
+	  grid->DisableMovementMode();
+	}
+  }
+
   goMgr->UpdateAll(dt);
   UpdateGSComponents(dt);
 
@@ -303,12 +312,31 @@ void GamePlay::DrawImGui()
 	if (currentState == ActionState::SelectingMove)
 	{
 	  m_input_handler->CancelCurrentAction();
+	  // 이동 모드 비활성화
+	  if (grid_system)
+	  {
+		grid_system->DisableMovementMode();
+	  }
 	  Engine::GetLogger().LogEvent("UI: 'Cancel Move' button clicked.");
 	}
 	else
 	{
 	  m_input_handler->SetState(ActionState::SelectingMove);
 	  Engine::GetLogger().LogEvent("UI: 'Move' button clicked.");
+
+	  if (turnMgr && grid_system)
+	  {
+		Character* current = turnMgr->GetCurrentCharacter();
+		if (current)
+		{
+		  Math::ivec2 current_pos	 = current->GetGridPosition()->Get();
+		  int		  movement_range = current->GetMovementRange();
+
+		  grid_system->EnableMovementMode(current_pos, movement_range);
+
+		  Engine::GetLogger().LogEvent("UI: 'Move' button clicked. Movement mode enabled.");
+		}
+	  }
 	}
   }
   if (is_move_disabled)

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * \file
  * \author Jonathan Holmes
  * \author Taekyung Ho
@@ -46,6 +46,13 @@ namespace Math
 
 	// length
 	double Length();
+
+	bool operator<(const ivec2& other) const
+	{
+	  if (x != other.x)
+		return x < other.x; // x가 다르면 x 기준으로 비교
+	  return y < other.y;	// x가 같으면 y 기준으로 비교
+	}
   };
 
   // Non-member operators

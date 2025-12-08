@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 
 #include "./CS200/IRenderer2D.h"
 #include "./Engine/Engine.h"
@@ -6,6 +6,9 @@
 #include "./Game/DragonicTactics/Objects/Character.h"
 #include "GridSystem.h"
 #include <cassert>
+#include <queue>
+#include <set>
+#include <algorithm>
 
 void GridSystem::SetExitPosition(Math::ivec2 pos)
 {
@@ -112,6 +115,47 @@ void GridSystem::Draw() const
 	  renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), 0U, CS200::WHITE);
 	}
   }
+  // ========================================
+  // 2. 이동 가능 타일 시각화 (낮은 알파 초록색)
+  // ========================================
+  if (movement_mode_active_)
+  {
+	for (const auto& tile : reachable_tiles_)
+	{
+	  int screen_x = tile.x * TILE_SIZE + TILE_SIZE;
+	  int screen_y = tile.y * TILE_SIZE + TILE_SIZE;
+
+	  // 반투명 초록색 오버레이
+	  renderer_2d->DrawRectangle(
+		  Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE),
+		  CS200::pack_color({ 0 / 255.0f, 255 / 255.0f, 0 / 255.0f, 80 / 255.0f }), // 낮은 알파 초록색 (fill_color)
+		  0U,																																						   // line_color: 없음
+		  0.0,																																						   // line_width
+		  0.2f																																						   // depth
+	  );
+	}
+  }
+
+  // ========================================
+  // 🆕 3. 마우스 호버 경로 시각화 (진한 초록색)
+  // ========================================
+  if (!hovered_path_.empty())
+  {
+	for (const auto& tile : hovered_path_)
+	{
+	  int screen_x = tile.x * TILE_SIZE + TILE_SIZE;
+	  int screen_y = tile.y * TILE_SIZE + TILE_SIZE;
+
+	  // 진한 초록색 오버레이
+	  renderer_2d->DrawRectangle(
+		  Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), 
+		  CS200::pack_color({ 0 / 255.0f, 200 / 255.0f, 0 / 255.0f, 150 / 255.0f }), // 진한 초록색 (fill_color)
+		  CS200::pack_color({ 0 / 255.0f, 255 / 255.0f, 0 / 255.0f, 255 / 255.0f }), // 밝은 초록색 테두리 (line_color)
+		  2.0,							 // line_width
+		  0.1f							 // depth (경로가 이동 가능 타일보다 위에 그려지도록)
+	  );
+	}
+  }
 }
 
 bool GridSystem::IsWalkable(Math::ivec2 pos) const
@@ -177,6 +221,140 @@ std::vector<Character*> GridSystem::GetAllCharacters()
 	}
   }
   return result;
+}
+
+// ========================================
+// BFS 기반 이동 가능 타일 계산
+// ========================================
+std::vector<Math::ivec2> GridSystem::GetReachableTiles(Math::ivec2 start, int max_distance)
+{
+  std::vector<Math::ivec2> reachable;
+
+  if (!IsValidTile(start))
+  {
+	Engine::GetLogger().LogError("GetReachableTiles: Invalid start position");
+	return reachable;
+  }
+
+  // BFS 탐색
+  std::queue<std::pair<Math::ivec2, int>> queue; // {position, distance}
+  std::set<Math::ivec2>					  visited;
+
+  queue.push({ start, 0 });
+  visited.insert(start);
+
+  while (!queue.empty())
+  {
+	auto [current_pos, distance] = queue.front();
+	queue.pop();
+
+	// 시작 위치는 제외 (현재 위치이므로 이동할 수 없음)
+	if (current_pos != start)
+	{
+	  reachable.push_back(current_pos);
+	}
+
+	// 최대 거리 도달 시 더 이상 탐색 안 함
+	if (distance >= max_distance)
+	{
+	  continue;
+	}
+
+	// 인접 타일 탐색
+	std::vector<Math::ivec2> neighbors = GetNeighbors(current_pos);
+	for (const auto& neighbor : neighbors)
+	{
+	  // 방문하지 않았고, 걸을 수 있는 타일만 추가
+	  if (visited.find(neighbor) == visited.end() && GetTileType(neighbor) == TileType::Empty && !IsOccupied(neighbor))
+	  {
+		visited.insert(neighbor);
+		queue.push({ neighbor, distance + 1 });
+	  }
+	}
+  }
+
+  Engine::GetLogger().LogEvent("GetReachableTiles: Found " + std::to_string(reachable.size()) + " reachable tiles");
+  return reachable;
+}
+
+// ========================================
+// 이동 모드 활성화
+// ========================================
+void GridSystem::EnableMovementMode(Math::ivec2 character_pos, int movement_range)
+{
+  movement_mode_active_ = true;
+  movement_source_pos_	= character_pos;
+
+  // 이동 가능한 타일 계산
+  std::vector<Math::ivec2> reachable = GetReachableTiles(character_pos, movement_range);
+  reachable_tiles_.clear();
+  for (const auto& tile : reachable)
+  {
+	reachable_tiles_.insert(tile);
+  }
+
+  Engine::GetLogger().LogEvent("GridSystem: Movement mode enabled at (" + std::to_string(character_pos.x) + ", " + std::to_string(character_pos.y) + ") with range " + std::to_string(movement_range));
+}
+
+// ========================================
+// 이동 모드 비활성화
+// ========================================
+void GridSystem::DisableMovementMode()
+{
+  movement_mode_active_ = false;
+  movement_source_pos_	= { -1, -1 };
+  reachable_tiles_.clear();
+  hovered_path_.clear();
+  hovered_tile_ = { -1, -1 };
+
+  Engine::GetLogger().LogEvent("GridSystem: Movement mode disabled");
+}
+
+// ========================================
+// 마우스 호버 타일 설정 (경로 계산)
+// ========================================
+void GridSystem::SetHoveredTile(Math::ivec2 hovered_tile)
+{
+  // 이미 호버 중인 타일이면 무시
+  if (hovered_tile_ == hovered_tile)
+  {
+	return;
+  }
+
+  hovered_tile_ = hovered_tile;
+
+  // 이동 가능한 타일이 아니면 경로 초기화
+  if (!IsReachable(hovered_tile))
+  {
+	hovered_path_.clear();
+	return;
+  }
+
+  // A* 경로 찾기
+  hovered_path_ = FindPath(movement_source_pos_, hovered_tile);
+
+  if (!hovered_path_.empty())
+  {
+	Engine::GetLogger().LogDebug(
+		"GridSystem: Path to (" + std::to_string(hovered_tile.x) + ", " + std::to_string(hovered_tile.y) + ") calculated (" + std::to_string(hovered_path_.size()) + " tiles)");
+  }
+}
+
+// ========================================
+// 마우스 호버 해제
+// ========================================
+void GridSystem::ClearHoveredTile()
+{
+  hovered_tile_ = { -1, -1 };
+  hovered_path_.clear();
+}
+
+// ========================================
+// 특정 타일이 이동 가능한지 확인
+// ========================================
+bool GridSystem::IsReachable(Math::ivec2 tile) const
+{
+  return reachable_tiles_.find(tile) != reachable_tiles_.end();
 }
 
 ////////////////////////////////////

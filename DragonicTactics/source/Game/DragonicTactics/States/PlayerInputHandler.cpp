@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
 prior written consent is prohibited
@@ -71,12 +71,31 @@ void PlayerInputHandler::HandleDragonInput([[maybe_unused]] double dt, Dragon* d
   auto& input		   = Engine::GetInput();
   bool	is_clicking_ui = ImGui::GetIO().WantCaptureMouse;
 
+  // 1. 이동 모드일 때 마우스 호버 처리
+  if (m_state == ActionState::SelectingMove)
+  {
+	Math::vec2	mouse_pos = input.GetMousePos();
+	Math::ivec2 grid_pos  = ConvertScreenToGrid(mouse_pos);
+
+	// 유효한 타일이고 이동 가능한 타일이면 경로 표시
+	if (grid->IsValidTile(grid_pos) && grid->IsReachable(grid_pos))
+	{
+	  grid->SetHoveredTile(grid_pos);
+	}
+	else
+	{
+	  grid->ClearHoveredTile();
+	}
+  }
+
+  // 우클릭 처리
   if (input.MouseJustPressed(2))
   {
 	HandleRightClick(dragon);
 	return;
   }
 
+  // 좌클릭 처리
   if (input.MouseJustPressed(0) && !is_clicking_ui)
   {
 	Math::vec2 mouse_pos = input.GetMousePos();
@@ -91,11 +110,26 @@ void PlayerInputHandler::HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, 
   switch (m_state)
   {
 	case ActionState::SelectingMove:
-	  if (grid->IsWalkable(grid_pos))
+	  // 이동 가능한 타일인지 확인
+	  if (grid->IsReachable(grid_pos))
 	  {
+		// A* 경로 찾기 (이미 계산된 경로 사용 가능)
 		auto path = grid->FindPath(dragon->GetGridPosition()->Get(), grid_pos);
-		dragon->SetPath(std::move(path));
-		m_state = ActionState::Moving;
+
+		if (!path.empty())
+		{
+		  dragon->SetPath(std::move(path));
+		  m_state = ActionState::Moving;
+
+		  Engine::GetLogger().LogEvent("Dragon moving to (" + std::to_string(grid_pos.x) + ", " + std::to_string(grid_pos.y) + ")");
+
+		  // 이동 모드 비활성화
+		  grid->DisableMovementMode();
+		}
+	  }
+	  else
+	  {
+		Engine::GetLogger().LogDebug("Cannot move to (" + std::to_string(grid_pos.x) + ", " + std::to_string(grid_pos.y) + "): Not reachable");
 	  }
 	  break;
 
@@ -133,14 +167,30 @@ void PlayerInputHandler::HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, 
 
 void PlayerInputHandler::HandleRightClick(Dragon* dragon)
 {
+  // 이동 모드 비활성화
+  if (m_state == ActionState::SelectingMove)
+  {
+	// GridSystem 접근이 필요한 경우 GamePlay에서 전달받아야 함
+	Engine::GetLogger().LogEvent("Movement mode cancelled by right-click");
+  }
+
   if (m_state == ActionState::Moving)
   {
 	dragon->GetGOComponent<MovementComponent>()->ClearPath();
   }
+
   m_state = ActionState::None;
 }
 
 void PlayerInputHandler::CancelCurrentAction()
 {
+  // 이동 모드였다면 GridSystem에도 알려야 함
+  if (m_state == ActionState::SelectingMove)
+  {
+	Engine::GetLogger().LogEvent("Movement mode cancelled");
+	// GridSystem::DisableMovementMode() 호출 필요
+	// GamePlay에서 처리하도록 수정
+  }
+
   m_state = ActionState::None;
 }
