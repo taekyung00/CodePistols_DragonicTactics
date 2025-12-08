@@ -10,6 +10,7 @@ Created:    November 24, 2025
 #pragma once
 #include "Engine/Vec2.h"
 #include <memory>
+#include "./Engine/Component.h"
 
 class Character;
 class Dragon;

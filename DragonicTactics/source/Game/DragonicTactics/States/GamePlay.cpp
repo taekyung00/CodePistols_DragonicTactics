@@ -210,15 +210,6 @@ void GamePlay::Update(double dt)
 	m_ui_manager->Update(dt);
   }
 
-  // 우클릭 시 이동 모드 비활성화 처리
-  if (Engine::GetInput().MouseJustPressed(2) && m_input_handler->GetCurrentState() == PlayerInputHandler::ActionState::SelectingMove)
-  {
-	if (grid)
-	{
-	  grid->DisableMovementMode();
-	}
-  }
-
   goMgr->UpdateAll(dt);
   UpdateGSComponents(dt);
 
@@ -315,9 +306,9 @@ void GamePlay::DrawImGui()
 	  // 이동 모드 비활성화
 	  if (grid_system)
 	  {
+		Engine::GetLogger().LogEvent("UI: 'Cancel Move' button clicked.");
 		grid_system->DisableMovementMode();
 	  }
-	  Engine::GetLogger().LogEvent("UI: 'Cancel Move' button clicked.");
 	}
 	else
 	{

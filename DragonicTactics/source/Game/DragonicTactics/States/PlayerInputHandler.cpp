@@ -170,8 +170,9 @@ void PlayerInputHandler::HandleRightClick(Dragon* dragon)
   // 이동 모드 비활성화
   if (m_state == ActionState::SelectingMove)
   {
-	// GridSystem 접근이 필요한 경우 GamePlay에서 전달받아야 함
+	auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
 	Engine::GetLogger().LogEvent("Movement mode cancelled by right-click");
+	grid->DisableMovementMode();	
   }
 
   if (m_state == ActionState::Moving)
