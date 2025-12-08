@@ -120,15 +120,16 @@ void GridSystem::Draw() const
   // ========================================
   if (movement_mode_active_)
   {
+	int alpha{ 0 };
 	for (const auto& tile : reachable_tiles_)
 	{
 	  int screen_x = tile.x * TILE_SIZE + TILE_SIZE;
 	  int screen_y = tile.y * TILE_SIZE + TILE_SIZE;
 
-	  // 반투명 초록색 오버레이
+	  alpha = static_cast<int>(80 + 40 * std::sin(pulse_timer_ * 3.0));
 	  renderer_2d->DrawRectangle(
 		  Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE),
-		  CS200::pack_color({ 0 / 255.0f, 255 / 255.0f, 0 / 255.0f, 80 / 255.0f }), // 낮은 알파 초록색 (fill_color)
+		  CS200::pack_color({ 0 / 255.0f, 255 / 255.0f, 0 / 255.0f, alpha / 255.0f }), // 낮은 알파 초록색 (fill_color)
 		  0U,																																						   // line_color: 없음
 		  0.0,																																						   // line_width
 		  0.2f																																						   // depth
@@ -207,6 +208,14 @@ void GridSystem::MoveCharacter(Math::ivec2 old_pos, Math::ivec2 new_pos)
 
 void GridSystem::Update([[maybe_unused]] double dt)
 {
+  if (movement_mode_active_)
+  {
+	pulse_timer_ += dt;
+  }
+  else
+  {
+	pulse_timer_ = 0.0;
+  }
 }
 
 /// @brief //////////////////////

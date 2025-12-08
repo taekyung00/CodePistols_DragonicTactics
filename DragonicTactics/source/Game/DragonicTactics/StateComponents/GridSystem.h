@@ -95,6 +95,7 @@ class GridSystem : public CS230::Component
   std::set<Math::ivec2>	   reachable_tiles_;				   // 이동 가능한 타일 집합
   std::vector<Math::ivec2> hovered_path_;					   // 마우스 호버 시 경로
   Math::ivec2			   hovered_tile_ = { -1, -1 };		   // 현재 마우스 호버 타일
+  double				   pulse_timer_	 = 0.0;
 
   public:
   static const int TILE_SIZE = MAP_WIDTH * MAP_HEIGHT;
