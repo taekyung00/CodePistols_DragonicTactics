@@ -254,7 +254,7 @@ std::vector<Math::ivec2> GridSystem::GetReachableTiles(Math::ivec2 start, int ma
 
   while (!queue.empty())
   {
-	auto [current_pos, distance] = queue.front();U
+	auto [current_pos, distance] = queue.front();
 	queue.pop();
 
 	// 시작 위치는 제외 (현재 위치이므로 이동할 수 없음)
