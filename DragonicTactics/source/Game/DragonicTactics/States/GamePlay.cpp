@@ -125,7 +125,7 @@ void GamePlay::Load()
   Engine::GetLogger().LogEvent("GamePlay::Load - Characters registered to UI Manager");
 
   GetGSComponent<EventBus>()->Subscribe<CharacterDamagedEvent>([this](const CharacterDamagedEvent& event) { this->OnCharacterDamaged(event); });
-  GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>(
+  GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>(  
 	  [this]([[maybe_unused]] const CharacterDeathEvent& event)
 	  {
 		this->game_end = true;
