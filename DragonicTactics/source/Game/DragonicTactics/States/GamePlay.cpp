@@ -12,6 +12,7 @@ Created:    November 5, 2025
 #include "CS200/IRenderer2D.h"
 #include "CS200/NDC.h"
 #include "Engine/Timer.h"
+#include "OpenGL/Environment.h"
 #include "GamePlay.h"
 
 #include "Game/MainMenu.h"
@@ -43,6 +44,12 @@ GamePlay::GamePlay() // : fighter(nullptr), dragon(nullptr)
 
 void GamePlay::Load()
 {
+
+	if (!OpenGL::IsWebGL)
+  {
+	Engine::GetWindow().ForceResize(default_window_size.x, default_window_size.y);
+	Engine::GetWindow().SetWindowPosition(SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+  }
   m_input_handler = std::make_unique<PlayerInputHandler>();
   m_ui_manager	  = std::make_unique<GamePlayUIManager>();
   m_orchestrator  = std::make_unique<BattleOrchestrator>();

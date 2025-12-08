@@ -24,6 +24,8 @@ void Splash::Load()
 {
   counter = 0.0;
   texture = Engine::GetTextureManager().Load("Assets/images/Splash/DigiPen.png");
+  Math::ivec2 window_size = Engine::GetWindow().GetSize();
+  Engine::GetLogger().LogDebug("Window Size: " + std::to_string(window_size.x) + ", " + std::to_string(window_size.y));
 }
 
 void Splash::Update([[maybe_unused]] double dt)
