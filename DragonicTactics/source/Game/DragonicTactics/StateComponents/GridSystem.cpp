@@ -138,7 +138,7 @@ void GridSystem::Draw() const
   }
 
   // ========================================
-  // 🆕 3. 마우스 호버 경로 시각화 (진한 초록색)
+  // 3. 마우스 호버 경로 시각화 (진한 초록색)
   // ========================================
   if (!hovered_path_.empty())
   {
@@ -254,7 +254,7 @@ std::vector<Math::ivec2> GridSystem::GetReachableTiles(Math::ivec2 start, int ma
 
   while (!queue.empty())
   {
-	auto [current_pos, distance] = queue.front();
+	auto [current_pos, distance] = queue.front();U
 	queue.pop();
 
 	// 시작 위치는 제외 (현재 위치이므로 이동할 수 없음)
@@ -267,7 +267,7 @@ std::vector<Math::ivec2> GridSystem::GetReachableTiles(Math::ivec2 start, int ma
 	if (distance >= max_distance)
 	{
 	  continue;
-	}
+	} 
 
 	// 인접 타일 탐색
 	std::vector<Math::ivec2> neighbors = GetNeighbors(current_pos);
