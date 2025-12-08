@@ -1,7 +1,7 @@
 flowchart TD
     %% Nodes for cleric
     SettingTarget("목표 설정 (상황 재판단)")
-    SettingTarget                                   --> AreWeInDanger("도망쳐야하는 상황인가?")
+    SettingTarget                                   --> AreWeInDanger("보물을 획득했나?")
 
     AreWeInDanger-- "Yes"                           --> TargetExit("목표 = 출구")
     AreWeInDanger-- "No"                            --> IsAllianceInDanger("아군의 체력이 30% 이하인가?")
@@ -52,4 +52,4 @@ flowchart TD
     AttackDragon                                    --> DecreaseActionPoints("행동력을 1 소모")
     HealAlliance                                    --> DecreaseActionPoints("행동력을 1 소모")
 
-    DecreaseActionPoints                            --> SettingTarget
+    DecreaseActionPoints                            --> CanIAct
