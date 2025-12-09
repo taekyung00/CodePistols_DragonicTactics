@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dragonic Tactics – Architecture Visualization</title>
+  <!-- Tailwind CDN (JIT) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #0b0f14; color: #e5e7eb; }
+    .card { background: rgba(17,24,39,0.85); border-radius: 1rem; border: 1px solid rgba(99, 102, 241, 0.25); }
+    .implemented { color: #10b981; font-weight: 600; }
+    .planned { color: #9ca3af; font-style: italic; }
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-left: 0.5rem;
+    }
+    .badge-done { background: #10b981; color: #000; }
+    .badge-planned { background: #6b7280; color: #fff; }
+  </style>
+</head>
+<body class="min-h-screen p-8">
+  <div class="max-w-7xl mx-auto">
+    <h1 class="text-3xl md:text-4xl font-bold mb-4 text-center">🐉 Dragonic Tactics – System Architecture Visualization</h1>
+    <p class="text-center text-gray-400 mb-8">Last Updated: 2025-12-09 | GAM200 Semester Completed</p>
+
+    <!-- Legend -->
+    <div class="card border-indigo-500/40 p-4 mb-8">
+      <h3 class="text-lg font-semibold mb-2 text-center">Implementation Status Legend</h3>
+      <div class="flex justify-center gap-6 text-sm">
+        <div><span class="status-badge badge-done">✅ Complete</span> GAM200 (Fall 2025)</div>
+        <div><span class="status-badge badge-planned">📋 Planned</span> GAM250 (Spring 2026)</div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- GameState Components (Battle Systems) -->
+      <div class="card border-emerald-500/40 p-6">
+        <h2 class="text-2xl font-semibold mb-4 text-emerald-300">GameState Components (Battle Systems)</h2>
+        <ul class="space-y-2">
+          <li class="implemented">✅ EventBus – Inter-system event communication</li>
+          <li class="implemented">✅ DiceManager – D&D dice rolling (3d6+5)</li>
+          <li class="implemented">✅ DataRegistry – Character JSON loading</li>
+          <li class="implemented">✅ MapDataRegistry – Map JSON loading</li>
+          <li class="implemented">✅ GridSystem – 8x8 grid + A* pathfinding</li>
+          <li class="implemented">✅ TurnManager – Turn order management (OnTurnStart/End)</li>
+          <li class="implemented">✅ CombatSystem – Combat resolution</li>
+          <li class="implemented">✅ AISystem – AI strategy pattern</li>
+          <li class="implemented">✅ CharacterFactory – Character creation (Factory pattern)</li>
+          <li class="implemented">✅ GameObjectManager – GameObject ownership management</li>
+          <li class="implemented">✅ DebugManager – Debug mode management</li>
+          <li class="implemented">✅ Timer – Game timer</li>
+          <li class="planned">📋 SpellSystem – Spell system (GAM250)</li>
+          <li class="planned">📋 StatusEffectManager – Buff/debuff management (GAM250)</li>
+          <li class="planned">📋 AIDirector – Team tactics coordination (GAM250)</li>
+          <li class="planned">📋 SoundManager – Sound system (GAM250)</li>
+          <li class="planned">📋 SaveManager – Save/load (GAM250)</li>
+        </ul>
+      </div>
+
+      <!-- GameObject Components -->
+      <div class="card border-purple-500/40 p-6">
+        <h2 class="text-2xl font-semibold mb-4 text-purple-300">GameObject Components (Character Components)</h2>
+        <ul class="space-y-2">
+          <li class="implemented">✅ GridPosition – Grid coordinate management</li>
+          <li class="implemented">✅ ActionPoints – Action point management</li>
+          <li class="implemented">✅ StatsComponent – HP, attack, defense, speed</li>
+          <li class="implemented">✅ SpellSlots – Spell slot data (spell casting not implemented)</li>
+          <li class="implemented">✅ MovementComponent – Movement animation</li>
+          <li class="planned">📋 StatusEffects – Buff/debuff collection (GAM250)</li>
+          <li class="planned">📋 AIMemory – AI decision history (GAM250)</li>
+        </ul>
+      </div>
+
+      <!-- Characters -->
+      <div class="card border-blue-500/40 p-6">
+        <h2 class="text-2xl font-semibold mb-4 text-blue-300">Character System</h2>
+        <div class="space-y-4">
+          <div>
+            <h3 class="font-semibold text-lg mb-2">Player</h3>
+            <ul class="space-y-1">
+              <li class="implemented">✅ Dragon (HP 140, Speed 5, AP 2)</li>
+              <li class="ml-4 text-sm text-gray-400">• SpellSlots component only</li>
+              <li class="ml-4 text-sm planned">📋 9 actual spells (GAM250)</li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="font-semibold text-lg mb-2">AI Characters (Adventurers)</h3>
+            <ul class="space-y-1">
+              <li class="implemented">✅ Fighter (HP 90, Speed 3) + FighterStrategy</li>
+              <li class="planned">📋 Cleric (HP 90, Speed 2) + ClericStrategy (GAM250)</li>
+              <li class="planned">📋 Wizard (HP 55, Speed 1) + WizardStrategy (GAM250)</li>
+              <li class="planned">📋 Rogue (HP 65, Speed 4) + RogueStrategy (GAM250)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Debug & Tools -->
+      <div class="card border-amber-500/40 p-6">
+        <h2 class="text-2xl font-semibold mb-4 text-amber-300">Debug Tools</h2>
+        <ul class="space-y-2">
+          <li class="implemented">✅ DebugConsole – Console commands</li>
+          <li class="implemented">✅ DebugManager – Debug mode management</li>
+          <li class="implemented">✅ DebugVisualizer – Grid visualization</li>
+          <li class="implemented">✅ Function call tracing (__PRETTY_FUNCTION__)</li>
+          <li class="planned">📋 AI behavior visualization (pause system) (GAM250)</li>
+          <li class="planned">📋 StatusInfoOverlay – HP/AP bars (GAM250)</li>
+        </ul>
+      </div>
+
+      <!-- AI System -->
+      <div class="card border-rose-500/40 p-6">
+        <h2 class="text-2xl font-semibold mb-4 text-rose-300">AI System (Strategy Pattern)</h2>
+        <ul class="space-y-2">
+          <li class="implemented">✅ IAIStrategy – AI strategy interface</li>
+          <li class="implemented">✅ FighterStrategy – Fighter AI (Tank)</li>
+          <li class="ml-4 text-sm text-gray-400">• Treasure carrying, HP management, melee attack</li>
+          <li class="implemented">✅ Fighter AI Flowchart (Mermaid)</li>
+          <li class="planned">📋 ClericStrategy – Cleric AI (Healer) (GAM250)</li>
+          <li class="planned">📋 WizardStrategy – Wizard AI (Ranged) (GAM250)</li>
+          <li class="planned">📋 RogueStrategy – Rogue AI (Assassin) (GAM250)</li>
+          <li class="planned">📋 Cleric/Wizard/Rogue AI Flowcharts (GAM250)</li>
+          <li class="ml-4 text-sm text-gray-400">• Already written, needs review</li>
+        </ul>
+        <div class="mt-4 text-sm text-gray-400">
+          <p>📊 AI Flowcharts: <code>architecture/character_flowchart/*.mmd</code></p>
+        </div>
+      </div>
+
+      <!-- Actions & Abilities -->
+      <div class="card border-violet-500/40 p-6">
+        <h2 class="text-2xl font-semibold mb-4 text-violet-300">Action & Ability System</h2>
+        <div class="space-y-3">
+          <div>
+            <h3 class="font-semibold mb-2">Basic Action System</h3>
+            <ul class="text-sm space-y-1">
+              <li class="implemented">✅ Action base class</li>
+              <li class="implemented">✅ ActionAttack (basic attack)</li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-2">Spell System</h3>
+            <ul class="text-sm space-y-1">
+              <li class="planned">📋 Dragon 9 spells (GAM250)</li>
+              <li class="ml-4 text-xs text-gray-500">Wall Creation, Fireball, Lava Pool, Dragon's Roar,</li>
+              <li class="ml-4 text-xs text-gray-500">Tail Swipe, Dragon's Fury, Meteor Swarm,</li>
+              <li class="ml-4 text-xs text-gray-500">Heat Absorption, Heat Release</li>
+              <li class="planned">📋 Upcasting system (GAM250)</li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-2">Ability System</h3>
+            <ul class="text-sm space-y-1">
+              <li class="planned">📋 AbilityBase (GAM250)</li>
+              <li class="planned">📋 MeleeAttack, ShieldBash, RangedAttack (GAM250)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Flow Architecture -->
+    <div class="card border-cyan-500/40 p-6 mt-8">
+      <h2 class="text-2xl font-semibold text-center mb-4 text-cyan-300">Game Flow Architecture</h2>
+      <p class="text-center mb-6 text-gray-300">Actual system flow based on GamePlay.cpp</p>
+
+      <!-- Load Phase -->
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold text-amber-300 mb-3 text-center">📦 Load Phase</h3>
+        <div class="space-y-2 text-center">
+          <div class="p-2 bg-emerald-900/20 rounded-lg border border-emerald-500/30">
+            <p class="font-semibold text-emerald-300 text-sm">DataRegistry · MapDataRegistry</p>
+            <p class="text-xs text-gray-400">Load character/map data from JSON files</p>
+          </div>
+          <p class="text-gray-400 text-sm">⬇️</p>
+          <div class="p-2 bg-blue-900/20 rounded-lg border border-blue-500/30">
+            <p class="font-semibold text-blue-300 text-sm">CharacterFactory → GameObjectManager</p>
+            <p class="text-xs text-gray-400">Create characters (unique_ptr) → Transfer ownership</p>
+          </div>
+          <p class="text-gray-400 text-sm">⬇️</p>
+          <div class="p-2 bg-purple-900/20 rounded-lg border border-purple-500/30">
+            <p class="font-semibold text-purple-300 text-sm">TurnManager.InitializeTurnOrder()</p>
+            <p class="text-xs text-gray-400">Speed-based turn order initialization → StartCombat()</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Update Phase -->
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold text-blue-300 mb-3 text-center">🔄 Update Phase (Per Frame)</h3>
+        <div class="space-y-2 text-center">
+          <div class="p-2 bg-blue-900/20 rounded-lg border border-blue-500/30">
+            <p class="font-semibold text-blue-300 text-sm">TurnManager.GetCurrentCharacter()</p>
+            <p class="text-xs text-gray-400">Check current turn character</p>
+          </div>
+          <p class="text-gray-400 text-sm">⬇️</p>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="p-2 bg-indigo-900/20 rounded-lg border border-indigo-500/30">
+              <p class="font-semibold text-indigo-300 text-sm">🎮 PlayerInputHandler</p>
+              <p class="text-xs text-gray-400">Player turn: Move/Attack input</p>
+            </div>
+            <div class="p-2 bg-rose-900/20 rounded-lg border border-rose-500/30">
+              <p class="font-semibold text-rose-300 text-sm">🤖 BattleOrchestrator</p>
+              <p class="text-xs text-gray-400">AI turn: Call AISystem</p>
+            </div>
+          </div>
+          <p class="text-gray-400 text-sm">⬇️</p>
+          <div class="p-2 bg-purple-900/20 rounded-lg border border-purple-500/30">
+            <p class="font-semibold text-purple-300 text-sm">GridSystem · CombatSystem</p>
+            <p class="text-xs text-gray-400">Process movement, calculate attacks (DiceManager)</p>
+          </div>
+          <p class="text-gray-400 text-sm">⬇️</p>
+          <div class="p-2 bg-amber-900/20 rounded-lg border border-amber-500/30">
+            <p class="font-semibold text-amber-300 text-sm">GameObject Components Update</p>
+            <p class="text-xs text-gray-400">GridPosition · StatsComponent · MovementComponent</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Draw Phase -->
+      <div>
+        <h3 class="text-lg font-semibold text-pink-300 mb-3 text-center">🎨 Draw Phase</h3>
+        <div class="space-y-2 text-center">
+          <div class="p-2 bg-pink-900/20 rounded-lg border border-pink-500/30">
+            <p class="font-semibold text-pink-300 text-sm">GridSystem.Draw() → GameObjectManager.DrawAll()</p>
+            <p class="text-xs text-gray-400">Render in order: Grid → Characters → UI</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Implementation Status -->
+    <div class="card border-indigo-500/40 p-6 mt-8">
+      <h2 class="text-2xl font-semibold text-center mb-4 text-indigo-300">Implementation Progress</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="text-center">
+          <div class="text-4xl font-bold text-emerald-400 mb-2">✅ GAM200</div>
+          <p class="text-sm text-gray-300">Fall 2025 Semester - Completed</p>
+          <ul class="text-xs text-left mt-2 space-y-1 text-gray-400">
+            <li>• 12 GameState Components</li>
+            <li>• 5 GameObject Components</li>
+            <li>• Dragon + Fighter characters</li>
+            <li>• FighterStrategy AI</li>
+            <li>• Basic combat system</li>
+            <li>• Debug tools</li>
+            <li>• JSON data loading</li>
+          </ul>
+        </div>
+        <div class="text-center">
+          <div class="text-4xl font-bold text-gray-400 mb-2">📋 GAM250</div>
+          <p class="text-sm text-gray-300">Spring 2026 Semester - Planned</p>
+          <ul class="text-xs text-left mt-2 space-y-1 text-gray-400">
+            <li>• Spell system (9 Dragon spells)</li>
+            <li>• 3 AI characters (Cleric, Wizard, Rogue)</li>
+            <li>• 3 AI strategies implementation</li>
+            <li>• StatusEffect system</li>
+            <li>• Treasure system</li>
+            <li>• Sound & Campaign mode</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Architecture Principles -->
+    <div class="card border-pink-500/40 p-6 mt-8">
+      <h2 class="text-2xl font-semibold text-center mb-4 text-pink-300">Architecture Principles</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div class="p-3 bg-gray-800/50 rounded">
+          <h3 class="font-semibold mb-2">1. Modular Independence</h3>
+          <p class="text-gray-400">Each system operates independently and is replaceable. EventBus communication.</p>
+        </div>
+        <div class="p-3 bg-gray-800/50 rounded">
+          <h3 class="font-semibold mb-2">2. Data-Driven Design</h3>
+          <p class="text-gray-400">Manage game data via JSON. Balance adjustment without code recompilation.</p>
+        </div>
+        <div class="p-3 bg-gray-800/50 rounded">
+          <h3 class="font-semibold mb-2">3. Event-Driven Communication</h3>
+          <p class="text-gray-400">Loose coupling. Easy system addition/removal. Simple debugging.</p>
+        </div>
+        <div class="p-3 bg-gray-800/50 rounded">
+          <h3 class="font-semibold mb-2">4. Component-Based</h3>
+          <p class="text-gray-400">Composition over inheritance. Runtime behavior addition/removal.</p>
+        </div>
+      </div>
+    </div>
+
+    <footer class="text-center text-xs text-gray-500 mt-10">
+      <p>Dragonic Tactics – Architecture Overview</p>
+      <p class="mt-2">GAM200 Semester Complete (Fall 2025) | 5-person dev team | 1-year project</p>
+    </footer>
+  </div>
+</body>
+</html>

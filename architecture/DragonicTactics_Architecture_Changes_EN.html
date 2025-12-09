@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dragonic Tactics – Architecture Changes (Post-Milestone 3)</title>
+  <!-- Tailwind CDN (JIT) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #0b0f14; color: #e5e7eb; }
+    .card { background: rgba(17,24,39,0.85); border-radius: 1rem; border: 1px solid rgba(99, 102, 241, 0.25); }
+    .contributor-badge {
+      display: inline-block;
+      padding: 0.15rem 0.4rem;
+      border-radius: 0.25rem;
+      font-size: 0.7rem;
+      font-weight: 500;
+      background: rgba(99, 102, 241, 0.2);
+      color: #818cf8;
+      margin-left: 0.5rem;
+    }
+  </style>
+</head>
+<body class="min-h-screen p-8">
+  <div class="max-w-5xl mx-auto">
+    <h1 class="text-3xl md:text-4xl font-bold mb-4 text-center">🐉 Dragonic Tactics</h1>
+    <h2 class="text-xl md:text-2xl font-semibold mb-2 text-center text-indigo-300">Core Architecture Changes</h2>
+    <p class="text-center text-gray-400 mb-8">Post-Milestone 3 Structural Improvements</p>
+
+    <!-- Architecture Changes -->
+    <div class="space-y-6">
+
+      <!-- Singleton to GSComponent Migration -->
+      <div class="card border-purple-500/40 p-6">
+        <h3 class="text-2xl font-semibold mb-4 text-purple-300">
+          🏗️ Singleton → GameState Component Migration
+          <span class="contributor-badge">Sangyoon</span>
+        </h3>
+        <div class="space-y-3">
+          <p class="text-gray-300">
+            Converted all singleton services to GameState Components, removing global state and engine dependencies.
+          </p>
+
+          <div class="bg-gray-800/50 p-4 rounded-lg">
+            <h4 class="font-semibold mb-2 text-sm text-gray-400">Before (Singleton Pattern)</h4>
+            <pre class="text-xs text-emerald-400"><code>EventBus::Instance().Publish(event);
+DiceManager::Instance().RollDice(3, 6);
+GridSystem::Instance().MoveCharacter(...);</code></pre>
+          </div>
+
+          <div class="bg-gray-800/50 p-4 rounded-lg">
+            <h4 class="font-semibold mb-2 text-sm text-gray-400">After (GameState Component Pattern)</h4>
+            <pre class="text-xs text-blue-400"><code>GetGSComponent&lt;EventBus&gt;()->Publish(event);
+GetGSComponent&lt;DiceManager&gt;()->RollDice(3, 6);
+GetGSComponent&lt;GridSystem&gt;()->MoveCharacter(...);</code></pre>
+          </div>
+
+          <ul class="text-sm text-gray-400 space-y-2 mt-4">
+            <li>• <strong>Removed global state:</strong> No more static Instance() methods</li>
+            <li>• <strong>Better lifecycle:</strong> Components created/destroyed with GameState</li>
+            <li>• <strong>Testability:</strong> Easy to mock components for unit testing</li>
+            <li>• <strong>Engine independence:</strong> Removed tight coupling to CS230 engine singletons</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- GamePlay Refactoring -->
+      <div class="card border-blue-500/40 p-6">
+        <h3 class="text-2xl font-semibold mb-4 text-blue-300">
+          🎯 GamePlay State Refactoring
+          <span class="contributor-badge">Seungju</span>
+        </h3>
+        <div class="space-y-3">
+          <p class="text-gray-300">
+            Split monolithic GamePlay class into three specialized handler classes with clear responsibilities.
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            <div class="bg-emerald-900/20 p-4 rounded-lg border border-emerald-500/30">
+              <h4 class="font-semibold mb-2 text-emerald-300">PlayerInputHandler</h4>
+              <p class="text-xs text-gray-400">Handles player input, action selection, and mouse/keyboard events</p>
+            </div>
+            <div class="bg-blue-900/20 p-4 rounded-lg border border-blue-500/30">
+              <h4 class="font-semibold mb-2 text-blue-300">GamePlayUIManager</h4>
+              <p class="text-xs text-gray-400">Manages UI rendering, damage display, and combat logs</p>
+            </div>
+            <div class="bg-purple-900/20 p-4 rounded-lg border border-purple-500/30">
+              <h4 class="font-semibold mb-2 text-purple-300">BattleOrchestrator</h4>
+              <p class="text-xs text-gray-400">Coordinates battle flow, AI turn execution, and state transitions</p>
+            </div>
+          </div>
+
+          <ul class="text-sm text-gray-400 space-y-2 mt-4">
+            <li>• <strong>Separation of concerns:</strong> Each class has single, clear responsibility</li>
+            <li>• <strong>Reduced complexity:</strong> GamePlay.cpp reduced from ~800 lines to manageable modules</li>
+            <li>• <strong>Maintainability:</strong> Easier to modify, test, and extend individual handlers</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Factory Pattern -->
+      <div class="card border-amber-500/40 p-6">
+        <h3 class="text-2xl font-semibold mb-4 text-amber-300">
+          🏭 Factory Pattern Implementation
+          <span class="contributor-badge">Kinam, Taegyeong</span>
+        </h3>
+        <div class="space-y-3">
+          <p class="text-gray-300">
+            Centralized character creation through CharacterFactory, integrating with JSON data loading.
+          </p>
+
+          <div class="bg-gray-800/50 p-4 rounded-lg">
+            <h4 class="font-semibold mb-2 text-sm text-gray-400">Character Creation Flow</h4>
+            <pre class="text-xs text-blue-400"><code>// Factory creates character with data from JSON
+auto dragonPtr = factory->Create(CharacterTypes::Dragon, position);
+
+// Raw pointer for reference (non-owning)
+Character* dragon = dragonPtr.get();
+
+// Transfer ownership to GameObjectManager
+gameObjectManager->Add(std::move(dragonPtr));</code></pre>
+          </div>
+
+          <ul class="text-sm text-gray-400 space-y-2 mt-4">
+            <li>• <strong>Data-driven:</strong> Character stats loaded from <code>characters.json</code></li>
+            <li>• <strong>Consistency:</strong> All characters created through factory ensures proper setup</li>
+            <li>• <strong>Type safety:</strong> Uses enum-based character types (Dragon, Fighter, Cleric, Wizard, Rogue)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Smart Pointer Ownership -->
+      <div class="card border-rose-500/40 p-6">
+        <h3 class="text-2xl font-semibold mb-4 text-rose-300">
+          🔒 Smart Pointer Ownership Model
+          <span class="contributor-badge">Taegyeong</span>
+        </h3>
+        <div class="space-y-3">
+          <p class="text-gray-300">
+            Established clear ownership semantics using RAII and smart pointers throughout the codebase.
+          </p>
+
+          <div class="bg-gray-800/50 p-4 rounded-lg">
+            <h4 class="font-semibold mb-2 text-sm text-gray-400">Ownership Model</h4>
+            <div class="space-y-2 text-xs">
+              <div class="flex items-start gap-3">
+                <span class="text-emerald-400 font-mono">std::unique_ptr&lt;Character&gt;</span>
+                <span class="text-gray-400">→ GameObjectManager owns the character</span>
+              </div>
+              <div class="flex items-start gap-3">
+                <span class="text-blue-400 font-mono">Character*</span>
+                <span class="text-gray-400">→ Other systems reference (non-owning)</span>
+              </div>
+              <div class="flex items-start gap-3">
+                <span class="text-purple-400 font-mono">std::move()</span>
+                <span class="text-gray-400">→ Ownership transfer (factory → manager)</span>
+              </div>
+            </div>
+          </div>
+
+          <ul class="text-sm text-gray-400 space-y-2 mt-4">
+            <li>• <strong>Memory safety:</strong> No memory leaks, automatic cleanup on scope exit</li>
+            <li>• <strong>Clear responsibility:</strong> Owner vs. observer distinction at type level</li>
+            <li>• <strong>Compile-time enforcement:</strong> Ownership violations caught by compiler</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Architecture Diagram -->
+    <div class="card border-indigo-500/40 p-6 mt-8">
+      <h3 class="text-2xl font-semibold mb-4 text-center text-indigo-300">System Architecture Overview</h3>
+      <div class="space-y-3 text-center text-sm">
+        <div class="p-3 bg-purple-900/20 rounded-lg border border-purple-500/30">
+          <p class="font-semibold text-purple-300">GameState (GamePlay)</p>
+          <p class="text-xs text-gray-400">Owns all GSComponents via AddGSComponent()</p>
+        </div>
+        <p class="text-gray-400">⬇️ manages ⬇️</p>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="p-2 bg-blue-900/20 rounded border border-blue-500/30">
+            <p class="font-semibold text-blue-300 text-xs">PlayerInputHandler</p>
+          </div>
+          <div class="p-2 bg-blue-900/20 rounded border border-blue-500/30">
+            <p class="font-semibold text-blue-300 text-xs">GamePlayUIManager</p>
+          </div>
+          <div class="p-2 bg-blue-900/20 rounded border border-blue-500/30">
+            <p class="font-semibold text-blue-300 text-xs">BattleOrchestrator</p>
+          </div>
+        </div>
+        <p class="text-gray-400">⬇️ uses ⬇️</p>
+        <div class="p-3 bg-emerald-900/20 rounded-lg border border-emerald-500/30">
+          <p class="font-semibold text-emerald-300">GameState Components</p>
+          <p class="text-xs text-gray-400 mt-1">EventBus · DiceManager · GridSystem · TurnManager · CombatSystem · AISystem</p>
+          <p class="text-xs text-gray-500 mt-1">Access: GetGSComponent&lt;T&gt;()</p>
+        </div>
+        <p class="text-gray-400">⬇️ manages ⬇️</p>
+        <div class="p-3 bg-amber-900/20 rounded-lg border border-amber-500/30">
+          <p class="font-semibold text-amber-300">CharacterFactory + GameObjectManager</p>
+          <p class="text-xs text-gray-400 mt-1">Factory creates, Manager owns via std::unique_ptr</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Impact -->
+    <div class="card border-pink-500/40 p-6 mt-8">
+      <h3 class="text-2xl font-semibold mb-4 text-center text-pink-300">Architecture Impact</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div class="p-4 bg-gray-800/50 rounded">
+          <h4 class="font-semibold mb-2 text-emerald-300">✅ Improved</h4>
+          <ul class="text-gray-400 space-y-1">
+            <li>• Testability (dependency injection)</li>
+            <li>• Maintainability (clear responsibilities)</li>
+            <li>• Memory safety (smart pointers)</li>
+            <li>• Engine independence (no global state)</li>
+          </ul>
+        </div>
+        <div class="p-4 bg-gray-800/50 rounded">
+          <h4 class="font-semibold mb-2 text-blue-300">🎯 Principles Applied</h4>
+          <ul class="text-gray-400 space-y-1">
+            <li>• Dependency Injection</li>
+            <li>• Single Responsibility Principle</li>
+            <li>• RAII (Resource Acquisition Is Initialization)</li>
+            <li>• Factory Pattern</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <footer class="text-center text-xs text-gray-500 mt-10">
+      <p>Dragonic Tactics – Core Architecture Changes (Post-Milestone 3)</p>
+      <p class="mt-2">GAM200 Fall 2025</p>
+    </footer>
+  </div>
+</body>
+</html>

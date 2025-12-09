@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dragonic Tactics – Architecture Visualization</title>
+  <!-- Tailwind CDN (JIT) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #0b0f14; color: #e5e7eb; }
+    .card { background: rgba(17,24,39,0.85); border-radius: 1rem; border: 1px solid rgba(99, 102, 241, 0.25); }
+    .implemented { color: #10b981; font-weight: 600; }
+    .planned { color: #9ca3af; font-style: italic; }
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-left: 0.5rem;
+    }
+    .badge-done { background: #10b981; color: #000; }
+    .badge-planned { background: #6b7280; color: #fff; }
+  </style>
+</head>
+<body class="min-h-screen p-8">
+  <div class="max-w-7xl mx-auto">
+    <h1 class="text-3xl md:text-4xl font-bold mb-4 text-center">🐉 Dragonic Tactics – System Architecture Visualization</h1>
+    <p class="text-center text-gray-400 mb-8">최종 업데이트: 2025-12-09 | GAM200 학기 완료</p>
+
+    <!-- 구현 상태 범례 -->
+    <div class="card border-indigo-500/40 p-4 mb-8">
+      <h3 class="text-lg font-semibold mb-2 text-center">구현 상태 범례</h3>
+      <div class="flex justify-center gap-6 text-sm">
+        <div><span class="status-badge badge-done">✅ 완료</span> GAM200 (2025 가을학기)</div>
+        <div><span class="status-badge badge-planned">📋 계획</span> GAM250 (2026 봄학기)</div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- StateComponents (전투 시스템) -->
+      <div class="card border-emerald-500/40 p-6">
+        <h2 class="text-2xl font-semibold mb-4 text-emerald-300">GameState Components (전투 시스템)</h2>
+        <ul class="space-y-2">
+          <li class="implemented">✅ EventBus – 시스템 간 이벤트 통신</li>
+          <li class="implemented">✅ DiceManager – D&D 주사위 굴림 (3d6+5)</li>
+          <li class="implemented">✅ DataRegistry – 캐릭터 JSON 로딩</li>
+          <li class="implemented">✅ MapDataRegistry – 맵 JSON 로딩</li>
+          <li class="implemented">✅ GridSystem – 8x8 그리드 + A* 경로찾기</li>
+          <li class="implemented">✅ TurnManager – 턴 순서 관리 (OnTurnStart/End)</li>
+          <li class="implemented">✅ CombatSystem – 전투 해결</li>
+          <li class="implemented">✅ AISystem – AI 전략 패턴</li>
+          <li class="implemented">✅ CharacterFactory – 캐릭터 생성 (팩토리 패턴)</li>
+          <li class="implemented">✅ GameObjectManager – GameObject 소유권 관리</li>
+          <li class="implemented">✅ DebugManager – 디버그 모드 관리</li>
+          <li class="implemented">✅ Timer – 게임 타이머</li>
+          <li class="planned">📋 SpellSystem – 주문 시스템 (GAM250)</li>
+          <li class="planned">📋 StatusEffectManager – 버프/디버프 관리 (GAM250)</li>
+          <li class="planned">📋 AIDirector – 팀 전술 조율 (GAM250)</li>
+          <li class="planned">📋 SoundManager – 사운드 시스템 (GAM250)</li>
+          <li class="planned">📋 SaveManager – 세이브/로드 (GAM250)</li>
+        </ul>
+      </div>
+
+      <!-- GameObject Components -->
+      <div class="card border-purple-500/40 p-6">
+        <h2 class="text-2xl font-semibold mb-4 text-purple-300">GameObject Components (캐릭터 컴포넌트)</h2>
+        <ul class="space-y-2">
+          <li class="implemented">✅ GridPosition – 그리드 좌표 관리</li>
+          <li class="implemented">✅ ActionPoints – 행동력 관리</li>
+          <li class="implemented">✅ StatsComponent – HP, 공격력, 방어력, 속도</li>
+          <li class="implemented">✅ SpellSlots – 주문 슬롯 데이터 (실제 주문 미구현)</li>
+          <li class="implemented">✅ MovementComponent – 이동 애니메이션</li>
+          <li class="planned">📋 StatusEffects – 버프/디버프 컬렉션 (GAM250)</li>
+          <li class="planned">📋 AIMemory – AI 의사결정 히스토리 (GAM250)</li>
+        </ul>
+      </div>
+
+      <!-- Characters -->
+      <div class="card border-blue-500/40 p-6">
+        <h2 class="text-2xl font-semibold mb-4 text-blue-300">캐릭터 시스템</h2>
+        <div class="space-y-4">
+          <div>
+            <h3 class="font-semibold text-lg mb-2">플레이어</h3>
+            <ul class="space-y-1">
+              <li class="implemented">✅ Dragon (HP 140, 속력 5, 행동력 2)</li>
+              <li class="ml-4 text-sm text-gray-400">• SpellSlots 컴포넌트만 구현</li>
+              <li class="ml-4 text-sm planned">📋 실제 주문 9개 (GAM250)</li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="font-semibold text-lg mb-2">AI 캐릭터 (모험가)</h3>
+            <ul class="space-y-1">
+              <li class="implemented">✅ Fighter (HP 90, 속력 3) + FighterStrategy</li>
+              <li class="planned">📋 Cleric (HP 90, 속력 2) + ClericStrategy (GAM250)</li>
+              <li class="planned">📋 Wizard (HP 55, 속력 1) + WizardStrategy (GAM250)</li>
+              <li class="planned">📋 Rogue (HP 65, 속력 4) + RogueStrategy (GAM250)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Debug & Tools -->
+      <div class="card border-amber-500/40 p-6">
+        <h2 class="text-2xl font-semibold mb-4 text-amber-300">디버그 도구</h2>
+        <ul class="space-y-2">
+          <li class="implemented">✅ DebugConsole – 콘솔 명령어</li>
+          <li class="implemented">✅ DebugManager – 디버그 모드 관리</li>
+          <li class="implemented">✅ DebugVisualizer – 그리드 시각화</li>
+          <li class="implemented">✅ 함수 호출 추적 (__PRETTY_FUNCTION__)</li>
+          <li class="planned">📋 AI 행동 시각화 (pause 시스템) (GAM250)</li>
+          <li class="planned">📋 StatusInfoOverlay – HP/AP 바 (GAM250)</li>
+        </ul>
+      </div>
+
+      <!-- AI System -->
+      <div class="card border-rose-500/40 p-6">
+        <h2 class="text-2xl font-semibold mb-4 text-rose-300">AI 시스템 (Strategy 패턴)</h2>
+        <ul class="space-y-2">
+          <li class="implemented">✅ IAIStrategy – AI 전략 인터페이스</li>
+          <li class="implemented">✅ FighterStrategy – 파이터 AI (탱커)</li>
+          <li class="ml-4 text-sm text-gray-400">• 보물 운반, HP 관리, 근접 공격</li>
+          <li class="implemented">✅ Fighter AI 플로우차트 (Mermaid)</li>
+          <li class="planned">📋 ClericStrategy – 클레릭 AI (힐러) (GAM250)</li>
+          <li class="planned">📋 WizardStrategy – 위저드 AI (원거리) (GAM250)</li>
+          <li class="planned">📋 RogueStrategy – 로그 AI (암살자) (GAM250)</li>
+          <li class="planned">📋 Cleric/Wizard/Rogue AI 플로우차트 (GAM250)</li>
+        </ul>
+        <div class="mt-4 text-sm text-gray-400">
+          <p>📊 AI 플로우차트: <code>architecture/character_flowchart/*.mmd</code></p>
+        </div>
+      </div>
+
+      <!-- Actions & Abilities -->
+      <div class="card border-violet-500/40 p-6">
+        <h2 class="text-2xl font-semibold mb-4 text-violet-300">액션 & 능력 시스템</h2>
+        <div class="space-y-3">
+          <div>
+            <h3 class="font-semibold mb-2">기본 액션 시스템</h3>
+            <ul class="text-sm space-y-1">
+              <li class="implemented">✅ Action 베이스 클래스</li>
+              <li class="implemented">✅ ActionAttack (기본 공격)</li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-2">주문 시스템</h3>
+            <ul class="text-sm space-y-1">
+              <li class="planned">📋 Dragon 주문 9개 (GAM250)</li>
+              <li class="ml-4 text-xs text-gray-500">벽 생성, 화염탄, 용암 뿌리기, 용의 포효,</li>
+              <li class="ml-4 text-xs text-gray-500">꼬리 휘두르기, 용의 분노, 운석 소환,</li>
+              <li class="ml-4 text-xs text-gray-500">열 흡수, 열 방출</li>
+              <li class="planned">📋 업캐스팅 시스템 (GAM250)</li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-2">Ability 시스템</h3>
+            <ul class="text-sm space-y-1">
+              <li class="planned">📋 AbilityBase (GAM250)</li>
+              <li class="planned">📋 MeleeAttack, ShieldBash, RangedAttack (GAM250)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- System Flow Architecture -->
+    <div class="card border-cyan-500/40 p-6 mt-8">
+      <h2 class="text-2xl font-semibold text-center mb-4 text-cyan-300">게임 플로우 아키텍처</h2>
+      <p class="text-center mb-6 text-gray-300">GamePlay.cpp 기반 실제 시스템 흐름</p>
+
+      <!-- Load Phase -->
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold text-amber-300 mb-3 text-center">📦 Load Phase</h3>
+        <div class="space-y-2 text-center">
+          <div class="p-2 bg-emerald-900/20 rounded-lg border border-emerald-500/30">
+            <p class="font-semibold text-emerald-300 text-sm">DataRegistry · MapDataRegistry</p>
+            <p class="text-xs text-gray-400">JSON 파일에서 캐릭터/맵 데이터 로딩</p>
+          </div>
+          <p class="text-gray-400 text-sm">⬇️</p>
+          <div class="p-2 bg-blue-900/20 rounded-lg border border-blue-500/30">
+            <p class="font-semibold text-blue-300 text-sm">CharacterFactory → GameObjectManager</p>
+            <p class="text-xs text-gray-400">캐릭터 생성 (unique_ptr) → 소유권 이전</p>
+          </div>
+          <p class="text-gray-400 text-sm">⬇️</p>
+          <div class="p-2 bg-purple-900/20 rounded-lg border border-purple-500/30">
+            <p class="font-semibold text-purple-300 text-sm">TurnManager.InitializeTurnOrder()</p>
+            <p class="text-xs text-gray-400">속도 기반 턴 순서 초기화 → StartCombat()</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Update Phase -->
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold text-blue-300 mb-3 text-center">🔄 Update Phase (매 프레임)</h3>
+        <div class="space-y-2 text-center">
+          <div class="p-2 bg-blue-900/20 rounded-lg border border-blue-500/30">
+            <p class="font-semibold text-blue-300 text-sm">TurnManager.GetCurrentCharacter()</p>
+            <p class="text-xs text-gray-400">현재 턴 캐릭터 확인</p>
+          </div>
+          <p class="text-gray-400 text-sm">⬇️</p>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="p-2 bg-indigo-900/20 rounded-lg border border-indigo-500/30">
+              <p class="font-semibold text-indigo-300 text-sm">🎮 PlayerInputHandler</p>
+              <p class="text-xs text-gray-400">플레이어 턴: 이동/공격 입력</p>
+            </div>
+            <div class="p-2 bg-rose-900/20 rounded-lg border border-rose-500/30">
+              <p class="font-semibold text-rose-300 text-sm">🤖 BattleOrchestrator</p>
+              <p class="text-xs text-gray-400">AI 턴: AISystem 호출</p>
+            </div>
+          </div>
+          <p class="text-gray-400 text-sm">⬇️</p>
+          <div class="p-2 bg-purple-900/20 rounded-lg border border-purple-500/30">
+            <p class="font-semibold text-purple-300 text-sm">GridSystem · CombatSystem</p>
+            <p class="text-xs text-gray-400">이동 처리, 공격 계산 (DiceManager)</p>
+          </div>
+          <p class="text-gray-400 text-sm">⬇️</p>
+          <div class="p-2 bg-amber-900/20 rounded-lg border border-amber-500/30">
+            <p class="font-semibold text-amber-300 text-sm">GameObject Components 업데이트</p>
+            <p class="text-xs text-gray-400">GridPosition · StatsComponent · MovementComponent</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Draw Phase -->
+      <div>
+        <h3 class="text-lg font-semibold text-pink-300 mb-3 text-center">🎨 Draw Phase</h3>
+        <div class="space-y-2 text-center">
+          <div class="p-2 bg-pink-900/20 rounded-lg border border-pink-500/30">
+            <p class="font-semibold text-pink-300 text-sm">GridSystem.Draw() → GameObjectManager.DrawAll()</p>
+            <p class="text-xs text-gray-400">그리드 → 캐릭터 → UI 순서 렌더링</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Implementation Status -->
+    <div class="card border-indigo-500/40 p-6 mt-8">
+      <h2 class="text-2xl font-semibold text-center mb-4 text-indigo-300">구현 진행 상황</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="text-center">
+          <div class="text-4xl font-bold text-emerald-400 mb-2">✅ GAM200</div>
+          <p class="text-sm text-gray-300">2025년 가을학기 완료</p>
+          <ul class="text-xs text-left mt-2 space-y-1 text-gray-400">
+            <li>• 12개 GameState Components</li>
+            <li>• 5개 GameObject Components</li>
+            <li>• Dragon + Fighter 캐릭터</li>
+            <li>• FighterStrategy AI</li>
+            <li>• 기본 전투 시스템</li>
+            <li>• 디버그 도구</li>
+            <li>• JSON 데이터 로딩</li>
+          </ul>
+        </div>
+        <div class="text-center">
+          <div class="text-4xl font-bold text-gray-400 mb-2">📋 GAM250</div>
+          <p class="text-sm text-gray-300">2026년 봄학기 계획</p>
+          <ul class="text-xs text-left mt-2 space-y-1 text-gray-400">
+            <li>• 주문 시스템 (Dragon 주문 9개)</li>
+            <li>• 3명 AI 캐릭터 (Cleric, Wizard, Rogue)</li>
+            <li>• 3개 AI 전략 구현</li>
+            <li>• StatusEffect 시스템</li>
+            <li>• 보물 시스템</li>
+            <li>• 사운드 & 캠페인</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Architecture Principles -->
+    <div class="card border-pink-500/40 p-6 mt-8">
+      <h2 class="text-2xl font-semibold text-center mb-4 text-pink-300">아키텍처 원칙</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div class="p-3 bg-gray-800/50 rounded">
+          <h3 class="font-semibold mb-2">1. 모듈 독립성</h3>
+          <p class="text-gray-400">각 시스템은 독립적으로 작동하며 교체 가능. EventBus 통신.</p>
+        </div>
+        <div class="p-3 bg-gray-800/50 rounded">
+          <h3 class="font-semibold mb-2">2. 데이터 기반 설계</h3>
+          <p class="text-gray-400">JSON으로 게임 데이터 관리. 코드 재컴파일 없이 밸런스 조정.</p>
+        </div>
+        <div class="p-3 bg-gray-800/50 rounded">
+          <h3 class="font-semibold mb-2">3. 이벤트 기반 통신</h3>
+          <p class="text-gray-400">느슨한 결합. 시스템 추가/제거 용이. 디버깅 간편.</p>
+        </div>
+        <div class="p-3 bg-gray-800/50 rounded">
+          <h3 class="font-semibold mb-2">4. 컴포넌트 기반</h3>
+          <p class="text-gray-400">상속보다 조합. 런타임 행동 추가/제거 가능.</p>
+        </div>
+      </div>
+    </div>
+
+    <footer class="text-center text-xs text-gray-500 mt-10">
+      <p>Dragonic Tactics – Architecture Overview</p>
+      <p class="mt-2">GAM200 학기 완료 (2025 가을) | 5명 개발팀 | 1년 프로젝트</p>
+    </footer>
+  </div>
+</body>
+</html>

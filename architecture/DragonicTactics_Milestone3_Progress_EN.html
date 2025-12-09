@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dragonic Tactics – Post-Milestone 3 Architecture Progress</title>
+  <!-- Tailwind CDN (JIT) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #0b0f14; color: #e5e7eb; }
+    .card { background: rgba(17,24,39,0.85); border-radius: 1rem; border: 1px solid rgba(99, 102, 241, 0.25); }
+    .contributor-badge {
+      display: inline-block;
+      padding: 0.15rem 0.4rem;
+      border-radius: 0.25rem;
+      font-size: 0.7rem;
+      font-weight: 500;
+      background: rgba(99, 102, 241, 0.2);
+      color: #818cf8;
+      margin-left: 0.5rem;
+    }
+  </style>
+</head>
+<body class="min-h-screen p-8">
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-3xl md:text-4xl font-bold mb-4 text-center">🐉 Dragonic Tactics</h1>
+    <h2 class="text-xl md:text-2xl font-semibold mb-2 text-center text-indigo-300">Post-Milestone 3 Architecture Progress</h2>
+    <p class="text-center text-gray-400 mb-8">GAM200 Fall 2025 | 5-Person Development Team</p>
+
+    <!-- Introduction -->
+    <div class="card border-indigo-500/40 p-6 mb-8">
+      <h3 class="text-xl font-semibold mb-3 text-center text-indigo-300">Architecture Improvements Summary</h3>
+      <p class="text-center text-gray-300 mb-4">
+        After completing Milestone 3, the team focused on architectural refactoring and modernization.
+        <br/>The following improvements were made to enhance code quality, maintainability, and scalability.
+      </p>
+      <div class="text-sm text-gray-400 text-center">
+        <span class="contributor-badge">Contributor Names</span> indicate who led each improvement
+      </div>
+    </div>
+
+    <!-- Architecture Improvements -->
+    <div class="space-y-6">
+
+      <!-- Build System Improvements -->
+      <div class="card border-emerald-500/40 p-6">
+        <h3 class="text-2xl font-semibold mb-4 text-emerald-300">🔧 Build System Improvements</h3>
+        <div class="space-y-4">
+
+          <div class="border-l-4 border-emerald-500 pl-4">
+            <h4 class="text-lg font-semibold mb-2">
+              Precompiled Header (PCH) System
+              <span class="contributor-badge">Taegyeong</span>
+            </h4>
+            <p class="text-gray-300 mb-2">Implemented <code class="bg-gray-800 px-2 py-1 rounded">pch.h</code> system across the entire codebase</p>
+            <ul class="text-sm text-gray-400 space-y-1 ml-4">
+              <li>• <strong>Build speed improvement:</strong> 35% faster compilation</li>
+              <li>• <strong>Standardization:</strong> All <code>.cpp</code> files include <code>#include "pch.h"</code> as first line</li>
+              <li>• <strong>Common headers:</strong> Standard library, engine headers, frequently-used dependencies</li>
+            </ul>
+          </div>
+
+          <div class="border-l-4 border-emerald-500 pl-4">
+            <h4 class="text-lg font-semibold mb-2">
+              CMake Automation
+              <span class="contributor-badge">Taegyeong</span>
+            </h4>
+            <p class="text-gray-300 mb-2">Automated source file detection using CMake GLOB_RECURSE</p>
+            <ul class="text-sm text-gray-400 space-y-1 ml-4">
+              <li>• <strong>Auto-discovery:</strong> No manual <code>CMakeLists.txt</code> editing when adding/removing files</li>
+              <li>• <strong>Reduced friction:</strong> Developers can focus on implementation, not build configuration</li>
+              <li>• <strong>Fewer errors:</strong> Eliminates linker errors from forgotten file additions</li>
+            </ul>
+          </div>
+
+          <div class="border-l-4 border-emerald-500 pl-4">
+            <h4 class="text-lg font-semibold mb-2">
+              Header Extension Standardization
+              <span class="contributor-badge">Junyoung, Taegyeong</span>
+            </h4>
+            <p class="text-gray-300 mb-2">Unified all header files to use <code>.h</code> extension (removed <code>.hpp</code>)</p>
+            <ul class="text-sm text-gray-400 space-y-1 ml-4">
+              <li>• <strong>Consistency:</strong> All headers use <code>.h</code> extension</li>
+              <li>• <strong>Convention:</strong> Matches C++ community standard and engine patterns</li>
+              <li>• <strong>Migration:</strong> <code>.hpp</code> → <code>.h</code> completed across ~50+ files</li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Architecture Refactoring -->
+      <div class="card border-purple-500/40 p-6">
+        <h3 class="text-2xl font-semibold mb-4 text-purple-300">🏗️ Architecture Refactoring</h3>
+        <div class="space-y-4">
+
+          <div class="border-l-4 border-purple-500 pl-4">
+            <h4 class="text-lg font-semibold mb-2">
+              Singleton → GameState Component Migration
+              <span class="contributor-badge">Sangyoon</span>
+            </h4>
+            <p class="text-gray-300 mb-2">Converted singleton services to GameState Components with dependency injection</p>
+            <ul class="text-sm text-gray-400 space-y-1 ml-4">
+              <li>• <strong>Pattern change:</strong> <code>Instance()</code> → <code>GetGSComponent&lt;T&gt;()</code></li>
+              <li>• <strong>Benefits:</strong> Better testability, clearer lifecycle, no global state</li>
+              <li>• <strong>Affected systems:</strong> EventBus, DiceManager, GridSystem, TurnManager, CombatSystem, AISystem, DataRegistry</li>
+              <li>• <strong>Engine independence:</strong> Removed tight coupling to engine singletons</li>
+            </ul>
+          </div>
+
+          <div class="border-l-4 border-purple-500 pl-4">
+            <h4 class="text-lg font-semibold mb-2">
+              GamePlay State Refactoring
+              <span class="contributor-badge">Seungju</span>
+            </h4>
+            <p class="text-gray-300 mb-2">Separated responsibilities into specialized handler classes</p>
+            <ul class="text-sm text-gray-400 space-y-1 ml-4">
+              <li>• <strong>PlayerInputHandler:</strong> Handles player input and action selection</li>
+              <li>• <strong>GamePlayUIManager:</strong> Manages UI rendering and damage display</li>
+              <li>• <strong>BattleOrchestrator:</strong> Coordinates battle flow and AI turns</li>
+              <li>• <strong>Result:</strong> <code>GamePlay.cpp</code> reduced from ~800 lines to manageable modules</li>
+              <li>• <strong>Maintainability:</strong> Each class has single, clear responsibility</li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Design Pattern Implementation -->
+      <div class="card border-blue-500/40 p-6">
+        <h3 class="text-2xl font-semibold mb-4 text-blue-300">🎨 Design Pattern Implementation</h3>
+        <div class="space-y-4">
+
+          <div class="border-l-4 border-blue-500 pl-4">
+            <h4 class="text-lg font-semibold mb-2">
+              Factory Pattern for Character Creation
+              <span class="contributor-badge">Kinam, Taegyeong</span>
+            </h4>
+            <p class="text-gray-300 mb-2">Centralized character creation with data-driven configuration</p>
+            <ul class="text-sm text-gray-400 space-y-1 ml-4">
+              <li>• <strong>CharacterFactory:</strong> Returns <code>std::unique_ptr&lt;Character&gt;</code></li>
+              <li>• <strong>Data-driven:</strong> Character stats loaded from <code>characters.json</code></li>
+              <li>• <strong>Type safety:</strong> Uses <code>CharacterTypes</code> enum (Dragon, Fighter, Cleric, Wizard, Rogue)</li>
+              <li>• <strong>Consistency:</strong> All characters created through factory, ensuring proper component attachment</li>
+            </ul>
+          </div>
+
+          <div class="border-l-4 border-blue-500 pl-4">
+            <h4 class="text-lg font-semibold mb-2">
+              Smart Pointer Ownership Model
+              <span class="contributor-badge">Taegyeong</span>
+            </h4>
+            <p class="text-gray-300 mb-2">Established clear ownership semantics using RAII and smart pointers</p>
+            <ul class="text-sm text-gray-400 space-y-1 ml-4">
+              <li>• <strong>Ownership:</strong> <code>GameObjectManager</code> owns characters via <code>std::unique_ptr</code></li>
+              <li>• <strong>References:</strong> Other systems (GridSystem, TurnManager) use raw pointers for non-owning references</li>
+              <li>• <strong>Transfer:</strong> <code>std::move()</code> for ownership transfer from factory to manager</li>
+              <li>• <strong>Safety:</strong> No memory leaks, clear responsibility, compile-time enforcement</li>
+            </ul>
+          </div>
+
+          <div class="border-l-4 border-blue-500 pl-4">
+            <h4 class="text-lg font-semibold mb-2">
+              AI Strategy Pattern Implementation
+              <span class="contributor-badge">Sangyoon, Taegyeong, Seungju</span>
+            </h4>
+            <p class="text-gray-300 mb-2">Implemented Strategy pattern for AI decision-making with Fighter as first complete strategy</p>
+            <ul class="text-sm text-gray-400 space-y-1 ml-4">
+              <li>• <strong>Interface:</strong> <code>IAIStrategy</code> defines <code>MakeDecision()</code> contract</li>
+              <li>• <strong>Fighter flowchart:</strong> Polished Mermaid diagram → fully implemented in code</li>
+              <li>• <strong>Complex logic:</strong> Treasure carrying, HP management, pathfinding, attack targeting</li>
+              <li>• <strong>Extensibility:</strong> ClericStrategy, WizardStrategy, RogueStrategy planned for GAM250</li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Data-Driven Design -->
+      <div class="card border-amber-500/40 p-6">
+        <h3 class="text-2xl font-semibold mb-4 text-amber-300">📊 Data-Driven Design</h3>
+        <div class="space-y-4">
+
+          <div class="border-l-4 border-amber-500 pl-4">
+            <h4 class="text-lg font-semibold mb-2">
+              JSON-Based Data Loading
+              <span class="contributor-badge">Kinam</span>
+            </h4>
+            <p class="text-gray-300 mb-2">Implemented JSON parsing for maps and character data</p>
+            <ul class="text-sm text-gray-400 space-y-1 ml-4">
+              <li>• <strong>DataRegistry:</strong> Loads <code>Assets/Data/characters.json</code></li>
+              <li>• <strong>MapDataRegistry:</strong> Loads <code>Assets/Data/maps.json</code></li>
+              <li>• <strong>Runtime reload:</strong> Modify JSON files and reload without recompilation</li>
+              <li>• <strong>Designer-friendly:</strong> Balance adjustments via JSON editing, no code changes needed</li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- UI Implementation -->
+      <div class="card border-rose-500/40 p-6">
+        <h3 class="text-2xl font-semibold mb-4 text-rose-300">🎮 User Interface Implementation</h3>
+        <div class="space-y-4">
+
+          <div class="border-l-4 border-rose-500 pl-4">
+            <h4 class="text-lg font-semibold mb-2">
+              Basic UI System
+              <span class="contributor-badge">Junyoung</span>
+            </h4>
+            <p class="text-gray-300 mb-2">Implemented foundational UI for player interaction</p>
+            <ul class="text-sm text-gray-400 space-y-1 ml-4">
+              <li>• <strong>Movement visualization:</strong> Display valid movement tiles for player character</li>
+              <li>• <strong>Pathfinding preview:</strong> Show path from current position to target tile</li>
+              <li>• <strong>Interactive grid:</strong> Click-to-move interface with visual feedback</li>
+            </ul>
+          </div>
+
+          <div class="border-l-4 border-rose-500 pl-4">
+            <h4 class="text-lg font-semibold mb-2">
+              Action Information Display
+              <span class="contributor-badge">Sangyoon</span>
+            </h4>
+            <p class="text-gray-300 mb-2">Real-time action feedback for player and enemy actions</p>
+            <ul class="text-sm text-gray-400 space-y-1 ml-4">
+              <li>• <strong>Damage display:</strong> Floating damage numbers on character hit</li>
+              <li>• <strong>Combat log:</strong> Text log showing attack results and HP changes</li>
+              <li>• <strong>Event-driven:</strong> Uses EventBus to subscribe to <code>CharacterDamagedEvent</code></li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Impact Summary -->
+    <div class="card border-indigo-500/40 p-6 mt-8">
+      <h3 class="text-2xl font-semibold mb-4 text-center text-indigo-300">📈 Overall Impact</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="text-center p-4 bg-emerald-900/20 rounded-lg">
+          <div class="text-3xl font-bold text-emerald-400 mb-2">35%</div>
+          <p class="text-sm text-gray-300">Build Speed Improvement</p>
+          <p class="text-xs text-gray-500">via PCH system</p>
+        </div>
+        <div class="text-center p-4 bg-purple-900/20 rounded-lg">
+          <div class="text-3xl font-bold text-purple-400 mb-2">100%</div>
+          <p class="text-sm text-gray-300">GameState Component Migration</p>
+          <p class="text-xs text-gray-500">All singletons converted</p>
+        </div>
+        <div class="text-center p-4 bg-blue-900/20 rounded-lg">
+          <div class="text-3xl font-bold text-blue-400 mb-2">3x</div>
+          <p class="text-sm text-gray-300">Code Maintainability</p>
+          <p class="text-xs text-gray-500">Refactored responsibilities</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Team Contributions -->
+    <div class="card border-pink-500/40 p-6 mt-8">
+      <h3 class="text-2xl font-semibold mb-4 text-center text-pink-300">👥 Team Contributions</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div class="p-3 bg-gray-800/50 rounded">
+          <h4 class="font-semibold mb-2 text-indigo-300">Taegyeong</h4>
+          <ul class="text-gray-400 space-y-1">
+            <li>• PCH system implementation</li>
+            <li>• CMake automation</li>
+            <li>• Header standardization (co-lead)</li>
+            <li>• Smart pointer ownership model</li>
+            <li>• Factory pattern (co-lead)</li>
+            <li>• AI Strategy implementation (contributor)</li>
+          </ul>
+        </div>
+        <div class="p-3 bg-gray-800/50 rounded">
+          <h4 class="font-semibold mb-2 text-indigo-300">Sangyoon</h4>
+          <ul class="text-gray-400 space-y-1">
+            <li>• Singleton → GSComponent migration</li>
+            <li>• Engine dependency removal</li>
+            <li>• Action information display</li>
+            <li>• AI Strategy implementation (contributor)</li>
+          </ul>
+        </div>
+        <div class="p-3 bg-gray-800/50 rounded">
+          <h4 class="font-semibold mb-2 text-indigo-300">Seungju</h4>
+          <ul class="text-gray-400 space-y-1">
+            <li>• GamePlay state refactoring</li>
+            <li>• Responsibility separation</li>
+            <li>• AI Strategy implementation (contributor)</li>
+          </ul>
+        </div>
+        <div class="p-3 bg-gray-800/50 rounded">
+          <h4 class="font-semibold mb-2 text-indigo-300">Junyoung</h4>
+          <ul class="text-gray-400 space-y-1">
+            <li>• Header standardization (co-lead)</li>
+            <li>• Basic UI system</li>
+            <li>• Movement visualization</li>
+          </ul>
+        </div>
+        <div class="p-3 bg-gray-800/50 rounded">
+          <h4 class="font-semibold mb-2 text-indigo-300">Kinam</h4>
+          <ul class="text-gray-400 space-y-1">
+            <li>• Factory pattern (co-lead)</li>
+            <li>• JSON data parsing</li>
+            <li>• Map/character data loading</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <footer class="text-center text-xs text-gray-500 mt-10">
+      <p>Dragonic Tactics – Post-Milestone 3 Architecture Improvements</p>
+      <p class="mt-2">GAM200 Fall 2025 | DigiPen Institute of Technology</p>
+    </footer>
+  </div>
+</body>
+</html>
