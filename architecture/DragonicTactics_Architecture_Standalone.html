@@ -177,9 +177,15 @@
             <p class="text-xs text-gray-400">JSON 파일에서 캐릭터/맵 데이터 로딩</p>
           </div>
           <p class="text-gray-400 text-sm">⬇️</p>
-          <div class="p-2 bg-blue-900/20 rounded-lg border border-blue-500/30">
-            <p class="font-semibold text-blue-300 text-sm">CharacterFactory → GameObjectManager</p>
-            <p class="text-xs text-gray-400">캐릭터 생성 (unique_ptr) → 소유권 이전</p>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="p-2 bg-blue-900/20 rounded-lg border border-blue-500/30">
+              <p class="font-semibold text-blue-300 text-sm">CharacterFactory</p>
+              <p class="text-xs text-gray-400">레지스트리 데이터로 캐릭터 생성 → GameObjectManager</p>
+            </div>
+            <div class="p-2 bg-cyan-900/20 rounded-lg border border-cyan-500/30">
+              <p class="font-semibold text-cyan-300 text-sm">GridSystem 설정</p>
+              <p class="text-xs text-gray-400">레지스트리의 맵 데이터로 그리드 타일 구성</p>
+            </div>
           </div>
           <p class="text-gray-400 text-sm">⬇️</p>
           <div class="p-2 bg-purple-900/20 rounded-lg border border-purple-500/30">
@@ -201,7 +207,7 @@
           <div class="grid grid-cols-2 gap-2">
             <div class="p-2 bg-indigo-900/20 rounded-lg border border-indigo-500/30">
               <p class="font-semibold text-indigo-300 text-sm">🎮 PlayerInputHandler</p>
-              <p class="text-xs text-gray-400">플레이어 턴: 이동/공격 입력</p>
+              <p class="text-xs text-gray-400">플레이어 턴: 입력 처리</p>
             </div>
             <div class="p-2 bg-rose-900/20 rounded-lg border border-rose-500/30">
               <p class="font-semibold text-rose-300 text-sm">🤖 BattleOrchestrator</p>
@@ -209,14 +215,20 @@
             </div>
           </div>
           <p class="text-gray-400 text-sm">⬇️</p>
-          <div class="p-2 bg-purple-900/20 rounded-lg border border-purple-500/30">
-            <p class="font-semibold text-purple-300 text-sm">GridSystem · CombatSystem</p>
-            <p class="text-xs text-gray-400">이동 처리, 공격 계산 (DiceManager)</p>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="p-2 bg-teal-900/20 rounded-lg border border-teal-500/30">
+              <p class="font-semibold text-teal-300 text-sm">🚶 이동 플로우</p>
+              <p class="text-xs text-gray-400">SetPath() 호출 → MovementComponent.Update()에서 점진적 이동 반영</p>
+            </div>
+            <div class="p-2 bg-orange-900/20 rounded-lg border border-orange-500/30">
+              <p class="font-semibold text-orange-300 text-sm">⚔️ 공격 플로우</p>
+              <p class="text-xs text-gray-400">CombatSystem.ExecuteAttack() → 즉시 데미지 적용</p>
+            </div>
           </div>
           <p class="text-gray-400 text-sm">⬇️</p>
           <div class="p-2 bg-amber-900/20 rounded-lg border border-amber-500/30">
             <p class="font-semibold text-amber-300 text-sm">GameObject Components 업데이트</p>
-            <p class="text-xs text-gray-400">GridPosition · StatsComponent · MovementComponent</p>
+            <p class="text-xs text-gray-400">MovementComponent · GridPosition · StatsComponent (매 프레임)</p>
           </div>
         </div>
       </div>

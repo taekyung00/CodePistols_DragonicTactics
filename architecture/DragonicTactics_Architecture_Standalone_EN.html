@@ -178,9 +178,15 @@
             <p class="text-xs text-gray-400">Load character/map data from JSON files</p>
           </div>
           <p class="text-gray-400 text-sm">⬇️</p>
-          <div class="p-2 bg-blue-900/20 rounded-lg border border-blue-500/30">
-            <p class="font-semibold text-blue-300 text-sm">CharacterFactory → GameObjectManager</p>
-            <p class="text-xs text-gray-400">Create characters (unique_ptr) → Transfer ownership</p>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="p-2 bg-blue-900/20 rounded-lg border border-blue-500/30">
+              <p class="font-semibold text-blue-300 text-sm">CharacterFactory</p>
+              <p class="text-xs text-gray-400">Create characters using registry data → GameObjectManager</p>
+            </div>
+            <div class="p-2 bg-cyan-900/20 rounded-lg border border-cyan-500/30">
+              <p class="font-semibold text-cyan-300 text-sm">GridSystem Setup</p>
+              <p class="text-xs text-gray-400">Configure grid tiles using map data from registry</p>
+            </div>
           </div>
           <p class="text-gray-400 text-sm">⬇️</p>
           <div class="p-2 bg-purple-900/20 rounded-lg border border-purple-500/30">
@@ -202,7 +208,7 @@
           <div class="grid grid-cols-2 gap-2">
             <div class="p-2 bg-indigo-900/20 rounded-lg border border-indigo-500/30">
               <p class="font-semibold text-indigo-300 text-sm">🎮 PlayerInputHandler</p>
-              <p class="text-xs text-gray-400">Player turn: Move/Attack input</p>
+              <p class="text-xs text-gray-400">Player turn: Input processing</p>
             </div>
             <div class="p-2 bg-rose-900/20 rounded-lg border border-rose-500/30">
               <p class="font-semibold text-rose-300 text-sm">🤖 BattleOrchestrator</p>
@@ -210,14 +216,20 @@
             </div>
           </div>
           <p class="text-gray-400 text-sm">⬇️</p>
-          <div class="p-2 bg-purple-900/20 rounded-lg border border-purple-500/30">
-            <p class="font-semibold text-purple-300 text-sm">GridSystem · CombatSystem</p>
-            <p class="text-xs text-gray-400">Process movement, calculate attacks (DiceManager)</p>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="p-2 bg-teal-900/20 rounded-lg border border-teal-500/30">
+              <p class="font-semibold text-teal-300 text-sm">🚶 Movement Flow</p>
+              <p class="text-xs text-gray-400">SetPath() → MovementComponent.Update() reflects gradual movement</p>
+            </div>
+            <div class="p-2 bg-orange-900/20 rounded-lg border border-orange-500/30">
+              <p class="font-semibold text-orange-300 text-sm">⚔️ Attack Flow</p>
+              <p class="text-xs text-gray-400">CombatSystem.ExecuteAttack() → Immediate damage application</p>
+            </div>
           </div>
           <p class="text-gray-400 text-sm">⬇️</p>
           <div class="p-2 bg-amber-900/20 rounded-lg border border-amber-500/30">
             <p class="font-semibold text-amber-300 text-sm">GameObject Components Update</p>
-            <p class="text-xs text-gray-400">GridPosition · StatsComponent · MovementComponent</p>
+            <p class="text-xs text-gray-400">MovementComponent · GridPosition · StatsComponent (per frame)</p>
           </div>
         </div>
       </div>
