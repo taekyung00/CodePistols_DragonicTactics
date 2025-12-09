@@ -1,0 +1,58 @@
+{
+    "maps": [
+        {
+            "id": "arena_01",
+            "name": "Basic Arena",
+            "width": 8,
+            "height": 8,
+            "tiles": [
+                "########",
+                "#......#",
+                "#......#",
+                "#...W..#",
+                "#...W..#",
+                "#......#",
+                "#......#",
+                "########"
+            ],
+            "legend": {
+                "#": "wall",
+                ".": "floor",
+                "W": "water",
+                "L": "lava"
+            },
+            "spawn_points": {
+                "dragon": {"x": 3, "y": 4},
+                "fighter": {"x": 1, "y": 1},
+                "cleric": {"x": 6, "y": 1},
+                "wizard": {"x": 6, "y": 6},
+                "rogue": {"x": 1, "y": 6}
+            }
+        },
+        {
+            "id": "lava_chamber",
+            "name": "Lava Chamber",
+            "width": 8,
+            "height": 8,
+            "tiles": [
+                "########",
+                "#......#",
+                "#.LLLL.#",
+                "#.LLLL.#",
+                "#.LLLL.#",
+                "#.LLLL.#",
+                "#......#",
+                "########"
+            ],
+            "legend": {
+                "#": "wall",
+                ".": "floor",
+                "L": "lava"
+            },
+            "spawn_points": {
+                "dragon": {"x": 2, "y": 2},
+                "fighter": {"x": 5, "y": 5}
+            }
+        }
+    ]
+}

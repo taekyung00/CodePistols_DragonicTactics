@@ -1,4 +1,4 @@
-﻿/**
+/**
  * \file
  * \author Jonathan Holmes
  * \author Taekyung Ho

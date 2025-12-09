@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 
 /*
 Copyright (C) 2023 DigiPen Institute of Technology
@@ -31,12 +31,17 @@ Created:    November 5, 2025
 #include "Game/DragonicTactics/StateComponents/GridSystem.h"
 #include "Game/DragonicTactics/StateComponents/SpellSystem.h"
 #include "Game/DragonicTactics/StateComponents/TurnManager.h"
+#include "Game/DragonicTactics/StateComponents/MapDataRegistry.h"
 
 #include "../Debugger/DebugManager.h"
 
 #include "BattleOrchestrator.h"
 #include "GamePlayUIManager.h"
 #include "PlayerInputHandler.h"
+
+GamePlay::MapSource GamePlay::s_next_map_source = GamePlay::MapSource::First;
+int GamePlay::s_next_map_index = 0;
+bool GamePlay::s_should_restart = false;
 
 GamePlay::GamePlay() // : fighter(nullptr), dragon(nullptr)
 {
@@ -65,6 +70,7 @@ void GamePlay::Load()
   AddGSComponent(new CharacterFactory());
   AddGSComponent(new DataRegistry());
   AddGSComponent(new util::Timer());
+  AddGSComponent(new MapDataRegistry());
 
   GetGSComponent<EventBus>()->Clear();
   GetGSComponent<DiceManager>()->SetSeed(100);
@@ -74,53 +80,34 @@ void GamePlay::Load()
   GetGSComponent<DataRegistry>()->LoadAllCharacterData("Assets/Data/characters.json");
   // GetGSComponent<SpellSystem>()->SetEventBus(GetGSComponent<EventBus>());
 
-  CS230::GameObjectManager* go_manager		  = GetGSComponent<CS230::GameObjectManager>();
-  GridSystem*				grid_system		  = GetGSComponent<GridSystem>();
-  CharacterFactory*			character_factory = GetGSComponent<CharacterFactory>();
+  current_map_source_ = s_next_map_source;
+  selected_json_map_index_ = s_next_map_index;
 
-  const std::vector<std::string> map_data = { "wwwwwwww",
-											  "xeefeeew", // new exit tile 'x'
-											  "weeeeeew", "weeeeeew", "weeeeeew", "weeeeeew", "weedeeew", "wwwwwwww" };
+  auto* map_registry = GetGSComponent<MapDataRegistry>();
+  map_registry->LoadMaps("Assets/Data/maps.json");
+  available_json_maps_ = map_registry->GetAllMapIds();
 
-  for (int y = 0; y < map_data.size(); ++y)
+  Engine::GetLogger().LogEvent("Available maps: " + std::to_string(available_json_maps_.size()));
+  if (current_map_source_ == MapSource::First)
   {
-	for (int x = 0; x < map_data[y].length(); ++x)
-	{
-	  char		  tile_char	  = map_data[y][x];
-	  Math::ivec2 current_pos = { x, static_cast<int>(map_data.size()) - 1 - y };
-	  switch (tile_char)
-	  {
-		case 'w': grid_system->SetTileType(current_pos, GridSystem::TileType::Wall); break;
-		case 'e': grid_system->SetTileType(current_pos, GridSystem::TileType::Empty); break;
-		case 'x': // 'x'를 출구로 사용 (exit)
-		  grid_system->SetTileType(current_pos, GridSystem::TileType::Exit);
-		  grid_system->SetExitPosition(current_pos);
-		  Engine::GetLogger().LogEvent("Exit set at position: " + std::to_string(current_pos.x) + ", " + std::to_string(current_pos.y));
-		  break;
-		case 'f':
-		  grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
-		  // fighter = new Fighter(current_pos);
-		  {
-			auto enemy_ptr = character_factory->Create(CharacterTypes::Fighter, current_pos);
-			enemy		   = enemy_ptr.get();
-			enemy->SetGridSystem(grid_system);
-			go_manager->Add(std::move(enemy_ptr));
-			grid_system->AddCharacter(enemy, current_pos);
-		  }
-		  break;
-		case 'd':
-		  grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
-		  {
-			auto player_ptr = character_factory->Create(CharacterTypes::Dragon, current_pos);
-			player			= player_ptr.get();
-			player->SetGridSystem(grid_system);
-			go_manager->Add(std::move(player_ptr));
-			grid_system->AddCharacter(player, current_pos);
-		  }
-		  break;
-	  }
-	}
+    Engine::GetLogger().LogEvent("Loading First map");
+    LoadFirstMap();
   }
+  else
+  {
+    if (!available_json_maps_.empty() && selected_json_map_index_ < available_json_maps_.size())
+    {
+      std::string selected_map_id = available_json_maps_[selected_json_map_index_];
+      Engine::GetLogger().LogEvent("Loading JSON map: " + selected_map_id);
+      LoadJSONMap(selected_map_id);
+    }
+    else
+    {
+      Engine::GetLogger().LogError("Invalid JSON map selection, falling back to hardcoded");
+      LoadFirstMap();
+    }
+  }
+
 
   TurnManager* turnMgr = GetGSComponent<TurnManager>();
   turnMgr->SetEventBus(GetGSComponent<EventBus>());
@@ -207,6 +194,16 @@ void GamePlay::CheckGameEnd(const CharacterDeathEvent& event){
 
 void GamePlay::Update(double dt)
 {
+
+    if (s_should_restart)
+  {
+    s_should_restart = false;
+    Engine::GetLogger().LogEvent("=== RESTARTING GAMEPLAY ===");
+    Engine::GetGameStateManager().PopState();
+    Engine::GetGameStateManager().PushState<GamePlay>();
+    return;
+  }
+  
   TurnManager*				turnMgr		 = GetGSComponent<TurnManager>();
   GridSystem*				grid		 = GetGSComponent<GridSystem>();
   CombatSystem*				combatSystem = GetGSComponent<CombatSystem>();
@@ -297,6 +294,72 @@ void GamePlay::DrawImGui()
 {
   GridSystem* grid_system = GetGSComponent<GridSystem>();
   GetGSComponent<DebugManager>()->DrawImGui(grid_system);
+
+  ImGui::Begin("Map Selection");
+
+  const char* current_source = (current_map_source_ == MapSource::First) ? "First" : "JSON";
+  ImGui::Text("Current Map: %s", current_source);
+
+  if (current_map_source_ == MapSource::Json && selected_json_map_index_ < available_json_maps_.size())
+  {
+    ImGui::Text("Map ID: %s", available_json_maps_[selected_json_map_index_].c_str());
+  }
+
+  ImGui::Separator();
+
+  bool is_first_selected = (s_next_map_source == MapSource::First);
+  if (is_first_selected)
+  {
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.6f, 0.2f, 1.0f));
+  }
+
+  if (ImGui::Button("First Map"))
+  {
+    s_next_map_source = MapSource::First;
+    Engine::GetLogger().LogEvent("Selected: First map (click Restart to apply)");
+  }
+
+  if (is_first_selected)
+  {
+    ImGui::PopStyleColor();
+  }
+
+  ImGui::Separator();
+
+  ImGui::Text("JSON Maps:");
+
+  for (int i = 0; i < available_json_maps_.size(); ++i)
+  {
+    const std::string& map_id = available_json_maps_[i];
+
+    bool is_selected = (s_next_map_source == MapSource::Json && s_next_map_index == i);
+    if (is_selected)
+    {
+      ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.6f, 0.2f, 1.0f));
+    }
+
+    if (ImGui::Button(map_id.c_str()))
+    {
+      s_next_map_source = MapSource::Json;
+      s_next_map_index = i;
+      Engine::GetLogger().LogEvent("Selected JSON map: " + map_id + " (click Restart to apply)");
+    }
+
+    if (is_selected)
+    {
+      ImGui::PopStyleColor();
+    }
+  }
+
+  ImGui::Separator();
+
+  if (ImGui::Button("Restart with Selected Map"))
+  {
+    Engine::GetLogger().LogEvent("Restart requested - will execute on next frame");
+    s_should_restart = true;
+  }
+
+  ImGui::End();
 
   ImGui::Begin("Player Actions");
   TurnManager* turnMgr = GetGSComponent<TurnManager>();
@@ -420,4 +483,114 @@ void GamePlay::DrawImGui()
 gsl::czstring GamePlay::GetName() const
 {
   return "GamePlay";
+}
+
+void GamePlay::LoadFirstMap()
+{
+  Engine::GetLogger().LogEvent("LoadHardcodedMap - BEGIN");
+
+  CS230::GameObjectManager* go_manager		  = GetGSComponent<CS230::GameObjectManager>();
+  GridSystem*				grid_system		  = GetGSComponent<GridSystem>();
+  CharacterFactory*			character_factory = GetGSComponent<CharacterFactory>();
+
+  const std::vector<std::string> map_data = { "wwwwwwww",
+											  "xeefeeew", // new exit tile 'x'
+											  "weeeeeew", "weeeeeew", "weeeeeew", "weeeeeew", "weedeeew", "wwwwwwww" };
+
+  for (int y = 0; y < map_data.size(); ++y)
+  {
+	for (int x = 0; x < map_data[y].length(); ++x)
+	{
+	  char		  tile_char	  = map_data[y][x];
+	  Math::ivec2 current_pos = { x, static_cast<int>(map_data.size()) - 1 - y };
+	  switch (tile_char)
+	  {
+		case 'w': grid_system->SetTileType(current_pos, GridSystem::TileType::Wall); break;
+		case 'e': grid_system->SetTileType(current_pos, GridSystem::TileType::Empty); break;
+		case 'x': // 'x'를 출구로 사용 (exit)
+		  grid_system->SetTileType(current_pos, GridSystem::TileType::Exit);
+		  grid_system->SetExitPosition(current_pos);
+		  Engine::GetLogger().LogEvent("Exit set at position: " + std::to_string(current_pos.x) + ", " + std::to_string(current_pos.y));
+		  break;
+		case 'f':
+		  grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
+		  // fighter = new Fighter(current_pos);
+		  {
+			auto enemy_ptr = character_factory->Create(CharacterTypes::Fighter, current_pos);
+			enemy		   = enemy_ptr.get();
+			enemy->SetGridSystem(grid_system);
+			go_manager->Add(std::move(enemy_ptr));
+			grid_system->AddCharacter(enemy, current_pos);
+		  }
+		  break;
+		case 'd':
+		  grid_system->SetTileType(current_pos, GridSystem::TileType::Empty);
+		  {
+			auto player_ptr = character_factory->Create(CharacterTypes::Dragon, current_pos);
+			player			= player_ptr.get();
+			player->SetGridSystem(grid_system);
+			go_manager->Add(std::move(player_ptr));
+			grid_system->AddCharacter(player, current_pos);
+		  }
+		  break;
+	  }
+	}
+  }
+  Engine::GetLogger().LogEvent("First map loaded.");
+}
+
+void GamePlay::LoadJSONMap(const std::string& map_id)
+{
+  Engine::GetLogger().LogEvent("LoadJSONMap - BEGIN: " + map_id);
+
+  CS230::GameObjectManager* go_manager = GetGSComponent<CS230::GameObjectManager>();
+  GridSystem* grid_system = GetGSComponent<GridSystem>();
+  CharacterFactory* character_factory = GetGSComponent<CharacterFactory>();
+  MapDataRegistry* map_registry = GetGSComponent<MapDataRegistry>();
+
+  MapData map_data = map_registry->GetMapData(map_id);
+
+  if (map_data.id.empty())
+  {
+    Engine::GetLogger().LogError("Failed to load map: " + map_id + ", falling back to hardcoded");
+    LoadFirstMap();
+    return;
+  }
+
+  grid_system->LoadMap(map_data);
+
+  auto dragon_spawn_it = map_data.spawn_points.find("dragon");
+  if (dragon_spawn_it != map_data.spawn_points.end())
+  {
+    Math::ivec2 dragon_spawn = dragon_spawn_it->second;
+    auto player_ptr = character_factory->Create(CharacterTypes::Dragon, dragon_spawn);
+    player = player_ptr.get();
+    player->SetGridSystem(grid_system);
+    go_manager->Add(std::move(player_ptr));
+    grid_system->AddCharacter(player, dragon_spawn);
+    Engine::GetLogger().LogEvent("Dragon spawned at: " + std::to_string(dragon_spawn.x) + ", " + std::to_string(dragon_spawn.y));
+  }
+  else
+  {
+    Engine::GetLogger().LogError("No dragon spawn point in map: " + map_id);
+  }
+
+  // Fighter
+  auto fighter_spawn_it = map_data.spawn_points.find("fighter");
+  if (fighter_spawn_it != map_data.spawn_points.end())
+  {
+    Math::ivec2 fighter_spawn = fighter_spawn_it->second;
+    auto enemy_ptr = character_factory->Create(CharacterTypes::Fighter, fighter_spawn);
+    enemy = enemy_ptr.get();
+    enemy->SetGridSystem(grid_system);
+    go_manager->Add(std::move(enemy_ptr));
+    grid_system->AddCharacter(enemy, fighter_spawn);
+    Engine::GetLogger().LogEvent("Fighter spawned at: " + std::to_string(fighter_spawn.x) + ", " + std::to_string(fighter_spawn.y));
+  }
+  else
+  {
+    Engine::GetLogger().LogError("No fighter spawn point in map: " + map_id);
+  }
+
+  Engine::GetLogger().LogEvent("LoadJSONMap - END: " + map_data.name);
 }

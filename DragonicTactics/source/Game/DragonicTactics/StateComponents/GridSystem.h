@@ -4,7 +4,10 @@
 #include "./Game/DragonicTactics/Objects/Character.h"
 // #include "./Game/DragonicTactics/States/Test.h"
 #include "./Game/DragonicTactics/Test/Week1TestMocks.h"
+#include "./Game/DragonicTactics/StateComponents/MapDataRegistry.h"
 #include <map>
+
+struct MapData;
 
 class GridSystem : public CS230::Component
 {
@@ -27,7 +30,7 @@ class GridSystem : public CS230::Component
   bool HasExit() const;
 
   // ========================================
-  // 🆕 신규 추가: 이동 범위 시각화
+  // 신규 추가: 이동 범위 시각화
   // ========================================
 
   /// @brief 이동 가능한 타일들을 계산 (BFS 기반)
@@ -131,6 +134,8 @@ class GridSystem : public CS230::Component
   void Draw() const;
 
   void Update(double dt) override;
+
+  void LoadMap(const MapData& map_data);
 };
 
 // ========================================

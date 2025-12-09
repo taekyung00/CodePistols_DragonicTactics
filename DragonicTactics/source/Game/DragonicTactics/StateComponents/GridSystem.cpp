@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 
 #include "./CS200/IRenderer2D.h"
 #include "./Engine/Engine.h"
@@ -88,18 +88,24 @@ void GridSystem::Draw() const
 	  int screen_x = x * TILE_SIZE + TILE_SIZE;
 	  int screen_y = y * TILE_SIZE + TILE_SIZE;
 
-	  switch (tile_grid[y][x])
+	 	  switch (tile_grid[y][x])
 	  {
-		case TileType::Wall:
-		  renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), CS200::BROWN, 0U);
-		  // renderer_2d.DrawRectangle(, TILE_SIZE, TILE_SIZE, BROWN);
-		  break;
-		case TileType::Exit:
-		  renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), CS200::GREEN, 0U);
-		  break;
-		case TileType::Empty: break;
-		default: break;
-	  }
+	  case TileType::Wall:
+	  renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), CS200::BROWN, 0U);
+	  // renderer_2d.DrawRectangle(, TILE_SIZE, TILE_SIZE, BROWN);
+	  break;
+	  case TileType::Exit:
+	  renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), CS200::GREEN, 0U);
+	  break;
+	  case TileType::Lava:
+	    renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), 0xFF8000FF, 0U);
+	      break;
+        case TileType::Difficult:
+          renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), 0x4080FFFF, 0U);
+          break;
+        case TileType::Empty: break;
+        default: break;
+      }
 	  Character* character = character_grid[y][x];
 	  if (character != nullptr)
 	  {
@@ -364,6 +370,67 @@ void GridSystem::ClearHoveredTile()
 bool GridSystem::IsReachable(Math::ivec2 tile) const
 {
   return reachable_tiles_.find(tile) != reachable_tiles_.end();
+}
+
+void GridSystem::LoadMap(const MapData& map_data)
+{
+  Engine::GetLogger().LogEvent("GridSystem::LoadMap - Loading map: " + map_data.id);
+
+  Reset();
+
+  for (int y = 0; y < map_data.height; ++y)
+  {
+    if (y >= map_data.tiles.size())
+    {
+      Engine::GetLogger().LogError("GridSystem::LoadMap - Row " + std::to_string(y) + " out of bounds");
+      break;
+    }
+
+    const std::string& row = map_data.tiles[y];
+
+    for (int x = 0; x < map_data.width; ++x)
+    {
+      if (x >= row.length())
+      {
+        Engine::GetLogger().LogError("GridSystem::LoadMap - Column " + std::to_string(x) + " out of bounds");
+        break;
+      }
+
+      char tile_char = row[x];
+
+      Math::ivec2 pos{ x, map_data.height - 1 - y };
+
+      auto it = map_data.legend.find(tile_char);
+      if (it == map_data.legend.end())
+      {
+        continue;
+      }
+
+      std::string tile_type_str = it->second;
+
+      TileType tile_type = TileType::Empty;
+      if (tile_type_str == "wall")
+      {
+        tile_type = TileType::Wall;
+      }
+      else if (tile_type_str == "floor")
+      {
+        tile_type = TileType::Empty;
+      }
+      else if (tile_type_str == "lava")
+      {
+        tile_type = TileType::Lava;
+      }
+      else if (tile_type_str == "water")
+      {
+        tile_type = TileType::Difficult;
+      }
+
+      SetTileType(pos, tile_type);
+    }
+  }
+
+  Engine::GetLogger().LogEvent("GridSystem::LoadMap - Completed (" + std::to_string(map_data.width * map_data.height) + " tiles)");
 }
 
 ////////////////////////////////////
