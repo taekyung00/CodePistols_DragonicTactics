@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dragonic Tactics – Technical Guide Q1: Architecture</title>
+  <!-- Tailwind CDN (JIT) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #0b0f14; color: #e5e7eb; }
+    .card { background: rgba(17,24,39,0.85); border-radius: 1rem; border: 1px solid rgba(99, 102, 241, 0.25); }
+    .implemented { color: #10b981; font-weight: 600; }
+    .planned { color: #9ca3af; font-style: italic; }
+    .file-ref {
+      font-family: 'Courier New', monospace;
+      background: rgba(99, 102, 241, 0.2);
+      padding: 0.125rem 0.375rem;
+      border-radius: 0.25rem;
+      font-size: 0.875rem;
+    }
+    .system-title {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body class="min-h-screen p-8">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-bold mb-2">🐉 Dragonic Tactics</h1>
+      <h2 class="text-2xl text-gray-300 mb-2">Technical Guide - Question 1</h2>
+      <h3 class="text-xl text-gray-400">Overall Architecture</h3>
+      <div class="mt-4 text-sm text-gray-500">
+        <p>Team Name: Code Pistols</p>
+        <p>Game Name: Dragonic Tactics</p>
+        <p>Milestone: 4 (GAM200 Completion)</p>
+      </div>
+    </div>
+
+    <!-- Architecture Overview -->
+    <div class="card border-indigo-500/40 p-6 mb-8">
+      <h2 class="text-2xl font-semibold mb-4 text-indigo-300">Architecture Overview</h2>
+      <p class="text-gray-300 mb-4">
+        Dragonic Tactics is built on a custom C++20 game engine with a modular, component-based architecture.
+        The engine separates core systems (Engine layer), rendering abstraction (CS200 layer),
+        low-level graphics (OpenGL layer), and game-specific logic (DragonicTactics layer).
+      </p>
+      <p class="text-gray-300">
+        This architecture follows key principles: <strong class="text-emerald-400">modular independence</strong>,
+        <strong class="text-emerald-400">event-driven communication</strong>,
+        <strong class="text-emerald-400">data-driven design</strong>, and
+        <strong class="text-emerald-400">component-based composition</strong>.
+      </p>
+    </div>
+
+    <!-- System Layers Diagram -->
+    <div class="card border-cyan-500/40 p-6 mb-8">
+      <h2 class="text-2xl font-semibold text-center mb-6 text-cyan-300">System Architecture Layers</h2>
+
+      <!-- Layer 1: Game Logic -->
+      <div class="mb-6">
+        <div class="system-title bg-purple-900/40 text-purple-300 w-full text-center">
+          Game Logic Layer (DragonicTactics)
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-4 bg-purple-900/20 rounded-lg border border-purple-500/30">
+            <h4 class="font-semibold text-purple-300 mb-2">GameState Systems</h4>
+            <ul class="text-sm space-y-1 text-gray-400">
+              <li><span class="file-ref">GamePlay.h/cpp</span></li>
+              <li><span class="file-ref">MainMenu.h/cpp</span></li>
+              <li><span class="file-ref">PlayerInputHandler.h/cpp</span></li>
+              <li><span class="file-ref">BattleOrchestrator.h/cpp</span></li>
+              <li><span class="file-ref">GamePlayUIManager.h/cpp</span></li>
+            </ul>
+          </div>
+          <div class="p-4 bg-emerald-900/20 rounded-lg border border-emerald-500/30">
+            <h4 class="font-semibold text-emerald-300 mb-2">StateComponents (Battle Systems)</h4>
+            <ul class="text-sm space-y-1 text-gray-400">
+              <li><span class="file-ref">EventBus.h/cpp</span> - Event system</li>
+              <li><span class="file-ref">GridSystem.h/cpp</span> - 8x8 tactical grid</li>
+              <li><span class="file-ref">TurnManager.h/cpp</span> - Turn order</li>
+              <li><span class="file-ref">CombatSystem.h/cpp</span> - Combat resolution</li>
+              <li><span class="file-ref">AISystem.h/cpp</span> - AI controller</li>
+              <li><span class="file-ref">DiceManager.h/cpp</span> - D&D dice rolling</li>
+              <li><span class="file-ref">DataRegistry.h/cpp</span> - Character data</li>
+              <li><span class="file-ref">MapDataRegistry.h/cpp</span> - Map data</li>
+            </ul>
+          </div>
+          <div class="p-4 bg-blue-900/20 rounded-lg border border-blue-500/30">
+            <h4 class="font-semibold text-blue-300 mb-2">Characters & Components</h4>
+            <ul class="text-sm space-y-1 text-gray-400">
+              <li><span class="file-ref">Character.h/cpp</span> - Base class</li>
+              <li><span class="file-ref">Dragon.h/cpp</span> - Player character</li>
+              <li><span class="file-ref">Fighter.h/cpp</span> - Enemy character</li>
+              <li><span class="file-ref">GridPosition.h/cpp</span> - Position</li>
+              <li><span class="file-ref">StatsComponent.h/cpp</span> - HP/Stats</li>
+              <li><span class="file-ref">MovementComponent.h/cpp</span> - Movement</li>
+              <li><span class="file-ref">ActionPoints.h/cpp</span> - AP system</li>
+              <li><span class="file-ref">SpellSlots.h/cpp</span> - Spell slots</li>
+            </ul>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div class="p-4 bg-rose-900/20 rounded-lg border border-rose-500/30">
+            <h4 class="font-semibold text-rose-300 mb-2">AI Strategy Pattern</h4>
+            <ul class="text-sm space-y-1 text-gray-400">
+              <li><span class="file-ref">IAIStrategy.h</span> - Interface</li>
+              <li><span class="file-ref">FighterStrategy.h/cpp</span> - Fighter AI</li>
+              <li><span class="file-ref">ClericStrategy.h/cpp</span> - Cleric AI</li>
+              <li><span class="file-ref">WizardStrategy.h/cpp</span> - Wizard AI</li>
+              <li><span class="file-ref">RogueStrategy.h/cpp</span> - Rogue AI</li>
+            </ul>
+          </div>
+          <div class="p-4 bg-amber-900/20 rounded-lg border border-amber-500/30">
+            <h4 class="font-semibold text-amber-300 mb-2">Factories & Types</h4>
+            <ul class="text-sm space-y-1 text-gray-400">
+              <li><span class="file-ref">CharacterFactory.h/cpp</span></li>
+              <li><span class="file-ref">CharacterTypes.h</span></li>
+              <li><span class="file-ref">GameObjectTypes.h</span></li>
+              <li><span class="file-ref">Events.h</span></li>
+              <li><span class="file-ref">GameTypes.h</span></li>
+            </ul>
+          </div>
+          <div class="p-4 bg-teal-900/20 rounded-lg border border-teal-500/30">
+            <h4 class="font-semibold text-teal-300 mb-2">Debug Tools</h4>
+            <ul class="text-sm space-y-1 text-gray-400">
+              <li><span class="file-ref">DebugManager.h/cpp</span></li>
+              <li><span class="file-ref">DebugConsole.h/cpp</span></li>
+              <li><span class="file-ref">DebugVisualizer.h/cpp</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Layer 2: Engine Core -->
+      <div class="mb-6">
+        <div class="system-title bg-indigo-900/40 text-indigo-300 w-full text-center">
+          Engine Core Layer (CS230)
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div class="p-4 bg-indigo-900/20 rounded-lg border border-indigo-500/30">
+            <h4 class="font-semibold text-indigo-300 mb-2">Core Systems</h4>
+            <ul class="text-sm space-y-1 text-gray-400">
+              <li><span class="file-ref">Engine.hpp/cpp</span> - Main singleton</li>
+              <li><span class="file-ref">GameState.hpp</span> - State interface</li>
+              <li><span class="file-ref">GameStateManager.hpp/cpp</span></li>
+              <li><span class="file-ref">GameObject.h/cpp</span></li>
+              <li><span class="file-ref">GameObjectManager.h/cpp</span></li>
+              <li><span class="file-ref">Component.h/cpp</span></li>
+            </ul>
+          </div>
+          <div class="p-4 bg-sky-900/20 rounded-lg border border-sky-500/30">
+            <h4 class="font-semibold text-sky-300 mb-2">Asset Management</h4>
+            <ul class="text-sm space-y-1 text-gray-400">
+              <li><span class="file-ref">TextureManager.h/cpp</span></li>
+              <li><span class="file-ref">Texture.h/cpp</span></li>
+              <li><span class="file-ref">Sprite.h/cpp</span></li>
+              <li><span class="file-ref">Animation.h/cpp</span></li>
+            </ul>
+          </div>
+          <div class="p-4 bg-violet-900/20 rounded-lg border border-violet-500/30">
+            <h4 class="font-semibold text-violet-300 mb-2">Input & Window</h4>
+            <ul class="text-sm space-y-1 text-gray-400">
+              <li><span class="file-ref">Input.h/cpp</span> - Input manager</li>
+              <li><span class="file-ref">Window.h/cpp</span> - SDL window</li>
+              <li><span class="file-ref">Camera.hpp</span> - Camera system</li>
+            </ul>
+          </div>
+          <div class="p-4 bg-pink-900/20 rounded-lg border border-pink-500/30">
+            <h4 class="font-semibold text-pink-300 mb-2">Utilities</h4>
+            <ul class="text-sm space-y-1 text-gray-400">
+              <li><span class="file-ref">Logger.h/cpp</span> - Logging</li>
+              <li><span class="file-ref">Timer.h/cpp</span> - Game timer</li>
+              <li><span class="file-ref">Vec2.h</span> - Math vectors</li>
+              <li><span class="file-ref">TransformMatrix.h</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Layer 3: Rendering Abstraction -->
+      <div class="mb-6">
+        <div class="system-title bg-cyan-900/40 text-cyan-300 w-full text-center">
+          Rendering Abstraction Layer (CS200)
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-4 bg-cyan-900/20 rounded-lg border border-cyan-500/30">
+            <h4 class="font-semibold text-cyan-300 mb-2">Renderer Interface</h4>
+            <ul class="text-sm space-y-1 text-gray-400">
+              <li><span class="file-ref">IRenderer2D.h</span> - Abstract interface</li>
+              <li><span class="file-ref">RenderingAPI.h</span> - API enum</li>
+              <li><span class="file-ref">NDC.h</span> - Coordinate transform</li>
+            </ul>
+          </div>
+          <div class="p-4 bg-teal-900/20 rounded-lg border border-teal-500/30">
+            <h4 class="font-semibold text-teal-300 mb-2">Renderer Implementations</h4>
+            <ul class="text-sm space-y-1 text-gray-400">
+              <li><span class="file-ref">ImmediateRenderer2D.h/cpp</span></li>
+              <li><span class="file-ref">BatchRenderer2D.h/cpp</span></li>
+              <li><span class="file-ref">InstancedRenderer2D.h/cpp</span></li>
+            </ul>
+          </div>
+          <div class="p-4 bg-blue-900/20 rounded-lg border border-blue-500/30">
+            <h4 class="font-semibold text-blue-300 mb-2">Graphics Utilities</h4>
+            <ul class="text-sm space-y-1 text-gray-400">
+              <li><span class="file-ref">Color.h</span> - RGBA colors</li>
+              <li><span class="file-ref">Vertex.h</span> - Vertex structure</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Layer 4: OpenGL Wrapper -->
+      <div class="mb-6">
+        <div class="system-title bg-green-900/40 text-green-300 w-full text-center">
+          OpenGL Wrapper Layer
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div class="p-4 bg-green-900/20 rounded-lg border border-green-500/30">
+            <h4 class="font-semibold text-green-300 mb-2">Core GL</h4>
+            <ul class="text-sm space-y-1 text-gray-400">
+              <li><span class="file-ref">GLHandle.h</span></li>
+              <li><span class="file-ref">GLShader.h/cpp</span></li>
+              <li><span class="file-ref">GLVertexArray.h/cpp</span></li>
+              <li><span class="file-ref">GLIndexBuffer.h/cpp</span></li>
+            </ul>
+          </div>
+          <div class="p-4 bg-lime-900/20 rounded-lg border border-lime-500/30">
+            <h4 class="font-semibold text-lime-300 mb-2">Buffers</h4>
+            <ul class="text-sm space-y-1 text-gray-400">
+              <li><span class="file-ref">GLVertexBuffer.h/cpp</span></li>
+              <li><span class="file-ref">GLFramebuffer.h/cpp</span></li>
+            </ul>
+          </div>
+          <div class="p-4 bg-emerald-900/20 rounded-lg border border-emerald-500/30">
+            <h4 class="font-semibold text-emerald-300 mb-2">Textures</h4>
+            <ul class="text-sm space-y-1 text-gray-400">
+              <li><span class="file-ref">GLTexture.h/cpp</span></li>
+            </ul>
+          </div>
+          <div class="p-4 bg-teal-900/20 rounded-lg border border-teal-500/30">
+            <h4 class="font-semibold text-teal-300 mb-2">Platform</h4>
+            <ul class="text-sm space-y-1 text-gray-400">
+              <li><span class="file-ref">Environment.h/cpp</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Flow Architecture -->
+    <div class="card border-purple-500/40 p-6 mb-8">
+      <h2 class="text-2xl font-semibold text-center mb-4 text-purple-300">Execution Flow Architecture</h2>
+      <p class="text-center mb-6 text-gray-300">Based on <span class="file-ref">GamePlay.cpp</span></p>
+
+      <!-- Load Phase -->
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold text-amber-300 mb-3 text-center">📦 Load Phase</h3>
+        <div class="space-y-2 text-center">
+          <div class="p-2 bg-emerald-900/20 rounded-lg border border-emerald-500/30">
+            <p class="font-semibold text-emerald-300 text-sm">DataRegistry · MapDataRegistry</p>
+            <p class="text-xs text-gray-400">Load character/map data from JSON files</p>
+            <p class="text-xs text-gray-500 mt-1">
+              <span class="file-ref">DataRegistry.cpp:LoadFromFile()</span>
+              <span class="file-ref">MapDataRegistry.cpp:LoadMaps()</span>
+            </p>
+          </div>
+          <p class="text-gray-400 text-sm">⬇️</p>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="p-2 bg-blue-900/20 rounded-lg border border-blue-500/30">
+              <p class="font-semibold text-blue-300 text-sm">CharacterFactory</p>
+              <p class="text-xs text-gray-400">Create characters using registry data</p>
+              <p class="text-xs text-gray-500 mt-1"><span class="file-ref">CharacterFactory.cpp:Create()</span></p>
+            </div>
+            <div class="p-2 bg-cyan-900/20 rounded-lg border border-cyan-500/30">
+              <p class="font-semibold text-cyan-300 text-sm">GridSystem Setup</p>
+              <p class="text-xs text-gray-400">Configure grid tiles from map data</p>
+              <p class="text-xs text-gray-500 mt-1"><span class="file-ref">GridSystem.cpp:LoadMap()</span></p>
+            </div>
+          </div>
+          <p class="text-gray-400 text-sm">⬇️</p>
+          <div class="p-2 bg-purple-900/20 rounded-lg border border-purple-500/30">
+            <p class="font-semibold text-purple-300 text-sm">TurnManager.InitializeTurnOrder()</p>
+            <p class="text-xs text-gray-400">Speed-based turn order → StartCombat()</p>
+            <p class="text-xs text-gray-500 mt-1"><span class="file-ref">TurnManager.cpp</span></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Update Phase -->
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold text-blue-300 mb-3 text-center">🔄 Update Phase (Per Frame)</h3>
+        <div class="space-y-2 text-center">
+          <div class="p-2 bg-blue-900/20 rounded-lg border border-blue-500/30">
+            <p class="font-semibold text-blue-300 text-sm">TurnManager.GetCurrentCharacter()</p>
+            <p class="text-xs text-gray-400">Check current turn character</p>
+          </div>
+          <p class="text-gray-400 text-sm">⬇️</p>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="p-2 bg-indigo-900/20 rounded-lg border border-indigo-500/30">
+              <p class="font-semibold text-indigo-300 text-sm">🎮 PlayerInputHandler</p>
+              <p class="text-xs text-gray-400">Player turn: Input processing</p>
+              <p class="text-xs text-gray-500 mt-1"><span class="file-ref">PlayerInputHandler.cpp:Update()</span></p>
+            </div>
+            <div class="p-2 bg-rose-900/20 rounded-lg border border-rose-500/30">
+              <p class="font-semibold text-rose-300 text-sm">🤖 BattleOrchestrator</p>
+              <p class="text-xs text-gray-400">AI turn: Call AISystem</p>
+              <p class="text-xs text-gray-500 mt-1"><span class="file-ref">BattleOrchestrator.cpp:Update()</span></p>
+            </div>
+          </div>
+          <p class="text-gray-400 text-sm">⬇️</p>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="p-2 bg-teal-900/20 rounded-lg border border-teal-500/30">
+              <p class="font-semibold text-teal-300 text-sm">🚶 Movement Flow</p>
+              <p class="text-xs text-gray-400">SetPath() → MovementComponent.Update()</p>
+              <p class="text-xs text-gray-500 mt-1">
+                <span class="file-ref">Character.cpp:SetPath()</span><br>
+                <span class="file-ref">MovementComponent.cpp:Update()</span>
+              </p>
+            </div>
+            <div class="p-2 bg-orange-900/20 rounded-lg border border-orange-500/30">
+              <p class="font-semibold text-orange-300 text-sm">⚔️ Attack Flow</p>
+              <p class="text-xs text-gray-400">CombatSystem.ExecuteAttack() → Immediate</p>
+              <p class="text-xs text-gray-500 mt-1"><span class="file-ref">CombatSystem.cpp:ExecuteAttack()</span></p>
+            </div>
+          </div>
+          <p class="text-gray-400 text-sm">⬇️</p>
+          <div class="p-2 bg-amber-900/20 rounded-lg border border-amber-500/30">
+            <p class="font-semibold text-amber-300 text-sm">GameObject Components Update</p>
+            <p class="text-xs text-gray-400">MovementComponent · GridPosition · StatsComponent (per frame)</p>
+            <p class="text-xs text-gray-500 mt-1"><span class="file-ref">GameObjectManager.cpp:UpdateAll()</span></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Draw Phase -->
+      <div>
+        <h3 class="text-lg font-semibold text-pink-300 mb-3 text-center">🎨 Draw Phase</h3>
+        <div class="space-y-2 text-center">
+          <div class="p-2 bg-pink-900/20 rounded-lg border border-pink-500/30">
+            <p class="font-semibold text-pink-300 text-sm">GridSystem.Draw() → GameObjectManager.DrawAll()</p>
+            <p class="text-xs text-gray-400">Render: Grid → Characters → UI</p>
+            <p class="text-xs text-gray-500 mt-1">
+              <span class="file-ref">GridSystem.cpp:Draw()</span>
+              <span class="file-ref">GameObjectManager.cpp:DrawAll()</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Flow & Communication -->
+    <div class="card border-yellow-500/40 p-6 mb-8">
+      <h2 class="text-2xl font-semibold mb-4 text-yellow-300">Data Flow & Communication Patterns</h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Event-Driven Communication -->
+        <div class="p-4 bg-yellow-900/20 rounded-lg border border-yellow-500/30">
+          <h3 class="font-semibold text-yellow-300 mb-3">Event-Driven Communication</h3>
+          <p class="text-sm text-gray-400 mb-2">
+            Loosely-coupled systems communicate via EventBus (<span class="file-ref">EventBus.h/cpp</span>)
+          </p>
+          <div class="text-xs space-y-1 text-gray-500">
+            <p>• <strong>Publisher:</strong> CombatSystem publishes CharacterDamagedEvent</p>
+            <p>• <strong>Subscriber:</strong> UI Manager subscribes to show damage text</p>
+            <p>• <strong>File:</strong> <span class="file-ref">Events.h</span> defines all event types</p>
+          </div>
+        </div>
+
+        <!-- Direct Communication -->
+        <div class="p-4 bg-orange-900/20 rounded-lg border border-orange-500/30">
+          <h3 class="font-semibold text-orange-300 mb-3">Direct Communication</h3>
+          <p class="text-sm text-gray-400 mb-2">
+            Tightly-coupled systems pass references directly
+          </p>
+          <div class="text-xs space-y-1 text-gray-500">
+            <p>• <strong>Example:</strong> PlayerInputHandler receives GridSystem* and CombatSystem*</p>
+            <p>• <strong>Reason:</strong> Immediate gameplay operations require fast access</p>
+            <p>• <strong>File:</strong> <span class="file-ref">GamePlay.cpp:Update()</span></p>
+          </div>
+        </div>
+
+        <!-- Data-Driven Architecture -->
+        <div class="p-4 bg-green-900/20 rounded-lg border border-green-500/30">
+          <h3 class="font-semibold text-green-300 mb-3">Data-Driven Architecture</h3>
+          <p class="text-sm text-gray-400 mb-2">
+            Game content loaded from JSON files
+          </p>
+          <div class="text-xs space-y-1 text-gray-500">
+            <p>• <strong>Characters:</strong> <span class="file-ref">Assets/Data/characters.json</span></p>
+            <p>• <strong>Maps:</strong> <span class="file-ref">Assets/Data/maps.json</span></p>
+            <p>• <strong>Parser:</strong> <span class="file-ref">External/json.hpp</span> (nlohmann/json)</p>
+          </div>
+        </div>
+
+        <!-- Factory Pattern -->
+        <div class="p-4 bg-blue-900/20 rounded-lg border border-blue-500/30">
+          <h3 class="font-semibold text-blue-300 mb-3">Factory Pattern</h3>
+          <p class="text-sm text-gray-400 mb-2">
+            Centralized object creation
+          </p>
+          <div class="text-xs space-y-1 text-gray-500">
+            <p>• <strong>Factory:</strong> <span class="file-ref">CharacterFactory.cpp:Create()</span></p>
+            <p>• <strong>Returns:</strong> std::unique_ptr&lt;Character&gt;</p>
+            <p>• <strong>Ownership:</strong> Transferred to GameObjectManager</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Directory Structure -->
+    <div class="card border-gray-500/40 p-6 mb-8">
+      <h2 class="text-2xl font-semibold mb-4 text-gray-300">Project Directory Structure</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="font-mono text-sm text-gray-400">
+          <pre class="bg-gray-900/50 p-4 rounded-lg overflow-x-auto">
+DragonicTactics/
+├── source/
+│   ├── main.cpp
+│   ├── Engine/              (CS230 namespace)
+│   │   ├── Engine.hpp/cpp
+│   │   ├── GameState.hpp
+│   │   ├── GameObject.h/cpp
+│   │   ├── GameObjectManager.h/cpp
+│   │   ├── Component.h/cpp
+│   │   ├── Input.h/cpp
+│   │   ├── Window.h/cpp
+│   │   ├── Logger.h/cpp
+│   │   └── TextureManager.h/cpp
+│   ├── CS200/               (Rendering abstraction)
+│   │   ├── IRenderer2D.h
+│   │   ├── ImmediateRenderer2D.h/cpp
+│   │   ├── BatchRenderer2D.h/cpp
+│   │   ├── InstancedRenderer2D.h/cpp
+│   │   └── NDC.h
+│   ├── OpenGL/              (Low-level wrapper)
+│   │   ├── GLShader.h/cpp
+│   │   ├── GLVertexArray.h/cpp
+│   │   ├── GLTexture.h/cpp
+│   │   └── Environment.h/cpp
+          </pre>
+        </div>
+        <div class="font-mono text-sm text-gray-400">
+          <pre class="bg-gray-900/50 p-4 rounded-lg overflow-x-auto">
+│   └── Game/DragonicTactics/ (Game logic)
+│       ├── Objects/
+│       │   ├── Character.h/cpp
+│       │   ├── Dragon.h/cpp
+│       │   ├── Fighter.h/cpp
+│       │   └── Components/
+│       │       ├── GridPosition.h/cpp
+│       │       ├── StatsComponent.h/cpp
+│       │       ├── MovementComponent.h/cpp
+│       │       ├── ActionPoints.h/cpp
+│       │       └── SpellSlots.h/cpp
+│       ├── StateComponents/
+│       │   ├── EventBus.h/cpp
+│       │   ├── GridSystem.h/cpp
+│       │   ├── TurnManager.h/cpp
+│       │   ├── CombatSystem.h/cpp
+│       │   ├── AISystem.h/cpp
+│       │   ├── DiceManager.h/cpp
+│       │   ├── DataRegistry.h/cpp
+│       │   ├── MapDataRegistry.h/cpp
+│       │   └── AI/
+│       │       ├── IAIStrategy.h
+│       │       ├── FighterStrategy.h/cpp
+│       │       ├── ClericStrategy.h/cpp
+│       │       ├── WizardStrategy.h/cpp
+│       │       └── RogueStrategy.h/cpp
+│       ├── States/
+│       │   ├── GamePlay.h/cpp
+│       │   ├── PlayerInputHandler.h/cpp
+│       │   ├── BattleOrchestrator.h/cpp
+│       │   └── GamePlayUIManager.h/cpp
+│       ├── Factories/
+│       │   └── CharacterFactory.h/cpp
+│       ├── Types/
+│       │   ├── CharacterTypes.h
+│       │   ├── Events.h
+│       │   └── GameTypes.h
+│       └── Debugger/
+│           ├── DebugManager.h/cpp
+│           ├── DebugConsole.h/cpp
+│           └── DebugVisualizer.h/cpp
+├── Assets/
+│   ├── Data/
+│   │   ├── characters.json
+│   │   └── maps.json
+│   ├── Textures/ (PNG files)
+│   └── Sprites/ (SPT files)
+└── CMakeLists.txt
+          </pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center text-xs text-gray-500 mt-10">
+      <p>Dragonic Tactics – Technical Guide Question 1</p>
+      <p class="mt-2">GAM200 Milestone 4 (Fall 2025) | 5-person dev team | Code Pistols</p>
+    </footer>
+  </div>
+</body>
+</html>

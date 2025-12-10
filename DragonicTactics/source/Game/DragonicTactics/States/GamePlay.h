@@ -31,6 +31,15 @@ class GamePlay : public CS230::GameState
   void			DrawImGui() override;
   gsl::czstring GetName() const override;
 
+  enum class MapSource{
+    First,
+    Json
+  };
+
+  static MapSource s_next_map_source;
+  static int s_next_map_index;
+  static bool s_should_restart;
+
   private:
   static constexpr Math::ivec2				  default_window_size = { 1200, 800 };
   std::unique_ptr<PlayerInputHandler> m_input_handler;
@@ -48,4 +57,16 @@ class GamePlay : public CS230::GameState
   Character* player	  = nullptr;
   Character* enemy	  = nullptr; // TODO : we have to make it vector
   bool		 game_end = false;
+
+  MapSource current_map_source_ = MapSource::First;
+  int selected_json_map_index_ = 0;
+  std::vector<std::string> available_json_maps_;
+
+  void LoadFirstMap();
+  void LoadJSONMap(const std::string& map_id);
 };
+
+namespace CS230
+{
+  
+}
