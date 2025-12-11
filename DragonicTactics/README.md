@@ -1,8 +1,20 @@
-# CS200 Computer Graphics I
+# Dragonic Tactics
+
+## Summary
+- Name of game: dragonic tactics
+
+- Version: 0.1.3524
+
+- Developers: joonyoung ki, seungju song, sangyun lee, taekyung ho, ginam park
+
+- Team: code pistols
+  
+- Small description of game : This game reinterprets the battles of traditional DND campaigns, allowing players to become dragons and fight against a party of adventurers. Each character in the game has a turn. You play as a character called a dragon, and you have to chase away the adventurers who invade your house. Click the buttons to decide your actions, move and attack. You can do everything with a click of the mouse.
+
+## Before Starting / Installation Instructions
+- Setup your [Development Environment](docs/DevEnvironment.md)
 
 ## How to Build and Run
-
-First Setup your [Development Environment](docs/DevEnvironment.md)
 
 ### Command Line Build
 
@@ -23,6 +35,7 @@ cmake --build --preset web-debug-on-windows
 ```
 
 **Linux**
+*Causion : even if we can build linux version, linux version can be relatively slow if you run this build file on virtual machine like WSL. It is recommended to build and run windows version or web version on such environment.*
 
 ```sh
 # configure / generate build files
@@ -116,3 +129,18 @@ cmake -S . -B build/linux-debug \
 ```
 
 This saves time and reduces configuration errors, especially when working across different platforms and build types.
+
+## Play
+- At the main menu, click "Dragonic Tactics" to start the game.
+- When the game starts, turn order is determined by each character's speed stat.
+- we can see the turn order at Combat Status window.
+- We can choose player's action : Move, Action, End Turn.
+- Move : click the grid where you want to move. Each player can move according to their speed stat. For example, if a player's speed stat is 4, the player can move up to 4 grids. Player can also move less than their speed stat, or mix move and action like move 2 grids, action, move 2 grids. Each character's speed stat is shown at right UI.
+- Action - basic attack : click the "Action" button, then click attack to use basic attack. For now, only basic attack is implemented. If you click spell button, click right button to cancel. If enemy is in range of dragon(red one) - now it is 2 grids - click the enemy to attack. Damage is calculated by attacker's dice-based calculated attack amount minus defender's dice-based calculated defense amount. If enemy isn't in range, nothing happens. Dragon can attack based on its attack point. Attack point(AP) is shown at right UI. Each basic attack consumes 1 AP. 
+- End Turn : click the "End Turn" button to end your turn. Even if you have remaining speed or AP, you can end your turn.
+- If one of characters' HP reaches 0, game ends.
+
+## Feedback
+- if you have any feedbacks, contact to here:
+  - Email: taek020422@gamil.com
+  - Discord: taekyung.ho
