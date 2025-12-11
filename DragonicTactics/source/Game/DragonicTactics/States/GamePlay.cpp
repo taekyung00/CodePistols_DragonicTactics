@@ -47,6 +47,8 @@ GamePlay::GamePlay() // : fighter(nullptr), dragon(nullptr)
 {
 }
 
+GamePlay::~GamePlay() = default; // Must be defined here where unique_ptr member types are complete
+
 void GamePlay::Load()
 {
 
@@ -95,9 +97,9 @@ void GamePlay::Load()
   }
   else
   {
-    if (!available_json_maps_.empty() && selected_json_map_index_ < available_json_maps_.size())
+    if (!available_json_maps_.empty() && selected_json_map_index_ < static_cast<int>(available_json_maps_.size()))
     {
-      std::string selected_map_id = available_json_maps_[selected_json_map_index_];
+      std::string selected_map_id = available_json_maps_[static_cast<std::size_t>(selected_json_map_index_)];
       Engine::GetLogger().LogEvent("Loading JSON map: " + selected_map_id);
       LoadJSONMap(selected_map_id);
     }
@@ -146,20 +148,20 @@ void GamePlay::Load()
 void GamePlay::DisplayDamageAmount(const CharacterDamagedEvent& event)
 {
   Engine::GetLogger().LogDebug("Damage Event! " + std::to_string(event.damageAmount));
-  Math::vec2 size = { 1.0f, 1.0f };
+  Math::vec2 size = { 1.0, 1.0 };
   if (event.target != nullptr)
   {
 	const StatsComponent* stats = event.target->GetStatsComponent();
 	if (stats != nullptr && stats->GetMaxHP() > 0)
 	{
 	  float damage_ratio = static_cast<float>(event.damageAmount) / static_cast<float>(stats->GetMaxHP());
-	  if (damage_ratio >= 0.5)
+	  if (damage_ratio >= 0.5f)
 		size = { 2.5, 2.5 };
-	  else if (damage_ratio >= 0.33)
+	  else if (damage_ratio >= 0.33f)
 		size = { 2.0, 2.0 };
-	  else if (damage_ratio >= 0.2)
+	  else if (damage_ratio >= 0.2f)
 		size = { 1.5, 1.5 };
-	  else if (damage_ratio >= 0.1)
+	  else if (damage_ratio >= 0.1f)
 		size = { 1.2, 1.2 };
 	}
   }
@@ -300,9 +302,9 @@ void GamePlay::DrawImGui()
   const char* current_source = (current_map_source_ == MapSource::First) ? "First" : "JSON";
   ImGui::Text("Current Map: %s", current_source);
 
-  if (current_map_source_ == MapSource::Json && selected_json_map_index_ < available_json_maps_.size())
+  if (current_map_source_ == MapSource::Json && selected_json_map_index_ < static_cast<int>(available_json_maps_.size()))
   {
-    ImGui::Text("Map ID: %s", available_json_maps_[selected_json_map_index_].c_str());
+    ImGui::Text("Map ID: %s", available_json_maps_[static_cast<std::size_t>(selected_json_map_index_)].c_str());
   }
 
   ImGui::Separator();
@@ -328,9 +330,9 @@ void GamePlay::DrawImGui()
 
   ImGui::Text("JSON Maps:");
 
-  for (int i = 0; i < available_json_maps_.size(); ++i)
+  for (int i = 0; i < static_cast<int>(available_json_maps_.size()); ++i)
   {
-    const std::string& map_id = available_json_maps_[i];
+    const std::string& map_id = available_json_maps_[static_cast<std::size_t>(i)];
 
     bool is_selected = (s_next_map_source == MapSource::Json && s_next_map_index == i);
     if (is_selected)
@@ -497,11 +499,11 @@ void GamePlay::LoadFirstMap()
 											  "xeefeeew", // new exit tile 'x'
 											  "weeeeeew", "weeeeeew", "weeeeeew", "weeeeeew", "weedeeew", "wwwwwwww" };
 
-  for (int y = 0; y < map_data.size(); ++y)
+  for (int y = 0; y < static_cast<int>(map_data.size()); ++y)
   {
-	for (int x = 0; x < map_data[y].length(); ++x)
+	for (int x = 0; x < static_cast<int>(map_data[static_cast<std::size_t>(y)].length()); ++x)
 	{
-	  char		  tile_char	  = map_data[y][x];
+	  char		  tile_char	  = map_data[static_cast<std::size_t>(y)][static_cast<std::size_t>(x)];
 	  Math::ivec2 current_pos = { x, static_cast<int>(map_data.size()) - 1 - y };
 	  switch (tile_char)
 	  {

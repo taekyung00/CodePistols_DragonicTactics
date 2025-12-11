@@ -1,3 +1,9 @@
+/**
+ * \file
+ * \author Ginam Park
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 #pragma once
 #include "AbilityBase.h"
 
@@ -39,7 +45,7 @@ class ShieldBash : public AbilityBase
 
   private:
   const std::string baseDamage	 = "1d8";
-  const int			pushDistance = 1;
+  [[maybe_unused]] const int pushDistance = 1;
 
   // calculate how many tile will pushed
   Math::ivec2 CalculatePushDirection(Math::ivec2 userPos, Math::ivec2 targetPos) const;

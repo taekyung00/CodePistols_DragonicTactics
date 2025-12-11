@@ -1,4 +1,10 @@
-﻿#pragma once
+/**
+ * \file
+ * \author Ginam Park
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
+#pragma once
 #include "./Engine/Component.h"
 #include "./Engine/Engine.h"
 #include <random>
@@ -13,10 +19,7 @@ class DiceManager : public CS230::Component
 
   int RollDice(int count, int sides);
   int RollDiceFromString(
-	const std::string& notation); // TODO NdS +-M ������. RollDice���, ParseDiceString�� ����ؼ�
-								  // ��Ȯ�� �������� Ȯ���ϱ�. if(!ParseDiceString)
-								  // ���߿��� RollDiceFromString�� ������� ���� ���ɼ��� �ִ�. �׷��� �ؾ���.����
-  // string �ʿ��� �κи� ������ -->
+	const std::string& notation); 
   void					  SetSeed(int seed);
   const std::vector<int>& GetLastRolls() const;
 

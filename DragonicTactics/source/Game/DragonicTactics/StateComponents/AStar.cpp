@@ -1,3 +1,9 @@
+/**
+ * \file
+ * \author Taekyung Ho
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 #include "pch.h"
 
 #include "./CS200/IRenderer2D.h"
@@ -69,7 +75,7 @@ std::vector<Math::ivec2> GridSystem::FindPath(Math::ivec2 start, Math::ivec2 goa
   // create start node
   Node* startNode = new Node(start, 0, ManhattanDistance(start, goal));
   openSet.push_back(startNode);
-  allNodes[{ (int)start.x, (int)start.y }] = startNode;
+  allNodes[{ static_cast<int>(start.x), static_cast<int>(start.y) }] = startNode;
 
   Node* goalNode = nullptr;
 
@@ -114,7 +120,7 @@ std::vector<Math::ivec2> GridSystem::FindPath(Math::ivec2 start, Math::ivec2 goa
 
 	  // check if neighbor is in open set
 	  Node* neighborNode = nullptr;
-	  auto	nodeKey		 = std::make_pair((int)neighborPos.x, (int)neighborPos.y);
+	  auto	nodeKey		 = std::make_pair(static_cast<int>(neighborPos.x), static_cast<int>(neighborPos.y));
 	  if (allNodes.find(nodeKey) == allNodes.end()) // not in open and close set
 	  {
 		// create new node
@@ -151,7 +157,7 @@ std::vector<Math::ivec2> GridSystem::FindPath(Math::ivec2 start, Math::ivec2 goa
   if (path.empty())
   {
 	Engine::GetLogger().LogError(
-	  "GridSystem: No path found from (" + std::to_string((int)start.x) + "," + std::to_string((int)start.y) + ") to (" + std::to_string((int)goal.x) + "," + std::to_string((int)goal.y) + ")");
+	  "GridSystem: No path found from (" + std::to_string(static_cast<int>(start.x)) + "," + std::to_string(static_cast<int>(start.y)) + ") to (" + std::to_string(static_cast<int>(goal.x)) + "," + std::to_string(static_cast<int>(goal.y)) + ")");
   }
 
 

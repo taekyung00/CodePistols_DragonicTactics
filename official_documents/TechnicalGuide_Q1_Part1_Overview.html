@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dragonic Tactics – Q1 Part 1: Overview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: #0b0f14;
+      color: #e5e7eb;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .card {
+      background: rgba(17,24,39,0.85);
+      border-radius: 1rem;
+      border: 1px solid rgba(99, 102, 241, 0.25);
+    }
+    .nav-button {
+      background: rgba(99, 102, 241, 0.3);
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      border: 1px solid rgba(99, 102, 241, 0.5);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .nav-button:hover {
+      background: rgba(99, 102, 241, 0.5);
+      border-color: rgba(99, 102, 241, 0.8);
+    }
+  </style>
+</head>
+<body class="p-6">
+  <div class="flex flex-col h-full max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-6">
+      <h1 class="text-3xl font-bold mb-2">🐉 Dragonic Tactics</h1>
+      <h2 class="text-xl text-gray-300 mb-1">Technical Guide - Question 1</h2>
+      <h3 class="text-lg text-gray-400">Part 1: Architecture Overview</h3>
+      <div class="mt-3 text-xs text-gray-500">
+        <p>Team: Code Pistols | Milestone 4 (GAM200)</p>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-hidden">
+      <div class="card border-indigo-500/40 p-6 h-full flex flex-col">
+        <h2 class="text-2xl font-semibold mb-4 text-indigo-300">Architecture Overview</h2>
+
+        <div class="flex-1 flex flex-col justify-center space-y-6">
+          <div class="text-gray-300 space-y-4">
+            <p class="text-lg">
+              Dragonic Tactics is built on a <strong class="text-emerald-400">custom C++20 game engine</strong>
+              with a modular, component-based architecture.
+            </p>
+
+            <p class="text-lg">
+              The engine separates systems into four distinct layers:
+            </p>
+
+            <div class="grid grid-cols-2 gap-4 my-6">
+              <div class="p-4 bg-purple-900/30 rounded-lg border border-purple-500/40">
+                <h4 class="font-bold text-purple-300 mb-2">Game Logic Layer</h4>
+                <p class="text-sm text-gray-400">DragonicTactics namespace - game-specific code</p>
+              </div>
+              <div class="p-4 bg-indigo-900/30 rounded-lg border border-indigo-500/40">
+                <h4 class="font-bold text-indigo-300 mb-2">Engine Core Layer</h4>
+                <p class="text-sm text-gray-400">CS230 namespace - reusable engine systems</p>
+              </div>
+              <div class="p-4 bg-cyan-900/30 rounded-lg border border-cyan-500/40">
+                <h4 class="font-bold text-cyan-300 mb-2">Rendering Abstraction</h4>
+                <p class="text-sm text-gray-400">CS200 namespace - graphics API abstraction</p>
+              </div>
+              <div class="p-4 bg-green-900/30 rounded-lg border border-green-500/40">
+                <h4 class="font-bold text-green-300 mb-2">OpenGL Wrapper</h4>
+                <p class="text-sm text-gray-400">Low-level OpenGL 3.3+ wrapper</p>
+              </div>
+            </div>
+
+            <div class="bg-indigo-900/20 rounded-lg p-4 border border-indigo-500/30">
+              <h4 class="font-semibold text-indigo-300 mb-3">Core Architectural Principles</h4>
+              <ul class="space-y-2 text-sm">
+                <li class="flex items-center">
+                  <span class="text-emerald-400 mr-2">✓</span>
+                  <strong class="text-emerald-400 mr-2">Modular Independence:</strong>
+                  <span class="text-gray-400">Systems are self-contained and replaceable</span>
+                </li>
+                <li class="flex items-center">
+                  <span class="text-emerald-400 mr-2">✓</span>
+                  <strong class="text-emerald-400 mr-2">Event-Driven Communication:</strong>
+                  <span class="text-gray-400">Loosely coupled via EventBus</span>
+                </li>
+                <li class="flex items-center">
+                  <span class="text-emerald-400 mr-2">✓</span>
+                  <strong class="text-emerald-400 mr-2">Data-Driven Design:</strong>
+                  <span class="text-gray-400">Game content in JSON files</span>
+                </li>
+                <li class="flex items-center">
+                  <span class="text-emerald-400 mr-2">✓</span>
+                  <strong class="text-emerald-400 mr-2">Component-Based Composition:</strong>
+                  <span class="text-gray-400">Flexible entity construction</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="mt-4 flex justify-between items-center">
+      <div class="text-sm text-gray-500">Page 1 of 6</div>
+      <div class="flex gap-2">
+        <button class="nav-button text-gray-500 cursor-not-allowed" disabled>Previous</button>
+        <button class="nav-button" onclick="window.location.href='TechnicalGuide_Q1_Part2_GameLayer.html'">Next: Game Layer →</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

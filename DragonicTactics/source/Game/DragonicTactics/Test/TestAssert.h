@@ -1,3 +1,9 @@
+/**
+ * \file
+ * \author Taekyung Ho
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 bool ASSERT_TRUE(bool condition);
 
 bool ASSERT_FALSE(bool condition);

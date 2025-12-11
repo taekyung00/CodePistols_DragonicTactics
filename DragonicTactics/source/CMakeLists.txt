@@ -1,4 +1,5 @@
 # author Rudy Castan
+# author Taekyung Ho
 # date 2025 Fall
 # CS200 Computer Graphics I
 # copyright DigiPen Institute of Technology

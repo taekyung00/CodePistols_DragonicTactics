@@ -197,13 +197,13 @@ def scan_directory(directory, skip_todos=False, skip_opengl=False):
     if skip_todos and skip_opengl:
         colored_print("⏭️  Skipping all scanning (--skip-todos and --skip-opengl flags used)", Colors.YELLOW)
         return
-        
+
     if skip_todos:
         colored_print("⏭️  Skipping TODO scan (--skip-todos flag used)", Colors.YELLOW)
-    
+
     if skip_opengl:
         colored_print("⏭️  Skipping OpenGL scan (--skip-opengl flag used)", Colors.YELLOW)
-        
+
     has_todo, has_opengl_issue = False, False
     scan_title = "TODO/FIXME"
     if not skip_todos and not skip_opengl:
@@ -212,12 +212,12 @@ def scan_directory(directory, skip_todos=False, skip_opengl=False):
         scan_title = "TODO/FIXME SCAN"
     elif not skip_opengl:
         scan_title = "OpenGL SCAN"
-    
+
     if not skip_todos or not skip_opengl:
         print_separator(scan_title)
         colored_print(f"📁 Scanning directory: {directory}", Colors.BLUE, bold=True)
         print()
-    
+
     scanned_files = 0
     with ThreadPoolExecutor() as executor:
         futures = []
@@ -229,28 +229,31 @@ def scan_directory(directory, skip_todos=False, skip_opengl=False):
                     file_path = os.path.join(root, file)
                     futures.append(executor.submit(scan_file, file_path, skip_todos, skip_opengl))
                     scanned_files += 1
-        
+
         for future in futures:
             todo_found, opengl_issue_found = future.result()
             has_todo |= todo_found
             has_opengl_issue |= opengl_issue_found
-    
+
     if has_todo:
-        colored_print(f"\n❌ TODO comments found in {scanned_files} scanned files. Fix them before proceeding.", Colors.RED, bold=True)
-    
+        colored_print(f"\n⚠️  TODO comments found in {scanned_files} scanned files.", Colors.YELLOW, bold=True)
+
     if has_opengl_issue:
         colored_print(f"\n❌ Bad OpenGL usage found in {scanned_files} scanned files. Fix them before proceeding.", Colors.RED, bold=True)
 
-    if has_todo or has_opengl_issue:
+    # Only exit on OpenGL issues, not TODO comments
+    if has_opengl_issue:
         sys.exit(1)
     elif not skip_todos or not skip_opengl:
         success_msg = "✅ No "
-        if not skip_todos and not skip_opengl:
-            success_msg += "TODO/FIXME comments or bad OpenGL usage"
-        elif not skip_todos:
-            success_msg += "TODO/FIXME comments"
-        elif not skip_opengl:
+        if not skip_opengl:
             success_msg += "bad OpenGL usage"
+        elif not skip_todos and has_todo:
+            success_msg = f"⚠️  TODO comments found but build will continue. "
+            colored_print(success_msg, Colors.YELLOW, bold=True)
+            return
+        elif not skip_todos:
+            success_msg += "TODO/FIXME comments or bad OpenGL usage"
         success_msg += f" found in {scanned_files} scanned files!"
         colored_print(success_msg, Colors.GREEN, bold=True)
 

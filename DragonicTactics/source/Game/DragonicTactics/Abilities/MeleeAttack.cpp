@@ -1,3 +1,9 @@
+/**
+ * \file
+ * \author Ginam Park
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 #include "MeleeAttack.h"
 #include "pch.h"
 

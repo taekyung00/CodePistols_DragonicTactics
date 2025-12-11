@@ -57,6 +57,9 @@ void MainMenu::SelecetOption()
 	  Engine::GetGameStateManager().PopState();
 	  Engine::GetGameStateManager().PushState<GamePlay>();
 	  break;
+	case MainMenu::Option::COUNT:
+	  // COUNT is not a selectable option, just a marker for enum size
+	  break;
 
 	case MainMenu::Option::ConsoleTest:
 	  Engine::GetGameStateManager().PopState();
@@ -110,7 +113,7 @@ void MainMenu::Update([[maybe_unused]] double dt)
 {
   CS230::Input& input		= Engine::GetInput();
   Math::vec2	mouse_pos	= input.GetMousePos();
-  auto			window_size = Engine::GetWindow().GetSize();
+  [[maybe_unused]] auto window_size = Engine::GetWindow().GetSize();
 
   if (input.KeyJustReleased(CS230::Input::Keys::Up))
   {
@@ -169,9 +172,9 @@ void MainMenu::Draw()
 
   text_manager.DrawText("Dragonic Tactics", title_pos, Fonts::Outlined, title_scale, title_color);
 
-  static constexpr CS200::RGBA DEBUG_FILL_COLOR = 0xFFFF0030;
-  static constexpr CS200::RGBA DEBUG_LINE_COLOR = 0xFFFF00FF;
-  static constexpr double	   DEBUG_LINE_WIDTH = 1.5;
+  [[maybe_unused]] static constexpr CS200::RGBA DEBUG_FILL_COLOR = 0xFFFF0030;
+  [[maybe_unused]] static constexpr CS200::RGBA DEBUG_LINE_COLOR = 0xFFFF00FF;
+  [[maybe_unused]] static constexpr double	   DEBUG_LINE_WIDTH = 1.5;
 
   for (size_t i = 0; i < menu_items.size(); ++i)
   {
@@ -196,7 +199,7 @@ void MainMenu::Draw()
 
 	Math::ScaleMatrix		   scale_matrix(item_size);
 	Math::TranslationMatrix	   trans_matrix(center_pos);
-	Math::TransformationMatrix transform = trans_matrix * scale_matrix;
+	[[maybe_unused]] Math::TransformationMatrix transform = trans_matrix * scale_matrix;
 
 	// renderer_2d.DrawRectangle(
 	// 	transform,

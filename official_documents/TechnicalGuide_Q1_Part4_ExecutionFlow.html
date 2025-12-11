@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dragonic Tactics – Q1 Part 4: Execution Flow</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: #0b0f14;
+      color: #e5e7eb;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .card {
+      background: rgba(17,24,39,0.85);
+      border-radius: 1rem;
+      border: 1px solid rgba(99, 102, 241, 0.25);
+    }
+    .file-ref {
+      font-family: 'Courier New', monospace;
+      background: rgba(99, 102, 241, 0.2);
+      padding: 0.125rem 0.375rem;
+      border-radius: 0.25rem;
+      font-size: 0.65rem;
+      word-break: break-all;
+      display: inline-block;
+      max-width: 100%;
+    }
+    .nav-button {
+      background: rgba(99, 102, 241, 0.3);
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      border: 1px solid rgba(99, 102, 241, 0.5);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .nav-button:hover {
+      background: rgba(99, 102, 241, 0.5);
+      border-color: rgba(99, 102, 241, 0.8);
+    }
+  </style>
+</head>
+<body class="p-6">
+  <div class="flex flex-col h-full max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-3">
+      <h1 class="text-2xl font-bold mb-1">🐉 Dragonic Tactics</h1>
+      <h3 class="text-lg text-gray-400">Part 4: Execution Flow Architecture</h3>
+      <p class="text-xs text-gray-500 mt-1">Based on <span class="file-ref">Game/DragonicTactics/States/GamePlay.cpp</span></p>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-hidden">
+      <div class="grid grid-cols-3 gap-3 h-full">
+        <!-- Load Phase -->
+        <div class="card border-amber-500/40 p-3 flex flex-col">
+          <h3 class="text-base font-semibold text-amber-300 mb-2 text-center">📦 Load Phase</h3>
+          <div class="flex-1 flex flex-col justify-center space-y-2">
+            <div class="p-2 bg-emerald-900/20 rounded-lg border border-emerald-500/30">
+              <p class="font-semibold text-emerald-300 text-xs mb-1">DataRegistry · MapDataRegistry</p>
+              <p class="text-xs text-gray-400 mb-1">Load character/map data from JSON files</p>
+              <div class="text-xs text-gray-500 space-y-0.5">
+                <div><span class="file-ref">Game/DragonicTactics/StateComponents/DataRegistry.cpp:LoadFromFile()</span></div>
+                <div><span class="file-ref">Game/DragonicTactics/StateComponents/MapDataRegistry.cpp:LoadMaps()</span></div>
+              </div>
+            </div>
+
+            <p class="text-gray-400 text-center text-sm">⬇️</p>
+
+            <div class="p-2 bg-blue-900/20 rounded-lg border border-blue-500/30">
+              <p class="font-semibold text-blue-300 text-xs mb-1">CharacterFactory</p>
+              <p class="text-xs text-gray-400 mb-1">Create characters using registry data</p>
+              <p class="text-xs text-gray-500"><span class="file-ref">Game/DragonicTactics/Factories/CharacterFactory.cpp:Create()</span></p>
+            </div>
+
+            <div class="p-2 bg-cyan-900/20 rounded-lg border border-cyan-500/30">
+              <p class="font-semibold text-cyan-300 text-xs mb-1">GridSystem Setup</p>
+              <p class="text-xs text-gray-400 mb-1">Configure grid tiles from map data</p>
+              <p class="text-xs text-gray-500"><span class="file-ref">Game/DragonicTactics/StateComponents/GridSystem.cpp:LoadMap()</span></p>
+            </div>
+
+            <p class="text-gray-400 text-center text-sm">⬇️</p>
+
+            <div class="p-2 bg-purple-900/20 rounded-lg border border-purple-500/30">
+              <p class="font-semibold text-purple-300 text-xs mb-1">TurnManager.InitializeTurnOrder()</p>
+              <p class="text-xs text-gray-400 mb-1">Speed-based turn order → StartCombat()</p>
+              <p class="text-xs text-gray-500"><span class="file-ref">Game/DragonicTactics/StateComponents/TurnManager.cpp</span></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Update Phase -->
+        <div class="card border-blue-500/40 p-3 flex flex-col">
+          <h3 class="text-base font-semibold text-blue-300 mb-2 text-center">🔄 Update Phase</h3>
+          <div class="flex-1 flex flex-col justify-center space-y-2">
+            <div class="p-2 bg-blue-900/20 rounded-lg border border-blue-500/30">
+              <p class="font-semibold text-blue-300 text-xs">TurnManager.GetCurrentCharacter()</p>
+              <p class="text-xs text-gray-400">Check current turn character</p>
+            </div>
+
+            <p class="text-gray-400 text-center text-sm">⬇️</p>
+
+            <div class="p-2 bg-indigo-900/20 rounded-lg border border-indigo-500/30">
+              <p class="font-semibold text-indigo-300 text-xs mb-1">🎮 PlayerInputHandler</p>
+              <p class="text-xs text-gray-400 mb-1">Player turn: Input processing</p>
+              <p class="text-xs text-gray-500"><span class="file-ref">Game/DragonicTactics/States/PlayerInputHandler.cpp:Update()</span></p>
+            </div>
+
+            <div class="p-2 bg-rose-900/20 rounded-lg border border-rose-500/30">
+              <p class="font-semibold text-rose-300 text-xs mb-1">🤖 BattleOrchestrator</p>
+              <p class="text-xs text-gray-400 mb-1">AI turn: Call AISystem</p>
+              <p class="text-xs text-gray-500"><span class="file-ref">Game/DragonicTactics/States/BattleOrchestrator.cpp:Update()</span></p>
+            </div>
+
+            <p class="text-gray-400 text-center text-sm">⬇️</p>
+
+            <div class="p-2 bg-teal-900/20 rounded-lg border border-teal-500/30">
+              <p class="font-semibold text-teal-300 text-xs mb-1">🚶 Movement Flow</p>
+              <p class="text-xs text-gray-400 mb-1">SetPath() → MovementComponent.Update()</p>
+              <div class="text-xs text-gray-500 space-y-0.5">
+                <div><span class="file-ref">Game/DragonicTactics/Objects/Character.cpp:SetPath()</span></div>
+                <div><span class="file-ref">Game/DragonicTactics/Objects/Components/MovementComponent.cpp:Update()</span></div>
+              </div>
+            </div>
+
+            <div class="p-2 bg-orange-900/20 rounded-lg border border-orange-500/30">
+              <p class="font-semibold text-orange-300 text-xs mb-1">⚔️ Attack Flow</p>
+              <p class="text-xs text-gray-400 mb-1">CombatSystem.ExecuteAttack() → Immediate</p>
+              <p class="text-xs text-gray-500"><span class="file-ref">Game/DragonicTactics/StateComponents/CombatSystem.cpp:ExecuteAttack()</span></p>
+            </div>
+
+            <p class="text-gray-400 text-center text-sm">⬇️</p>
+
+            <div class="p-2 bg-amber-900/20 rounded-lg border border-amber-500/30">
+              <p class="font-semibold text-amber-300 text-xs mb-1">GameObject Components Update</p>
+              <p class="text-xs text-gray-400 mb-1">Per-frame component updates</p>
+              <p class="text-xs text-gray-500"><span class="file-ref">Engine/GameObjectManager.cpp:UpdateAll()</span></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Draw Phase -->
+        <div class="card border-pink-500/40 p-3 flex flex-col">
+          <h3 class="text-base font-semibold text-pink-300 mb-2 text-center">🎨 Draw Phase</h3>
+          <div class="flex-1 flex flex-col justify-center space-y-3">
+            <div class="p-3 bg-pink-900/20 rounded-lg border border-pink-500/30">
+              <p class="font-semibold text-pink-300 text-xs mb-2">GridSystem.Draw() → GameObjectManager.DrawAll()</p>
+              <p class="text-xs text-gray-400 mb-2">Render: Grid → Characters → UI</p>
+              <div class="text-xs text-gray-500 space-y-1">
+                <div><span class="file-ref">Game/DragonicTactics/StateComponents/GridSystem.cpp:Draw()</span></div>
+                <div><span class="file-ref">Engine/GameObjectManager.cpp:DrawAll()</span></div>
+              </div>
+            </div>
+
+            <div class="p-3 bg-purple-900/20 rounded-lg border border-purple-500/30">
+              <p class="font-semibold text-purple-300 text-xs mb-2">Renderer Selection</p>
+              <p class="text-xs text-gray-400 mb-2">Runtime-switchable rendering backends:</p>
+              <ul class="text-xs text-gray-500 space-y-1">
+                <li>• ImmediateRenderer2D</li>
+                <li>• BatchRenderer2D</li>
+                <li>• InstancedRenderer2D</li>
+              </ul>
+              <p class="text-xs text-gray-500 mt-2"><span class="file-ref">CS200/IRenderer2D.h</span></p>
+            </div>
+
+            <div class="p-3 bg-indigo-900/20 rounded-lg border border-indigo-500/30">
+              <p class="font-semibold text-indigo-300 text-xs mb-2">Debug Visualization</p>
+              <p class="text-xs text-gray-400 mb-2">Optional debug overlays:</p>
+              <ul class="text-xs text-gray-500 space-y-1">
+                <li>• Grid coordinates</li>
+                <li>• Pathfinding visualization</li>
+                <li>• Component states</li>
+              </ul>
+              <p class="text-xs text-gray-500 mt-2"><span class="file-ref">Game/DragonicTactics/Debugger/DebugVisualizer.cpp</span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="mt-4 flex justify-between items-center">
+      <div class="text-sm text-gray-500">Page 4 of 6</div>
+      <div class="flex gap-2">
+        <button class="nav-button" onclick="window.location.href='TechnicalGuide_Q1_Part3_EngineLayers.html'">← Previous</button>
+        <button class="nav-button" onclick="window.location.href='TechnicalGuide_Q1_Part5_Communication.html'">Next: Communication →</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,3 +1,9 @@
+/**
+ * \file
+ * \author Junyoung Ki
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 #include "pch.h"
 
 // File: CS230/Game/System/SpellSystem.cpp
@@ -212,7 +218,7 @@ MockSpellResult SpellSystem::CastSpell(Character* caster, const std::string& spe
 
   // Step 4.1c: Log spell cast attempt
   Engine::GetLogger().LogEvent(
-	"SpellSystem: " + caster->TypeName() + " casting " + spellName + " at (" + std::to_string((int)targetTile.x) + "," + std::to_string((int)targetTile.y) + ")" +
+	"SpellSystem: " + caster->TypeName() + " casting " + spellName + " at (" + std::to_string(static_cast<int>(targetTile.x)) + "," + std::to_string(static_cast<int>(targetTile.y)) + ")" +
 	(upcastLevel > 0 ? " (upcast to level " + std::to_string(upcastLevel) + ")" : ""));
   caster->ConsumeSpell(spell->GetLevel());
   // Step 4.1d: Execute the spell

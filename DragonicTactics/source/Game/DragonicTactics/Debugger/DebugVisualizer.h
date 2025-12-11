@@ -1,3 +1,9 @@
+/**
+ * \file
+ * \author Sangyun Lee
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 #pragma once
 #include "./CS200/RGBA.h"
 #include "./Engine/Vec2.h"

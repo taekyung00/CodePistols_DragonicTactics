@@ -252,9 +252,9 @@ Math::ivec2 FighterStrategy::FindNextMovePos(Character* actor, Character* target
 	std::vector<Math::ivec2> currentPath = grid->FindPath(myPos, attackPos);
 
 	// 경로가 있고 더 짧다면 갱신
-	if (!currentPath.empty() && (int)currentPath.size() < bestPathCost)
+	if (!currentPath.empty() && static_cast<int>(currentPath.size()) < bestPathCost)
 	{
-	  bestPathCost = (int)currentPath.size();
+	  bestPathCost = static_cast<int>(currentPath.size());
 	  bestPath	   = currentPath;
 	}
   }
@@ -263,12 +263,12 @@ Math::ivec2 FighterStrategy::FindNextMovePos(Character* actor, Character* target
   if (!bestPath.empty())
   {
 	// 내 이동력(Speed) 한계 내에서 가장 멀리 갈 수 있는 칸 선택
-	int maxReach  = std::min((int)bestPath.size(), actor->GetMovementRange());
+	int maxReach  = std::min(static_cast<int>(bestPath.size()), actor->GetMovementRange());
 	int destIndex = maxReach - 1;
 
 	if (destIndex >= 0)
 	{
-	  return bestPath[destIndex];
+	  return bestPath[static_cast<std::size_t>(destIndex)];
 	}
   }
 

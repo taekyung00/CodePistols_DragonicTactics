@@ -1,3 +1,9 @@
+/**
+ * \file
+ * \author Sangyun Lee
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 #pragma once
 // Individual CombatSystem test functions
 bool Test_CombatSystem_CalculateDamage();

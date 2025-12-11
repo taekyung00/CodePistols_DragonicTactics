@@ -1,6 +1,31 @@
+/**
+ * \file
+ * \author Ginam Park
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 #pragma once
 #include "pch.h"
+
+// Suppress warnings from external library (nlohmann/json)
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wsign-conversion"
+#pragma clang diagnostic ignored "-Wdouble-promotion"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wdouble-promotion"
+#endif
+
 #include "./Game/DragonicTactics/External/json.hpp"
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+
 #include <fstream>
 
 struct MapData {

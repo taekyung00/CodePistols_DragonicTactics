@@ -1,3 +1,9 @@
+/**
+ * \file
+ * \author Taekyung Ho
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 #include "pch.h"
 
 #include "../../../Engine/Engine.h"
@@ -145,7 +151,7 @@ std::vector<Math::vec2> MockFireball::GetAffectedTiles(Math::vec2 targetTile) co
   {
 	for (int dy = -1; dy <= 1; ++dy)
 	{
-	  Math::vec2 checkTile = targetTile + Math::vec2{ (double)dx, (double)dy };
+	  Math::vec2 checkTile = targetTile + Math::vec2{ static_cast<double>(dx), static_cast<double>(dy) };
 
 	  if (grid->IsValidTile(checkTile))
 	  {
@@ -205,7 +211,7 @@ std::vector<Math::vec2> MockCreateWall::GetAffectedTiles(Math::vec2 targetTile) 
   {
 	for (int dy = -1; dy <= 1; ++dy)
 	{
-	  Math::vec2 checkTile = targetTile + Math::vec2{ (double)dx, (double)dy };
+	  Math::vec2 checkTile = targetTile + Math::vec2{ static_cast<double>(dx), static_cast<double>(dy) };
 
 	  if (grid->IsValidTile(checkTile))
 	  {
@@ -272,7 +278,7 @@ std::vector<Math::vec2> MockLavaPool::GetAffectedTiles(Math::vec2 targetTile) co
   {
 	for (int dy = -1; dy <= 1; ++dy)
 	{
-	  Math::vec2 checkTile = targetTile + Math::vec2{ (double)dx, (double)dy };
+	  Math::vec2 checkTile = targetTile + Math::vec2{ static_cast<double>(dx), static_cast<double>(dy) };
 
 	  if (grid->IsValidTile(checkTile))
 	  {

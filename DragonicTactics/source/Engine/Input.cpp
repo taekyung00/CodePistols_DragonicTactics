@@ -19,7 +19,7 @@
 
 namespace CS230
 {
-  Input::Input() : mouse_position(0.0f, 0.0f), mouse_scroll(0.0)
+  Input::Input() : mouse_position(0.0, 0.0), mouse_scroll(0.0)
   {
 	Init();
   }
@@ -60,21 +60,21 @@ namespace CS230
   {
 	if (button < 0 || button >= 3)
 	  return false;
-	return current_mouse_state[button];
+	return current_mouse_state[static_cast<std::size_t>(button)];
   }
 
   bool Input::MouseJustPressed(int button) const
   {
 	if (button < 0 || button >= 3)
 	  return false;
-	return current_mouse_state[button] && !last_mouse_state[button];
+	return current_mouse_state[static_cast<std::size_t>(button)] && !last_mouse_state[static_cast<std::size_t>(button)];
   }
 
   bool Input::MouseJustReleased(int button) const
   {
 	if (button < 0 || button >= 3)
 	  return false;
-	return !current_mouse_state[button] && last_mouse_state[button];
+	return !current_mouse_state[static_cast<std::size_t>(button)] && last_mouse_state[static_cast<std::size_t>(button)];
   }
 
   Math::vec2 Input::GetMousePos() const
@@ -106,14 +106,14 @@ namespace CS230
   {
 	if (button < 0 || button >= 3)
 	  return;
-	current_mouse_state[button] = true;
+	current_mouse_state[static_cast<std::size_t>(button)] = true;
   }
 
   void Input::SetMouseReleased(int button)
   {
 	if (button < 0 || button >= 3)
 	  return;
-	current_mouse_state[button] = false;
+	current_mouse_state[static_cast<std::size_t>(button)] = false;
   }
 
   void Input::SetMousePos(Math::vec2 pos)

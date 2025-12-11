@@ -1,3 +1,9 @@
+/**
+ * \file
+ * \author Ginam Park
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 #include "TestMemory.h"
 #include "Game/DragonicTactics/Factories/CharacterFactory.h"
 #include "Game/DragonicTactics/Objects/Character.h"

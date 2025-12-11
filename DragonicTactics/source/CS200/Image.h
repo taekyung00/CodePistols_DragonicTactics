@@ -1,4 +1,4 @@
-﻿/**
+/**
  * \file
  * \author Rudy Castan
  * \author Taekyung Ho

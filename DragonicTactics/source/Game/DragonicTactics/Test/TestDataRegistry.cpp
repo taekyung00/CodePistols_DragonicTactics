@@ -1,3 +1,9 @@
+/**
+ * \file
+ * \author Ginam Park
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 #include "pch.h"
 
 #include "TestDataRegistry.h"
@@ -91,7 +97,7 @@ bool TestDataRegistry_GetArray()
 	spells = dragon.known_spells;
   }
 
-  ASSERT_GE(spells.size(), (size_t)1); // At least one spell
+  ASSERT_GE(spells.size(), static_cast<size_t>(1)); // At least one spell
 
   // Verify array contains expected values
   bool hasFireball = false;
@@ -157,7 +163,7 @@ bool TestDataRegistry_DragonStats()
   ASSERT_EQ(dragon.spell_slots[3], 2);
 
   // Verify known spells
-  ASSERT_GE(dragon.known_spells.size(), (size_t)1);
+  ASSERT_GE(dragon.known_spells.size(), static_cast<size_t>(1));
 
   std::cout << "TestDataRegistry_DragonStats passed" << std::endl;
   return true;
@@ -186,7 +192,7 @@ bool TestDataRegistry_FighterStats()
   ASSERT_EQ(fighter.spell_slots[2], 2);
 
   // Verify known abilities
-  ASSERT_GE(fighter.known_abilities.size(), (size_t)1);
+  ASSERT_GE(fighter.known_abilities.size(), static_cast<size_t>(1));
 
   std::cout << "TestDataRegistry_FighterStats passed" << std::endl;
   return true;

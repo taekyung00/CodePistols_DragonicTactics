@@ -1,3 +1,9 @@
+/**
+ * \file
+ * \author Junyoung Ki
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 #include "pch.h"
 
 #include "../Objects/Components/StatsComponent.h"
@@ -83,14 +89,14 @@ void TurnManager::StartNextTurn()
   }
 
   // Get current character
-  Character* currentChar = turnOrder[currentTurnIndex];
+  Character* currentChar = turnOrder[static_cast<std::size_t>(currentTurnIndex)];
   Engine::GetLogger().LogEvent("TurnManager: Turn " + std::to_string(turnNumber) + " - " + currentChar->TypeName() + "'s turn");
 
   // Skip dead characters
   while (!currentChar->IsAlive())
   {
-	currentTurnIndex = (currentTurnIndex + 1) % turnOrder.size();
-	currentChar		 = turnOrder[currentTurnIndex];
+	currentTurnIndex = static_cast<int>((static_cast<std::size_t>(currentTurnIndex) + 1) % turnOrder.size());
+	currentChar		 = turnOrder[static_cast<std::size_t>(currentTurnIndex)];
 
 	// Check if we've cycled through all characters (all dead)
 	if (currentTurnIndex == 0)
@@ -127,7 +133,7 @@ void TurnManager::EndCurrentTurn()
 	return;
   }
 
-  Character* currentChar = turnOrder[currentTurnIndex];
+  Character* currentChar = turnOrder[static_cast<std::size_t>(currentTurnIndex)];
 
   // Call OnTurnEnd
   Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - Calling OnTurnEnd");
@@ -137,7 +143,7 @@ void TurnManager::EndCurrentTurn()
   PublishTurnEndEvent();
 
   // Advance to next character
-  currentTurnIndex = (currentTurnIndex + 1) % turnOrder.size();
+  currentTurnIndex = static_cast<int>((static_cast<std::size_t>(currentTurnIndex) + 1) % turnOrder.size());
   turnNumber++;
 
   // Check if we completed a round (all characters had a turn)
@@ -216,11 +222,11 @@ void TurnManager::Reset()
 
 Character* TurnManager::GetCurrentCharacter() const
 {
-  if (turnOrder.empty() || currentTurnIndex >= turnOrder.size())
+  if (turnOrder.empty() || currentTurnIndex >= static_cast<int>(turnOrder.size()))
   {
 	return nullptr;
   }
-  return turnOrder[currentTurnIndex];
+  return turnOrder[static_cast<std::size_t>(currentTurnIndex)];
 }
 
 int TurnManager::GetCurrentTurnNumber() const
@@ -265,7 +271,7 @@ int TurnManager::GetCharacterTurnIndex(Character* character) const
   {
 	if (turnOrder[i] == character)
 	{
-	  return (int)i;
+	  return static_cast<int>(i);
 	}
   }
   return -1;

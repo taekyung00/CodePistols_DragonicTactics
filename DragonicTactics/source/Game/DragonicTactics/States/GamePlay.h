@@ -22,7 +22,7 @@ class GamePlay : public CS230::GameState
 {
   public:
   GamePlay();
-  virtual ~GamePlay() = default;
+  virtual ~GamePlay(); // Must be defined in .cpp where unique_ptr member types are complete
 
   void			Load() override;
   void			Update(double dt) override;

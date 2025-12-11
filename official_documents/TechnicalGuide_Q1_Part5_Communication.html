@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dragonic Tactics – Q1 Part 5: Communication</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: #0b0f14;
+      color: #e5e7eb;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .card {
+      background: rgba(17,24,39,0.85);
+      border-radius: 1rem;
+      border: 1px solid rgba(99, 102, 241, 0.25);
+    }
+    .file-ref {
+      font-family: 'Courier New', monospace;
+      background: rgba(99, 102, 241, 0.2);
+      padding: 0.125rem 0.375rem;
+      border-radius: 0.25rem;
+      font-size: 0.7rem;
+      word-break: break-all;
+      display: inline-block;
+      max-width: 100%;
+    }
+    .nav-button {
+      background: rgba(99, 102, 241, 0.3);
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      border: 1px solid rgba(99, 102, 241, 0.5);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .nav-button:hover {
+      background: rgba(99, 102, 241, 0.5);
+      border-color: rgba(99, 102, 241, 0.8);
+    }
+  </style>
+</head>
+<body class="p-6">
+  <div class="flex flex-col h-full max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-4">
+      <h1 class="text-2xl font-bold mb-1">🐉 Dragonic Tactics</h1>
+      <h3 class="text-lg text-gray-400">Part 5: Data Flow & Communication Patterns</h3>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-hidden">
+      <div class="grid grid-cols-2 gap-4 h-full">
+        <!-- Row 1 -->
+        <div class="card border-yellow-500/40 p-4">
+          <h3 class="font-semibold text-yellow-300 mb-3 text-base">Event-Driven Communication</h3>
+          <p class="text-sm text-gray-400 mb-3">
+            Loosely-coupled systems communicate via EventBus
+          </p>
+          <div class="text-xs space-y-2 text-gray-300 mb-4">
+            <div class="p-2 bg-yellow-900/20 rounded border border-yellow-500/20">
+              <p class="font-semibold text-yellow-300 mb-1">Publisher Example:</p>
+              <p class="text-gray-400">CombatSystem publishes CharacterDamagedEvent when damage occurs</p>
+            </div>
+            <div class="p-2 bg-yellow-900/20 rounded border border-yellow-500/20">
+              <p class="font-semibold text-yellow-300 mb-1">Subscriber Example:</p>
+              <p class="text-gray-400">UI Manager subscribes to show damage text and update health bars</p>
+            </div>
+          </div>
+          <div class="text-xs space-y-1 text-gray-500">
+            <p><strong>EventBus:</strong> <span class="file-ref">Game/DragonicTactics/StateComponents/EventBus.h/cpp</span></p>
+            <p><strong>Event Types:</strong> <span class="file-ref">Game/DragonicTactics/Types/Events.h</span></p>
+          </div>
+          <div class="mt-4 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
+            <p class="text-xs font-mono text-gray-300">
+              <span class="text-purple-400">EventBus</span>::Instance().<span class="text-yellow-400">Subscribe</span>&lt;CharacterDamagedEvent&gt;(<br/>
+              &nbsp;&nbsp;[](const CharacterDamagedEvent& e) {<br/>
+              &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-gray-500">// Handle event</span><br/>
+              &nbsp;&nbsp;}<br/>
+              );
+            </p>
+          </div>
+        </div>
+
+        <div class="card border-orange-500/40 p-4">
+          <h3 class="font-semibold text-orange-300 mb-3 text-base">Direct Communication</h3>
+          <p class="text-sm text-gray-400 mb-3">
+            Tightly-coupled systems pass references directly
+          </p>
+          <div class="text-xs space-y-2 text-gray-300 mb-4">
+            <div class="p-2 bg-orange-900/20 rounded border border-orange-500/20">
+              <p class="font-semibold text-orange-300 mb-1">Example:</p>
+              <p class="text-gray-400">PlayerInputHandler receives GridSystem* and CombatSystem* pointers</p>
+            </div>
+            <div class="p-2 bg-orange-900/20 rounded border border-orange-500/20">
+              <p class="font-semibold text-orange-300 mb-1">Reason:</p>
+              <p class="text-gray-400">Immediate gameplay operations require fast, direct access without event overhead</p>
+            </div>
+          </div>
+          <div class="text-xs space-y-1 text-gray-500">
+            <p><strong>Implementation:</strong> <span class="file-ref">Game/DragonicTactics/States/GamePlay.cpp:Update()</span></p>
+          </div>
+          <div class="mt-4 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
+            <p class="text-xs font-mono text-gray-300">
+              <span class="text-blue-400">playerInputHandler</span>.<span class="text-yellow-400">Update</span>(<br/>
+              &nbsp;&nbsp;gridSystem,<br/>
+              &nbsp;&nbsp;combatSystem,<br/>
+              &nbsp;&nbsp;turnManager<br/>
+              );
+            </p>
+          </div>
+        </div>
+
+        <!-- Row 2 -->
+        <div class="card border-green-500/40 p-4">
+          <h3 class="font-semibold text-green-300 mb-3 text-base">Data-Driven Architecture</h3>
+          <p class="text-sm text-gray-400 mb-3">
+            Game content loaded from JSON files
+          </p>
+          <div class="text-xs space-y-2 text-gray-300 mb-4">
+            <div class="p-2 bg-green-900/20 rounded border border-green-500/20">
+              <p class="font-semibold text-green-300 mb-1">Character Data:</p>
+              <p class="text-gray-400">Stats, abilities, spell slots defined in characters.json</p>
+              <p class="text-gray-500 mt-1"><span class="file-ref">Assets/Data/characters.json</span></p>
+            </div>
+            <div class="p-2 bg-green-900/20 rounded border border-green-500/20">
+              <p class="font-semibold text-green-300 mb-1">Map Data:</p>
+              <p class="text-gray-400">Grid layout, tile types, spawn points in maps.json</p>
+              <p class="text-gray-500 mt-1"><span class="file-ref">Assets/Data/maps.json</span></p>
+            </div>
+          </div>
+          <div class="text-xs space-y-1 text-gray-500">
+            <p><strong>Parser:</strong> <span class="file-ref">External/json.hpp</span> (nlohmann/json)</p>
+            <p><strong>Registry:</strong> <span class="file-ref">Game/DragonicTactics/StateComponents/DataRegistry.h/cpp</span></p>
+          </div>
+          <div class="mt-4 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
+            <p class="text-xs font-mono text-gray-300">
+              <span class="text-blue-400">auto</span> data = <span class="text-purple-400">DataRegistry</span>::Instance()<br/>
+              &nbsp;&nbsp;.<span class="text-yellow-400">GetCharacterData</span>(<span class="text-green-400">"Dragon"</span>);
+            </p>
+          </div>
+        </div>
+
+        <div class="card border-blue-500/40 p-4">
+          <h3 class="font-semibold text-blue-300 mb-3 text-base">Factory Pattern</h3>
+          <p class="text-sm text-gray-400 mb-3">
+            Centralized object creation
+          </p>
+          <div class="text-xs space-y-2 text-gray-300 mb-4">
+            <div class="p-2 bg-blue-900/20 rounded border border-blue-500/20">
+              <p class="font-semibold text-blue-300 mb-1">Purpose:</p>
+              <p class="text-gray-400">Single point of character instantiation, loads data from DataRegistry</p>
+            </div>
+            <div class="p-2 bg-blue-900/20 rounded border border-blue-500/20">
+              <p class="font-semibold text-blue-300 mb-1">Returns:</p>
+              <p class="text-gray-400">std::unique_ptr&lt;Character&gt; with full ownership semantics</p>
+            </div>
+            <div class="p-2 bg-blue-900/20 rounded border border-blue-500/20">
+              <p class="font-semibold text-blue-300 mb-1">Ownership:</p>
+              <p class="text-gray-400">Transferred to GameObjectManager for lifecycle management</p>
+            </div>
+          </div>
+          <div class="text-xs space-y-1 text-gray-500">
+            <p><strong>Factory:</strong> <span class="file-ref">Game/DragonicTactics/Factories/CharacterFactory.cpp:Create()</span></p>
+          </div>
+          <div class="mt-4 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
+            <p class="text-xs font-mono text-gray-300">
+              <span class="text-blue-400">auto</span> character = <span class="text-purple-400">CharacterFactory</span>::<span class="text-yellow-400">Create</span>(<br/>
+              &nbsp;&nbsp;<span class="text-purple-400">CharacterTypes</span>::Dragon,<br/>
+              &nbsp;&nbsp;position<br/>
+              );
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="mt-4 flex justify-between items-center">
+      <div class="text-sm text-gray-500">Page 5 of 6</div>
+      <div class="flex gap-2">
+        <button class="nav-button" onclick="window.location.href='TechnicalGuide_Q1_Part4_ExecutionFlow.html'">← Previous</button>
+        <button class="nav-button" onclick="window.location.href='TechnicalGuide_Q1_Part6_Summary.html'">Next: Summary →</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

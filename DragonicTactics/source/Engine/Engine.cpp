@@ -178,7 +178,7 @@ void Engine::OnEvent(const SDL_Event& event)
 		impl->input.SetMouseReleased(event.button.button - 1);
 	  break;
 
-	case SDL_MOUSEMOTION: impl->input.SetMousePos({ static_cast<float>(event.motion.x), static_cast<float>(event.motion.y) }); break;
+	case SDL_MOUSEMOTION: impl->input.SetMousePos({ static_cast<double>(event.motion.x), static_cast<double>(event.motion.y) }); break;
 
 	case SDL_MOUSEWHEEL: impl->input.SetMouseScroll(static_cast<double>(event.wheel.y)); break;
 

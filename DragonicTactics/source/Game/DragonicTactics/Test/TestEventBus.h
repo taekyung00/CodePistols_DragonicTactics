@@ -1,3 +1,9 @@
+/**
+ * \file
+ * \author Taekyung Ho
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 #pragma once
 void test_subscribe_publish_singleSubscriber();
 void test_multiple_subscribers_sameEvent();
