@@ -173,8 +173,8 @@ void GamePlay::DisplayDamageAmount(const CharacterDamagedEvent& event)
 
 void GamePlay::DisplayDamageLog(const CharacterDamagedEvent& event){
     std::string str = event.target->TypeName() + " took " + std::to_string(event.damageAmount) + " damage from " + event.attacker->TypeName() + "(HP: " + std::to_string(event.remainingHP) + ")";
-
-    auto position = Math::vec2{8.0 * GetGSComponent<GridSystem>()->TILE_SIZE, 0.0};
+    auto size = GetGSComponent<GridSystem>()->TILE_SIZE;
+    auto position = Math::vec2{9.0 * size, 1.0 * size};
     m_ui_manager->ShowDamageLog(str, position, Math::vec2{0.5, 0.5});
 }
 

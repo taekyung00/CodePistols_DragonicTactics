@@ -131,6 +131,8 @@ cmake -S . -B build/linux-debug \
 This saves time and reduces configuration errors, especially when working across different platforms and build types.
 
 ## Play
+- After building the project, run the executable file located in the build directory.
+- For example, if you built the windows-debug preset, run ./build/windows-debug/dragonic_tactics.exe
 - At the main menu, click "Dragonic Tactics" to start the game.
 - When the game starts, turn order is determined by each character's speed stat.
 - we can see the turn order at Combat Status window.
