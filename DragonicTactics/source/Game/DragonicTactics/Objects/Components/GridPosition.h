@@ -1,3 +1,9 @@
+/**
+ * \file
+ * \author Seungju Song
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 #pragma once
 #include "./Engine/Component.h"
 #include "./Engine/Vec2.h"

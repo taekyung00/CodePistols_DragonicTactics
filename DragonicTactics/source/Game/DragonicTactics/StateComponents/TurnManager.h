@@ -1,3 +1,9 @@
+/**
+ * \file
+ * \author Junyoung Ki
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 #pragma once
 #include "../Objects/Character.h"
 #include "../Test/Week1TestMocks.h"

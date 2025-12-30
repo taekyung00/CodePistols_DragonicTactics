@@ -119,18 +119,18 @@ void GamePlayUIManager::DrawCharacterStatsPanel([[maybe_unused]] Math::Transform
   Math::ivec2 window_size = Engine::GetWindow().GetSize();
 
   // 패널 위치 설정
-  const float panel_x		= static_cast<float>(window_size.x) - 330.0f;
-  const float panel_start_y = static_cast<float>(window_size.y) - 150.0f;
+  const double panel_x		  = static_cast<double>(window_size.x) - 330.0;
+  const double panel_start_y = static_cast<double>(window_size.y) - 150.0;
 
-  const float panel_height_per_char = 90.0f;
+  const double panel_height_per_char = 90.0;
 
   // [설정] 텍스트 레이아웃 상수
-  const float	   text_left_margin = 20.0f;					// 패널 왼쪽 끝에서 텍스트까지의 거리 (X축 정렬용)
-  const float	   line_height		= 30.0f;					// 줄 간격
-  const float	   first_line_y		= 20.0f;					// 패널 상단에서 첫 줄까지의 거리
-  const Math::vec2 text_scale		= Math::vec2{ 0.5f, 0.5f }; // 폰트 크기
+  const double	   text_left_margin = 20.0;					// 패널 왼쪽 끝에서 텍스트까지의 거리 (X축 정렬용)
+  const double	   line_height		= 30.0;					// 줄 간격
+  const double	   first_line_y		= 20.0;					// 패널 상단에서 첫 줄까지의 거리
+  const Math::vec2 text_scale		= Math::vec2{ 0.5, 0.5 }; // 폰트 크기
 
-  float current_y = panel_start_y;
+  double current_y = panel_start_y;
 
   for (Character* character : m_characters)
   {
@@ -146,32 +146,32 @@ void GamePlayUIManager::DrawCharacterStatsPanel([[maybe_unused]] Math::Transform
 	*/
 
 	// 텍스트 X 위치 통일 (왼쪽 정렬)
-	float text_x_pos = panel_x + text_left_margin;
+	double text_x_pos = panel_x + text_left_margin;
 
 	// 1. 이름 (Name)
 	std::string name = character->TypeName();
-	Engine::GetTextManager().DrawText(name, Math::vec2{ text_x_pos + 40, current_y + panel_height_per_char - first_line_y }, Fonts::Outlined, text_scale, CS200::WHITE);
+	Engine::GetTextManager().DrawText(name, Math::vec2{ text_x_pos + 40.0, current_y + panel_height_per_char - first_line_y }, Fonts::Outlined, text_scale, CS200::WHITE);
 
 	// 2. HP (Name 아래로 line_height만큼 이동)
 	int			current_hp = character->GetHP();
 	int			max_hp	   = character->GetMaxHP();
 	std::string hp_text	   = "HP: " + std::to_string(current_hp) + " / " + std::to_string(max_hp);
 
-	Engine::GetTextManager().DrawText(hp_text, Math::vec2{ text_x_pos, current_y + panel_height_per_char - (first_line_y + line_height * 1) }, Fonts::Outlined, text_scale, CS200::RED);
+	Engine::GetTextManager().DrawText(hp_text, Math::vec2{ text_x_pos, current_y + panel_height_per_char - (first_line_y + line_height * 1.0) }, Fonts::Outlined, text_scale, CS200::RED);
 
 	// 3. AP
 	int			current_ap = character->GetActionPoints();
 	std::string ap_text	   = "AP: " + std::to_string(current_ap);
 
-	Engine::GetTextManager().DrawText(ap_text, Math::vec2{ text_x_pos + 50, current_y + panel_height_per_char - (first_line_y + line_height * 2) }, Fonts::Outlined, text_scale, CS200::YELLOW);
+	Engine::GetTextManager().DrawText(ap_text, Math::vec2{ text_x_pos + 50.0, current_y + panel_height_per_char - (first_line_y + line_height * 2.0) }, Fonts::Outlined, text_scale, CS200::YELLOW);
 
 	// 4. Speed
 	int			speed	   = character->GetMovementRange();
 	std::string speed_text = "Speed: " + std::to_string(speed);
 
-	Engine::GetTextManager().DrawText(speed_text, Math::vec2{ text_x_pos + 30, current_y + panel_height_per_char - (first_line_y + line_height * 3) }, Fonts::Outlined, text_scale, CS200::GREEN);
+	Engine::GetTextManager().DrawText(speed_text, Math::vec2{ text_x_pos + 30.0, current_y + panel_height_per_char - (first_line_y + line_height * 3.0) }, Fonts::Outlined, text_scale, CS200::GREEN);
 
 	// 다음 캐릭터 패널 위치로 이동
-	current_y -= panel_height_per_char + 40.0f;
+	current_y -= panel_height_per_char + 40.0;
   }
 }

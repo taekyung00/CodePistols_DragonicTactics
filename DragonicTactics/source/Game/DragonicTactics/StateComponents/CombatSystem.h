@@ -1,3 +1,9 @@
+/**
+ * \file
+ * \author Sangyun Lee
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 #pragma once
 #include "../Objects/Character.h"
 #include "./Engine/Component.h"

@@ -1,5 +1,10 @@
+/**
+ * \file
+ * \author Junyoung Ki
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 
-// File: CS230/Game/System/SpellSystem.h
 #pragma once
 // #include "../Spells/SpellBase.h"
 #include "../../../Engine/Vec2.h"

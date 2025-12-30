@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dragonic Tactics – Q1 Part 3: Engine Layers</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: #0b0f14;
+      color: #e5e7eb;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .card {
+      background: rgba(17,24,39,0.85);
+      border-radius: 1rem;
+      border: 1px solid rgba(99, 102, 241, 0.25);
+    }
+    .file-ref {
+      font-family: 'Courier New', monospace;
+      background: rgba(99, 102, 241, 0.2);
+      padding: 0.125rem 0.375rem;
+      border-radius: 0.25rem;
+      font-size: 0.7rem;
+      word-break: break-all;
+      display: inline-block;
+      max-width: 100%;
+    }
+    .nav-button {
+      background: rgba(99, 102, 241, 0.3);
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      border: 1px solid rgba(99, 102, 241, 0.5);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .nav-button:hover {
+      background: rgba(99, 102, 241, 0.5);
+      border-color: rgba(99, 102, 241, 0.8);
+    }
+  </style>
+</head>
+<body class="p-6">
+  <div class="flex flex-col h-full max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-4">
+      <h1 class="text-2xl font-bold mb-1">🐉 Dragonic Tactics</h1>
+      <h3 class="text-lg text-gray-400">Part 3: Engine Core & Rendering Layers</h3>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-hidden space-y-3">
+      <!-- Engine Core Layer -->
+      <div class="card border-indigo-500/40 p-3">
+        <h2 class="text-lg font-semibold mb-2 text-indigo-300 text-center">Engine Core Layer (CS230)</h2>
+        <div class="grid grid-cols-4 gap-2">
+          <div class="p-2 bg-indigo-900/20 rounded-lg border border-indigo-500/30">
+            <h4 class="font-semibold text-indigo-300 mb-1 text-xs">Core Systems</h4>
+            <ul class="text-xs space-y-0.5 text-gray-400">
+              <li><span class="file-ref">Engine/Engine.h/cpp</span></li>
+              <li><span class="file-ref">Engine/GameState.h</span></li>
+              <li><span class="file-ref">Engine/GameStateManager.h/cpp</span></li>
+              <li><span class="file-ref">Engine/GameObject.h/cpp</span></li>
+              <li><span class="file-ref">Engine/GameObjectManager.h/cpp</span></li>
+              <li><span class="file-ref">Engine/Component.h/cpp</span></li>
+            </ul>
+          </div>
+          <div class="p-2 bg-sky-900/20 rounded-lg border border-sky-500/30">
+            <h4 class="font-semibold text-sky-300 mb-1 text-xs">Asset Management</h4>
+            <ul class="text-xs space-y-0.5 text-gray-400">
+              <li><span class="file-ref">Engine/TextureManager.h/cpp</span></li>
+              <li><span class="file-ref">Engine/Texture.h/cpp</span></li>
+              <li><span class="file-ref">Engine/Sprite.h/cpp</span></li>
+              <li><span class="file-ref">Engine/Animation.h/cpp</span></li>
+            </ul>
+          </div>
+          <div class="p-2 bg-violet-900/20 rounded-lg border border-violet-500/30">
+            <h4 class="font-semibold text-violet-300 mb-1 text-xs">Input & Window</h4>
+            <ul class="text-xs space-y-0.5 text-gray-400">
+              <li><span class="file-ref">Engine/Input.h/cpp</span></li>
+              <li><span class="file-ref">Engine/Window.h/cpp</span></li>
+              <li><span class="file-ref">Engine/Camera.h</span></li>
+            </ul>
+          </div>
+          <div class="p-2 bg-pink-900/20 rounded-lg border border-pink-500/30">
+            <h4 class="font-semibold text-pink-300 mb-1 text-xs">Utilities</h4>
+            <ul class="text-xs space-y-0.5 text-gray-400">
+              <li><span class="file-ref">Engine/Logger.h/cpp</span></li>
+              <li><span class="file-ref">Engine/Timer.h/cpp</span></li>
+              <li><span class="file-ref">Engine/Matrix.h</span></li>
+              <li><span class="file-ref">Engine/Path.h</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rendering Abstraction Layer -->
+      <div class="card border-cyan-500/40 p-3">
+        <h2 class="text-lg font-semibold mb-2 text-cyan-300 text-center">Rendering Abstraction Layer (CS200)</h2>
+        <div class="grid grid-cols-3 gap-2">
+          <div class="p-2 bg-cyan-900/20 rounded-lg border border-cyan-500/30">
+            <h4 class="font-semibold text-cyan-300 mb-1 text-xs">Renderer Interface</h4>
+            <ul class="text-xs space-y-0.5 text-gray-400">
+              <li><span class="file-ref">CS200/IRenderer2D.h</span></li>
+              <li><span class="file-ref">CS200/RenderingAPI.h</span></li>
+              <li><span class="file-ref">CS200/NDC.h</span></li>
+            </ul>
+          </div>
+          <div class="p-2 bg-teal-900/20 rounded-lg border border-teal-500/30">
+            <h4 class="font-semibold text-teal-300 mb-1 text-xs">Renderer Implementations</h4>
+            <ul class="text-xs space-y-0.5 text-gray-400">
+              <li><span class="file-ref">CS200/ImmediateRenderer2D.h/cpp</span></li>
+              <li><span class="file-ref">CS200/BatchRenderer2D.h/cpp</span></li>
+              <li><span class="file-ref">CS200/InstancedRenderer2D.h/cpp</span></li>
+            </ul>
+          </div>
+          <div class="p-2 bg-blue-900/20 rounded-lg border border-blue-500/30">
+            <h4 class="font-semibold text-blue-300 mb-1 text-xs">Graphics Utilities</h4>
+            <ul class="text-xs space-y-0.5 text-gray-400">
+              <li><span class="file-ref">CS200/RGBA.h</span></li>
+              <li><span class="file-ref">CS200/Renderer2DUtils.h</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- OpenGL Wrapper Layer -->
+      <div class="card border-green-500/40 p-3">
+        <h2 class="text-lg font-semibold mb-2 text-green-300 text-center">OpenGL Wrapper Layer</h2>
+        <div class="grid grid-cols-4 gap-2">
+          <div class="p-2 bg-green-900/20 rounded-lg border border-green-500/30">
+            <h4 class="font-semibold text-green-300 mb-1 text-xs">Core GL</h4>
+            <ul class="text-xs space-y-0.5 text-gray-400">
+              <li><span class="file-ref">OpenGL/Handle.h</span></li>
+              <li><span class="file-ref">OpenGL/Shader.h/cpp</span></li>
+              <li><span class="file-ref">OpenGL/VertexArray.h/cpp</span></li>
+              <li><span class="file-ref">OpenGL/GL.h</span></li>
+            </ul>
+          </div>
+          <div class="p-2 bg-lime-900/20 rounded-lg border border-lime-500/30">
+            <h4 class="font-semibold text-lime-300 mb-1 text-xs">Buffers</h4>
+            <ul class="text-xs space-y-0.5 text-gray-400">
+              <li><span class="file-ref">OpenGL/Buffer.h/cpp</span></li>
+              <li><span class="file-ref">OpenGL/Framebuffer.h/cpp</span></li>
+            </ul>
+          </div>
+          <div class="p-2 bg-emerald-900/20 rounded-lg border border-emerald-500/30">
+            <h4 class="font-semibold text-emerald-300 mb-1 text-xs">Textures</h4>
+            <ul class="text-xs space-y-0.5 text-gray-400">
+              <li><span class="file-ref">OpenGL/Texture.h/cpp</span></li>
+            </ul>
+          </div>
+          <div class="p-2 bg-teal-900/20 rounded-lg border border-teal-500/30">
+            <h4 class="font-semibold text-teal-300 mb-1 text-xs">Platform</h4>
+            <ul class="text-xs space-y-0.5 text-gray-400">
+              <li><span class="file-ref">OpenGL/Environment.h/cpp</span></li>
+              <li><span class="file-ref">OpenGL/GLTypes.h</span></li>
+              <li><span class="file-ref">OpenGL/GLConstants.h</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="mt-4 flex justify-between items-center">
+      <div class="text-sm text-gray-500">Page 3 of 6</div>
+      <div class="flex gap-2">
+        <button class="nav-button" onclick="window.location.href='TechnicalGuide_Q1_Part2_GameLayer.html'">← Previous</button>
+        <button class="nav-button" onclick="window.location.href='TechnicalGuide_Q1_Part4_ExecutionFlow.html'">Next: Execution Flow →</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

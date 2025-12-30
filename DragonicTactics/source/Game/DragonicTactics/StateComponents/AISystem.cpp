@@ -70,7 +70,7 @@ void AISystem::ExecuteDecision(Character* actor, const AIDecision& decision)
   CombatSystem* combat		 = gs.GetGSComponent<CombatSystem>();
   SpellSystem*	spell_system = gs.GetGSComponent<SpellSystem>();
 
-  bool actionExecuted = false;
+  [[maybe_unused]] bool actionExecuted = false;
 
   switch (decision.type)
   {

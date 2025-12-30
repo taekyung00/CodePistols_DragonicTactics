@@ -1,3 +1,9 @@
+/**
+ * \file
+ * \author Junyoung Ki
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 #include "pch.h"
 
 #include "TestAI.h"
@@ -38,7 +44,7 @@ bool TestAITargetsClosestEnemy()
 
   if (!passed)
   {
-	std::cout << "  FAILED: AI didn't target Dragon (decision type: " << (int)decision.type << ")\n";
+	std::cout << "  FAILED: AI didn't target Dragon (decision type: " << static_cast<int>(decision.type) << ")\n";
   }
 
   return passed;
@@ -73,7 +79,7 @@ bool TestAIMovesCloserWhenOutOfRange()
 
   if (!passed)
   {
-	std::cout << "  FAILED: AI didn't move closer (decision: " << (int)decision.type << ", reasoning: " << decision.reasoning << ")\n";
+	std::cout << "  FAILED: AI didn't move closer (decision: " << static_cast<int>(decision.type) << ", reasoning: " << decision.reasoning << ")\n";
   }
 
   return passed;
@@ -108,7 +114,7 @@ bool TestAIAttacksWhenInRange()
 
   if (!passed)
   {
-	std::cout << "  FAILED: AI didn't attack when in range (decision: " << (int)decision.type << ", reasoning: " << decision.reasoning << ")\n";
+	std::cout << "  FAILED: AI didn't attack when in range (decision: " << static_cast<int>(decision.type) << ", reasoning: " << decision.reasoning << ")\n";
   }
 
   return passed;
@@ -146,7 +152,7 @@ bool TestAIUsesShieldBashWhenAdjacent()
   if (!passed)
   {
 	std::cout << "  FAILED: AI didn't use Shield Bash when appropriate"
-			  << " (decision: " << (int)decision.type << ", ability: " << decision.abilityName << ")\n";
+			  << " (decision: " << static_cast<int>(decision.type) << ", ability: " << decision.abilityName << ")\n";
   }
 
   return passed;
@@ -181,7 +187,7 @@ bool TestAIEndsTurnWhenNoActions()
   if (!passed)
   {
 	std::cout << "  FAILED: AI didn't end turn when no actions available"
-			  << " (decision: " << (int)decision.type << ", reasoning: " << decision.reasoning << ")\n";
+			  << " (decision: " << static_cast<int>(decision.type) << ", reasoning: " << decision.reasoning << ")\n";
   }
 
   return passed;

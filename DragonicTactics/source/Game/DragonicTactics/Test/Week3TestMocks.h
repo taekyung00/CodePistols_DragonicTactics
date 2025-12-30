@@ -1,3 +1,9 @@
+/**
+ * \file
+ * \author Taekyung Ho
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 #pragma once
 // File: DragonicTactics/source/Game/DragonicTactics/Test/Week3TestMocks.h
 // Purpose: Mockups for Week 3 independent development

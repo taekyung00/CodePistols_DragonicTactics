@@ -1,3 +1,9 @@
+/**
+ * \file
+ * \author Sangyun Lee
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 #include "pch.h"
 
 #include "DebugConsole.h"
@@ -244,7 +250,7 @@ void DebugConsole::DrawImGui()
 
 	  if (prev_history_pos != console->history_index_)
 	  {
-		const char* history_str = (console->history_index_ >= 0) ? console->command_history_[console->history_index_].c_str() : "";
+		const char* history_str = (console->history_index_ >= 0) ? console->command_history_[static_cast<std::size_t>(console->history_index_)].c_str() : "";
 		data->DeleteChars(0, data->BufTextLen);
 		data->InsertChars(0, history_str);
 	  }
@@ -252,7 +258,7 @@ void DebugConsole::DrawImGui()
 	return 0;
   };
 
-  if (ImGui::InputText("Input", input_buffer_, IM_ARRAYSIZE(input_buffer_), input_flags, callback, (void*)this))
+  if (ImGui::InputText("Input", input_buffer_, IM_ARRAYSIZE(input_buffer_), input_flags, callback, static_cast<void*>(this)))
   {
 	std::string command(input_buffer_);
 	if (!command.empty())

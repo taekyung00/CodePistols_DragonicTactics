@@ -1,3 +1,9 @@
+/**
+ * \file
+ * \author Sangyun Lee
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 #include "pch.h"
 
 #include "./CS200/IRenderer2D.h"
@@ -105,17 +111,17 @@ void DebugVisualizer::DrawGridOverlay(const GridSystem* grid)
   // Vertical lines
   for (int x = 0; x <= MAP_WIDTH; ++x)
   {
-	int screen_x = x * TILE_SIZE + TILE_SIZE;
+	double screen_x = static_cast<double>(x * TILE_SIZE + TILE_SIZE);
 	renderer_2d->DrawLine(
-	  Math::vec2{ static_cast<float>(screen_x), static_cast<float>(TILE_SIZE) }, Math::vec2{ static_cast<float>(screen_x), static_cast<float>((MAP_HEIGHT + 1) * TILE_SIZE) }, grid_color);
+	  Math::vec2{ screen_x, static_cast<double>(TILE_SIZE) }, Math::vec2{ screen_x, static_cast<double>((MAP_HEIGHT + 1) * TILE_SIZE) }, grid_color);
   }
 
   // Horizontal lines
   for (int y = 0; y <= MAP_HEIGHT; ++y)
   {
-	int screen_y = y * TILE_SIZE + TILE_SIZE;
+	double screen_y = static_cast<double>(y * TILE_SIZE + TILE_SIZE);
 	renderer_2d->DrawLine(
-	  Math::vec2{ static_cast<float>(TILE_SIZE), static_cast<float>(screen_y) }, Math::vec2{ static_cast<float>((MAP_WIDTH + 1) * TILE_SIZE), static_cast<float>(screen_y) }, grid_color);
+	  Math::vec2{ static_cast<double>(TILE_SIZE), screen_y }, Math::vec2{ static_cast<double>((MAP_WIDTH + 1) * TILE_SIZE), screen_y }, grid_color);
   }
 }
 

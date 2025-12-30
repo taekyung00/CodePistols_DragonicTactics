@@ -1,3 +1,9 @@
+/**
+ * \file
+ * \author Taekyung Ho
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 #include "pch.h"
 
 #include "./Engine/Engine.h"

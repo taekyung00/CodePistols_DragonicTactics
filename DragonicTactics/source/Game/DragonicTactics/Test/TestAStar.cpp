@@ -1,3 +1,9 @@
+/**
+ * \file
+ * \author Taekyung Ho
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 #include "pch.h"
 
 #include "TestAStar.h"
@@ -294,7 +300,7 @@ bool TestPathfindingInvalidStart()
   std::vector<Math::ivec2> path = gridsys->FindPath({ -1, -1 }, { 4, 4 });
 
   // Assertions
-  ASSERT_EQ(path.size(), (size_t)0); // Should return empty path
+  ASSERT_EQ(path.size(), static_cast<size_t>(0)); // Should return empty path
 
   std::cout << "Test_Pathfinding_InvalidStart passed" << std::endl;
   return true;
@@ -315,7 +321,7 @@ bool TestPathfindingInvalidGoal()
   std::vector<Math::ivec2> path = gridsys->FindPath({ 4, 4 }, { 10, 10 });
 
   // Assertions
-  ASSERT_EQ(path.size(), (size_t)0);
+  ASSERT_EQ(path.size(), static_cast<size_t>(0));
 
   std::cout << "Test_Pathfinding_InvalidGoal passed" << std::endl;
   return true;
@@ -337,7 +343,7 @@ bool TestPathfindingUnwalkableGoal()
   std::vector<Math::ivec2> path = gridsys->FindPath({ 4, 4 }, { 5, 5 });
 
   // Assertions
-  ASSERT_EQ(path.size(), (size_t)0);
+  ASSERT_EQ(path.size(), static_cast<size_t>(0));
 
   std::cout << "Test_Pathfinding_UnwalkableGoal passed" << std::endl;
   return true;

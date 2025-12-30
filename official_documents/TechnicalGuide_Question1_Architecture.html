@@ -17,6 +17,9 @@
       padding: 0.125rem 0.375rem;
       border-radius: 0.25rem;
       font-size: 0.875rem;
+      word-break: break-all;
+      display: inline-block;
+      max-width: 100%;
     }
     .system-title {
       display: inline-block;
@@ -70,37 +73,37 @@
           <div class="p-4 bg-purple-900/20 rounded-lg border border-purple-500/30">
             <h4 class="font-semibold text-purple-300 mb-2">GameState Systems</h4>
             <ul class="text-sm space-y-1 text-gray-400">
-              <li><span class="file-ref">GamePlay.h/cpp</span></li>
-              <li><span class="file-ref">MainMenu.h/cpp</span></li>
-              <li><span class="file-ref">PlayerInputHandler.h/cpp</span></li>
-              <li><span class="file-ref">BattleOrchestrator.h/cpp</span></li>
-              <li><span class="file-ref">GamePlayUIManager.h/cpp</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/States/GamePlay.h/cpp</span></li>
+              <li><span class="file-ref">Game/MainMenu.h/cpp</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/States/PlayerInputHandler.h/cpp</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/States/BattleOrchestrator.h/cpp</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/States/GamePlayUIManager.h/cpp</span></li>
             </ul>
           </div>
           <div class="p-4 bg-emerald-900/20 rounded-lg border border-emerald-500/30">
             <h4 class="font-semibold text-emerald-300 mb-2">StateComponents (Battle Systems)</h4>
             <ul class="text-sm space-y-1 text-gray-400">
-              <li><span class="file-ref">EventBus.h/cpp</span> - Event system</li>
-              <li><span class="file-ref">GridSystem.h/cpp</span> - 8x8 tactical grid</li>
-              <li><span class="file-ref">TurnManager.h/cpp</span> - Turn order</li>
-              <li><span class="file-ref">CombatSystem.h/cpp</span> - Combat resolution</li>
-              <li><span class="file-ref">AISystem.h/cpp</span> - AI controller</li>
-              <li><span class="file-ref">DiceManager.h/cpp</span> - D&D dice rolling</li>
-              <li><span class="file-ref">DataRegistry.h/cpp</span> - Character data</li>
-              <li><span class="file-ref">MapDataRegistry.h/cpp</span> - Map data</li>
+              <li><span class="file-ref">Game/DragonicTactics/StateComponents/EventBus.h/cpp</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/StateComponents/GridSystem.h/cpp</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/StateComponents/TurnManager.h/cpp</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/StateComponents/CombatSystem.h/cpp</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/StateComponents/AISystem.h/cpp</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/StateComponents/DiceManager.h/cpp</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/StateComponents/DataRegistry.h/cpp</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/StateComponents/MapDataRegistry.h/cpp</span></li>
             </ul>
           </div>
           <div class="p-4 bg-blue-900/20 rounded-lg border border-blue-500/30">
             <h4 class="font-semibold text-blue-300 mb-2">Characters & Components</h4>
             <ul class="text-sm space-y-1 text-gray-400">
-              <li><span class="file-ref">Character.h/cpp</span> - Base class</li>
-              <li><span class="file-ref">Dragon.h/cpp</span> - Player character</li>
-              <li><span class="file-ref">Fighter.h/cpp</span> - Enemy character</li>
-              <li><span class="file-ref">GridPosition.h/cpp</span> - Position</li>
-              <li><span class="file-ref">StatsComponent.h/cpp</span> - HP/Stats</li>
-              <li><span class="file-ref">MovementComponent.h/cpp</span> - Movement</li>
-              <li><span class="file-ref">ActionPoints.h/cpp</span> - AP system</li>
-              <li><span class="file-ref">SpellSlots.h/cpp</span> - Spell slots</li>
+              <li><span class="file-ref">Game/DragonicTactics/Objects/Character.h/cpp</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/Objects/Dragon.h/cpp</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/Objects/Fighter.h/cpp</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/Objects/Components/GridPosition.h/cpp</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/Objects/Components/StatsComponent.h/cpp</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/Objects/Components/MovementComponent.h/cpp</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/Objects/Components/ActionPoints.h/cpp</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/Objects/Components/SpellSlots.h/cpp</span></li>
             </ul>
           </div>
         </div>
@@ -108,29 +111,26 @@
           <div class="p-4 bg-rose-900/20 rounded-lg border border-rose-500/30">
             <h4 class="font-semibold text-rose-300 mb-2">AI Strategy Pattern</h4>
             <ul class="text-sm space-y-1 text-gray-400">
-              <li><span class="file-ref">IAIStrategy.h</span> - Interface</li>
-              <li><span class="file-ref">FighterStrategy.h/cpp</span> - Fighter AI</li>
-              <li><span class="file-ref">ClericStrategy.h/cpp</span> - Cleric AI</li>
-              <li><span class="file-ref">WizardStrategy.h/cpp</span> - Wizard AI</li>
-              <li><span class="file-ref">RogueStrategy.h/cpp</span> - Rogue AI</li>
+              <li><span class="file-ref">Game/DragonicTactics/StateComponents/AI/IAIStrategy.h</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/StateComponents/AI/FighterStrategy.h/cpp</span></li>
             </ul>
           </div>
           <div class="p-4 bg-amber-900/20 rounded-lg border border-amber-500/30">
             <h4 class="font-semibold text-amber-300 mb-2">Factories & Types</h4>
             <ul class="text-sm space-y-1 text-gray-400">
-              <li><span class="file-ref">CharacterFactory.h/cpp</span></li>
-              <li><span class="file-ref">CharacterTypes.h</span></li>
-              <li><span class="file-ref">GameObjectTypes.h</span></li>
-              <li><span class="file-ref">Events.h</span></li>
-              <li><span class="file-ref">GameTypes.h</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/Factories/CharacterFactory.h/cpp</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/Types/CharacterTypes.h</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/Types/GameObjectTypes.h</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/Types/Events.h</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/Types/GameTypes.h</span></li>
             </ul>
           </div>
           <div class="p-4 bg-teal-900/20 rounded-lg border border-teal-500/30">
             <h4 class="font-semibold text-teal-300 mb-2">Debug Tools</h4>
             <ul class="text-sm space-y-1 text-gray-400">
-              <li><span class="file-ref">DebugManager.h/cpp</span></li>
-              <li><span class="file-ref">DebugConsole.h/cpp</span></li>
-              <li><span class="file-ref">DebugVisualizer.h/cpp</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/Debugger/DebugManager.h/cpp</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/Debugger/DebugConsole.h/cpp</span></li>
+              <li><span class="file-ref">Game/DragonicTactics/Debugger/DebugVisualizer.h/cpp</span></li>
             </ul>
           </div>
         </div>
@@ -145,38 +145,38 @@
           <div class="p-4 bg-indigo-900/20 rounded-lg border border-indigo-500/30">
             <h4 class="font-semibold text-indigo-300 mb-2">Core Systems</h4>
             <ul class="text-sm space-y-1 text-gray-400">
-              <li><span class="file-ref">Engine.hpp/cpp</span> - Main singleton</li>
-              <li><span class="file-ref">GameState.hpp</span> - State interface</li>
-              <li><span class="file-ref">GameStateManager.hpp/cpp</span></li>
-              <li><span class="file-ref">GameObject.h/cpp</span></li>
-              <li><span class="file-ref">GameObjectManager.h/cpp</span></li>
-              <li><span class="file-ref">Component.h/cpp</span></li>
+              <li><span class="file-ref">Engine/Engine.h/cpp</span></li>
+              <li><span class="file-ref">Engine/GameState.h</span></li>
+              <li><span class="file-ref">Engine/GameStateManager.h/cpp</span></li>
+              <li><span class="file-ref">Engine/GameObject.h/cpp</span></li>
+              <li><span class="file-ref">Engine/GameObjectManager.h/cpp</span></li>
+              <li><span class="file-ref">Engine/Component.h/cpp</span></li>
             </ul>
           </div>
           <div class="p-4 bg-sky-900/20 rounded-lg border border-sky-500/30">
             <h4 class="font-semibold text-sky-300 mb-2">Asset Management</h4>
             <ul class="text-sm space-y-1 text-gray-400">
-              <li><span class="file-ref">TextureManager.h/cpp</span></li>
-              <li><span class="file-ref">Texture.h/cpp</span></li>
-              <li><span class="file-ref">Sprite.h/cpp</span></li>
-              <li><span class="file-ref">Animation.h/cpp</span></li>
+              <li><span class="file-ref">Engine/TextureManager.h/cpp</span></li>
+              <li><span class="file-ref">Engine/Texture.h/cpp</span></li>
+              <li><span class="file-ref">Engine/Sprite.h/cpp</span></li>
+              <li><span class="file-ref">Engine/Animation.h/cpp</span></li>
             </ul>
           </div>
           <div class="p-4 bg-violet-900/20 rounded-lg border border-violet-500/30">
             <h4 class="font-semibold text-violet-300 mb-2">Input & Window</h4>
             <ul class="text-sm space-y-1 text-gray-400">
-              <li><span class="file-ref">Input.h/cpp</span> - Input manager</li>
-              <li><span class="file-ref">Window.h/cpp</span> - SDL window</li>
-              <li><span class="file-ref">Camera.hpp</span> - Camera system</li>
+              <li><span class="file-ref">Engine/Input.h/cpp</span></li>
+              <li><span class="file-ref">Engine/Window.h/cpp</span></li>
+              <li><span class="file-ref">Engine/Camera.h</span></li>
             </ul>
           </div>
           <div class="p-4 bg-pink-900/20 rounded-lg border border-pink-500/30">
             <h4 class="font-semibold text-pink-300 mb-2">Utilities</h4>
             <ul class="text-sm space-y-1 text-gray-400">
-              <li><span class="file-ref">Logger.h/cpp</span> - Logging</li>
-              <li><span class="file-ref">Timer.h/cpp</span> - Game timer</li>
-              <li><span class="file-ref">Vec2.h</span> - Math vectors</li>
-              <li><span class="file-ref">TransformMatrix.h</span></li>
+              <li><span class="file-ref">Engine/Logger.h/cpp</span></li>
+              <li><span class="file-ref">Engine/Timer.h/cpp</span></li>
+              <li><span class="file-ref">Engine/Matrix.h</span></li>
+              <li><span class="file-ref">Engine/Path.h</span></li>
             </ul>
           </div>
         </div>
@@ -191,24 +191,24 @@
           <div class="p-4 bg-cyan-900/20 rounded-lg border border-cyan-500/30">
             <h4 class="font-semibold text-cyan-300 mb-2">Renderer Interface</h4>
             <ul class="text-sm space-y-1 text-gray-400">
-              <li><span class="file-ref">IRenderer2D.h</span> - Abstract interface</li>
-              <li><span class="file-ref">RenderingAPI.h</span> - API enum</li>
-              <li><span class="file-ref">NDC.h</span> - Coordinate transform</li>
+              <li><span class="file-ref">CS200/IRenderer2D.h</span></li>
+              <li><span class="file-ref">CS200/RenderingAPI.h</span></li>
+              <li><span class="file-ref">CS200/NDC.h</span></li>
             </ul>
           </div>
           <div class="p-4 bg-teal-900/20 rounded-lg border border-teal-500/30">
             <h4 class="font-semibold text-teal-300 mb-2">Renderer Implementations</h4>
             <ul class="text-sm space-y-1 text-gray-400">
-              <li><span class="file-ref">ImmediateRenderer2D.h/cpp</span></li>
-              <li><span class="file-ref">BatchRenderer2D.h/cpp</span></li>
-              <li><span class="file-ref">InstancedRenderer2D.h/cpp</span></li>
+              <li><span class="file-ref">CS200/ImmediateRenderer2D.h/cpp</span></li>
+              <li><span class="file-ref">CS200/BatchRenderer2D.h/cpp</span></li>
+              <li><span class="file-ref">CS200/InstancedRenderer2D.h/cpp</span></li>
             </ul>
           </div>
           <div class="p-4 bg-blue-900/20 rounded-lg border border-blue-500/30">
             <h4 class="font-semibold text-blue-300 mb-2">Graphics Utilities</h4>
             <ul class="text-sm space-y-1 text-gray-400">
-              <li><span class="file-ref">Color.h</span> - RGBA colors</li>
-              <li><span class="file-ref">Vertex.h</span> - Vertex structure</li>
+              <li><span class="file-ref">CS200/RGBA.h</span></li>
+              <li><span class="file-ref">CS200/Renderer2DUtils.h</span></li>
             </ul>
           </div>
         </div>
@@ -223,29 +223,31 @@
           <div class="p-4 bg-green-900/20 rounded-lg border border-green-500/30">
             <h4 class="font-semibold text-green-300 mb-2">Core GL</h4>
             <ul class="text-sm space-y-1 text-gray-400">
-              <li><span class="file-ref">GLHandle.h</span></li>
-              <li><span class="file-ref">GLShader.h/cpp</span></li>
-              <li><span class="file-ref">GLVertexArray.h/cpp</span></li>
-              <li><span class="file-ref">GLIndexBuffer.h/cpp</span></li>
+              <li><span class="file-ref">OpenGL/Handle.h</span></li>
+              <li><span class="file-ref">OpenGL/Shader.h/cpp</span></li>
+              <li><span class="file-ref">OpenGL/VertexArray.h/cpp</span></li>
+              <li><span class="file-ref">OpenGL/GL.h</span></li>
             </ul>
           </div>
           <div class="p-4 bg-lime-900/20 rounded-lg border border-lime-500/30">
             <h4 class="font-semibold text-lime-300 mb-2">Buffers</h4>
             <ul class="text-sm space-y-1 text-gray-400">
-              <li><span class="file-ref">GLVertexBuffer.h/cpp</span></li>
-              <li><span class="file-ref">GLFramebuffer.h/cpp</span></li>
+              <li><span class="file-ref">OpenGL/Buffer.h/cpp</span></li>
+              <li><span class="file-ref">OpenGL/Framebuffer.h/cpp</span></li>
             </ul>
           </div>
           <div class="p-4 bg-emerald-900/20 rounded-lg border border-emerald-500/30">
             <h4 class="font-semibold text-emerald-300 mb-2">Textures</h4>
             <ul class="text-sm space-y-1 text-gray-400">
-              <li><span class="file-ref">GLTexture.h/cpp</span></li>
+              <li><span class="file-ref">OpenGL/Texture.h/cpp</span></li>
             </ul>
           </div>
           <div class="p-4 bg-teal-900/20 rounded-lg border border-teal-500/30">
             <h4 class="font-semibold text-teal-300 mb-2">Platform</h4>
             <ul class="text-sm space-y-1 text-gray-400">
-              <li><span class="file-ref">Environment.h/cpp</span></li>
+              <li><span class="file-ref">OpenGL/Environment.h/cpp</span></li>
+              <li><span class="file-ref">OpenGL/GLTypes.h</span></li>
+              <li><span class="file-ref">OpenGL/GLConstants.h</span></li>
             </ul>
           </div>
         </div>
@@ -255,7 +257,7 @@
     <!-- Game Flow Architecture -->
     <div class="card border-purple-500/40 p-6 mb-8">
       <h2 class="text-2xl font-semibold text-center mb-4 text-purple-300">Execution Flow Architecture</h2>
-      <p class="text-center mb-6 text-gray-300">Based on <span class="file-ref">GamePlay.cpp</span></p>
+      <p class="text-center mb-6 text-gray-300">Based on <span class="file-ref">Game/DragonicTactics/States/GamePlay.cpp</span></p>
 
       <!-- Load Phase -->
       <div class="mb-6">
@@ -265,8 +267,8 @@
             <p class="font-semibold text-emerald-300 text-sm">DataRegistry · MapDataRegistry</p>
             <p class="text-xs text-gray-400">Load character/map data from JSON files</p>
             <p class="text-xs text-gray-500 mt-1">
-              <span class="file-ref">DataRegistry.cpp:LoadFromFile()</span>
-              <span class="file-ref">MapDataRegistry.cpp:LoadMaps()</span>
+              <span class="file-ref">Game/DragonicTactics/StateComponents/DataRegistry.cpp:LoadFromFile()</span>
+              <span class="file-ref">Game/DragonicTactics/StateComponents/MapDataRegistry.cpp:LoadMaps()</span>
             </p>
           </div>
           <p class="text-gray-400 text-sm">⬇️</p>
@@ -274,19 +276,19 @@
             <div class="p-2 bg-blue-900/20 rounded-lg border border-blue-500/30">
               <p class="font-semibold text-blue-300 text-sm">CharacterFactory</p>
               <p class="text-xs text-gray-400">Create characters using registry data</p>
-              <p class="text-xs text-gray-500 mt-1"><span class="file-ref">CharacterFactory.cpp:Create()</span></p>
+              <p class="text-xs text-gray-500 mt-1"><span class="file-ref">Game/DragonicTactics/Factories/CharacterFactory.cpp:Create()</span></p>
             </div>
             <div class="p-2 bg-cyan-900/20 rounded-lg border border-cyan-500/30">
               <p class="font-semibold text-cyan-300 text-sm">GridSystem Setup</p>
               <p class="text-xs text-gray-400">Configure grid tiles from map data</p>
-              <p class="text-xs text-gray-500 mt-1"><span class="file-ref">GridSystem.cpp:LoadMap()</span></p>
+              <p class="text-xs text-gray-500 mt-1"><span class="file-ref">Game/DragonicTactics/StateComponents/GridSystem.cpp:LoadMap()</span></p>
             </div>
           </div>
           <p class="text-gray-400 text-sm">⬇️</p>
           <div class="p-2 bg-purple-900/20 rounded-lg border border-purple-500/30">
             <p class="font-semibold text-purple-300 text-sm">TurnManager.InitializeTurnOrder()</p>
             <p class="text-xs text-gray-400">Speed-based turn order → StartCombat()</p>
-            <p class="text-xs text-gray-500 mt-1"><span class="file-ref">TurnManager.cpp</span></p>
+            <p class="text-xs text-gray-500 mt-1"><span class="file-ref">Game/DragonicTactics/StateComponents/TurnManager.cpp</span></p>
           </div>
         </div>
       </div>
@@ -304,12 +306,12 @@
             <div class="p-2 bg-indigo-900/20 rounded-lg border border-indigo-500/30">
               <p class="font-semibold text-indigo-300 text-sm">🎮 PlayerInputHandler</p>
               <p class="text-xs text-gray-400">Player turn: Input processing</p>
-              <p class="text-xs text-gray-500 mt-1"><span class="file-ref">PlayerInputHandler.cpp:Update()</span></p>
+              <p class="text-xs text-gray-500 mt-1"><span class="file-ref">Game/DragonicTactics/States/PlayerInputHandler.cpp:Update()</span></p>
             </div>
             <div class="p-2 bg-rose-900/20 rounded-lg border border-rose-500/30">
               <p class="font-semibold text-rose-300 text-sm">🤖 BattleOrchestrator</p>
               <p class="text-xs text-gray-400">AI turn: Call AISystem</p>
-              <p class="text-xs text-gray-500 mt-1"><span class="file-ref">BattleOrchestrator.cpp:Update()</span></p>
+              <p class="text-xs text-gray-500 mt-1"><span class="file-ref">Game/DragonicTactics/States/BattleOrchestrator.cpp:Update()</span></p>
             </div>
           </div>
           <p class="text-gray-400 text-sm">⬇️</p>
@@ -318,21 +320,21 @@
               <p class="font-semibold text-teal-300 text-sm">🚶 Movement Flow</p>
               <p class="text-xs text-gray-400">SetPath() → MovementComponent.Update()</p>
               <p class="text-xs text-gray-500 mt-1">
-                <span class="file-ref">Character.cpp:SetPath()</span><br>
-                <span class="file-ref">MovementComponent.cpp:Update()</span>
+                <span class="file-ref">Game/DragonicTactics/Objects/Character.cpp:SetPath()</span><br>
+                <span class="file-ref">Game/DragonicTactics/Objects/Components/MovementComponent.cpp:Update()</span>
               </p>
             </div>
             <div class="p-2 bg-orange-900/20 rounded-lg border border-orange-500/30">
               <p class="font-semibold text-orange-300 text-sm">⚔️ Attack Flow</p>
               <p class="text-xs text-gray-400">CombatSystem.ExecuteAttack() → Immediate</p>
-              <p class="text-xs text-gray-500 mt-1"><span class="file-ref">CombatSystem.cpp:ExecuteAttack()</span></p>
+              <p class="text-xs text-gray-500 mt-1"><span class="file-ref">Game/DragonicTactics/StateComponents/CombatSystem.cpp:ExecuteAttack()</span></p>
             </div>
           </div>
           <p class="text-gray-400 text-sm">⬇️</p>
           <div class="p-2 bg-amber-900/20 rounded-lg border border-amber-500/30">
             <p class="font-semibold text-amber-300 text-sm">GameObject Components Update</p>
             <p class="text-xs text-gray-400">MovementComponent · GridPosition · StatsComponent (per frame)</p>
-            <p class="text-xs text-gray-500 mt-1"><span class="file-ref">GameObjectManager.cpp:UpdateAll()</span></p>
+            <p class="text-xs text-gray-500 mt-1"><span class="file-ref">Engine/GameObjectManager.cpp:UpdateAll()</span></p>
           </div>
         </div>
       </div>
@@ -345,8 +347,8 @@
             <p class="font-semibold text-pink-300 text-sm">GridSystem.Draw() → GameObjectManager.DrawAll()</p>
             <p class="text-xs text-gray-400">Render: Grid → Characters → UI</p>
             <p class="text-xs text-gray-500 mt-1">
-              <span class="file-ref">GridSystem.cpp:Draw()</span>
-              <span class="file-ref">GameObjectManager.cpp:DrawAll()</span>
+              <span class="file-ref">Game/DragonicTactics/StateComponents/GridSystem.cpp:Draw()</span>
+              <span class="file-ref">Engine/GameObjectManager.cpp:DrawAll()</span>
             </p>
           </div>
         </div>
@@ -362,12 +364,12 @@
         <div class="p-4 bg-yellow-900/20 rounded-lg border border-yellow-500/30">
           <h3 class="font-semibold text-yellow-300 mb-3">Event-Driven Communication</h3>
           <p class="text-sm text-gray-400 mb-2">
-            Loosely-coupled systems communicate via EventBus (<span class="file-ref">EventBus.h/cpp</span>)
+            Loosely-coupled systems communicate via EventBus (<span class="file-ref">Game/DragonicTactics/StateComponents/EventBus.h/cpp</span>)
           </p>
           <div class="text-xs space-y-1 text-gray-500">
             <p>• <strong>Publisher:</strong> CombatSystem publishes CharacterDamagedEvent</p>
             <p>• <strong>Subscriber:</strong> UI Manager subscribes to show damage text</p>
-            <p>• <strong>File:</strong> <span class="file-ref">Events.h</span> defines all event types</p>
+            <p>• <strong>File:</strong> <span class="file-ref">Game/DragonicTactics/Types/Events.h</span> defines all event types</p>
           </div>
         </div>
 
@@ -380,7 +382,7 @@
           <div class="text-xs space-y-1 text-gray-500">
             <p>• <strong>Example:</strong> PlayerInputHandler receives GridSystem* and CombatSystem*</p>
             <p>• <strong>Reason:</strong> Immediate gameplay operations require fast access</p>
-            <p>• <strong>File:</strong> <span class="file-ref">GamePlay.cpp:Update()</span></p>
+            <p>• <strong>File:</strong> <span class="file-ref">Game/DragonicTactics/States/GamePlay.cpp:Update()</span></p>
           </div>
         </div>
 
@@ -404,7 +406,7 @@
             Centralized object creation
           </p>
           <div class="text-xs space-y-1 text-gray-500">
-            <p>• <strong>Factory:</strong> <span class="file-ref">CharacterFactory.cpp:Create()</span></p>
+            <p>• <strong>Factory:</strong> <span class="file-ref">Game/DragonicTactics/Factories/CharacterFactory.cpp:Create()</span></p>
             <p>• <strong>Returns:</strong> std::unique_ptr&lt;Character&gt;</p>
             <p>• <strong>Ownership:</strong> Transferred to GameObjectManager</p>
           </div>
@@ -418,82 +420,81 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="font-mono text-sm text-gray-400">
           <pre class="bg-gray-900/50 p-4 rounded-lg overflow-x-auto">
-DragonicTactics/
-├── source/
-│   ├── main.cpp
-│   ├── Engine/              (CS230 namespace)
-│   │   ├── Engine.hpp/cpp
-│   │   ├── GameState.hpp
-│   │   ├── GameObject.h/cpp
-│   │   ├── GameObjectManager.h/cpp
-│   │   ├── Component.h/cpp
-│   │   ├── Input.h/cpp
-│   │   ├── Window.h/cpp
-│   │   ├── Logger.h/cpp
-│   │   └── TextureManager.h/cpp
-│   ├── CS200/               (Rendering abstraction)
-│   │   ├── IRenderer2D.h
-│   │   ├── ImmediateRenderer2D.h/cpp
-│   │   ├── BatchRenderer2D.h/cpp
-│   │   ├── InstancedRenderer2D.h/cpp
-│   │   └── NDC.h
-│   ├── OpenGL/              (Low-level wrapper)
-│   │   ├── GLShader.h/cpp
-│   │   ├── GLVertexArray.h/cpp
-│   │   ├── GLTexture.h/cpp
-│   │   └── Environment.h/cpp
+DragonicTactics/source/
+├── main.cpp
+├── Engine/              (CS230 namespace)
+│   ├── Engine.h/cpp
+│   ├── GameState.h
+│   ├── GameObject.h/cpp
+│   ├── GameObjectManager.h/cpp
+│   ├── Component.h/cpp
+│   ├── Input.h/cpp
+│   ├── Window.h/cpp
+│   ├── Logger.h/cpp
+│   ├── TextureManager.h/cpp
+│   ├── Camera.h
+│   ├── Matrix.h
+│   └── Timer.h/cpp
+├── CS200/               (Rendering abstraction)
+│   ├── IRenderer2D.h
+│   ├── ImmediateRenderer2D.h/cpp
+│   ├── BatchRenderer2D.h/cpp
+│   ├── InstancedRenderer2D.h/cpp
+│   ├── RenderingAPI.h
+│   ├── NDC.h
+│   └── RGBA.h
+├── OpenGL/              (Low-level wrapper)
+│   ├── Shader.h/cpp
+│   ├── VertexArray.h/cpp
+│   ├── Buffer.h/cpp
+│   ├── Texture.h/cpp
+│   ├── Handle.h
+│   └── Environment.h/cpp
           </pre>
         </div>
         <div class="font-mono text-sm text-gray-400">
           <pre class="bg-gray-900/50 p-4 rounded-lg overflow-x-auto">
-│   └── Game/DragonicTactics/ (Game logic)
-│       ├── Objects/
-│       │   ├── Character.h/cpp
-│       │   ├── Dragon.h/cpp
-│       │   ├── Fighter.h/cpp
-│       │   └── Components/
-│       │       ├── GridPosition.h/cpp
-│       │       ├── StatsComponent.h/cpp
-│       │       ├── MovementComponent.h/cpp
-│       │       ├── ActionPoints.h/cpp
-│       │       └── SpellSlots.h/cpp
-│       ├── StateComponents/
-│       │   ├── EventBus.h/cpp
-│       │   ├── GridSystem.h/cpp
-│       │   ├── TurnManager.h/cpp
-│       │   ├── CombatSystem.h/cpp
-│       │   ├── AISystem.h/cpp
-│       │   ├── DiceManager.h/cpp
-│       │   ├── DataRegistry.h/cpp
-│       │   ├── MapDataRegistry.h/cpp
-│       │   └── AI/
-│       │       ├── IAIStrategy.h
-│       │       ├── FighterStrategy.h/cpp
-│       │       ├── ClericStrategy.h/cpp
-│       │       ├── WizardStrategy.h/cpp
-│       │       └── RogueStrategy.h/cpp
-│       ├── States/
-│       │   ├── GamePlay.h/cpp
-│       │   ├── PlayerInputHandler.h/cpp
-│       │   ├── BattleOrchestrator.h/cpp
-│       │   └── GamePlayUIManager.h/cpp
-│       ├── Factories/
-│       │   └── CharacterFactory.h/cpp
-│       ├── Types/
-│       │   ├── CharacterTypes.h
-│       │   ├── Events.h
-│       │   └── GameTypes.h
-│       └── Debugger/
-│           ├── DebugManager.h/cpp
-│           ├── DebugConsole.h/cpp
-│           └── DebugVisualizer.h/cpp
-├── Assets/
-│   ├── Data/
-│   │   ├── characters.json
-│   │   └── maps.json
-│   ├── Textures/ (PNG files)
-│   └── Sprites/ (SPT files)
-└── CMakeLists.txt
+└── Game/DragonicTactics/ (Game logic)
+    ├── Objects/
+    │   ├── Character.h/cpp
+    │   ├── Dragon.h/cpp
+    │   ├── Fighter.h/cpp
+    │   ├── Components/
+    │   │   ├── GridPosition.h/cpp
+    │   │   ├── StatsComponent.h/cpp
+    │   │   ├── MovementComponent.h/cpp
+    │   │   ├── ActionPoints.h/cpp
+    │   │   └── SpellSlots.h/cpp
+    │   └── Actions/
+    │       ├── Action.h/cpp
+    │       └── ActionAttack.h/cpp
+    ├── StateComponents/
+    │   ├── EventBus.h/cpp
+    │   ├── GridSystem.h/cpp
+    │   ├── TurnManager.h/cpp
+    │   ├── CombatSystem.h/cpp
+    │   ├── AISystem.h/cpp
+    │   ├── DiceManager.h/cpp
+    │   ├── DataRegistry.h/cpp
+    │   ├── MapDataRegistry.h/cpp
+    │   └── AI/
+    │       ├── IAIStrategy.h
+    │       └── FighterStrategy.h/cpp
+    ├── States/
+    │   ├── GamePlay.h/cpp
+    │   ├── PlayerInputHandler.h/cpp
+    │   ├── BattleOrchestrator.h/cpp
+    │   └── GamePlayUIManager.h/cpp
+    ├── Factories/
+    │   └── CharacterFactory.h/cpp
+    ├── Types/
+    │   ├── CharacterTypes.h
+    │   ├── Events.h
+    │   └── GameTypes.h
+    └── Debugger/
+        ├── DebugManager.h/cpp
+        ├── DebugConsole.h/cpp
+        └── DebugVisualizer.h/cpp
           </pre>
         </div>
       </div>

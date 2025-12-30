@@ -1,3 +1,9 @@
+/**
+ * \file
+ * \author Junyoung Ki
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
 #include "pch.h"
 
 #include "./CS200/IRenderer2D.h"
@@ -380,23 +386,23 @@ void GridSystem::LoadMap(const MapData& map_data)
 
   for (int y = 0; y < map_data.height; ++y)
   {
-    if (y >= map_data.tiles.size())
+    if (y >= static_cast<int>(map_data.tiles.size()))
     {
       Engine::GetLogger().LogError("GridSystem::LoadMap - Row " + std::to_string(y) + " out of bounds");
       break;
     }
 
-    const std::string& row = map_data.tiles[y];
+    const std::string& row = map_data.tiles[static_cast<std::size_t>(y)];
 
     for (int x = 0; x < map_data.width; ++x)
     {
-      if (x >= row.length())
+      if (x >= static_cast<int>(row.length()))
       {
         Engine::GetLogger().LogError("GridSystem::LoadMap - Column " + std::to_string(x) + " out of bounds");
         break;
       }
 
-      char tile_char = row[x];
+      char tile_char = row[static_cast<std::size_t>(x)];
 
       Math::ivec2 pos{ x, map_data.height - 1 - y };
 
