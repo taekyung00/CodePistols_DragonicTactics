@@ -35,6 +35,7 @@
 ```
 
 **영향**:
+
 - 엔진 코드가 컴파일되려면 DragonicTactics 게임 코드가 필수
 - 다른 게임 개발 시 기존 게임 타입들을 모두 남겨둬야 함
 - 빌드 시간 증가 (불필요한 헤더 포함)
@@ -53,6 +54,7 @@ virtual bool CanCollideWith(GameObjectTypes other_object_type);
 ```
 
 **영향**:
+
 - GameObject는 엔진의 핵심 클래스인데 게임에 종속적
 - GameObjectTypes가 DragonicTactics 전용으로 설계됨
 - 다른 게임은 이 enum을 재사용하거나 수정해야 함
@@ -62,6 +64,7 @@ virtual bool CanCollideWith(GameObjectTypes other_object_type);
 #### 1.3 엔진-게임 코드 혼재
 
 **현재 구조**:
+
 ```
 source/
 ├── Engine/          # 엔진 코드
@@ -75,6 +78,7 @@ source/
 ```
 
 **문제**:
+
 - 어떤 파일이 엔진이고 어떤 파일이 게임인지 불명확
 - `Game/` 최상위의 파일들이 공통인지 DragonicTactics 전용인지 모호
 
