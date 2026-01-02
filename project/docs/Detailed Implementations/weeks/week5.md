@@ -763,6 +763,7 @@ void TurnManager::EndCurrentTurn()
 **목표**: 4명의 모험가 캐릭터에 대한 robust한 AI 구현
 
 **⚠️ 중요 제약사항**:
+
 - **Ability 시스템은 아직 구현되지 않았습니다** (Week 6+ 구현 예정)
 - ShieldBash, MeleeAttack, Heal 등의 어빌리티는 사용 불가
 - 현재는 기본 공격(Attack)만 지원됩니다
@@ -1023,6 +1024,7 @@ void AISystem::ScoreActions(
 **목표**: 기존 AISystem 로직을 Strategy 패턴으로 분리하여 캐릭터별 AI 전략 구현
 
 **배경**:
+
 - 기존 `ExecuteFighterAI()` 방식은 모든 AI 로직이 AISystem 내부에 집중되어 확장성 부족
 - Strategy 패턴을 사용하여 각 캐릭터별 AI 로직을 독립적인 클래스로 분리
 - Mermaid 플로우차트로 의사결정 로직 시각화 (architecture/character_flowchart/)
@@ -1298,12 +1300,13 @@ bool Character::HasAnySpellSlot() const
 
 D&D 스타일 게임에서 이 두 개념을 혼동하지 말 것:
 
-| 개념 | 용도 | Character 메서드 | 예시 |
-|------|------|------------------|------|
-| **ActionPoints** | 턴당 **행동 횟수** (공격, 스킬 등) | `GetActionPoints()` | 공격 1회 = AP 1 소모 |
-| **Speed (MovementRange)** | 턴당 **이동 가능 타일 수** | `GetMovementRange()` | Speed 3 = 3타일 이동 가능 |
+| 개념                        | 용도                      | Character 메서드        | 예시                  |
+| ------------------------- | ----------------------- | -------------------- | ------------------- |
+| **ActionPoints**          | 턴당 **행동 횟수** (공격, 스킬 등) | `GetActionPoints()`  | 공격 1회 = AP 1 소모     |
+| **Speed (MovementRange)** | 턴당 **이동 가능 타일 수**       | `GetMovementRange()` | Speed 3 = 3타일 이동 가능 |
 
 **잘못된 예**:
+
 ```cpp
 // ❌ 이동 체크에 ActionPoints 사용 (잘못됨!)
 if (actor->GetActionPoints() > 0)  // 공격용 포인트를 이동 체크에 사용
@@ -1313,6 +1316,7 @@ if (actor->GetActionPoints() > 0)  // 공격용 포인트를 이동 체크에 �
 ```
 
 **올바른 예**:
+
 ```cpp
 // ✅ 이동 체크에 MovementRange (Speed) 사용
 if (actor->GetMovementRange() > 0)  // Speed (이동력) 체크
@@ -1824,6 +1828,7 @@ void AISystem::ExecuteDecision(Character* character, const AIDecision& decision)
 플로우차트는 이미 작성되어 있으므로, 코드와 일치 여부를 확인합니다.
 
 **플로우차트 주요 노드**:
+
 - ✅ 보물 체크 → 출구 이동
 - ✅ HP 30% 이하 체크 → 클레릭 찾기
 - ✅ 목표 도달 시 행동 분기 (출구/클레릭/드래곤)
@@ -1891,6 +1896,7 @@ bool HasAnySpellSlot() const;            // 주문 슬롯 1개라도 있는지
 ```
 
 **장점**:
+
 - ✅ **코드 재사용**: 모든 AI 전략이 동일한 메서드 사용
 - ✅ **중앙화된 상태 쿼리**: Character 단위 테스트 가능
 - ✅ **다른 시스템 활용**: UI, 디버그 도구에서도 사용 가능
@@ -1914,6 +1920,7 @@ bool ShouldUseSpellAttack(Character* actor, Character* target) const
 ```
 
 **장점**:
+
 - ✅ **전략별 커스터마이징**: 각 캐릭터마다 다른 판단 기준
   - Fighter: HP 30% 이하를 위험으로 판단
   - Cleric: HP 50% 이하를 위험으로 판단 (더 보수적)
@@ -1923,11 +1930,11 @@ bool ShouldUseSpellAttack(Character* actor, Character* target) const
 
 **3. 비교: 다른 접근 방식들**
 
-| 접근 방식 | 장점 | 단점 |
-|----------|------|------|
-| **모두 Strategy에** | 전략이 자체 포함적 | 코드 중복, 유지보수 어려움 |
-| **모두 Character에** | 코드 재사용 극대화 | 전략별 커스터마이징 어려움 |
-| **하이브리드 (현재)** | 재사용 + 커스터마이징 균형 | 설계 복잡도 약간 증가 |
+| 접근 방식             | 장점              | 단점              |
+| ----------------- | --------------- | --------------- |
+| **모두 Strategy에**  | 전략이 자체 포함적      | 코드 중복, 유지보수 어려움 |
+| **모두 Character에** | 코드 재사용 극대화      | 전략별 커스터마이징 어려움  |
+| **하이브리드 (현재)**    | 재사용 + 커스터마이징 균형 | 설계 복잡도 약간 증가    |
 
 **4. 향후 확장 예시: ClericStrategy**
 
@@ -1999,6 +2006,7 @@ bool FighterStrategy::ShouldUseSpellAttack(Character* actor, Character* target) 
 - Strategy: `IsInDanger()` → 판단 (0.25f <= 0.3f → true)
 
 이렇게 하면:
+
 - 재사용성 ✅
 - 커스터마이징 ✅
 - 테스트 용이성 ✅
@@ -3386,12 +3394,12 @@ void GamePlay::Load() {
 
 **기존 구현 vs 신규 구현 차이점**:
 
-| 항목 | 기존 (DamageText) | 신규 (Persistent Stats) |
-|------|-------------------|-------------------------|
-| **표시 위치** | 캐릭터 위치에 표시 | 화면 오른쪽 고정 패널 |
-| **표시 시간** | 일시적 (0.5초 후 사라짐) | 지속적 (게임 내내 표시) |
-| **업데이트 방식** | 이벤트 발생 시 생성 | 매 프레임 실시간 조회 |
-| **데이터 저장** | DamageText 구조체 벡터 | 저장 불필요 (직접 조회) |
+| 항목          | 기존 (DamageText)   | 신규 (Persistent Stats) |
+| ----------- | ----------------- | --------------------- |
+| **표시 위치**   | 캐릭터 위치에 표시        | 화면 오른쪽 고정 패널          |
+| **표시 시간**   | 일시적 (0.5초 후 사라짐)  | 지속적 (게임 내내 표시)        |
+| **업데이트 방식** | 이벤트 발생 시 생성       | 매 프레임 실시간 조회          |
+| **데이터 저장**  | DamageText 구조체 벡터 | 저장 불필요 (직접 조회)        |
 
 ---
 
@@ -3703,6 +3711,7 @@ void GamePlay::Load()
 1. ImGui "Player Actions" 패널에서 "Action" → "Attack" 선택
 2. Fighter 클릭하여 공격
 3. **콘솔 로그 확인**:
+   
    ```
    [DEBUG] Damage Event! 10
    ```
@@ -3999,6 +4008,7 @@ void GamePlayUIManager::DrawCharacterStatsPanel([[maybe_unused]] Math::Transform
 ```
 
 **변경 사항**:
+
 - ✅ **모든 텍스트의 X 좌표를 `text_x`로 통일** (임의의 오프셋 제거)
 - ✅ **Y 좌표를 명확하게 계산** (`name_y`, `hp_y`, `ap_y`, `speed_y`)
 - ✅ **line_height로 줄 간격 일관성 유지**
@@ -4304,6 +4314,7 @@ void GamePlayUIManager::DrawCharacterStatsPanel([[maybe_unused]] Math::Transform
 ### 권장 사항
 
 **해결 방법 1 (완전 왼쪽 정렬)**을 권장합니다:
+
 - ✅ 가장 단순하고 명확
 - ✅ 모든 텍스트가 동일한 X 좌표에서 시작
 - ✅ 수정이 쉬움 (Y 좌표만 `line_height`로 계산)
