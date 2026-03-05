@@ -11,9 +11,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **현재 상태**: Week 1-3 완료, Milestone 3 완료, Week 4-5 진행 중
 - **팀 구성**: 5명의 개발자
 
-### 최근 변경사항 (Updated: 2025-12-06)
+### 최근 변경사항 (Updated: 2026-03-04)
 
-- **AI Strategy 패턴 도입**: 캐릭터별 AI 전략 분리 (FighterStrategy, ClericStrategy, WizardStrategy, RogueStrategy)
+- **AI Strategy 패턴 도입**: 캐릭터별 AI 전략 분리 (FighterStrategy 구현 완료, Cleric/Wizard/Rogue 전략 진행 중)
+- **Ability 시스템 부분 구현**: AbilityBase, MeleeAttack, ShieldBash 구현 완료
+- **MapDataRegistry 추가**: JSON 기반 맵 데이터 파싱 및 타일 설정 시스템 구현
 - **AI 플로우차트 작성**: Mermaid 다이어그램으로 캐릭터별 의사결정 로직 문서화 (architecture/character_flowchart/)
 - **향상된 AI 의사결정**: 보물, 버프/디버프, 주문 슬롯 등 상태 기반 전략 구현
 - **턴 플로우 개선**: OnTurnStart/OnTurnEnd 함수 정립
@@ -96,8 +98,10 @@ CodePistols_DragonicTactics/
         ├── CS200/               # 렌더링 추상화
         ├── OpenGL/              # OpenGL 래퍼
         └── Game/DragonicTactics/  # 게임 코드
-            ├── Abilities/       # 캐릭터 어빌리티 (Week 6+ 구현 예정)
-            │   └── (미구현)
+            ├── Abilities/       # 캐릭터 어빌리티
+            │   ├── AbilityBase.h
+            │   ├── MeleeAttack.h/cpp
+            │   └── ShieldBash.h/cpp
             ├── Objects/         # 게임 엔티티
             │   ├── Character.h/cpp      # 캐릭터 베이스 클래스
             │   ├── Dragon.h/cpp         # 플레이어 캐릭터

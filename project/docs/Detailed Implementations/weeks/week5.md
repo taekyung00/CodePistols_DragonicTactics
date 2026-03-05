@@ -3709,13 +3709,17 @@ void GamePlay::Load()
 **검증 방법**:
 
 1. ImGui "Player Actions" 패널에서 "Action" → "Attack" 선택
+
 2. Fighter 클릭하여 공격
+
 3. **콘솔 로그 확인**:
    
    ```
    [DEBUG] Damage Event! 10
    ```
+
 4. **화면 확인**:
+   
    - Fighter 위에 보라색 "10" 텍스트가 잠시 표시
    - 오른쪽 패널의 Fighter HP가 `20 / 30`으로 변경
 
