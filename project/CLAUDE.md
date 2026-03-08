@@ -213,7 +213,7 @@ int result = DiceManager::Instance().RollDiceFromString("2d8+5");
 - `Dragon` - 플레이어 캐릭터
 - `Fighter` - 적 캐릭터 (근접 전투)
 
-**참고**: ShieldBash, MeleeAttack 등의 Ability 시스템은 아직 구현되지 않았습니다. 현재는 기본 공격만 지원됩니다.
+**참고**: Ability 시스템 (MeleeAttack, ShieldBash)은 설계 방향 변경으로 **폐기** 결정. 해당 파일들(`Abilities/` 디렉토리 전체)은 삭제 예정. 현재는 기본 공격(ActionAttack)만 사용.
 
 ### 4. 그리드 시스템 (GridSystem)
 
@@ -642,7 +642,7 @@ CMake FetchContent로 자동 관리:
 
 ### 📋 계획 (Week 6+)
 
-- **Ability 시스템 구현** (AbilityBase, MeleeAttack, ShieldBash 등)
+- ~~**Ability 시스템 구현** (AbilityBase, MeleeAttack, ShieldBash 등)~~ → **폐기 결정**, `Abilities/` 디렉토리 삭제 예정
 - **StatusEffect 시스템** (버프/디버프)
 - **보물 시스템** (아이템 획득, 운반, 탈출)
 - 더 많은 캐릭터 클래스 (Cleric, Wizard, Rogue)
