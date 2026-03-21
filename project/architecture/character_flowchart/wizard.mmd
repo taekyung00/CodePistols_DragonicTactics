@@ -1,36 +1,43 @@
 flowchart TD
-    %% Nodes for wizard
-    SettingTarget("목표 설정")
-    SettingTarget           --> AreWeInDanger("도망쳐야하는 상황인가?")
+    Start(["위저드 턴 시작"]) --> Init["상태 초기화 <br> (자원/디버프 확인)"]
+    
+    %% [공포 디버프 체크]
+    Init --> CheckFear{"공포(Fear) 상태?"}
+    CheckFear -- Yes --> SetFear["[패널티 적용] <br> 피해-3, MP-1, 텔레포트 불가"] --> CheckKill
+    CheckFear -- No --> CheckKill
 
-    AreWeInDanger -- "Yes"   --> TargetExit("목표 = 출구")
-    AreWeInDanger -- "No"    --> TargetSafePlace("목표 = 안전지대<br>(최대 사거리 또는 엄폐 위치)")
+    %% [1단계: 지능형 킬캐치]
+    CheckKill{"[1순위] <br> 가용 슬롯으로 <br> 확정 킬 가능? (피해-3 보정)"}
+    CheckKill -- Yes --> Kill_Loop
+    
+    subgraph Kill_Loop ["최적 자원 사격"]
+        K_AP{"AP > 0?"} -- Yes --> K_Calc["적 HP vs 데미지"]
+        K_Calc -- "1레벨로 충분" --> K_Fire["화염탄 (Slot1)"] --> K_AP
+        K_Calc -- "2레벨 필요" --> K_MM["매직 미사일 (Slot2)"] --> K_AP
+        K_AP -- No --> End_K(["턴 종료"])
+    end
 
-    TargetSafePlace         --> MoveStart("행동 시작")
-    TargetExit              --> MoveStart("행동 시작")
+    %% [2단계: Sweet Spot 이동]
+    CheckKill -- No --> Phase_Decision(("판단 지점"))
+    Phase_Decision --> HasAP{"AP > 0?"}
+    HasAP -- No --> End(["턴 종료"])
 
-    MoveStart               --> AmIOnTarget("목표(안전지대)에 도달했나?")
-    AmIOnTarget   -- "Yes"   --> CanIAct("행동력이 1 이상인가?")
-    AmIOnTarget   -- "No"    --> CanIMove("이동력이 1 이상인가?")
-
-    CanIMove      -- "Yes"   --> MoveToTarget("목표로 1칸 이동")
-    CanIMove      -- "No"    --> CanIAct("행동력이 1 이상인가?")
-
-    MoveToTarget            --> DecreaseMovePoint("이동력을 1 소모")
-    DecreaseMovePoint       --> AmIOnTarget
-
-    CanIAct       -- "No"    --> TurnEnd("턴 종료")
-    CanIAct       -- "Yes"   --> IsDragonInRange("드래곤이 공격 범위 안에 있는가?")
-
-    IsDragonInRange -- "No" --> TurnEnd("턴 종료") 
-    IsDragonInRange -- "Yes" --> DoIHaveSpellSlot("주문 슬롯이 1개 이상인가?") 
-
-    %% --- 공격 실행 및 루프 로직 ---
-    DoIHaveSpellSlot -- "Yes" --> SpellAttackDragon("드래곤에게<br>가장 강력한 주문 사용")
-    DoIHaveSpellSlot -- "No"  --> AttackDragon("드래곤에게 일반 공격")
-
-    SpellAttackDragon       --> DecreaseSpellSlot("주문 슬롯을 1 소모")
-    AttackDragon            --> DecreaseActionPoints("행동력을 1 소모")
-    DecreaseSpellSlot       --> DecreaseActionPoints("행동력을 1 소모")
-
-    DecreaseActionPoints    --> AmIOnTarget("목표에 도달했나?")
+    HasAP -- Yes --> IsSafe{"현재 위치가 <br> Sweet Spot인가?"}
+    IsSafe -- No --> MoveStrategy{"텔레포트 가능?"}
+    
+    %% 텔레포트는 위치 변경이므로 포위 무관 [사용자 요구사항 반영]
+    MoveStrategy -- "Yes (비공포)" --> Act_Tele["Sweet Spot으로 <br> 텔레포트 (AP-1)"] --> Phase_Decision
+    MoveStrategy -- "No (공포/MP유)" --> Act_Walk["일반 이동 (MP-1)"] --> IsSafe
+    
+    %% [3단계: 공격 및 마력 전환]
+    IsSafe -- Yes --> CheckSlots{"남은 슬롯 > 50%?"}
+    
+    %% 슬롯 넉넉 시 공격
+    CheckSlots -- Yes --> Act_BestMagic["최적 마법 시전 <br> (화염탄/매직미사일)"] --> Phase_Decision
+    
+    %% 슬롯 부족 시 마력 전환 (S 배제)
+    CheckSlots -- No --> EvalConv{"마력 전환 조건 <br> (E_conv > 0.8 & HP > 30%)"}
+    EvalConv -- Yes --> Act_Convert["마력 전환 (AP-1)"] --> Phase_Decision
+    
+    %% 최후의 발악 (원거리 캔트립)
+    EvalConv -- No --> Act_Cantrip["원거리 캔트립 (AP-1)"] --> Phase_Decision
