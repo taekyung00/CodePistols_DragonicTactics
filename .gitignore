@@ -7,5 +7,6 @@ DragonicTactics/source/Engine/taekyung.ho_milestone2_loc.csv
 *.csv
 *.bat
 *.txt
+DragonicTactics/build/
 !dragonic_tactics.docx
 
