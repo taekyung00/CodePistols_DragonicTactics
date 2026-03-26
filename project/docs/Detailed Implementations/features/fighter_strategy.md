@@ -5,6 +5,7 @@
 **작성일**: 2026-03-08
 
 **관련 파일**:
+
 - [FighterStrategy.h/cpp](../../../DragonicTactics/source/Game/DragonicTactics/StateComponents/AI/FighterStrategy.h)
 - [IAIStrategy.h](../../../DragonicTactics/source/Game/DragonicTactics/StateComponents/AI/IAIStrategy.h)
 - [architecture/character_flowchart/fighter.mmd](../../../architecture/character_flowchart/fighter.mmd)
@@ -44,12 +45,12 @@
 
 ### 핵심 어빌리티
 
-| 어빌리티 | `abilityName` | 슬롯 | 효과 |
-|---------|--------------|------|------|
-| 강타 (Smite) | `"강타"` | 가용 최고레벨 | 강화 공격 |
-| 피의 갈망 (Bloodlust) | `"피의 갈망"` | 2레벨 | 버프: 공격 시 피흡 |
-| 공포의 외침 (Fear) | `"공포의 외침"` | 1레벨 | 디버프: 드래곤 공포 |
-| 격앙 (Burst) | `"격앙"` | 2레벨 | 버프: 공격력 강화 |
+| 어빌리티              | `abilityName` | 슬롯      | 효과          |
+| ----------------- | ------------- | ------- | ----------- |
+| 강타 (Smite)        | `"강타"`        | 가용 최고레벨 | 강화 공격       |
+| 피의 갈망 (Bloodlust) | `"피의 갈망"`     | 2레벨     | 버프: 공격 시 피흡 |
+| 공포의 외침 (Fear)     | `"공포의 외침"`    | 1레벨     | 디버프: 드래곤 공포 |
+| 격앙 (Burst)        | `"격앙"`        | 2레벨     | 버프: 공격력 강화  |
 
 ---
 
@@ -58,6 +59,7 @@
 ### Task 1: FighterStrategy.h 재작성
 
 **기존 코드와 차이점**:
+
 - `IsInDanger()`: HP 임계값 **40%** (기존 코드는 30%였으나 플로우차트가 40%로 변경)
 - 새 헬퍼: `CanKillDragonThisTurn()`, `HasBuff()`, `HasSpellSlot()`, `IsFearActive()`, `IsInFearRange()`
 - `ShouldUseSpellAttack()`, `DecideAttackAction()` 제거 → 명시적 분기로 교체
@@ -257,6 +259,7 @@ AIDecision FighterStrategy::MakeSurvivalDecision(Character* actor, Character* dr
 ### Task 6: 일반 교전 로직 (HP > 40%)
 
 **⚠️ 수정 포인트**:
+
 - **클레릭 생존 경로**: mmd는 `공포 → 일반 공격`만 존재. 강타 없음
 - **클레릭 부재 + 격앙 있음**: mmd는 `CheckSmiteSlot`으로 직행. 공포 먼저 체크하지 않음
 
@@ -596,6 +599,7 @@ AIDecision normal = fighter_strategy.MakeDecision(fighter);
 ### BattleOrchestrator 동작 방식
 
 `BattleOrchestrator::HandleAITurn`은 매 프레임:
+
 1. `MovementComponent::IsMoving()` 체크 → 이동 중이면 대기
 2. 0.4초 busy-wait
 3. `ai_system->MakeDecision(actor)` → 단 하나의 행동 결정
@@ -609,6 +613,7 @@ AIDecision normal = fighter_strategy.MakeDecision(fighter);
 ### ⚠️ 필수 전제 조건: SpellSystem 등록
 
 `AISystem::ExecuteDecision`의 `UseAbility` 처리:
+
 ```cpp
 case AIDecisionType::UseAbility:
   if (spell_system)  // GetGSComponent<SpellSystem>()
@@ -620,6 +625,7 @@ case AIDecisionType::UseAbility:
 `UseAbility` 결정이 반환되면 아무 일도 안 일어나고 AP/슬롯 소모도 없어 **무한 루프** 발생.
 
 **수정 필요** (`GamePlay::Load()` 내):
+
 ```cpp
 AddGSComponent(new SpellSystem());
 GetGSComponent<SpellSystem>()->SetEventBus(GetGSComponent<EventBus>());
@@ -634,6 +640,7 @@ GetGSComponent<SpellSystem>()->SetEventBus(GetGSComponent<EventBus>());
 
 `AISystem::ExecuteDecision`은 `decision.target->GetGridPosition()->Get()`을 사용합니다.
 자신이 타겟인 어빌리티(피의 갈망, 격앙)는 `target = actor`로 설정하면 크래시 없이 처리됩니다.
+
 ```cpp
 return { AIDecisionType::UseAbility, actor, {}, "피의 갈망", "..." };  // target = actor (self)
 ```
