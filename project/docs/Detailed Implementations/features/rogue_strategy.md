@@ -5,6 +5,7 @@
 **작성일**: 2026-03-08
 
 **관련 파일**:
+
 - [RogueStrategy.h/cpp](../../../DragonicTactics/source/Game/DragonicTactics/StateComponents/AI/RogueStrategy.h) ← 신규 생성
 - [IAIStrategy.h](../../../DragonicTactics/source/Game/DragonicTactics/StateComponents/AI/IAIStrategy.h)
 - [AISystem.h/cpp](../../../DragonicTactics/source/Game/DragonicTactics/StateComponents/AISystem.h)
@@ -42,11 +43,11 @@
 
 ### 핵심 어빌리티
 
-| 어빌리티 | `abilityName` | 슬롯 | 효과 |
-|---------|--------------|------|------|
-| 약점 공략 (Weak Point) | `"약점 공략"` | 2레벨 | 공격력 2배 (은신 중) |
-| 질풍의 보법 (Haste) | `"질풍의 보법"` | 1레벨 | 버프: AP+1, MP+1 |
-| 그림자 숨기 (Shadow Hide) | `"그림자 숨기"` | 0 (슬롯 불필요) | 버프: 은신 상태 진입 |
+| 어빌리티                 | `abilityName` | 슬롯         | 효과             |
+| -------------------- | ------------- | ---------- | -------------- |
+| 약점 공략 (Weak Point)   | `"약점 공략"`     | 2레벨        | 공격력 2배 (은신 중)  |
+| 질풍의 보법 (Haste)       | `"질풍의 보법"`    | 1레벨        | 버프: AP+1, MP+1 |
+| 그림자 숨기 (Shadow Hide) | `"그림자 숨기"`    | 0 (슬롯 불필요) | 버프: 은신 상태 진입   |
 
 ### 상태 변수
 
