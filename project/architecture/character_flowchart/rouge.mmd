@@ -1,60 +1,71 @@
 flowchart TD
-    %% --- 1. 목표 설정 단계 ---
-    SettingTarget("목표 설정")
-    SettingTarget           --> AreWeInDanger("도망쳐야하는 상황인가?")
+    Start(["로그 턴 시작"]) --> InitVars["상태 변수 초기화: <br> [공격 여부 = False]"]
+    InitVars --> CheckKill{"드래곤 킬각인가? <br> (은신 2배 & A* 경로 확인)"}
 
-    AreWeInDanger -- "Yes"   --> TargetExit("목표 = 출구")
-    AreWeInDanger -- "No"    --> ShouldIUseSmokescreen("연막탄 사용 조건 충족?<br>(부상당한 아군 2명 이상 밀집)")
+    %% ---------------------------------------------------
+    %% 0. 킬캐치 오버라이드 (보완: 실패 시 판단 지점으로 합류)
+    %% ---------------------------------------------------
+    CheckKill -- Yes --> Kill_Loop
+    subgraph Kill_Loop ["최고 데미지 난사 루프"]
+        K_Reach{"인접?"} -- No --> K_CanMove{"MP > 0 & <br> A* 경로 있음?"} 
+        K_CanMove -- Yes --> K_DoMove["이동 (A*)"] --> K_Reach
+        
+        %% [수정] 이동력이 다해 인접에 실패하면 즉시 일반 판단으로 전환
+        K_CanMove -- No --> Phase_Decision
+        
+        K_Reach -- Yes --> K_AP{"AP > 0?"} -- Yes --> K_Cond{"2레벨 슬롯 있음?"}
+        K_Cond -- Yes --> K_Weak["약점 공략 (Slot-1)"] --> K_AP
+        K_Cond -- No --> K_Norm["일반 공격"] --> K_AP
+        
+        %% [수정] 공격 자원이 다했을 때도 일반 판단으로 가서 은신 여부 확인
+        K_AP -- No --> Phase_Decision
+    end
 
-    ShouldIUseSmokescreen -- "Yes" --> TargetSmokescreen("목표 = 연막탄 투척 위치")
-    ShouldIUseSmokescreen -- "No"  --> IsStealthed("현재 은신 상태인가?")
-
-    IsStealthed -- "Yes"     --> TargetFlank("목표 = 드래곤의 측면/후방")
-    IsStealthed -- "No"      --> DoIHaveSpellSlot("주문 슬롯(은신)이 있는가?")
-
-    DoIHaveSpellSlot -- "No" --> TargetFlank("목표 = 드래곤의 측면/후방")
-    DoIHaveSpellSlot -- "Yes"--> UseStealth("은신 사용")
-
-    UseStealth              --> DecreaseSpellSlot("주문 슬롯 1 소모")
-    DecreaseSpellSlot       --> DecreaseActionPointsForStealth("행동력 1 소모")
-    DecreaseActionPointsForStealth --> TargetFlank("목표 = 드래곤의 측면/후방")
+    %% ---------------------------------------------------
+    %% 1. 버프 페이즈
+    %% ---------------------------------------------------
+    CheckKill -- No --> HasHasteBuff{"이미 '신속' 상태인가?"}
     
-    TargetExit              --> MoveStart("행동 시작")
-    TargetFlank             --> MoveStart("행동 시작")
-    TargetSmokescreen       --> MoveStart("행동 시작")
+    HasHasteBuff -- No --> CheckHasteSlot{"1레벨 슬롯 있음?"}
+    CheckHasteSlot -- Yes --> IsHasteMeaningful{"신속 시 유의미한가? <br> (MP 부족 혹은 AP 활용)"}
 
-    %% --- 2. 이동 및 행동 결정 ---
-    MoveStart               --> CanIMove("이동력이 1 이상인가?")
+    IsHasteMeaningful -- Yes --> Act_Haste["질풍의 보법 시전 <br> (AP-1, AP+1, MP+1)"] --> Phase_Decision
     
-    CanIMove      -- "Yes"   --> MoveToTarget("목표로 1칸 이동")
-    CanIMove      -- "No"    --> PostMoveAction("이동 후 행동 결정")
+    HasHasteBuff -- Yes --> Phase_Decision
+    CheckHasteSlot -- No --> Phase_Decision
+    IsHasteMeaningful -- No --> Phase_Decision
 
-    MoveToTarget            --> DecreaseMovePoint("이동력 1 소모")
-    DecreaseMovePoint       --> CanIMove
-
-    %% --- 3. 최종 행동 실행 단계 ---
-    PostMoveAction          --> CanIAct("행동력이 1 이상인가?")
-    CanIAct       -- "No"    --> TurnEnd("턴 종료")
-    CanIAct       -- "Yes"   --> WhatIsMyGoal{현재 목표는?}
-
-    WhatIsMyGoal -- "목표==연막탄" --> UseSmokescreen("연막탄 사용")
-    WhatIsMyGoal -- "그 외 목표" --> IsDragonInRange("드래곤이 공격 범위 안에 있나?")
-
-    UseSmokescreen          --> DecreaseSpellSlotForSmoke("주문 슬롯 1 소모")
-    DecreaseSpellSlotForSmoke --> DecreaseActionPointsForSmoke("행동력 1 소모")
-    DecreaseActionPointsForSmoke --> TurnEnd("턴 종료")
-
-    IsDragonInRange -- "No"  --> TurnEnd("턴 종료")
-    IsDragonInRange -- "Yes" --> IsAtFlank("현재 위치가<br>드래곤의 측/후방인가?")
-
-    IsAtFlank -- "Yes"       --> SneakAttack("기습 공격")
-    IsAtFlank -- "No"        --> Attack("일반 공격")
-
-    SneakAttack             --> WasIStealthed("공격 시 은신 상태였는가?")
-    WasIStealthed -- "Yes"   --> BreakStealth("은신 해제")
-    WasIStealthed -- "No"    --> DecreaseActionPoints("행동력 1 소모")
+    %% ---------------------------------------------------
+    %% 2. 행동/이동 판단 루프 (모든 길은 여기로 통함)
+    %% ---------------------------------------------------
+    Phase_Decision(("판단 지점")) --> CheckAP{"남은 AP > 0?"}
+    CheckAP -- No --> End(["턴 종료"])
     
-    BreakStealth            --> DecreaseActionPoints("행동력 1 소모")
-    Attack                  --> DecreaseActionPoints("행동력 1 소모")
+    CheckAP -- Yes --> CheckReach{"인접했는가?"}
 
-    DecreaseActionPoints    --> PostMoveAction("추가 행동 결정")
+    %% [이동 로직]
+    CheckReach -- No --> CanMove{"MP > 0 & <br> A* 경로 있음?"}
+    CanMove -- Yes --> Act_Move["이동 (A* 경로 따라)"] --> Phase_Decision
+    
+    %% 이동 불가 시: 공격 여부에 따라 은신 시도
+    CanMove -- No --> CheckAttackedFar{"[공격 여부] == False <br> & 비은신 상태?"}
+    CheckAttackedFar -- Yes --> Act_StealthFar["그림자 숨기 (AP-1)"] --> End
+    CheckAttackedFar -- No --> End
+
+    %% [교전 로직]
+    CheckReach -- Yes --> CheckStealth_Combat{"현재 은신 상태인가?"}
+
+    %% 은신 중
+    CheckStealth_Combat -- Yes --> CheckWeakSlot{"2레벨 슬롯 있음?"}
+    CheckWeakSlot -- Yes --> Act_Weak["약점 공략 (2배) <br> [공격 여부 = True] <br> [은신 해제]"] --> Phase_Decision
+    CheckWeakSlot -- No --> ShouldIBreakStealth{"평타로 은신 깰 가치 있음?"}
+    
+    ShouldIBreakStealth -- Yes --> Act_NormStealth["일반 공격 (2배) <br> [공격 여부 = True] <br> [은신 해제]"] --> Phase_Decision
+    ShouldIBreakStealth -- No --> Repo_Move{"MP > 0?"}
+    Repo_Move -- Yes --> Act_Repo["재포지셔닝 이동"] --> Repo_Move
+    Repo_Move -- No --> End_Stealth(["턴 종료 (은신 유지)"])
+
+    %% 비은신 중
+    CheckStealth_Combat -- No --> CheckAttacked{"이미 공격했는가?"}
+    CheckAttacked -- No --> Act_StealthClose["그림자 숨기 (AP-1)"] --> End_Stealth
+    CheckAttacked -- Yes --> Act_NormNoStealth["일반 공격 (AP-1) <br> [공격 여부 = True]"] --> Phase_Decision

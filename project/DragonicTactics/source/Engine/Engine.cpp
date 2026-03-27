@@ -22,6 +22,7 @@
 #include "Logger.h"
 #include "TextManager.h"
 #include "TextureManager.h"
+#include "SoundManager.h"
 #include "Timer.h"
 #include "Window.h"
 
@@ -101,6 +102,7 @@ class Engine::Impl
   CS200::ImmediateRenderer2D renderer2D{};
   CS230::TextureManager		 textureManager{};
   TextManager				 textManager{};
+  SoundManager soundmanager{};
 };
 
 Engine& Engine::Instance()
@@ -147,6 +149,11 @@ CS230::TextureManager& Engine::GetTextureManager()
 TextManager& Engine::GetTextManager()
 {
   return Instance().impl->textManager;
+}
+
+SoundManager& Engine::GetSoundManager()
+{
+  return Instance().impl->soundmanager;
 }
 
 void Engine::OnEvent(const SDL_Event& event)
@@ -205,11 +212,13 @@ void Engine::Start(std::string_view window_title)
   // impl->renderer2D.Init();
   impl->timer.ResetTimeStamp();
   impl->textManager.Init();
+  impl->soundmanager.Init();
 }
 
 void Engine::Stop()
 {
   impl->textureManager.Shutdown();
+  impl->soundmanager.Shutdown();
   // impl->renderer2D.Shutdown();
   impl->gameStateManager.Clear();
   ImGuiHelper::Shutdown();

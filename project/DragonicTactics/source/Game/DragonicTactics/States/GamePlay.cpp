@@ -12,6 +12,7 @@ Created:    November 5, 2025
 #include "CS200/IRenderer2D.h"
 #include "CS200/NDC.h"
 #include "Engine/Timer.h"
+#include "Engine/SoundManager.h"
 #include "OpenGL/Environment.h"
 #include "GamePlay.h"
 
@@ -116,6 +117,11 @@ void GamePlay::Load()
   turnMgr->InitializeTurnOrder(std::vector<Character*>{ player, enemy });
   turnMgr->StartCombat();
 
+  Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/SFX_test.wav");
+
+  Engine::GetSoundManager().LoadBGM("Assets/Audio/BGM/BGM_test.ogg");
+  Engine::GetSoundManager().PlayBGM("Assets/Audio/BGM/BGM_test.ogg");
+
   // 신규 추가: UI Manager에 캐릭터 등록
   m_ui_manager->SetCharacters({ player, enemy });
   Engine::GetLogger().LogEvent("GamePlay::Load - Characters registered to UI Manager");
@@ -124,6 +130,7 @@ void GamePlay::Load()
     [this](const CharacterDamagedEvent& event) { 
       this->DisplayDamageAmount(event);
       this->DisplayDamageLog(event);
+      Engine::GetSoundManager().PlaySFX("Assets/Audio/SFX/SFX_test.wav");
     });
 
   GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>(
@@ -263,6 +270,8 @@ void GamePlay::Unload()
 
   enemy	 = nullptr;
   player = nullptr;
+
+  Engine::GetSoundManager().Shutdown();
 }
 
 void GamePlay::Draw()
