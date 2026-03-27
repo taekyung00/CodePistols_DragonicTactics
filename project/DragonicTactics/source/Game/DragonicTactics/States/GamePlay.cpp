@@ -117,10 +117,7 @@ void GamePlay::Load()
   turnMgr->InitializeTurnOrder(std::vector<Character*>{ player, enemy });
   turnMgr->StartCombat();
 
-  Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/SFX_test.wav");
-
-  Engine::GetSoundManager().LoadBGM("Assets/Audio/BGM/BGM_test.ogg");
-  Engine::GetSoundManager().PlayBGM("Assets/Audio/BGM/BGM_test.ogg");
+  Engine::GetSoundManager().PlayBGM(SoundManager::BGM_BATTLE);
 
   // 신규 추가: UI Manager에 캐릭터 등록
   m_ui_manager->SetCharacters({ player, enemy });
@@ -130,7 +127,7 @@ void GamePlay::Load()
     [this](const CharacterDamagedEvent& event) { 
       this->DisplayDamageAmount(event);
       this->DisplayDamageLog(event);
-      Engine::GetSoundManager().PlaySFX("Assets/Audio/SFX/SFX_test.wav");
+      Engine::GetSoundManager().PlaySFX(SoundManager::SFX_HIT);
     });
 
   GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>(
@@ -271,7 +268,7 @@ void GamePlay::Unload()
   enemy	 = nullptr;
   player = nullptr;
 
-  Engine::GetSoundManager().Shutdown();
+  Engine::GetSoundManager().StopBGM();
 }
 
 void GamePlay::Draw()

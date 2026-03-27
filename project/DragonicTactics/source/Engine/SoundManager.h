@@ -16,6 +16,10 @@ Wav - SFX
 class SoundManager
 {
 public:
+    static constexpr const char* BGM_MAIN_MENU = "Assets/Audio/BGM/BGM_Main.ogg";
+    static constexpr const char* BGM_BATTLE    = "Assets/Audio/BGM/BGM_test.ogg";
+    static constexpr const char* SFX_HIT       = "Assets/Audio/SFX/SFX_test.wav";
+
     SoundManager()  = default;
     ~SoundManager() = default;
 
@@ -56,4 +60,5 @@ private:
     bool   LoadOGGToBuffer(const std::string& path, ALuint& out_buffer);
     bool   LoadWAVToBuffer(const std::string& path, ALuint& out_buffer);
     ALuint GetFreeSFXSource();
+    
 };

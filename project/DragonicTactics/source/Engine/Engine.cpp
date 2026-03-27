@@ -213,6 +213,10 @@ void Engine::Start(std::string_view window_title)
   impl->timer.ResetTimeStamp();
   impl->textManager.Init();
   impl->soundmanager.Init();
+
+  Engine::GetSoundManager().LoadBGM(SoundManager::BGM_MAIN_MENU);
+  Engine::GetSoundManager().LoadBGM(SoundManager::BGM_BATTLE);
+  Engine::GetSoundManager().LoadBGM(SoundManager::SFX_HIT);
 }
 
 void Engine::Stop()
