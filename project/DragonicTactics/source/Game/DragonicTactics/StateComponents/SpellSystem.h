@@ -18,52 +18,47 @@
 class Character;
 class EventBus;
 
-// Step 1.1: SpellSystem singleton class
-// Reason: Centralized spell management accessible from anywhere
+
+struct SpellData
+{
+    std::string id;           // "S_ATK_010"
+    std::string spell_name;   // "화염탄"
+    std::string spell_school; // "공격", "버프", "디버프", "강화", "지형"
+    int         spell_level;  // 요구 슬롯 레벨 (0 = 슬롯 불필요)
+    std::string target_type;  // "적 단일", "아군 단일", "자신", "범위"
+    int         range;        // 타일 수 ("-"는 0으로 처리)
+    bool        upcastable;   // 업캐스트 가능 여부
+    std::string effect_desc;  // 효과 설명 전체
+    std::string base_damage;  // "2d6", "3d8+2" 형식 (없으면 빈 문자열)
+
+    std::vector<std::string> usable_classes; // ["Dragon", "Wizard"] — '/' 구분 파싱
+};
+
+
 class SpellSystem : public CS230::Component
 {
-  public:
-  SpellSystem();
-  ~SpellSystem();
+public:
+    void LoadFromCSV(const std::string& csv_path);
 
-  // Set EventBus for testing or runtime use
-  void SetEventBus(EventBus* bus)
-  {
-	eventBus = bus;
-  }
+    bool HasSpell(const std::string& spell_id) const;
+    std::vector<std::string> GetAvailableSpells(Character* caster) const;
+    bool CanCast(Character* caster, const std::string& spell_id,
+                 Math::ivec2 target_tile) const;
 
-  // Step 1.2: Spell registration
-  // Reason: Spells must be registered before they can be used
-  void			 RegisterSpell(const std::string& spellName, MockSpellBase* spell);
-  MockSpellBase* GetSpell(const std::string& spellName);
+    // AISystem::ExecuteDecision이 이 이름으로 호출 — 이름 변경 금지
+    bool CastSpell(Character* caster, const std::string& spell_id,
+                   Math::ivec2 target_tile, int upcast_level = 0);
 
-  // Step 1.3: Spell casting interface
-  // Reason: Main entry point for casting spells
-  MockSpellResult CastSpell(Character* caster, const std::string& spellName, Math::vec2 targetTile, int upcastLevel = 0);
+    const SpellData* GetSpellData(const std::string& spell_id) const;
 
-  // Step 1.4: Spell validation
-  // Reason: Check if spell can be cast before committing resources
-  bool CanCastSpell(Character* caster, const std::string& spellName, Math::vec2 targetTile, int upcastLevel = 0) const;
+private:
+    std::map<std::string, SpellData> spells_;
 
-  // Step 1.5: Spell slot management helpers
-  // Reason: Query available spells for UI
-  std::vector<std::string> GetAvailableSpells(Character* caster) const;
-  int					   GetSpellSlotCount(Character* caster, int level) const;
+    SpellData                ParseCSVRow(const std::vector<std::string>& columns) const;
+    std::vector<std::string> SplitByDelimiter(const std::string& str, char delim) const;
+    int                      ParseRange(const std::string& range_str) const;
 
-  // Step 1.6: Spell preview (for UI)
-  // Reason: Show which tiles will be affected before casting
-  std::vector<Math::vec2> PreviewSpellArea(const std::string& spellName, Math::vec2 targetTile) const;
-
-  private:
-
-
-  // Step 1.7: Spell registry
-  // Reason: Store all registered spells
-  std::map<std::string, std::unique_ptr<MockSpellBase>> spells;
-
-  // Step 1.8: Validation helpers
-  bool ValidateSpellSlots(Character* caster, int requiredLevel) const;
-  bool ValidateTarget(MockSpellBase* spell, Character* caster, Math::vec2 targetTile) const;
-
-  EventBus* eventBus = nullptr;
+    void ApplySpellEffect(Character* caster, const SpellData& spell,
+                          Math::ivec2 target_tile, int upcast_level);
+    int  CalculateSpellDamage(const SpellData& spell, Character* caster, int upcast_level);
 };

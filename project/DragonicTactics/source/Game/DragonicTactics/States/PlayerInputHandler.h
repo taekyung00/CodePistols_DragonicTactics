@@ -49,6 +49,7 @@ class PlayerInputHandler
 
   private:
   ActionState m_state = ActionState::None;
+  std::string m_selected_spell_id;
 
   void HandleDragonInput(double dt, Dragon* dragon, GridSystem* grid, CombatSystem* combat_system);
   void HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, GridSystem* grid, CombatSystem* combat_system);

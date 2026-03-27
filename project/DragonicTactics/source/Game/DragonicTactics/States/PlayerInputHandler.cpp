@@ -162,8 +162,15 @@ void PlayerInputHandler::HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, 
 	  // 행동 선택 중에는 클릭 무시
 	  break;
 
-	case ActionState::TargetingForSpell:
-	  // 스펠 타겟 선택 (미구현)
+	case ActionState::TargetingForSpell: {
+		Math::ivec2  clicked_tile = ConvertScreenToGrid(mouse_pos);
+		SpellSystem* spell_sys  = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
+		if (spell_sys && spell_sys->CanCast(dragon, m_selected_spell_id, clicked_tile))
+		{
+			spell_sys->CastSpell(dragon, m_selected_spell_id, clicked_tile);
+			m_state = ActionState::None;
+		}
+	}
 	  break;
 
 	case ActionState::None: break;
@@ -189,6 +196,8 @@ void PlayerInputHandler::HandleRightClick(Dragon* dragon)
 
   m_state = ActionState::None;
 }
+
+
 
 void PlayerInputHandler::CancelCurrentAction()
 {

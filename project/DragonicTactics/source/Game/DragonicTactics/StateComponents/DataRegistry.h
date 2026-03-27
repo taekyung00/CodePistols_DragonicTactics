@@ -27,9 +27,12 @@
 #endif
 
 #include "./Game/DragonicTactics/Types/CharacterTypes.h"
+#include "./Game/DragonicTactics/StateComponents/SpellSystem.h"
 #include <ctime>
 #include <map>
 #include <string>
+
+struct SpellData;
 
 class DataRegistry : public CS230::Component
 {
