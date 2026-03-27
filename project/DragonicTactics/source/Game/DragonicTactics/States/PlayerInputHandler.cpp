@@ -13,6 +13,8 @@ Created:    November 24, 2025
 #include "./CS200/NDC.h"
 #include "GamePlay.h"
 #include "pch.h"
+#include "ButtonManager.h"
+#include "GamePlayUIManager.h"
 
 #include "../Debugger/DebugManager.h"
 #include "../StateComponents/GridSystem.h"
@@ -45,6 +47,77 @@ PlayerInputHandler::PlayerInputHandler() : m_state(ActionState::None)
 
 void PlayerInputHandler::Update(double dt, Character* current_character, GridSystem* grid, CombatSystem* combat_system)
 {
+  // ButtonManager 참조 (GamePlayUIManager에서)
+    GamePlayUIManager* m_ui_manager;
+    ButtonManager& btns = m_ui_manager->GetButtons();
+ 
+    // Move 버튼 클릭
+    if (btns.IsPressed("btn_move"))
+    {
+        if (m_state == ActionState::SelectingMove)
+        {
+            CancelCurrentAction();
+            grid->DisableMovementMode();
+        }
+        else
+        {
+            SetState(ActionState::SelectingMove);
+            // 이동 가능 타일 계산
+            grid->EnableMovementMode(current_character->GetGridPosition()->Get(),
+                                      current_character->GetMovementRange());
+        }
+    }
+
+    // Action 버튼 클릭
+    if (btns.IsPressed("btn_action"))
+    {
+        if (m_state == ActionState::SelectingAction)
+        {
+            CancelCurrentAction();
+            btns.SetVisible("btn_attack", false);
+            btns.SetVisible("btn_spell", false);
+        }
+        else
+        {
+            SetState(ActionState::SelectingAction);
+            btns.SetVisible("btn_attack", true);
+            btns.SetVisible("btn_spell", true);
+        }
+    }
+
+    // Attack 서브 버튼
+    if (btns.IsPressed("btn_attack"))
+    {
+        SetState(ActionState::TargetingForAttack);
+        btns.SetVisible("btn_attack", false);
+        btns.SetVisible("btn_spell", false);
+    }
+
+    // Spell 서브 버튼
+    if (btns.IsPressed("btn_spell"))
+    {
+        SetState(ActionState::TargetingForSpell);
+        btns.SetVisible("btn_attack", false);
+        btns.SetVisible("btn_spell", false);
+    }
+
+    // End Turn 버튼
+    if (btns.IsPressed("btn_end_turn"))
+    {
+        TurnManager* tm = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
+        if (tm) tm->EndCurrentTurn();
+    }
+
+    // 버튼 비활성화 상태 갱신
+    bool in_action = (m_state != ActionState::None);
+    btns.SetDisabled("btn_move", in_action && m_state != ActionState::SelectingMove);
+    btns.SetDisabled("btn_action", in_action && m_state != ActionState::SelectingAction);
+    btns.SetDisabled("btn_end_turn", in_action);
+
+    // Move/Action 버튼 레이블 갱신 (Cancel 표시)
+    btns.SetLabel("btn_move",   (m_state == ActionState::SelectingMove)   ? "Cancel Move"   : "Move");
+    btns.SetLabel("btn_action", (m_state == ActionState::SelectingAction) ? "Cancel Action" : "Action");
+
   if (current_character->GetCharacterType() != CharacterTypes::Dragon)
   {
 	return;
@@ -62,7 +135,26 @@ void PlayerInputHandler::Update(double dt, Character* current_character, GridSys
 	  // Engine::GetLogger().LogEvent("Dragon finished moving.");
 	}
   }
+  // 특정 스펠 사용 가능 시 스펠 버튼 추가
+	SpellSystem* ss = GetGSComponent<SpellSystem>();
+	auto available = ss->GetAvailableSpells(current_character);
 
+	// 기존 스펠 버튼 제거
+	for (const auto& spell : cached_spell_buttons_)
+		button_manager_.RemoveButton("spell_" + spell.id);
+
+	// 새 스펠 버튼 생성
+	for (int i = 0; i < static_cast<int>(available.size()); ++i)
+	{
+		button_manager_.AddButton({
+			"spell_" + available[i].id,
+			{ 500.0 + i * 130.0, 700.0 },
+			{ 120.0, 35.0 },
+			available[i].spell_name,
+			false,  // 초기 visible
+			current_character->GetSpellSlotCount(available[i].spell_level) == 0  // 슬롯 없으면 disabled
+		});
+	}
   HandleDragonInput(dt, dragon, grid, combat_system);
 }
 

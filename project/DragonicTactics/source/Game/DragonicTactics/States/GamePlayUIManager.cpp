@@ -61,6 +61,13 @@ void GamePlayUIManager::ShowGameEnd(std::string&& text)
 
 void GamePlayUIManager::Update(double dt)
 {
+
+	// 마우스 입력 가져오기
+	Math::vec2 mouse_pos = Engine::GetInput().GetMousePos();
+	bool mouse_clicked   = Engine::GetInput().MouseJustPressed(0); 
+
+	button_manager_.Update(mouse_pos, mouse_clicked);
+
   for (auto& text : m_damage_texts)
   {
 	text.lifetime -= dt;
@@ -81,6 +88,7 @@ void GamePlayUIManager::Update(double dt)
 
 void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_matrix)
 {
+	button_manager_.Draw(camera_matrix);
 	auto& textMng = Engine::GetTextManager();
 	for (const auto& text : m_damage_texts)
 	{
@@ -98,6 +106,26 @@ void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_
 		textMng.DrawText(*game_end_text, Math::ivec2{ 0, size.y / 2 }, Fonts::Outlined, Math::vec2{GAME_END_TEXT_SIZE, GAME_END_TEXT_SIZE}, CS200::WHITE);
 	}
 
+// // 특정 스펠 사용 가능 시 스펠 버튼 추가
+// SpellSystem* ss = GetGSComponent<SpellSystem>();
+// auto available = ss->GetAvailableSpells(current_character);
+
+// // 기존 스펠 버튼 제거
+// for (const auto& spell : cached_spell_buttons_)
+//     button_manager_.RemoveButton("spell_" + spell.id);
+
+// // 새 스펠 버튼 생성
+// for (int i = 0; i < static_cast<int>(available.size()); ++i)
+// {
+//     button_manager_.AddButton({
+//         "spell_" + available[i].id,
+//         { 500.0 + i * 130.0, 700.0 },
+//         { 120.0, 35.0 },
+//         available[i].spell_name,
+//         false,  // 초기 visible
+//         current_character->GetSpellSlotCount(available[i].spell_level) == 0  // 슬롯 없으면 disabled
+//     });
+// }
   DrawCharacterStatsPanel(camera_matrix);
 }
 
@@ -174,4 +202,57 @@ void GamePlayUIManager::DrawCharacterStatsPanel([[maybe_unused]] Math::Transform
 	// 다음 캐릭터 패널 위치로 이동
 	current_y -= panel_height_per_char + 40.0;
   }
+}
+
+void GamePlayUIManager::InitButtons()
+{
+    // 화면 하단 중앙에 버튼 배치 (1200x800 기준)
+    // 좌상단 원점 기준, y가 아래로 증가하는 화면 좌표
+
+    constexpr double BTN_W = 120.0;  // 버튼 너비
+    constexpr double BTN_H = 40.0;   // 버튼 높이
+    constexpr double BTN_Y = 750.0;  // 하단에서 50px 위 (y=800기준)
+    constexpr double GAP   = 10.0;   // 버튼 간격
+    constexpr double START_X = 400.0; // 시작 x
+
+    // Move 버튼
+    button_manager_.AddButton({
+        "btn_move",
+        { START_X, BTN_Y },
+        { BTN_W, BTN_H },
+        "Move"
+    });
+
+    // Action 버튼
+    button_manager_.AddButton({
+        "btn_action",
+        { START_X + BTN_W + GAP, BTN_Y },
+        { BTN_W, BTN_H },
+        "Action"
+    });
+
+    // End Turn 버튼
+    button_manager_.AddButton({
+        "btn_end_turn",
+        { START_X + (BTN_W + GAP) * 2, BTN_Y },
+        { BTN_W, BTN_H },
+        "End Turn"
+    });
+
+    // Action 서브 버튼 (Action 선택 시에만 표시)
+    button_manager_.AddButton({
+        "btn_attack",
+        { START_X + BTN_W + GAP, BTN_Y - BTN_H - GAP },
+        { BTN_W, BTN_H },
+        "Attack",
+        false  // 초기에는 숨김
+    });
+
+    button_manager_.AddButton({
+        "btn_spell",
+        { START_X + BTN_W + GAP, BTN_Y - (BTN_H + GAP) * 2 },
+        { BTN_W, BTN_H },
+        "Spell",
+        false  // 초기에는 숨김
+    });
 }
