@@ -4,8 +4,7 @@
 #include "../../Types/Events.h"
 #include "../../Objects/Character.h"
 
-void StatusEffectComponent::AddEffect(const std::string& name, int duration,
-                                       int magnitude, [[maybe_unused]] bool is_buff)
+void StatusEffectComponent::AddEffect(const std::string& name, int duration, int magnitude)
 {
     // 이미 있으면 지속시간 갱신
     for (auto& e : effects_)
@@ -17,7 +16,7 @@ void StatusEffectComponent::AddEffect(const std::string& name, int duration,
             return;
         }
     }
-    effects_.push_back({ name, duration, magnitude, is_buff });
+    effects_.push_back({ name, duration, magnitude });
 }
 
 void StatusEffectComponent::RemoveEffect(const std::string& name)
@@ -28,32 +27,15 @@ void StatusEffectComponent::RemoveEffect(const std::string& name)
         effects_.end());
 }
 
-void StatusEffectComponent::RemoveAllDebuffs()
+void StatusEffectComponent::RemoveAllEffects()
 {
-    effects_.erase(
-        std::remove_if(effects_.begin(), effects_.end(),
-                       [](const ActiveEffect& e) { return !e.is_buff; }),
-        effects_.end());
+    effects_.clear();
 }
 
-bool StatusEffectComponent::HasBuff(const std::string& name) const
+bool StatusEffectComponent::Has(const std::string& name) const
 {
     for (const auto& e : effects_)
-        if (e.name == name && e.is_buff) return true;
-    return false;
-}
-
-bool StatusEffectComponent::HasBuff(const std::string& name) const
-{
-    for (const auto& e : effects_)
-        if (e.name == name && e.is_buff) return true;
-    return false;
-}
-
-bool StatusEffectComponent::HasDebuff(const std::string& name) const
-{
-    for (const auto& e : effects_)
-        if (e.name == name && !e.is_buff) return true;
+        if (e.name == name) return true;
     return false;
 }
 

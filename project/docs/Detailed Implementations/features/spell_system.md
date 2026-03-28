@@ -150,7 +150,6 @@ AI가 스펠을 사용하려면 Strategy에서 `decision.type = AIDecisionType::
 - `SpellSystem.h`에서 `MockSpellBase` 의존성을 완전히 제거하고 `SpellData` 기반 API로 교체한다.
 - 메인 시전 함수명은 `CastSpell`을 유지한다. `AISystem::ExecuteDecision`이 이미 이 이름으로 호출하고 있어 수정이 불필요하다.
 - private에 파싱 헬퍼(`SplitByDelimiter`, `ParseRange`, `ParseCSVRow`, `ParseEffectField`, `ReadCSVRecord`)와 실행 헬퍼(`ApplySpellEffect`, `CalculateSpellDamage`)를 선언한다.
-- `LoadStatusEffectsFromCSV`로 `status_effect.csv`를 `status_effects_` 맵에 로드한다 (UI 툴팁/디버그 표시용).
 
 ---
 
@@ -160,7 +159,6 @@ AI가 스펠을 사용하려면 Strategy에서 `decision.type = AIDecisionType::
 
 - `ReadCSVRecord(file)`: 파일에서 레코드 하나(quoted multiline 포함)를 읽어 컬럼 벡터로 반환한다. Effect 필드는 `"..."` 형태로 개행을 포함할 수 있으므로, 닫는 따옴표를 만날 때까지 줄을 이어 붙인다.
 - `LoadFromCSV`: 헤더 레코드를 스킵하고 `ReadCSVRecord`를 반복 호출해 `ParseCSVRow`로 `SpellData`를 만들어 `spells_` 맵에 저장한다.
-- `LoadStatusEffectsFromCSV`: `status_effect.csv`를 읽어 `status_effects_` (`std::map<std::string, std::string>`)에 로드한다. UI 툴팁 표시와 디버그 로그에 사용한다.
 - `SplitByDelimiter(str, delim)`: 구분자로 문자열을 분리하고 앞뒤 공백을 제거한다. Classes 파싱(`,`) 양쪽에 사용한다.
 - `ParseRange(range_str)`: `"4 spaces"` 형태에서 숫자만 추출해 `int`로 반환한다. `"-"` 또는 빈 문자열은 `0`으로 처리한다.
 - `ParseCSVRow(col)`: 9개 컬럼 벡터를 `SpellData` 필드에 매핑한다. Classes는 `SplitByDelimiter(col[3], ',')`. `upcastable`은 `"TRUE"`일 때 `true`.
@@ -389,7 +387,6 @@ class SpellSystem : public CS230::Component
 {
 public:
     void LoadFromCSV(const std::string& csv_path);
-    void LoadStatusEffectsFromCSV(const std::string& csv_path); // status_effect.csv
 
     bool HasSpell(const std::string& spell_id) const;
     std::vector<std::string> GetAvailableSpells(Character* caster) const;
@@ -401,11 +398,9 @@ public:
                    Math::ivec2 target_tile, int upcast_level = 0);
 
     const SpellData* GetSpellData(const std::string& spell_id) const;
-    std::string      GetStatusEffectDesc(const std::string& name) const; // 툴팁용
 
 private:
     std::map<std::string, SpellData> spells_;
-    std::map<std::string, std::string> status_effects_; // status_effect.csv 로드
 
     // 파싱 헬퍼
     std::vector<std::string> ReadCSVRecord(std::ifstream& file) const;
@@ -563,7 +558,7 @@ void SpellSystem::LoadFromCSV(const std::string& csv_path)
 }
 ```
 
-#### 신형 LoadFromCSV + LoadStatusEffectsFromCSV (ReadCSVRecord 기반)
+#### 신형 LoadFromCSV (ReadCSVRecord 기반)
 
 ```cpp
 void SpellSystem::LoadFromCSV(const std::string& csv_path)
@@ -588,22 +583,10 @@ void SpellSystem::LoadFromCSV(const std::string& csv_path)
     Engine::GetLogger().LogEvent(
         "SpellSystem: Loaded " + std::to_string(spells_.size()) + " spells");
 }
-
-void SpellSystem::LoadStatusEffectsFromCSV(const std::string& csv_path)
-{
-    std::ifstream file(csv_path);
-    if (!file.is_open()) return;
-
-    std::string line;
-    while (std::getline(file, line))
-    {
-        if (line.empty()) continue;
-        auto cols = SplitByDelimiter(line, ',');
-        if (cols.size() >= 2)
-            status_effects_[cols[0]] = cols[1];
-    }
-}
 ```
+
+> **status_effect.csv 파싱 불필요**: 효과 이름 목록과 실행 로직은 `StatusEffectHandler::KNOWN_EFFECTS`가 소유한다.
+> `status_effect.csv`는 설계 참조 문서로만 존재한다.
 
 ---
 
@@ -1049,16 +1032,7 @@ ASSERT(frenzy->damage_formula == "0",      "Frenzy deals 0 damage");
 ASSERT(frenzy->spell_level == 0,           "Frenzy requires no spell slot");
 ```
 
-### 테스트 3: status_effect.csv 로드
-
-```cpp
-ss->LoadStatusEffectsFromCSV("Assets/Data/status_effect.csv");
-// "Lifesteal" → "Recover 50% of damage dealt this turn (round down)"
-std::string desc = ss->GetStatusEffectDesc("Lifesteal");
-ASSERT(!desc.empty(), "Lifesteal description loaded");
-```
-
-### 테스트 4: 슬롯 소모 검증
+### 테스트 3: 슬롯 소모 검증
 
 ```cpp
 int before = player->GetSpellSlotCount(1);
@@ -1095,7 +1069,7 @@ ASSERT(enemy->GetHP() < hp_before, "AI spell must deal damage");
 ```cpp
 // Fearful Cry: 시전자 주변 3칸 적에게 Fear 3턴 적용
 ss->CastSpell(fighter, "S_DEB_020", dragon_tile, 0);
-ASSERT(dragon->HasDebuff("Fear"), "Dragon must have Fear after Fearful Cry");
+ASSERT(dragon->Has("Fear"), "Dragon must have Fear after Fearful Cry");
 ```
 
 ### 게임 내 수동 테스트 (키보드)
@@ -1111,3 +1085,425 @@ if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Q))
         Engine::GetLogger().LogEvent("Available: " + id);
 }
 ```
+
+---
+
+## 스펠 선택 UI 구현 (Dragon 턴)
+
+Dragon이 자신이 사용 가능한 스펠 목록을 보고 선택할 수 있도록 하는 구현 가이드.
+
+### 현재 문제 목록
+
+| 파일                     | 문제                                                              |
+| ---------------------- | --------------------------------------------------------------- |
+| `GamePlay.cpp`         | `AddGSComponent(new SpellSystem())` 없음 → 스펠 시스템 미등록             |
+| `GamePlay.cpp`         | `LoadFromCSV()` 호출 없음 → 스펠 데이터 비어 있음                            |
+| `GamePlay.cpp`         | "Spell" 버튼이 바로 `TargetingForSpell`로 전환 → 어떤 스펠인지 선택 불가          |
+| `PlayerInputHandler.h` | `SelectingSpell` 상태 없음                                          |
+| `SpellSystem.cpp`      | `GetAvailableSpells`가 `ivec2(0,0)`을 타겟으로 전달 → 사거리 체크에서 모든 스펠 실패 |
+
+---
+
+### 수정 1: SpellSystem.cpp — `GetAvailableSpells` 버그 수정
+
+`GetAvailableSpells`는 타겟 위치 없이 "시전 가능 여부"만 판단해야 한다.
+현재 `CanCast(caster, id, ivec2(0,0))`을 호출하면 시전자 위치에서 `(0,0)`까지 거리를 계산해
+사거리 초과로 대부분의 스펠이 걸러진다.
+
+**수정**: 타겟 위치에 시전자 자신의 위치를 전달 → 거리 = 0 → 사거리 체크 항상 통과
+
+```cpp
+// SpellSystem.cpp — GetAvailableSpells
+std::vector<std::string> SpellSystem::GetAvailableSpells(Character* caster) const
+{
+    std::vector<std::string> available_spells;
+    for (const auto& pair : spells_)
+    {
+        // 타겟 미확정이므로 시전자 위치를 사용 → 거리=0, 사거리 체크 항상 통과
+        if (CanCast(caster, pair.first, caster->GetGridPosition()->Get()))
+        {
+            available_spells.push_back(pair.first);
+        }
+    }
+    return available_spells;
+}
+```
+
+---
+
+### 수정 2: PlayerInputHandler.h — `SelectingSpell` 상태 추가
+
+```cpp
+enum class ActionState
+{
+    None,
+    SelectingMove,
+    Moving,
+    SelectingAction,
+    SelectingSpell,       // ← 신규: 스펠 목록에서 선택 중
+    TargetingForAttack,
+    TargetingForSpell
+};
+```
+
+---
+
+### 수정 3: PlayerInputHandler.cpp — switch에 케이스 추가
+
+`HandleMouseClick`의 switch에 `SelectingSpell` 케이스 추가 (클릭 무시):
+
+```cpp
+case ActionState::SelectingSpell:
+    // 스펠 목록 선택 중에는 타일 클릭 무시
+    break;
+```
+
+---
+
+### 수정 4: GamePlay.cpp — SpellSystem 등록 및 CSV 로드
+
+`GamePlay::Load()`의 `AddGSComponent` 목록에 추가:
+
+```cpp
+AddGSComponent(new SpellSystem());
+AddGSComponent(new StatusEffectHandler());  // 기존 — 위치 참고용
+```
+
+설정 코드 추가 (기존 `SetDiceManager` 라인 근처):
+
+```cpp
+GetGSComponent<SpellSystem>()->LoadFromCSV("Assets/Data/spell_table.csv");
+GetGSComponent<SpellSystem>()->SetEventBus(GetGSComponent<EventBus>());
+```
+
+> 기존 주석 처리된 `// GetGSComponent<SpellSystem>()->SetEventBus(...)` 줄을 교체.
+
+---
+
+### 수정 5: GamePlay.cpp — DrawImGui() 수정
+
+#### 5-1. Action 버튼: SelectingSpell 상태도 취소 가능하게
+
+```cpp
+// 수정 전
+const char* action_text     = (currentState == ActionState::SelectingAction) ? "Cancel Action" : "Action";
+bool  is_action_disabled    = (currentState != ActionState::None && currentState != ActionState::SelectingAction);
+
+// 수정 후
+const char* action_text     = (currentState == ActionState::SelectingAction ||
+                                currentState == ActionState::SelectingSpell) ? "Cancel Action" : "Action";
+bool  is_action_disabled    = (currentState != ActionState::None &&
+                                currentState != ActionState::SelectingAction &&
+                                currentState != ActionState::SelectingSpell);
+```
+
+#### 5-2. Action 버튼 클릭 핸들러: SelectingSpell도 취소 처리
+
+```cpp
+if (ImGui::Button(action_text))
+{
+    if (currentState == ActionState::SelectingAction ||
+        currentState == ActionState::SelectingSpell)      // ← 추가
+    {
+        m_input_handler->CancelCurrentAction();
+        Engine::GetLogger().LogEvent("UI: 'Cancel Action' button clicked.");
+    }
+    else
+    {
+        m_input_handler->SetState(ActionState::SelectingAction);
+        Engine::GetLogger().LogEvent("UI: 'Action' button clicked.");
+    }
+}
+```
+
+#### 5-3. Action List 패널: "Spell" 버튼 → SelectingSpell으로 전환
+
+```cpp
+if (currentState == ActionState::SelectingAction)
+{
+    ImGui::Begin("Action List");
+
+    if (ImGui::Button("Attack"))
+    {
+        Engine::GetLogger().LogEvent("UI: 'Attack' selected. Now targeting.");
+        m_input_handler->SetState(ActionState::TargetingForAttack);
+    }
+
+    if (ImGui::Button("Spell"))
+    {
+        Engine::GetLogger().LogEvent("UI: 'Spell' selected. Showing spell list.");
+        m_input_handler->SetState(ActionState::SelectingSpell);  // ← TargetingForSpell → SelectingSpell
+    }
+
+    ImGui::End();
+}
+```
+
+#### 5-4. Spell List 패널 신규 추가 (Action List 패널 바로 뒤)
+
+```cpp
+if (currentState == ActionState::SelectingSpell)
+{
+    ImGui::Begin("Spell List");
+
+    SpellSystem* spell_sys = GetGSComponent<SpellSystem>();
+    Character*   current   = turnMgr ? turnMgr->GetCurrentCharacter() : nullptr;
+
+    if (spell_sys && current)
+    {
+        auto available = spell_sys->GetAvailableSpells(current);
+
+        if (available.empty())
+        {
+            ImGui::Text("No spells available.");
+        }
+
+        for (const auto& spell_id : available)
+        {
+            const SpellData* spell = spell_sys->GetSpellData(spell_id);
+            if (!spell) continue;
+
+            // 버튼 레이블: "Fire Bolt (Lv.1)"
+            // ##spell_id 로 ImGui 내부 ID 충돌 방지
+            std::string label = spell->spell_name
+                              + " (Lv." + std::to_string(spell->spell_level) + ")"
+                              + "##" + spell_id;
+
+            if (ImGui::Button(label.c_str()))
+            {
+                Engine::GetLogger().LogEvent("UI: Spell '" + spell->spell_name + "' selected. Now targeting.");
+                m_input_handler->SelectSpell(spell_id);  // → TargetingForSpell로 전환
+            }
+        }
+    }
+
+    if (ImGui::Button("Cancel"))
+    {
+        m_input_handler->CancelCurrentAction();
+    }
+
+    ImGui::End();
+}
+```
+
+> `SpellData`는 `SpellSystem.h`를 include하면 사용 가능. `GamePlay.cpp`에는 이미 include되어 있음.
+
+---
+
+### 구현 순서
+
+```
+1. SpellSystem.cpp — GetAvailableSpells 한 줄 수정
+2. PlayerInputHandler.h — SelectingSpell 추가
+3. PlayerInputHandler.cpp — switch case 추가
+4. GamePlay.cpp — AddGSComponent(new SpellSystem()) + LoadFromCSV + SetEventBus
+5. GamePlay.cpp — DrawImGui 수정 (5-1 ~ 5-4)
+6. cmake --preset windows-debug 재실행 (SpellSystem이 새로 링크됨)
+7. 빌드 후 Dragon 턴에서 Action → Spell 클릭 → 스펠 목록 확인
+```
+
+---
+
+## 캐릭터 스탯 패널에 스펠 슬롯 / 상태 효과 표시
+
+`GamePlayUIManager::DrawCharacterStatsPanel()`에 스펠 레벨별 슬롯 잔여량과 현재 활성 상태 효과를 추가 표시한다.
+
+### 사전 작업: 필요한 getter 추가
+
+#### A. SpellSlots — 최대 슬롯 수 반환
+
+현재 `GetSpellSlotCount(level)`는 현재 잔여 슬롯만 반환한다. `현재/최대` 형식으로 표시하려면 최대 슬롯도 필요하다.
+
+**`SpellSlots.h` 추가**:
+
+```cpp
+int GetMaxSlotCount(int level) const;
+const std::map<int, int>& GetMaxSlots() const { return max_slots; }
+```
+
+**`SpellSlots.cpp` 추가**:
+
+```cpp
+int SpellSlots::GetMaxSlotCount(int level) const
+{
+    auto it = max_slots.find(level);
+    return (it != max_slots.end()) ? it->second : 0;
+}
+```
+
+#### B. StatusEffectComponent — 전체 활성 효과 목록 반환
+
+현재 `Has(name)` / `GetMagnitude(name)`만 있고, 목록 전체를 순회할 방법이 없다.
+
+**`StatusEffectComponent.h` 추가**:
+
+```cpp
+// --- 전체 효과 목록 (UI 표시용) ---
+const std::vector<ActiveEffect>& GetAllEffects() const { return effects_; }
+```
+
+#### C. Character — facade 추가
+
+**`Character.h` 추가**:
+
+```cpp
+const std::vector<ActiveEffect>& GetActiveEffects() const;
+```
+
+**`Character.cpp` 추가**:
+
+```cpp
+const std::vector<ActiveEffect>& Character::GetActiveEffects() const
+{
+    static const std::vector<ActiveEffect> empty;
+    const auto* se = GetGOComponent<StatusEffectComponent>();
+    return se ? se->GetAllEffects() : empty;
+}
+```
+
+---
+
+### DrawCharacterStatsPanel 수정
+
+기존 코드에서 Speed 다음에 두 블록을 추가한다.
+
+**추가 위치**: 각 캐릭터 루프 안, Speed 텍스트 드로우 직후 / `current_y` 이동 직전
+
+```cpp
+// (기존) Speed 텍스트 드로우 ...
+Engine::GetTextManager().DrawText(speed_text, ..., CS200::GREEN);
+
+// ── 신규 블록 1: 스펠 슬롯 ──
+SpellSlots* slots = character->GetSpellSlots();
+if (slots)
+{
+    std::string slot_text = "Slots:";
+    for (int lv = 1; lv <= 5; ++lv)
+    {
+        int max_count = slots->GetMaxSlotCount(lv);
+        if (max_count == 0) continue;              // 이 레벨 슬롯 없으면 스킵
+
+        int cur_count = slots->GetSpellSlotCount(lv);
+        slot_text += " Lv" + std::to_string(lv)
+                   + ":" + std::to_string(cur_count)
+                   + "/" + std::to_string(max_count);
+    }
+    Engine::GetTextManager().DrawText(
+        slot_text,
+        Math::vec2{ text_x_pos, current_y + panel_height_per_char - (first_line_y + line_height * 4.0) },
+        Fonts::Outlined, text_scale, CS200::CYAN);
+}
+
+// ── 신규 블록 2: 활성 상태 효과 ──
+const auto& effects = character->GetActiveEffects();
+if (!effects.empty())
+{
+    std::string fx_text = "FX:";
+    for (const auto& e : effects)
+        fx_text += " " + e.name + "(" + std::to_string(e.duration) + ")";
+
+    Engine::GetTextManager().DrawText(
+        fx_text,
+        Math::vec2{ text_x_pos, current_y + panel_height_per_char - (first_line_y + line_height * 5.0) },
+        Fonts::Outlined, text_scale, CS200::YELLOW);
+}
+
+// (기존) current_y -= panel_height_per_char + 40.0;
+```
+
+> **패널 높이 조정 필요**: 두 줄이 추가되므로 `panel_height_per_char`를 기존 `90.0`에서 `150.0` 내외로 늘려야 글자가 잘리지 않는다.
+
+---
+
+### 표시 결과 예시
+
+```
+Dragon
+HP: 210 / 250
+AP: 2
+Speed: 4
+Slots: Lv1:3/4  Lv2:2/3  Lv3:1/2  Lv4:2/2  Lv5:1/1
+FX: Fear(2) Blessing(1)
+
+Fighter
+HP: 180 / 200
+AP: 1
+Speed: 3
+Slots: Lv1:4/4  Lv2:3/3
+FX:
+```
+
+---
+
+### 구현 순서 (스탯 패널)
+
+```
+1. SpellSlots.h/cpp — GetMaxSlotCount() 추가
+2. StatusEffectComponent.h — GetAllEffects() 추가 (1줄 inline)
+3. Character.h/cpp — GetActiveEffects() facade 추가
+4. GamePlayUIManager.cpp — DrawCharacterStatsPanel에 두 블록 추가
+5. panel_height_per_char 값 조정 (90 → 150)
+```
+
+---
+
+## 스펠 시전 시 AP 1 소모
+
+스펠은 일반 공격과 동일하게 AP 1을 소모해야 한다. 모든 캐릭터에 동일하게 적용.
+
+**관련 파일**: `StateComponents/SpellSystem.cpp`
+
+이미 존재하는 API:
+
+- `Character::GetActionPoints()` → 현재 AP 조회
+- `Character::GetActionPointsComponent()->Consume(1)` → AP 1 소모 (`ActionPoints::Consume` 구현됨)
+
+---
+
+### 수정 1: CanCast — AP 체크 추가
+
+AP가 없으면 스펠 목록에 아예 뜨지 않아야 한다.
+`GetAvailableSpells`는 `CanCast`를 통해 필터링하므로 이 한 곳만 수정하면 된다.
+
+```cpp
+// SpellSystem.cpp — CanCast 함수 끝 부분
+// 기존: 클래스 체크 → 슬롯 체크 → 사거리 체크 → return true
+
+// 사거리 체크 이후, return true 바로 앞에 추가
+if (caster->GetActionPoints() < 1)
+    return false;
+
+return true;
+```
+
+---
+
+### 수정 2: CastSpell — AP 소모 추가
+
+슬롯 소모(`ConsumeSpell`) 직후에 AP를 차감한다.
+
+```cpp
+// SpellSystem.cpp — CastSpell 함수
+
+caster->ConsumeSpell(spell.spell_level);  // 슬롯 소모 (기존)
+
+// AP 소모 (신규) — CanCast에서 이미 >= 1 보장됨
+caster->GetActionPointsComponent()->Consume(1);
+
+ApplySpellEffect(caster, spell, target_tile, upcast_level);  // 기존
+```
+
+---
+
+### 구현 순서
+
+```
+1. SpellSystem.cpp — CanCast의 return true 바로 앞에 AP 체크 추가
+2. SpellSystem.cpp — CastSpell의 ConsumeSpell 직후에 Consume(1) 추가
+```
+
+### 검증
+
+- Dragon 턴 AP 2: 스펠 사용 후 AP 1 감소 → 스탯 패널에서 확인
+- Dragon 턴 AP 0: Action → Spell → Spell List 패널이 빈 목록 표시
+- 슬롯은 있으나 AP 없을 때: CanCast = false 확인

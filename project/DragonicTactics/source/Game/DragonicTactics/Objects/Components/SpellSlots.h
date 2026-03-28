@@ -23,6 +23,12 @@ class SpellSlots : public CS230::Component
   // int	 GetMaxLevel() const;
   int  GetSpellSlotCount(int level);
   void SetSpellSlots(std::map<int, int> spellSlots);
+  int  GetMaxSlotCount(int level) const;
+
+  const std::map<int, int>& GetMaxSlots() const
+  {
+	return max_slots;
+  }
 
   private:
   std::map<int, int> max_slots;

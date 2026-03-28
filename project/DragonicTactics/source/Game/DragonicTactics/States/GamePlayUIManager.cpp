@@ -48,15 +48,15 @@ void GamePlayUIManager::ShowDamageText(int damage, Math::vec2 position, Math::ve
   m_damage_texts.push_back(text);
 }
 
-void GamePlayUIManager::ShowDamageLog(std::string str, Math::vec2 position, Math::vec2 size) 
+void GamePlayUIManager::ShowDamageLog(std::string str, Math::vec2 position, Math::vec2 size)
 {
-    DamageText text{ str, position, size, 1.0 };
-    m_damage_log.push_back(text);
+  DamageText text{ str, position, size, 1.0 };
+  m_damage_log.push_back(text);
 }
 
 void GamePlayUIManager::ShowGameEnd(std::string&& text)
 {
-    game_end_text = std::make_unique<std::string>(text);
+  game_end_text = std::make_unique<std::string>(text);
 }
 
 void GamePlayUIManager::Update(double dt)
@@ -71,32 +71,30 @@ void GamePlayUIManager::Update(double dt)
   }
 
   m_damage_texts.erase(std::remove_if(m_damage_texts.begin(), m_damage_texts.end(), [](const DamageText& text) { return text.lifetime <= 0; }), m_damage_texts.end());
-  
-  m_damage_log.erase(
-		std::remove_if(m_damage_log.begin(), m_damage_log.end(),
-			[](const DamageText& text) { return text.lifetime <= 0; }),
-		m_damage_log.end()
-	);
+
+  m_damage_log.erase(std::remove_if(m_damage_log.begin(), m_damage_log.end(), [](const DamageText& text) { return text.lifetime <= 0; }), m_damage_log.end());
 }
 
 void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_matrix)
 {
-	auto& textMng = Engine::GetTextManager();
-	for (const auto& text : m_damage_texts)
-	{
-		textMng.DrawText(text.text, text.position, Fonts::Outlined, text.size, CS200::VIOLET);
-	}
+  auto& textMng = Engine::GetTextManager();
+  for (const auto& text : m_damage_texts)
+  {
+	textMng.DrawText(text.text, text.position, Fonts::Outlined, text.size, CS200::VIOLET);
+  }
 
-  	int i = 0;
-	for (const auto& text : m_damage_log) {
-		textMng.DrawText(text.text, text.position + Math::vec2{ 0.0, 30.0 * i },Fonts::Outlined, text.size, CS200::RED);
-		++i;
-	}
+  int i = 0;
+  for (const auto& text : m_damage_log)
+  {
+	textMng.DrawText(text.text, text.position + Math::vec2{ 0.0, 30.0 * i }, Fonts::Outlined, text.size, CS200::RED);
+	++i;
+  }
 
-	if(game_end_text) {
-		auto size = Engine::GetWindow().GetSize();
-		textMng.DrawText(*game_end_text, Math::ivec2{ 0, size.y / 2 }, Fonts::Outlined, Math::vec2{GAME_END_TEXT_SIZE, GAME_END_TEXT_SIZE}, CS200::WHITE);
-	}
+  if (game_end_text)
+  {
+	auto size = Engine::GetWindow().GetSize();
+	textMng.DrawText(*game_end_text, Math::ivec2{ 0, size.y / 2 }, Fonts::Outlined, Math::vec2{ GAME_END_TEXT_SIZE, GAME_END_TEXT_SIZE }, CS200::WHITE);
+  }
 
   DrawCharacterStatsPanel(camera_matrix);
 }
@@ -109,8 +107,6 @@ void GamePlayUIManager::SetCharacters(const std::vector<Character*>& characters)
 
 void GamePlayUIManager::DrawCharacterStatsPanel([[maybe_unused]] Math::TransformationMatrix camera_matrix)
 {
-
-	
   if (m_characters.empty())
   {
 	return;
@@ -119,15 +115,15 @@ void GamePlayUIManager::DrawCharacterStatsPanel([[maybe_unused]] Math::Transform
   Math::ivec2 window_size = Engine::GetWindow().GetSize();
 
   // 패널 위치 설정
-  const double panel_x		  = static_cast<double>(window_size.x) - 330.0;
-  const double panel_start_y = static_cast<double>(window_size.y) - 150.0;
+  const double panel_x		 = static_cast<double>(window_size.x) - 650.0;
+  const double panel_start_y = static_cast<double>(window_size.y) - 200.0;
 
-  const double panel_height_per_char = 90.0;
+  const double panel_height_per_char = 150.0;
 
   // [설정] 텍스트 레이아웃 상수
-  const double	   text_left_margin = 20.0;					// 패널 왼쪽 끝에서 텍스트까지의 거리 (X축 정렬용)
-  const double	   line_height		= 30.0;					// 줄 간격
-  const double	   first_line_y		= 20.0;					// 패널 상단에서 첫 줄까지의 거리
+  const double	   text_left_margin = 20.0;					  // 패널 왼쪽 끝에서 텍스트까지의 거리 (X축 정렬용)
+  const double	   line_height		= 30.0;					  // 줄 간격
+  const double	   first_line_y		= 20.0;					  // 패널 상단에서 첫 줄까지의 거리
   const Math::vec2 text_scale		= Math::vec2{ 0.5, 0.5 }; // 폰트 크기
 
   double current_y = panel_start_y;
@@ -170,6 +166,34 @@ void GamePlayUIManager::DrawCharacterStatsPanel([[maybe_unused]] Math::Transform
 	std::string speed_text = "Speed: " + std::to_string(speed);
 
 	Engine::GetTextManager().DrawText(speed_text, Math::vec2{ text_x_pos + 30.0, current_y + panel_height_per_char - (first_line_y + line_height * 3.0) }, Fonts::Outlined, text_scale, CS200::GREEN);
+
+	// ── 신규 블록 1: 스펠 슬롯 ──
+	SpellSlots* slots = character->GetSpellSlots();
+	if (slots)
+	{
+	  std::string slot_text = "Slots:";
+	  for (int lv = 1; lv <= 5; ++lv)
+	  {
+		int max_count = slots->GetMaxSlotCount(lv);
+		if (max_count == 0)
+		  continue; // 이 레벨 슬롯 없으면 스킵
+
+		int cur_count = slots->GetSpellSlotCount(lv);
+		slot_text += " Lv" + std::to_string(lv) + ":" + std::to_string(cur_count) + "/" + std::to_string(max_count);
+	  }
+	  Engine::GetTextManager().DrawText(slot_text, Math::vec2{ text_x_pos, current_y + panel_height_per_char - (first_line_y + line_height * 4.0) }, Fonts::Outlined, text_scale, CS200::ORANGE);
+	}
+
+	// ── 신규 블록 2: 활성 상태 효과 ──
+	const auto& effects = character->GetActiveEffects();
+	if (!effects.empty())
+	{
+	  std::string fx_text = "FX:";
+	  for (const auto& e : effects)
+		fx_text += " " + e.name + "(" + std::to_string(e.duration) + ")";
+
+	  Engine::GetTextManager().DrawText(fx_text, Math::vec2{ text_x_pos, current_y + panel_height_per_char - (first_line_y + line_height * 5.0) }, Fonts::Outlined, text_scale, CS200::YELLOW);
+	}
 
 	// 다음 캐릭터 패널 위치로 이동
 	current_y -= panel_height_per_char + 40.0;

@@ -12,6 +12,7 @@
 #include "./Engine/GameStateManager.h"
 #include "./Engine/Logger.h"
 #include "TurnManager.h"
+#include "Game/DragonicTactics/StateComponents/StatusEffectHandler.h"
 
 TurnManager::TurnManager() : currentTurnIndex{}, turnNumber{}, roundNumber{}, combatActive{}, initiativeMode{ InitiativeMode::RollOnce }
 {
@@ -108,15 +109,27 @@ void TurnManager::StartNextTurn()
   }
 
   // Refresh character's action points
- // currentChar->RefreshActionPoints();
- // StatsComponent* stats = currentChar->GetStatsComponent();
- // if (stats)
- // {
-	//stats->RefreshSpeed();
- // }
- 
+  // currentChar->RefreshActionPoints();
+  // StatsComponent* stats = currentChar->GetStatsComponent();
+  // if (stats)
+  // {
+  // stats->RefreshSpeed();
+  // }
+
+  // ── 신규: TickDown — 상태 효과 지속시간 감소 + 만료 제거 ──
+  auto* se = currentChar->GetGOComponent<StatusEffectComponent>();
+  if (se)
+	se->TickDown(currentChar, eventBus);
+
   Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - Calling OnTurnStart");
   currentChar->OnTurnStart();
+
+  // ── 신규: Exhaustion/Haste 효과 적용 (복원 후) ──
+  //    Exhaustion → 복원된 AP를 0으로 덮어씀
+  //    Haste     → 복원된 AP에 +1 추가
+  auto* handler = Engine::GetGameStateManager().GetGSComponent<StatusEffectHandler>();
+  if (handler)
+	handler->OnTurnStart(currentChar);
 
   // Publish turn start event
   PublishTurnStartEvent();
@@ -401,18 +414,18 @@ void TurnManager::SortInitiativeOrder()
 {
   // Sort by total initiative (descending)
   std::sort(
-	initiativeOrder.begin(), initiativeOrder.end(),
-	[](const InitiativeEntry& a, const InitiativeEntry& b)
-	{
-	  // Primary sort: Total initiative (higher goes first)
-	  if (a.speed != b.speed)
+	  initiativeOrder.begin(), initiativeOrder.end(),
+	  [](const InitiativeEntry& a, const InitiativeEntry& b)
 	  {
-		return a.speed > b.speed;
-	  }
+		// Primary sort: Total initiative (higher goes first)
+		if (a.speed != b.speed)
+		{
+		  return a.speed > b.speed;
+		}
 
-	  // Tie-breaker 2: Pointer address (deterministic for same pointers)
-	  return a.character > b.character;
-	});
+		// Tie-breaker 2: Pointer address (deterministic for same pointers)
+		return a.character > b.character;
+	  });
 }
 
 // int TurnManager::GetInitiativeValue(Character* character) const

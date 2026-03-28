@@ -57,7 +57,7 @@ SpellSystem::CastSpell
 TurnManager::StartNextTurn
   → StatusEffectComponent::TickDown        ← 만료 관리
       → StatusEffectRemovedEvent 발행 (만료 시)
-  → character->RefreshActionPoints()
+  → character->OnTurnStart()               ← RefreshActionPoints() + RefreshSpeed() 내부 호출
   → StatusEffectHandler::OnTurnStart()     ← Exhaustion, Haste 처리 (복원 후)
 
 CombatSystem::ExecuteAttack
@@ -347,35 +347,50 @@ StatusEffectComponent(Task 1) · Character facade(Task 2) · StatusEffectHandler
 
 ---
 
-### Task 5: TurnManager::StartNextTurn에 TickDown + OnTurnStart 추가
+### Task 5: TurnManager::StartNextTurn에 TickDown + handler→OnTurnStart 추가
 
 **수정 파일**: `TurnManager.cpp`
+
+현재 실제 코드의 `StartNextTurn()` 흐름:
+
+```
+죽은 캐릭터 스킵 → currentChar->OnTurnStart() → PublishTurnStartEvent()
+```
+
+`Character::OnTurnStart()` 내부에서 `RefreshActionPoints()` + `stats->RefreshSpeed()`가 호출됩니다.
+`TurnManager`에서 직접 호출하지 않습니다.
+
+추가할 위치:
+
+1. `currentChar->OnTurnStart()` **이전** — TickDown (만료된 효과 먼저 정리)
+2. `currentChar->OnTurnStart()` **이후** — handler->OnTurnStart() (AP/Speed 복원 뒤에 적용)
 
 ```cpp
 void TurnManager::StartNextTurn()
 {
-    Character* current = GetCurrentCharacter();
-    if (current)
-    {
-        // 1. TickDown: 지속시간 감소 + 만료 제거
-        auto* se = current->GetGOComponent<StatusEffectComponent>();
-        if (se) se->TickDown(current, eventBus);
+    // ... 죽은 캐릭터 스킵 (기존) ...
+    Character* currentChar = turnOrder[currentTurnIndex];
 
-        // 2. AP/이동력 기본값 복원 (has_attacked_this_turn_ 리셋 포함)
-        current->RefreshActionPoints();
+    // ── 신규: TickDown — 상태 효과 지속시간 감소 + 만료 제거 ──
+    auto* se = currentChar->GetGOComponent<StatusEffectComponent>();
+    if (se) se->TickDown(currentChar, eventBus);
 
-        // 3. OnTurnStart: Exhaustion/Haste 적용 (반드시 복원 이후)
-        //    Exhaustion은 RefreshActionPoints로 복원된 AP를 다시 0으로 덮어씁니다.
-        //    Haste는 복원된 AP에 +1을 더합니다.
-        auto* handler = Engine::GetGameStateManager().GetGSComponent<StatusEffectHandler>();
-        if (handler) handler->OnTurnStart(current);
-    }
-    // ... 기존 이벤트 발행 ...
+    // ── 기존: AP/Speed 기본값 복원 (내부적으로 RefreshActionPoints + RefreshSpeed 호출) ──
+    currentChar->OnTurnStart();
+
+    // ── 신규: Exhaustion/Haste 효과 적용 (복원 후) ──
+    //    Exhaustion → 복원된 AP를 0으로 덮어씀
+    //    Haste     → 복원된 AP에 +1 추가
+    auto* handler = Engine::GetGameStateManager().GetGSComponent<StatusEffectHandler>();
+    if (handler) handler->OnTurnStart(currentChar);
+
+    // ── 기존: TurnStartedEvent 발행 ──
+    PublishTurnStartEvent();
 }
 ```
 
-> **순서 중요**: `RefreshActionPoints` → `OnTurnStart` 순서여야 합니다.
-> `OnTurnStart`를 먼저 호출하면 `RefreshActionPoints`가 Haste/Exhaustion 효과를 덮어씁니다.
+> **순서 중요**: `TickDown` → `OnTurnStart(RefreshActionPoints)` → `handler->OnTurnStart()` 순서여야 합니다.
+> `handler->OnTurnStart`를 `OnTurnStart()` 이전에 호출하면 `RefreshActionPoints`가 Haste/Exhaustion 효과를 덮어씁니다.
 
 ---
 
@@ -426,8 +441,14 @@ public:
     // Stealth 중인 캐릭터는 타겟 불가
     bool IsTargetable(const Character* target) const;
 
+    // 알려진 효과 이름 목록 (status_effect.csv 파싱 대체)
+    // 새 효과 추가 시 KNOWN_EFFECTS와 실행 로직을 함께 업데이트
+    static bool IsKnownEffect(const std::string& name);
+
 private:
     DiceManager* diceManager_ = nullptr;
+
+    static const std::set<std::string> KNOWN_EFFECTS;
 };
 ```
 
@@ -438,6 +459,21 @@ private:
 #include "StatusEffectHandler.h"
 #include "../Objects/Character.h"
 #include "DiceManager.h"
+#include <set>
+
+// ──────────────────────────────────────────────
+// KNOWN_EFFECTS: 알려진 효과 이름 목록 (status_effect.csv의 NAME 컬럼과 동일)
+// status_effect.csv 파싱을 대체한다 — 새 효과 추가 시 이 목록도 업데이트
+// ──────────────────────────────────────────────
+const std::set<std::string> StatusEffectHandler::KNOWN_EFFECTS = {
+    "Lifesteal", "Frenzy",  "Exhaustion", "Purify",
+    "Blessing",  "Curse",   "Haste",      "Stealth", "Fear"
+};
+
+bool StatusEffectHandler::IsKnownEffect(const std::string& name)
+{
+    return KNOWN_EFFECTS.count(name) > 0;
+}
 
 // ──────────────────────────────────────────────
 // OnApplied: AddEffect 직후 즉시 실행
