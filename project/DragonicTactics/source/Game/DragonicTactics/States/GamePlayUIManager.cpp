@@ -118,7 +118,7 @@ void GamePlayUIManager::DrawCharacterStatsPanel([[maybe_unused]] Math::Transform
   const double panel_x		 = static_cast<double>(window_size.x) - 650.0;
   const double panel_start_y = static_cast<double>(window_size.y) - 200.0;
 
-  const double panel_height_per_char = 150.0;
+  const double panel_height_per_char = 180.0;
 
   // [설정] 텍스트 레이아웃 상수
   const double	   text_left_margin = 20.0;					  // 패널 왼쪽 끝에서 텍스트까지의 거리 (X축 정렬용)
@@ -185,9 +185,8 @@ void GamePlayUIManager::DrawCharacterStatsPanel([[maybe_unused]] Math::Transform
 	}
 
 	// ── 신규 블록 2: 활성 상태 효과 ──
-	const auto& effects = character->GetActiveEffects();
-	if (!effects.empty())
 	{
+	  const auto& effects = character->GetActiveEffects();
 	  std::string fx_text = "FX:";
 	  for (const auto& e : effects)
 		fx_text += " " + e.name + "(" + std::to_string(e.duration) + ")";

@@ -174,6 +174,7 @@ void PlayerInputHandler::HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, 
 		{
 		  spell_sys->CastSpell(dragon, m_selected_spell_id, clicked_tile);
 		  m_state = ActionState::None;
+		  if (grid) grid->DisableSpellTargetingMode();
 		}
 		else
 		{
@@ -198,6 +199,12 @@ void PlayerInputHandler::HandleRightClick(Dragon* dragon)
 	grid->DisableMovementMode();
   }
 
+  if (m_state == ActionState::TargetingForSpell)
+{
+    auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    if (grid) grid->DisableSpellTargetingMode();
+}
+
   if (m_state == ActionState::Moving)
   {
 	dragon->GetGOComponent<MovementComponent>()->ClearPath();
@@ -217,4 +224,19 @@ void PlayerInputHandler::CancelCurrentAction()
   }
 
   m_state = ActionState::None;
+}
+
+void PlayerInputHandler::SelectSpell(const std::string& spell_id, Character* caster)
+{
+    m_selected_spell_id = spell_id;
+    m_state = ActionState::TargetingForSpell;
+
+    auto* spell_sys = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
+    auto* grid      = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    if (spell_sys && grid && caster)
+    {
+        const SpellData* spell = spell_sys->GetSpellData(spell_id);
+        if (spell)
+            grid->EnableSpellTargetingMode(caster->GetGridPosition()->Get(), spell->range);
+    }
 }

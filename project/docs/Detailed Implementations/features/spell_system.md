@@ -1507,3 +1507,731 @@ ApplySpellEffect(caster, spell, target_tile, upcast_level);  // 기존
 - Dragon 턴 AP 2: 스펠 사용 후 AP 1 감소 → 스탯 패널에서 확인
 - Dragon 턴 AP 0: Action → Spell → Spell List 패널이 빈 목록 표시
 - 슬롯은 있으나 AP 없을 때: CanCast = false 확인
+
+---
+
+## 스펠 타겟팅 가능 위치 빨간색 표시
+
+### 목표
+
+플레이어가 스펠을 선택해 `TargetingForSpell` 상태가 되면,
+해당 스펠의 사거리 내 타일을 **빨간색 반투명 오버레이**로 표시한다.
+이동 모드의 초록색 시각화(`movement_mode_active_` / `reachable_tiles_`)를 그대로 모방한다.
+
+### 구현 파일
+
+- `GridSystem.h` — 필드·메서드 선언 추가
+- `GridSystem.cpp` — 메서드 구현, `Draw()`, `Update()` 수정
+- `PlayerInputHandler.h` — `SelectSpell` 시그니처 변경
+- `PlayerInputHandler.cpp` — 타일 모드 시작/종료 호출 추가
+- `GamePlayUIManager.cpp` — 버튼 클릭 시 caster 전달
+
+---
+
+### 수정 1: GridSystem.h — 필드 및 메서드 추가
+
+기존 `movement_mode_active_` 필드 블록 바로 아래에 추가:
+
+```cpp
+// ─ 스펠 타겟팅 시각화 ─
+bool                    spell_targeting_mode_active_ = false;
+std::set<Math::ivec2>   spell_targetable_tiles_;
+```
+
+`public` 메서드 선언 추가 (`EnableMovementMode` / `DisableMovementMode` 바로 아래):
+
+```cpp
+/// @brief 스펠 타겟팅 가능 타일 계산 (맨해튼 거리 기반)
+/// @param center  시전자 위치
+/// @param range   스펠 사거리
+void EnableSpellTargetingMode(Math::ivec2 center, int range);
+
+/// @brief 스펠 타겟팅 모드 해제 (시각화 데이터 초기화)
+void DisableSpellTargetingMode();
+```
+
+---
+
+### 수정 2: GridSystem.cpp — 메서드 구현
+
+```cpp
+void GridSystem::EnableSpellTargetingMode(Math::ivec2 center, int range)
+{
+    spell_targeting_mode_active_ = true;
+    spell_targetable_tiles_.clear();
+
+    for (int y = 0; y < MAP_HEIGHT; ++y)
+    {
+        for (int x = 0; x < MAP_WIDTH; ++x)
+        {
+            Math::ivec2 tile{ x, y };
+            if (IsValidTile(tile) && ManhattanDistance(center, tile) <= range)
+                spell_targetable_tiles_.insert(tile);
+        }
+    }
+}
+
+void GridSystem::DisableSpellTargetingMode()
+{
+    spell_targeting_mode_active_ = false;
+    spell_targetable_tiles_.clear();
+}
+```
+
+> 이동 가능 타일은 BFS(벽 우회)로 계산하지만,
+> 스펠 사거리는 벽을 무시한 맨해튼 거리로 계산한다.
+
+---
+
+### 수정 3: GridSystem.cpp — Draw() 빨간색 타일 렌더링
+
+이동 타일 시각화 블록(`// 2. 이동 가능 타일 시각화`) 바로 뒤에 추가:
+
+```cpp
+// ========================================
+// 3. 스펠 타겟팅 가능 타일 시각화 (빨간색)
+// ========================================
+if (spell_targeting_mode_active_)
+{
+    int alpha = static_cast<int>(80 + 40 * std::sin(pulse_timer_ * 3.0));
+    for (const auto& tile : spell_targetable_tiles_)
+    {
+        int screen_x = tile.x * TILE_SIZE + TILE_SIZE;
+        int screen_y = tile.y * TILE_SIZE + TILE_SIZE;
+        renderer_2d->DrawRectangle(
+            Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE),
+            CS200::pack_color({ 255 / 255.0f, 0 / 255.0f, 0 / 255.0f, alpha / 255.0f }), // 빨간색
+            0U
+        );
+    }
+}
+```
+
+> 알파값은 이동 타일과 동일한 `80 + 40*sin(t)` 공식을 사용해 부드럽게 깜빡인다.
+
+---
+
+### 수정 4: GridSystem.cpp — Update() pulse_timer_ 범위 확장
+
+기존 `if (movement_mode_active_)` 조건에 `|| spell_targeting_mode_active_` 추가:
+
+```cpp
+void GridSystem::Update(double dt)
+{
+    if (movement_mode_active_ || spell_targeting_mode_active_)
+    {
+        pulse_timer_ += dt;
+    }
+    else
+    {
+        pulse_timer_ = 0.0;
+    }
+}
+```
+
+---
+
+### 수정 5: PlayerInputHandler.h — SelectSpell 인라인 → 선언으로
+
+```cpp
+// 변경 전 (인라인)
+void SelectSpell(const std::string& spell_id)
+{
+    m_selected_spell_id = spell_id;
+    m_state = ActionState::TargetingForSpell;
+}
+
+// 변경 후 (선언만)
+void SelectSpell(const std::string& spell_id, Character* caster);
+```
+
+---
+
+### 수정 6: PlayerInputHandler.cpp — SelectSpell 구현
+
+```cpp
+void PlayerInputHandler::SelectSpell(const std::string& spell_id, Character* caster)
+{
+    m_selected_spell_id = spell_id;
+    m_state = ActionState::TargetingForSpell;
+
+    auto* spell_sys = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
+    auto* grid      = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    if (spell_sys && grid && caster)
+    {
+        const SpellData* spell = spell_sys->GetSpellData(spell_id);
+        if (spell)
+            grid->EnableSpellTargetingMode(caster->GetGridPosition()->Get(), spell->range);
+    }
+}
+```
+
+---
+
+### 수정 7: PlayerInputHandler.cpp — TargetingForSpell 시전 성공 시 모드 해제
+
+`HandleMouseClick`의 `TargetingForSpell:` case — 시전 성공 시 `DisableSpellTargetingMode` 추가:
+
+```cpp
+case ActionState::TargetingForSpell:
+{
+    Math::ivec2  clicked_tile = ConvertScreenToGrid(mouse_pos);
+    SpellSystem* spell_sys    = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
+    auto*        grid         = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+
+    if (spell_sys && spell_sys->CanCast(dragon, m_selected_spell_id, clicked_tile))
+    {
+        spell_sys->CastSpell(dragon, m_selected_spell_id, clicked_tile);
+        m_state = ActionState::None;
+        if (grid) grid->DisableSpellTargetingMode();  // ← 추가
+    }
+    else
+    {
+        Engine::GetLogger().LogDebug("Cannot cast " + m_selected_spell_id + " at ...");
+        // 범위 밖 클릭은 타겟팅 모드 유지 — 다른 타일 재시도 가능
+    }
+}
+break;
+```
+
+---
+
+### 수정 8: PlayerInputHandler.cpp — 우클릭 취소 시 모드 해제
+
+`HandleRightClick` 안, 이동 모드 취소 블록 아래에 추가:
+
+```cpp
+if (m_state == ActionState::TargetingForSpell)
+{
+    auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    if (grid) grid->DisableSpellTargetingMode();
+}
+```
+
+---
+
+### 수정 9: GamePlayUIManager.cpp — Spell List 버튼에 caster 전달
+
+DrawImGui Spell List 패널의 스펠 버튼 클릭 핸들러:
+
+```cpp
+// 변경 전
+if (ImGui::Button(spell_button_label.c_str()))
+    input_handler->SelectSpell(spell_id);
+
+// 변경 후
+if (ImGui::Button(spell_button_label.c_str()))
+    input_handler->SelectSpell(spell_id, current_character);
+```
+
+`current_character`는 Spell List 패널 위쪽에서 이미 사용 중인 포인터를 그대로 전달한다.
+
+---
+
+### 구현 순서
+
+```
+1. GridSystem.h     — spell_targeting_mode_active_, spell_targetable_tiles_ 필드 추가
+2. GridSystem.h     — EnableSpellTargetingMode / DisableSpellTargetingMode 선언 추가
+3. GridSystem.cpp   — 두 메서드 구현
+4. GridSystem.cpp   — Draw(): 빨간색 타일 블록 추가
+5. GridSystem.cpp   — Update(): || spell_targeting_mode_active_ 조건 추가
+6. PlayerInputHandler.h  — SelectSpell 인라인 제거 → 선언만
+7. PlayerInputHandler.cpp — SelectSpell 구현 (EnableSpellTargetingMode 호출)
+8. PlayerInputHandler.cpp — HandleMouseClick TargetingForSpell: DisableSpellTargetingMode 추가
+9. PlayerInputHandler.cpp — HandleRightClick: DisableSpellTargetingMode 추가
+10. GamePlayUIManager.cpp — SelectSpell(spell_id) → SelectSpell(spell_id, current_character)
+```
+
+### 검증
+
+- Dragon이 스펠 선택 → 빨간 타일이 사거리 내 모든 타일에 깜빡이며 표시
+- 빨간 타일 클릭 → 스펠 시전 + 빨간 타일 사라짐, 상태 None 복귀
+- 범위 밖 클릭 → 빨간 타일 유지 (로그에 "Cannot cast" 출력, 재시도 가능)
+- 우클릭 취소 → 빨간 타일 사라짐, 상태 None 복귀
+- 이동 모드(초록 타일) 중에는 빨간 타일 미표시
+
+> **주의**: 이 섹션은 아래 "Targeting 템플릿 시스템" 구현 이후 `EnableSpellTargetingMode` 시그니처가 바뀜.
+> 수정 6~7을 해당 섹션의 수정 내용으로 대체할 것.
+
+---
+
+## Targeting 템플릿 시스템
+
+### 문제
+
+현재 CSV의 Target 컬럼과 Range 컬럼은 각각 자유 텍스트/숫자로 분리되어 있어 다음 문제가 생긴다:
+
+| 스펠            | Target (현재)                  | Range (현재) | 문제                             |
+| ------------- | ---------------------------- | ---------- | ------------------------------ |
+| Meteor        | All Odd or Even Tiles        | `-`        | ParseRange → 0 → CanCast 항상 실패 |
+| Dragon's Fury | All Enemies in Straight Line | 4          | 직선 AOE 기하학 정보 소실               |
+| Tail Swipe    | Enemies Around Caster        | 2          | 원형 AOE인지 단일 타겟인지 코드가 모름        |
+
+근본 원인: Range에 `-`가 들어오면 `ParseRange` → 0 → `ManhattanDistance(caster, target) > 0` → 모든 범위 외 클릭 실패.
+
+---
+
+### 해결: Targeting 템플릿 컬럼
+
+Target + Range 두 컬럼을 **하나의 Targeting 컬럼**으로 통합한다.
+포맷: `{Filter}:{Geometry}:{Range}`
+
+| 항목       | 허용 값                                                   |
+| -------- | ------------------------------------------------------ |
+| Filter   | `Enemy` \| `Ally` \| `Self` \| `Any` \| `Empty`        |
+| Geometry | `Single` \| `Around` \| `Line` \| `OddEven` \| `Point` |
+| Range    | 정수 (타일 수) \| `-1` (무한)                                 |
+
+**필드 의미**:
+
+- **Filter**: 어떤 대상을 타겟으로 삼는가 (`Enemy`=적, `Ally`=아군, `Self`=자신, `Any`=전체, `Empty`=빈 타일)
+- **Geometry**: 공간 형태 (`Single`=단일 선택, `Around`=원형 AOE, `Line`=4방향 직선, `OddEven`=바둑판 패턴, `Point`=지형 대상 단일 선택)
+- **Range**: 사거리 (`-1`=무한, `0`=자신)
+
+---
+
+### 새 CSV 컬럼 구조
+
+```
+ID, Name, Category, Classes, SpellLevel, Targeting, Upcastable, Effect
+ 0    1       2        3          4           5           6         7
+```
+
+> Range 컬럼 제거 → 총 8컬럼 (기존 9컬럼). `columns.size() < 8` 체크로 변경.
+
+---
+
+### 전체 스펠 Targeting 값 재정의
+
+| ID        | 스펠                 | 기존 Target / Range                | 새 Targeting       |
+| --------- | ------------------ | -------------------------------- | ----------------- |
+| S_ATK_010 | Fire Bolt          | Single Enemy / 4                 | `Enemy:Single:4`  |
+| S_ATK_020 | Tail Swipe         | Enemies Around Caster / 2        | `Enemy:Around:2`  |
+| S_ATK_030 | Dragon's Fury      | All Enemies in Straight Line / 4 | `Enemy:Line:4`    |
+| S_ATK_040 | Meteor             | All Odd or Even Tiles / -        | `Any:OddEven:-1`  |
+| S_ATK_050 | Smite              | Single Enemy / 1                 | `Enemy:Single:1`  |
+| S_ATK_060 | Magic Missile      | Single Enemy / -                 | `Enemy:Single:-1` |
+| S_ATK_070 | Weakpoint Strike   | Single Enemy / 1                 | `Enemy:Single:1`  |
+| S_BUF_010 | Divine Shield      | Single Ally / 4                  | `Ally:Single:4`   |
+| S_BUF_020 | Gale Step          | Self / -                         | `Self:Single:0`   |
+| S_DEB_010 | Curse of Suffering | Single Enemy / 5                 | `Enemy:Single:5`  |
+| S_DEB_020 | Fearful Cry        | Enemies Around Caster / 3        | `Enemy:Around:3`  |
+| S_ENH_010 | Bloodlust          | Self / -                         | `Self:Single:0`   |
+| S_ENH_020 | Frenzy             | Self / -                         | `Self:Single:0`   |
+| S_ENH_030 | Healing Touch      | Single Ally / 5                  | `Ally:Single:5`   |
+| S_ENH_040 | Mana Conversion    | Self / -                         | `Self:Single:0`   |
+| S_ENH_050 | Purify             | All Units Around Caster / 4      | `Any:Around:4`    |
+| S_ENH_060 | Shadow Hide        | Self / -                         | `Self:Single:0`   |
+| S_GEO_010 | Magma Blast        | Empty Tile (Point) / 6           | `Empty:Point:6`   |
+| S_GEO_020 | Wall Creation      | Empty Tile (Point) / 5           | `Empty:Point:5`   |
+| S_GEO_030 | Teleport           | Empty Tile (Point) / 1           | `Empty:Point:1`   |
+
+---
+
+### 수정 1: SpellSystem.h — SpellTargeting 구조체 추가, SpellData 수정
+
+```cpp
+// SpellData 위에 추가
+struct SpellTargeting
+{
+    std::string filter;   // "Enemy", "Ally", "Self", "Any", "Empty"
+    std::string geometry; // "Single", "Around", "Line", "OddEven", "Point"
+    int         range;    // 타일 수. -1 = 무한
+};
+
+struct SpellData
+{
+    std::string id;
+    std::string spell_name;
+    std::string category;
+    std::vector<std::string> usable_classes;
+    int             spell_level;
+    SpellTargeting  targeting;   // ← target_type + range 를 대체
+    bool            upcastable;
+
+    // Effect 파싱 결과
+    std::string damage_formula;
+    std::string effect_status;
+    int         effect_duration;
+    std::string move_type;
+    std::string summon_type;
+    std::string effect_raw;
+};
+```
+
+SpellSystem 클래스에 헬퍼 선언 추가:
+
+```cpp
+private:
+    // 기존 헬퍼 유지
+    SpellTargeting ParseTargeting(const std::string& targeting_str) const; // ← 신규
+    // ParseRange 제거 (더 이상 사용 안 함)
+```
+
+---
+
+### 수정 2: SpellSystem.cpp — ParseTargeting 구현
+
+```cpp
+SpellTargeting SpellSystem::ParseTargeting(const std::string& targeting_str) const
+{
+    // "Enemy:Single:4"  →  filter=Enemy, geometry=Single, range=4
+    // "Any:OddEven:-1"  →  filter=Any,   geometry=OddEven, range=-1
+    auto parts = SplitByDelimiter(targeting_str, ':');
+
+    SpellTargeting t;
+    t.filter   = (parts.size() > 0) ? parts[0] : "Any";
+    t.geometry = (parts.size() > 1) ? parts[1] : "Single";
+    if (parts.size() > 2 && !parts[2].empty())
+        t.range = std::stoi(parts[2]);
+    else
+        t.range = -1; // 파싱 실패 → 무한으로 처리
+    return t;
+}
+```
+
+---
+
+### 수정 3: SpellSystem.cpp — ParseCSVRow 수정
+
+```cpp
+SpellData SpellSystem::ParseCSVRow(const std::vector<std::string>& col) const
+{
+    // 컬럼 수 체크: 8 → (기존 9에서 변경)
+    SpellData data;
+    data.id            = col[0];
+    data.spell_name    = col[1];
+    data.category      = col[2];
+    data.usable_classes = SplitByDelimiter(col[3], ',');
+    data.spell_level   = col[4].empty() ? 0 : std::stoi(col[4]);
+    data.targeting     = ParseTargeting(col[5]);  // ← 신규
+    data.upcastable    = (col[6] == "TRUE");       // col[7] → col[6]
+    data.effect_raw    = col[7];                   // col[8] → col[7]
+
+    ParseEffectField(col[7], data);
+    return data;
+}
+```
+
+`LoadFromCSV` 의 크기 체크도 변경:
+
+```cpp
+// 기존
+if (columns.size() < 9 || columns[0].empty())
+
+// 변경
+if (columns.size() < 8 || columns[0].empty())
+```
+
+---
+
+### 수정 4: SpellSystem.cpp — CanCast 사거리 체크 수정
+
+```cpp
+bool SpellSystem::CanCast(Character* caster, const std::string& spell_id, Math::ivec2 target_tile) const
+{
+    // ... 기존 클래스 체크, 슬롯 체크 ...
+
+    const SpellTargeting& t = spell.targeting;
+
+    // Self / OddEven 은 사거리 무관 (항상 허용)
+    bool range_ok = (t.geometry == "Self" || t.geometry == "OddEven" || t.range < 0);
+    if (!range_ok)
+    {
+        auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+        if (!grid) return false;
+        int dist = grid->ManhattanDistance(caster->GetGridPosition()->Get(), target_tile);
+        if (dist > t.range) return false;
+    }
+
+    // AP 체크 (기존)
+    if (caster->GetActionPoints() < 1)
+        return false;
+
+    return true;
+}
+```
+
+> 기존 `if (!grid) return false;` + `int dist = ...` 블록을 위 코드로 교체한다.
+
+---
+
+### 수정 5: SpellSystem.cpp — ApplySpellEffect 기하학 처리
+
+```cpp
+void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell,
+                                    Math::ivec2 target_tile, int upcast_level)
+{
+    auto* grid   = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    auto* combat = Engine::GetGameStateManager().GetGSComponent<CombatSystem>();
+    if (!grid || !combat) return;
+
+    // ─────────────────────────────────────────────────
+    // 피해 대상 목록 결정 (Geometry 기반)
+    // ─────────────────────────────────────────────────
+    std::vector<Character*> targets;
+    const SpellTargeting& t = spell.targeting;
+
+    if (t.geometry == "Self")
+    {
+        targets.push_back(caster);
+    }
+    else if (t.geometry == "Single" || t.geometry == "Point")
+    {
+        // 단일 타일 선택 — 기존 동작
+        Character* hit = grid->GetCharacterAt(target_tile);
+        if (hit) targets.push_back(hit);
+    }
+    else if (t.geometry == "Around")
+    {
+        // 시전자 중심 원형 AOE
+        int radius = (t.range < 0) ? 99 : t.range;
+        for (auto* c : grid->GetAllCharacters())
+        {
+            if (!c || !c->IsAlive()) continue;
+            if (t.filter == "Self" && c != caster) continue;
+            if (t.filter == "Enemy" && c == caster) continue; // 간단 필터 (팀 구분은 추후)
+            int dist = grid->ManhattanDistance(caster->GetGridPosition()->Get(),
+                                               c->GetGridPosition()->Get());
+            if (dist <= radius)
+                targets.push_back(c);
+        }
+    }
+    else if (t.geometry == "Line")
+    {
+        // 4방향 직선 (십자 모양)
+        const Math::ivec2 dirs[4] = { {1,0},{-1,0},{0,1},{0,-1} };
+        int reach = (t.range < 0) ? 99 : t.range;
+        for (const auto& dir : dirs)
+        {
+            for (int step = 1; step <= reach; ++step)
+            {
+                Math::ivec2 tile = caster->GetGridPosition()->Get()
+                                   + Math::ivec2{ dir.x * step, dir.y * step };
+                if (!grid->IsValidTile(tile)) break;
+                // 벽 통과 불가
+                if (grid->GetTileType(tile) == GridSystem::TileType::Wall) break;
+                Character* hit = grid->GetCharacterAt(tile);
+                if (hit && hit->IsAlive()) targets.push_back(hit);
+            }
+        }
+    }
+    else if (t.geometry == "OddEven")
+    {
+        // 바둑판 패턴 — 홀수 or 짝수 타일의 모든 캐릭터
+        // (플레이어가 홀/짝 선택하는 기능은 추후 구현, 현재는 전체 대상)
+        for (auto* c : grid->GetAllCharacters())
+        {
+            if (!c || !c->IsAlive() || c == caster) continue;
+            targets.push_back(c);
+        }
+    }
+
+    // ─────────────────────────────────────────────────
+    // 피해 적용
+    // ─────────────────────────────────────────────────
+    if (spell.damage_formula != "0" && !spell.damage_formula.empty())
+    {
+        int damage = CalculateSpellDamage(spell, upcast_level);
+        for (auto* tgt : targets)
+        {
+            if (damage > 0)  combat->ApplyDamage(caster, tgt, damage);
+            else if (damage < 0)
+                tgt->SetHP(std::min(tgt->GetHP() + (-damage), tgt->GetMaxHP()));
+        }
+    }
+
+    // ─────────────────────────────────────────────────
+    // 상태 효과 적용 (기존 로직 유지, targets 루프로 통합)
+    // ─────────────────────────────────────────────────
+    if (spell.effect_status != "Basic" && spell.effect_duration > 0)
+    {
+        auto* handler = Engine::GetGameStateManager().GetGSComponent<StatusEffectHandler>();
+        // Around/Line/OddEven은 이미 targets에 대상 목록이 있음
+        // Single/Self 도 동일 루프 사용
+        for (auto* tgt : targets)
+        {
+            tgt->AddEffect(spell.effect_status, spell.effect_duration);
+            if (handler) handler->OnApplied(tgt, spell.effect_status);
+        }
+        // Around 타겟 없고 filter==Self 인 경우 (ex. Purify) 이미 Self geometry로 처리됨
+    }
+
+    // ─────────────────────────────────────────────────
+    // 지형 / 특수 이동 (기존 유지)
+    // ─────────────────────────────────────────────────
+    if (spell.summon_type != "NULL" && !spell.summon_type.empty())
+        Engine::GetLogger().LogEvent("SpellSystem: Summon " + spell.summon_type + " at ...");
+
+    if (spell.move_type != "current location" && !spell.move_type.empty())
+        Engine::GetLogger().LogEvent("SpellSystem: Special move — " + spell.move_type);
+}
+```
+
+---
+
+### 수정 6: GridSystem.h — EnableSpellTargetingMode 시그니처 변경
+
+```cpp
+// 변경 전
+void EnableSpellTargetingMode(Math::ivec2 center, int range);
+
+// 변경 후
+void EnableSpellTargetingMode(Math::ivec2 center, const std::string& geometry, int range);
+```
+
+또한 Line 기하학용 헬퍼 추가:
+
+```cpp
+/// @brief 4방향 직선 타일 목록 반환 (Line 기하학 시각화용)
+std::vector<Math::ivec2> GetLineTiles(Math::ivec2 center, int reach) const;
+```
+
+---
+
+### 수정 7: GridSystem.cpp — EnableSpellTargetingMode 구현 변경
+
+```cpp
+void GridSystem::EnableSpellTargetingMode(Math::ivec2 center,
+                                           const std::string& geometry, int range)
+{
+    spell_targeting_mode_active_ = true;
+    spell_targetable_tiles_.clear();
+
+    if (geometry == "Self")
+    {
+        spell_targetable_tiles_.insert(center);
+    }
+    else if (geometry == "Line")
+    {
+        for (const auto& tile : GetLineTiles(center, (range < 0 ? MAP_HEIGHT : range)))
+            spell_targetable_tiles_.insert(tile);
+    }
+    else if (geometry == "OddEven")
+    {
+        // 전체 타일 표시
+        for (int y = 0; y < MAP_HEIGHT; ++y)
+            for (int x = 0; x < MAP_WIDTH; ++x)
+                spell_targetable_tiles_.insert({ x, y });
+    }
+    else
+    {
+        // Single / Around / Point — 맨해튼 거리 이내 모든 타일
+        int r = (range < 0) ? MAP_HEIGHT + MAP_WIDTH : range;
+        for (int y = 0; y < MAP_HEIGHT; ++y)
+        {
+            for (int x = 0; x < MAP_WIDTH; ++x)
+            {
+                Math::ivec2 tile{ x, y };
+                if (IsValidTile(tile) && ManhattanDistance(center, tile) <= r)
+                    spell_targetable_tiles_.insert(tile);
+            }
+        }
+    }
+}
+
+std::vector<Math::ivec2> GridSystem::GetLineTiles(Math::ivec2 center, int reach) const
+{
+    std::vector<Math::ivec2> result;
+    const Math::ivec2 dirs[4] = { {1,0},{-1,0},{0,1},{0,-1} };
+    for (const auto& dir : dirs)
+    {
+        for (int step = 1; step <= reach; ++step)
+        {
+            Math::ivec2 tile{ center.x + dir.x * step, center.y + dir.y * step };
+            if (!IsValidTile(tile)) break;
+            if (GetTileType(tile) == TileType::Wall) break;
+            result.push_back(tile);
+        }
+    }
+    return result;
+}
+```
+
+---
+
+### 수정 8: PlayerInputHandler.cpp — SelectSpell에서 geometry 전달
+
+```cpp
+void PlayerInputHandler::SelectSpell(const std::string& spell_id, Character* caster)
+{
+    m_selected_spell_id = spell_id;
+    m_state = ActionState::TargetingForSpell;
+
+    auto* spell_sys = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
+    auto* grid      = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    if (spell_sys && grid && caster)
+    {
+        const SpellData* spell = spell_sys->GetSpellData(spell_id);
+        if (spell)
+            grid->EnableSpellTargetingMode(
+                caster->GetGridPosition()->Get(),
+                spell->targeting.geometry,   // ← geometry 전달
+                spell->targeting.range
+            );
+    }
+}
+```
+
+---
+
+### 수정 9: spell_table.csv 갱신
+
+헤더 행:
+
+```
+ID,Name,Category,Classes,Required Slot Level,Targeting,Upcasting Effect,Effect
+```
+
+각 행 Targeting 컬럼 (col[5]) 값:
+
+| ID        | 새 Targeting 값     |
+| --------- | ----------------- |
+| S_ATK_010 | `Enemy:Single:4`  |
+| S_ATK_020 | `Enemy:Around:2`  |
+| S_ATK_030 | `Enemy:Line:4`    |
+| S_ATK_040 | `Any:OddEven:-1`  |
+| S_ATK_050 | `Enemy:Single:1`  |
+| S_ATK_060 | `Enemy:Single:-1` |
+| S_ATK_070 | `Enemy:Single:1`  |
+| S_BUF_010 | `Ally:Single:4`   |
+| S_BUF_020 | `Self:Single:0`   |
+| S_DEB_010 | `Enemy:Single:5`  |
+| S_DEB_020 | `Enemy:Around:3`  |
+| S_ENH_010 | `Self:Single:0`   |
+| S_ENH_020 | `Self:Single:0`   |
+| S_ENH_030 | `Ally:Single:5`   |
+| S_ENH_040 | `Self:Single:0`   |
+| S_ENH_050 | `Any:Around:4`    |
+| S_ENH_060 | `Self:Single:0`   |
+| S_GEO_010 | `Empty:Point:6`   |
+| S_GEO_020 | `Empty:Point:5`   |
+| S_GEO_030 | `Empty:Point:1`   |
+
+---
+
+### 구현 순서
+
+```
+1. SpellSystem.h    — SpellTargeting 구조체 추가, SpellData 필드 교체
+                      (target_type + range → targeting: SpellTargeting)
+                      ParseRange 선언 제거, ParseTargeting 선언 추가
+2. SpellSystem.cpp  — ParseTargeting 구현
+3. SpellSystem.cpp  — ParseCSVRow: col[5]=targeting, col[6]=upcastable, col[7]=effect
+                      LoadFromCSV: columns.size() < 8 로 변경
+4. SpellSystem.cpp  — CanCast: geometry/range 기반 체크로 교체
+5. SpellSystem.cpp  — ApplySpellEffect: geometry 기반 targets 목록 생성으로 교체
+6. GridSystem.h     — EnableSpellTargetingMode 시그니처 변경, GetLineTiles 선언 추가
+7. GridSystem.cpp   — EnableSpellTargetingMode 구현 교체, GetLineTiles 구현 추가
+8. PlayerInputHandler.cpp — SelectSpell: geometry 전달
+9. spell_table.csv  — 헤더 변경 + 각 행 Targeting 컬럼 값 갱신
+```
+
+### 검증
+
+- **Meteor** (`Any:OddEven:-1`): 스펠 선택 시 맵 전체 타일 빨간색 → 클릭하면 사거리 체크 통과
+- **Dragon's Fury** (`Enemy:Line:4`): 스펠 선택 시 시전자 기준 상하좌우 4칸 십자 빨간색 표시
+- **Fire Bolt** (`Enemy:Single:4`): 반경 4 이내 타일 빨간색
+- **Tail Swipe** (`Enemy:Around:2`): 반경 2 원형 → 시전 시 반경 내 모든 적 피해
+- **Magic Missile** (`Enemy:Single:-1`): 맵 전체 타일 빨간색 (무한 사거리)

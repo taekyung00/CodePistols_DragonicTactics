@@ -48,11 +48,7 @@ class PlayerInputHandler
 	  m_state = new_state;
   }
 
-  void SelectSpell(const std::string& spell_id)
-  {
-    m_selected_spell_id = spell_id;
-    m_state = ActionState::TargetingForSpell;
-  }
+  void SelectSpell(const std::string& spell_id, Character* caster);
 
   private:
   ActionState m_state = ActionState::None;

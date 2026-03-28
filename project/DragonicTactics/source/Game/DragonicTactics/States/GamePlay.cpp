@@ -508,7 +508,7 @@ void GamePlay::DrawImGui()
 		if (ImGui::Button(label.c_str()))
 		{
 		  Engine::GetLogger().LogEvent("UI: Spell '" + spell->spell_name + "' selected. Now targeting.");
-		  m_input_handler->SelectSpell(spell_id); // → TargetingForSpell로 전환
+		  m_input_handler->SelectSpell(spell_id, current); // → TargetingForSpell로 전환
 		}
 	  }
 	}
