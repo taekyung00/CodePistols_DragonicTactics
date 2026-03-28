@@ -21,17 +21,25 @@ class EventBus;
 
 struct SpellData
 {
-    std::string id;           // "S_ATK_010"
-    std::string spell_name;   // "화염탄"
-    std::string spell_school; // "공격", "버프", "디버프", "강화", "지형"
-    int         spell_level;  // 요구 슬롯 레벨 (0 = 슬롯 불필요)
-    std::string target_type;  // "적 단일", "아군 단일", "자신", "범위"
-    int         range;        // 타일 수 ("-"는 0으로 처리)
-    bool        upcastable;   // 업캐스트 가능 여부
-    std::string effect_desc;  // 효과 설명 전체
-    std::string base_damage;  // "2d6", "3d8+2" 형식 (없으면 빈 문자열)
+    // ── CSV 컬럼 (col[0]~col[8]) ──
+    std::string id;           // col[0]  "S_ATK_050"
+    std::string spell_name;   // col[1]  "Smite"
+    std::string category;     // col[2]  "Attack", "Buff", "Terrain Change" (빈 값 허용)
+    int         spell_level;  // col[4]  요구 슬롯 레벨 (0 = 슬롯 불필요)
+    std::string target_type;  // col[5]  "Single Enemy", "Self", "Enemies Around Caster"
+    int         range;        // col[6]  타일 수 ("-" → 0)
+    bool        upcastable;   // col[7]  TRUE / FALSE
 
-    std::vector<std::string> usable_classes; // ["Dragon", "Wizard"] — '/' 구분 파싱
+    std::vector<std::string> usable_classes; // col[3]  ["Dragon", "Fighter"] — ", " 구분
+
+    // ── Effect 템플릿 파싱 결과 (col[8] → ParseEffectField) ──
+    std::string damage_formula;  // "3d8", "0", "-(1d10)", "8 * (Spell Level + 1 - ...)"
+    std::string effect_status;   // status_effect.csv의 NAME. "Basic" = 상태 없음
+    int         effect_duration; // 상태 지속 턴 ("Basic"이면 0)
+    std::string move_type;       // "current location", "furthest position from the Dragon..."
+    std::string summon_type;     // "NULL", "Lava Zone", "Wall"
+
+    std::string effect_raw;      // 파싱 전 원본 Effect 문자열 (디버그/툴팁용)
 };
 
 
@@ -39,26 +47,28 @@ class SpellSystem : public CS230::Component
 {
 public:
     void LoadFromCSV(const std::string& csv_path);
+    void LoadStatusEffectsFromCSV(const std::string& csv_path); // status_effect.csv
 
-    bool HasSpell(const std::string& spell_id) const;
+    bool                     HasSpell(const std::string& spell_id) const;
     std::vector<std::string> GetAvailableSpells(Character* caster) const;
-    bool CanCast(Character* caster, const std::string& spell_id,
-                 Math::ivec2 target_tile) const;
+    bool                     CanCast(Character* caster, const std::string& spell_id, Math::ivec2 target_tile) const;
 
-    // AISystem::ExecuteDecision이 이 이름으로 호출 — 이름 변경 금지
-    bool CastSpell(Character* caster, const std::string& spell_id,
-                   Math::ivec2 target_tile, int upcast_level = 0);
+    bool CastSpell(Character* caster, const std::string& spell_id, Math::ivec2 target_tile, int upcast_level = 0);
 
     const SpellData* GetSpellData(const std::string& spell_id) const;
+    std::string      GetStatusEffectDesc(const std::string& name) const; // 툴팁용
 
 private:
     std::map<std::string, SpellData> spells_;
+    std::map<std::string, std::string> status_effects_; // status_effect.csv 로드
 
+    std::vector<std::string> ReadCSVRecord(std::ifstream& file) const;
     SpellData                ParseCSVRow(const std::vector<std::string>& columns) const;
+    void                     ParseEffectField(const std::string& effect_str,
+                                              SpellData& data) const;
     std::vector<std::string> SplitByDelimiter(const std::string& str, char delim) const;
     int                      ParseRange(const std::string& range_str) const;
 
-    void ApplySpellEffect(Character* caster, const SpellData& spell,
-                          Math::ivec2 target_tile, int upcast_level);
-    int  CalculateSpellDamage(const SpellData& spell, Character* caster, int upcast_level);
+    void ApplySpellEffect(Character* caster, const SpellData& spell, Math::ivec2 target_tile, int upcast_level);
+    int  CalculateSpellDamage(const SpellData& spell, int upcast_level);
 };

@@ -32,8 +32,6 @@
 #include <map>
 #include <string>
 
-struct SpellData;
-
 class DataRegistry : public CS230::Component
 {
   public:
