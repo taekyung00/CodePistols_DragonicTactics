@@ -62,9 +62,9 @@ flowchart TD
     %% ---------------------------------------------------
     CheckHP -- No --> CheckBless{"'축복' 적용 중?"}
     
-    CheckBless -- Yes --> HasBurst{"'격앙' 버프 상태?"}
+    CheckBless -- Yes --> HasBurst{"'광란' 버프 상태?"}
     HasBurst -- No --> CheckBurstAP{"남은 AP >= 2?"}
-    CheckBurstAP -- Yes --> Act_Burst["격앙 시전 (AP-1)"] --> Phase_Decision
+    CheckBurstAP -- Yes --> Act_Burst["광란 시전 (AP-1)"] --> Phase_Decision
     CheckBurstAP -- No --> CheckSmiteSlot
     
     HasBurst -- Yes --> CheckSmiteSlot
@@ -83,8 +83,8 @@ flowchart TD
     CheckFearNear -- No (이미공포) --> Act_NormalLoop
 
     %% 클레릭 부재 시 로직
-    CheckCleric -- No --> HasIndBurst{"'격앙' 상태인가?"}
+    CheckCleric -- No --> HasIndBurst{"'광란' 상태인가?"}
     HasIndBurst -- No --> Check2ndSlot{"2레벨 슬롯 있음 & <br> AP >= 2?"}
-    Check2ndSlot -- Yes --> Act_IndBurst["격앙 시전 (AP-1)"] --> Phase_Decision
+    Check2ndSlot -- Yes --> Act_IndBurst["광란 시전 (AP-1)"] --> Phase_Decision
     Check2ndSlot -- No --> CheckFearNear
     HasIndBurst -- Yes --> CheckSmiteSlot

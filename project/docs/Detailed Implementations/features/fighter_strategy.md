@@ -9,12 +9,14 @@
 - [FighterStrategy.h/cpp](../../../DragonicTactics/source/Game/DragonicTactics/StateComponents/AI/FighterStrategy.h)
 - [IAIStrategy.h](../../../DragonicTactics/source/Game/DragonicTactics/StateComponents/AI/IAIStrategy.h)
 - [architecture/character_flowchart/fighter.mmd](../../../architecture/character_flowchart/fighter.mmd)
+- [spell_system.md](./spell_system.md)
+- [Assets/Data/spell_table.csv](../../../DragonicTactics/Assets/Data/spell_table.csv)
 
 ---
 
 ## 개요
 
-현재 `FighterStrategy.cpp`는 단순 이동+공격 로직만 구현되어 있으며, 업데이트된 `fighter.mmd` 플로우차트와 다릅니다.
+현재 `FighterStrategy.cpp`는 단순 이동+공격 로직만 구현되어 있으며, `fighter.mmd` 플로우차트와 다릅니다.
 이 문서는 플로우차트를 **완벽하게** 반영한 재구현을 다룹니다.
 
 ### fighter.mmd 플로우차트 요약
@@ -37,20 +39,30 @@
                            있음 → 강타용 슬롯? → 강타(피흡) / 일반(피흡)
                            없음 → 2슬롯 → 피의 갈망 시전 / 없음 → 공포 or 일반 공격
               No  (정상) → 축복 적용 중?
-                           Yes → 격앙 버프? → 격앙 시전(AP>=2) or 강타/일반
+                           Yes → 광란 버프? → 광란 시전(AP>=2) or 강타/일반
                            No  → 클레릭 생존? → Yes: 공포 or 일반 공격
-                                               No:  격앙 있음? → 강타/일반
-                                                    없음 → 격앙 시전(AP>=2) / 공포 or 일반 공격
+                                               No:  광란 있음? → 강타/일반
+                                                    없음 → 광란 시전(AP>=2) / 공포 or 일반 공격
 ```
 
-### 핵심 어빌리티
+---
 
-| 어빌리티              | `abilityName` | 슬롯      | 효과          |
-| ----------------- | ------------- | ------- | ----------- |
-| 강타 (Smite)        | `"강타"`        | 가용 최고레벨 | 강화 공격       |
-| 피의 갈망 (Bloodlust) | `"피의 갈망"`     | 2레벨     | 버프: 공격 시 피흡 |
-| 공포의 외침 (Fear)     | `"공포의 외침"`    | 1레벨     | 디버프: 드래곤 공포 |
-| 격앙 (Burst)        | `"격앙"`        | 2레벨     | 버프: 공격력 강화  |
+## 스펠 ID 매핑 (spell_table.csv 기준)
+
+> **⚠️ `decision.abilityName`은 반드시 spell_table.csv의 ID 컬럼 값을 사용해야 합니다.**
+> `SpellSystem::CastSpell`은 `spells_[spell_id]`로 조회합니다. 한글 이름으로 전달하면 스펠을 찾지 못합니다.
+
+| 어빌리티              | `abilityName` (CSV ID) | 슬롯 레벨           | 대상        | 사거리    | 효과                                                                  |
+| ----------------- | ---------------------- | --------------- | --------- | ------ | ------------------------------------------------------------------- |
+| 강타 (Smite)        | `"S_ATK_050"`          | **1** (업캐스트 가능) | 적군 단일     | 1칸     | 3d8+(레벨차)d8 피해                                                      |
+| 피의 갈망 (Bloodlust) | `"S_ENH_010"`          | **2**           | 자신        | -      | 이번 턴 피해 절반 회복                                                       |
+| 공포의 외침 (Fear)     | `"S_DEB_020"`          | **1**           | 시전자 주변 적군 | **3칸** | 3턴: 피해 -3, 스피드 -1                                                   |
+| 광란 (Frenzy)       | `"S_ENH_020"`          | **0 (슬롯 불필요)**  | 자신        | -      | 다음 공격 10↑ 피해 시 적 무작위 디버프                                            |
+| 최후의 저항            | `"S_ENH_070"`          | **0 (슬롯 불필요)**  | 자신        | -      | 아군 2명↑ 사망 시 사용가능, 2레벨 슬롯 1 회복 + 디버프 제거 + 2d10 회복 + 축복/신속 (전투 1회 한정) |
+
+> **⚠️ 광란 (S_ENH_020)은 스펠슬롯이 필요 없습니다 (level=0).**
+> 기존에 `HasSpellSlot(actor, 2)` 조건으로 광란을 막던 코드는 **틀린 로직**입니다.
+> 광란 시전 조건은 **AP >= 2** 만으로 충분합니다.
 
 ---
 
@@ -60,8 +72,8 @@
 
 **기존 코드와 차이점**:
 
-- `IsInDanger()`: HP 임계값 **40%** (기존 코드는 30%였으나 플로우차트가 40%로 변경)
-- 새 헬퍼: `CanKillDragonThisTurn()`, `HasBuff()`, `HasSpellSlot()`, `IsFearActive()`, `IsInFearRange()`
+- `IsInDanger()`: HP 임계값 **40%** (기존 30%에서 변경)
+- 새 헬퍼: `CanKillDragonThisTurn()`, `HasBuff()`, `IsFearActive()` (모두 Week 6+ stub)
 - `ShouldUseSpellAttack()`, `DecideAttackAction()` 제거 → 명시적 분기로 교체
 
 ```cpp
@@ -85,11 +97,11 @@ private:
     Character* FindCleric();
 
     // --- 판단 헬퍼 ---
-    bool IsInDanger(Character* actor) const;                                                   // HP 40% 이하
+    bool IsInDanger(Character* actor) const;                    // HP 40% 이하
     bool CanKillDragonThisTurn(Character* actor, Character* dragon, GridSystem* grid) const;
-    bool HasBuff(Character* actor, const std::string& buffName) const;                        // TODO: Week 6+ StatusEffect 연동
+    bool HasBuff(Character* actor, const std::string& buffName) const; // TODO: Week 6+ StatusEffect 연동
     bool HasSpellSlot(Character* actor, int level) const;
-    bool IsFearActive(Character* dragon) const;                                               // TODO: Week 6+ StatusEffect 연동
+    bool IsFearActive(Character* dragon) const;                 // TODO: Week 6+ StatusEffect 연동
     bool IsInFearRange(Character* actor, Character* dragon, GridSystem* grid) const;
 
     // --- 이동 ---
@@ -108,9 +120,7 @@ private:
 
 ### Task 2: MakeDecision() — 최상위 흐름
 
-플로우차트의 구조 그대로, **재귀 없이 루프** 형태로 구현합니다.
-`BattleOrchestrator`가 `MakeDecision()`을 반복 호출하는 구조이므로,
-한 번 호출 시 **단 하나의 행동**만 결정하고 반환합니다.
+`BattleOrchestrator`가 `MakeDecision()`을 반복 호출하므로, 한 번 호출 시 **단 하나의 행동**만 반환합니다.
 
 ```cpp
 AIDecision FighterStrategy::MakeDecision(Character* actor)
@@ -126,9 +136,7 @@ AIDecision FighterStrategy::MakeDecision(Character* actor)
     // A* 경로로 이번 턴 내 도달 가능 & 확정 처치 가능 시 진입
     // ============================================================
     if (CanReachThisTurn(actor, dragon, grid) && CanKillDragonThisTurn(actor, dragon, grid))
-    {
         return MakeKillLoopDecision(actor, dragon, grid);
-    }
 
     // ============================================================
     // Phase_Decision: AP 체크
@@ -136,21 +144,15 @@ AIDecision FighterStrategy::MakeDecision(Character* actor)
     if (actor->GetActionPoints() <= 0)
         return { AIDecisionType::EndTurn, nullptr, {}, "", "No AP" };
 
-    // 드래곤 인접(1칸) 여부
     int  dist     = grid->ManhattanDistance(actor->GetGridPosition()->Get(), dragon->GetGridPosition()->Get());
     bool adjacent = (dist <= 1);
 
     if (!adjacent)
-    {
         return MakeFarMoveDecision(actor, dragon, grid);
-    }
+    else if (IsInDanger(actor))
+        return MakeSurvivalDecision(actor, dragon, grid);
     else
-    {
-        if (IsInDanger(actor))
-            return MakeSurvivalDecision(actor, dragon, grid);
-        else
-            return MakeNormalCombatDecision(actor, dragon, grid);
-    }
+        return MakeNormalCombatDecision(actor, dragon, grid);
 }
 ```
 
@@ -166,27 +168,19 @@ AIDecision FighterStrategy::MakeKillLoopDecision(Character* actor, Character* dr
 
     if (!adjacent)
     {
-        // 이동
         if (actor->GetMovementRange() <= 0)
-        {
-            // K_CanMove -- No --> Phase_Decision (mmd 명시)
-            // MP 소진 후 인접 미달 → 일반 교전 판단으로 위임
-            // (CanReachThisTurn이 true였으므로 이 분기는 경로 차단 등 예외 상황)
             return { AIDecisionType::EndTurn, nullptr, {}, "", "Kill loop: no MP to reach" };
-        }
 
         Math::ivec2 movePos = FindNextMovePos(actor, dragon, grid);
         return { AIDecisionType::Move, nullptr, movePos, "", "Kill loop: moving to dragon" };
     }
 
-    // 인접 — AP 체크
     if (actor->GetActionPoints() <= 0)
         return { AIDecisionType::EndTurn, nullptr, {}, "", "Kill loop: no AP" };
 
-    // 최적 슬롯 탐색 (오버킬 방지 업캐스팅)
-    // 슬롯 있음 → 강타, 없음 → 일반 공격
+    // 슬롯 있음 → 강타(S_ATK_050), 없음 → 일반 공격
     if (actor->HasAnySpellSlot())
-        return { AIDecisionType::UseAbility, dragon, {}, "강타", "Kill loop: smite" };
+        return { AIDecisionType::UseAbility, dragon, {}, "S_ATK_050", "Kill loop: smite" };
     else
         return { AIDecisionType::Attack, dragon, {}, "", "Kill loop: normal attack" };
 }
@@ -196,10 +190,11 @@ AIDecision FighterStrategy::MakeKillLoopDecision(Character* actor, Character* dr
 
 ### Task 4: 이동 / 원거리 공포 (MakeFarMoveDecision)
 
+공포의 외침 (S_DEB_020): 사거리 **3칸** (spell_table.csv 기준), level 1 슬롯 필요
+
 ```cpp
 AIDecision FighterStrategy::MakeFarMoveDecision(Character* actor, Character* dragon, GridSystem* grid)
 {
-    // 이동 가능? (MP > 0 & A* 경로 있음)
     if (actor->GetMovementRange() > 0)
     {
         Math::ivec2 movePos = FindNextMovePos(actor, dragon, grid);
@@ -207,14 +202,10 @@ AIDecision FighterStrategy::MakeFarMoveDecision(Character* actor, Character* dra
             return { AIDecisionType::Move, nullptr, movePos, "", "Moving towards dragon" };
     }
 
-    // 이동 불가 — 원거리 공포 시전 가능한가?
-    // 조건: 드래곤에 공포 없음 & 1레벨 슬롯 있음 & 공포 사거리 내
-    if (!IsFearActive(dragon) &&
-        HasSpellSlot(actor, 1) &&
-        IsInFearRange(actor, dragon, grid))
-    {
-        return { AIDecisionType::UseAbility, dragon, {}, "공포의 외침", "Fear from range (can't move)" };
-    }
+    // 이동 불가 — 원거리 공포(S_DEB_020) 시전 가능한가?
+    // 조건: 드래곤에 공포 없음 & 1레벨 슬롯 있음 & 3칸 이내
+    if (!IsFearActive(dragon) && HasSpellSlot(actor, 1) && IsInFearRange(actor, dragon, grid))
+        return { AIDecisionType::UseAbility, dragon, {}, "S_DEB_020", "Fear from range (can't move)" };
 
     return { AIDecisionType::EndTurn, nullptr, {}, "", "Can't move or cast fear" };
 }
@@ -229,25 +220,25 @@ AIDecision FighterStrategy::MakeFarMoveDecision(Character* actor, Character* dra
 ```cpp
 AIDecision FighterStrategy::MakeSurvivalDecision(Character* actor, Character* dragon, GridSystem* grid)
 {
-    // 피의 갈망 버프 있는가?
-    if (!HasBuff(actor, "피의 갈망"))
+    // Lifesteal 버프 있는가? (stub: 항상 false → Week 6+ StatusEffect 연동)
+    if (!HasBuff(actor, "Lifesteal"))
     {
-        // 없음 → 2레벨 슬롯 있으면 피의 갈망 시전
+        // 없음 → 2레벨 슬롯 있으면 Bloodlust(S_ENH_010) 시전
         if (HasSpellSlot(actor, 2))
-            return { AIDecisionType::UseAbility, actor, {}, "피의 갈망", "Survival: cast bloodlust" };
+            return { AIDecisionType::UseAbility, actor, {}, "S_ENH_010", "Survival: cast bloodlust" };
 
-        // 2레벨 슬롯 없음 → CheckFearNear
+        // 없음 → Fear(S_DEB_020) 시전 가능한가?
         if (!IsFearActive(dragon) && HasSpellSlot(actor, 1) && IsInFearRange(actor, dragon, grid))
-            return { AIDecisionType::UseAbility, dragon, {}, "공포의 외침", "Survival: cast fear" };
+            return { AIDecisionType::UseAbility, dragon, {}, "S_DEB_020", "Survival: cast fear" };
 
-        // 공포도 못 씀 → 일반 공격 (Act_NormalLoop, NOT EndTurn)
+        // 자원 없음 → 일반 공격 (NOT EndTurn, mmd: Act_NormalLoop)
         return { AIDecisionType::Attack, dragon, {}, "", "Survival: normal attack (no resources)" };
     }
     else
     {
-        // 피의 갈망 있음 → 강타용 슬롯 있으면 피흡 극대화 강타
+        // Lifesteal 있음 → 강타(S_ATK_050) 슬롯 있으면 피흡 극대화
         if (actor->HasAnySpellSlot())
-            return { AIDecisionType::UseAbility, dragon, {}, "강타", "Survival: smite (lifesteal max)" };
+            return { AIDecisionType::UseAbility, dragon, {}, "S_ATK_050", "Survival: smite (lifesteal)" };
         else
             return { AIDecisionType::Attack, dragon, {}, "", "Survival: normal attack (lifesteal)" };
     }
@@ -258,16 +249,21 @@ AIDecision FighterStrategy::MakeSurvivalDecision(Character* actor, Character* dr
 
 ### Task 6: 일반 교전 로직 (HP > 40%)
 
-**⚠️ 수정 포인트**:
+**⚠️ 핵심 수정**:
 
-- **클레릭 생존 경로**: mmd는 `공포 → 일반 공격`만 존재. 강타 없음
-- **클레릭 부재 + 격앙 있음**: mmd는 `CheckSmiteSlot`으로 직행. 공포 먼저 체크하지 않음
+- **광란(S_ENH_020) = level 0** → `HasSpellSlot(actor, 2)` 조건 **삭제**, AP >= 2만 확인
+- **클레릭 생존 경로**: mmd는 `공포 → 일반 공격`만 존재 (강타 없음)
+- **클레릭 부재 + 광란 있음**: mmd는 CheckSmiteSlot 직행 (공포 먼저 체크 안 함)
+
+> **⚠️ mmd 불일치 주의**: `fighter.mmd`의 `Check2ndSlot` 노드는 `"2레벨 슬롯 있음 & AP >= 2"` 라고 표기되어 있으나,
+> `spell_table.csv`에서 `S_ENH_020 (광란)`의 `Required Slot Level = 0`이다. 슬롯 체크는 불필요하며
+> **CSV가 정본**이므로 코드 구현 시 `AP >= 2` 조건만 사용한다. (mmd의 "2레벨 슬롯" 표기는 구버전 잔재)
 
 ```cpp
 AIDecision FighterStrategy::MakeNormalCombatDecision(Character* actor, Character* dragon, GridSystem* grid)
 {
-    bool hasBless    = HasBuff(actor, "축복");
-    bool hasBurst    = HasBuff(actor, "격앙");
+    bool hasBless    = HasBuff(actor, "Blessing"); // stub: false
+    bool hasBurst    = HasBuff(actor, "Frenzy");   // stub: false
     bool clericAlive = (FindCleric() != nullptr);
 
     // ----- 축복 적용 중 -----
@@ -275,14 +271,13 @@ AIDecision FighterStrategy::MakeNormalCombatDecision(Character* actor, Character
     {
         if (!hasBurst)
         {
-            // 격앙 없음 → AP >= 2 & 2레벨 슬롯 있으면 격앙 시전
-            if (actor->GetActionPoints() >= 2 && HasSpellSlot(actor, 2))
-                return { AIDecisionType::UseAbility, actor, {}, "격앙", "Normal: cast burst (blessed)" };
-            // AP 부족 → CheckSmiteSlot 진행
+            // 광란(S_ENH_020) 없음 → AP >= 2이면 광란 시전 (슬롯 불필요 — level 0)
+            if (actor->GetActionPoints() >= 2)
+                return { AIDecisionType::UseAbility, actor, {}, "S_ENH_020", "Normal: cast burst (blessed)" };
         }
-        // 격앙 있거나(HasBurst=Yes) AP 부족(CheckBurstAP→No) → CheckSmiteSlot
+        // 광란 있거나 AP 부족 → CheckSmiteSlot
         if (actor->HasAnySpellSlot())
-            return { AIDecisionType::UseAbility, dragon, {}, "강타", "Normal: smite (blessed+burst)" };
+            return { AIDecisionType::UseAbility, dragon, {}, "S_ATK_050", "Normal: smite (blessed+burst)" };
         else
             return { AIDecisionType::Attack, dragon, {}, "", "Normal: attack (blessed, no slot)" };
     }
@@ -290,9 +285,9 @@ AIDecision FighterStrategy::MakeNormalCombatDecision(Character* actor, Character
     // ----- 축복 없음 -----
     if (clericAlive)
     {
-        // 클레릭 생존 → CheckFearNear → 공포 or 일반 공격 (강타 없음, mmd 명시)
+        // 클레릭 생존 → CheckFearNear → 공포 or 일반 공격 (강타 없음)
         if (!IsFearActive(dragon) && HasSpellSlot(actor, 1) && IsInFearRange(actor, dragon, grid))
-            return { AIDecisionType::UseAbility, dragon, {}, "공포의 외침", "Normal: fear (cleric alive)" };
+            return { AIDecisionType::UseAbility, dragon, {}, "S_DEB_020", "Normal: fear (cleric alive)" };
 
         return { AIDecisionType::Attack, dragon, {}, "", "Normal: attack (cleric alive)" };
     }
@@ -301,21 +296,21 @@ AIDecision FighterStrategy::MakeNormalCombatDecision(Character* actor, Character
         // 클레릭 부재
         if (hasBurst)
         {
-            // 격앙 있음 → 바로 CheckSmiteSlot (공포 먼저 체크 안 함, mmd 명시)
+            // 광란 있음 → CheckSmiteSlot 직행 (공포 먼저 아님)
             if (actor->HasAnySpellSlot())
-                return { AIDecisionType::UseAbility, dragon, {}, "강타", "Normal: smite (no cleric, has burst)" };
+                return { AIDecisionType::UseAbility, dragon, {}, "S_ATK_050", "Normal: smite (no cleric, has burst)" };
             else
                 return { AIDecisionType::Attack, dragon, {}, "", "Normal: attack (no cleric, has burst)" };
         }
         else
         {
-            // 격앙 없음 → 격앙 시전 시도
-            if (HasSpellSlot(actor, 2) && actor->GetActionPoints() >= 2)
-                return { AIDecisionType::UseAbility, actor, {}, "격앙", "Normal: cast burst (independent)" };
+            // 광란 없음 → 광란(S_ENH_020) 시전 시도 (AP >= 2, 슬롯 불필요)
+            if (actor->GetActionPoints() >= 2)
+                return { AIDecisionType::UseAbility, actor, {}, "S_ENH_020", "Normal: cast burst (independent)" };
 
-            // 슬롯/AP 부족 → CheckFearNear → 공포 or 일반 공격
+            // AP 부족 → CheckFearNear → 공포 or 일반 공격
             if (!IsFearActive(dragon) && HasSpellSlot(actor, 1) && IsInFearRange(actor, dragon, grid))
-                return { AIDecisionType::UseAbility, dragon, {}, "공포의 외침", "Normal: fear (no cleric)" };
+                return { AIDecisionType::UseAbility, dragon, {}, "S_DEB_020", "Normal: fear (no cleric)" };
 
             return { AIDecisionType::Attack, dragon, {}, "", "Normal: attack (no cleric)" };
         }
@@ -328,13 +323,12 @@ AIDecision FighterStrategy::MakeNormalCombatDecision(Character* actor, Character
 ### Task 7: 헬퍼 함수 구현
 
 ```cpp
-// HP 40% 이하 판단 (플로우차트: CheckHP 40%)
 bool FighterStrategy::IsInDanger(Character* actor) const
 {
     return actor->GetHPPercentage() <= 0.4f;
 }
 
-// 버프 확인 — StatusEffect 시스템 구현 전까지 stub (항상 false)
+// 버프 확인 — StatusEffect 구현 전까지 stub (항상 false)
 bool FighterStrategy::HasBuff(Character* actor, const std::string& buffName) const
 {
     // TODO: Week 6+ actor->HasBuff(buffName) 연동
@@ -342,28 +336,28 @@ bool FighterStrategy::HasBuff(Character* actor, const std::string& buffName) con
     return false;
 }
 
-// 특정 레벨 주문 슬롯 보유 여부
+// 특정 레벨 주문 슬롯 보유 여부 (Character::HasSpellSlot 직접 사용)
 bool FighterStrategy::HasSpellSlot(Character* actor, int level) const
 {
-    return actor->HasSpellSlot(level); // Character::HasSpellSlot(int) 사용
+    return actor->HasSpellSlot(level);
 }
 
-// 드래곤에 '공포' 디버프 활성 여부 — StatusEffect 시스템 구현 전까지 stub (항상 false)
+// 드래곤에 공포 디버프 활성 여부 — StatusEffect 구현 전까지 stub (항상 false)
 bool FighterStrategy::IsFearActive(Character* dragon) const
 {
-    // TODO: Week 6+ dragon->HasDebuff("공포") 연동
+    // TODO: Week 6+ dragon->HasDebuff("Fear") 연동
     (void)dragon;
     return false;
 }
 
-// 공포의 외침 사거리 내 여부 (통상 3칸 이하)
+// 공포의 외침(S_DEB_020) 사거리 내 여부 — CSV: range=3칸
 bool FighterStrategy::IsInFearRange(Character* actor, Character* dragon, GridSystem* grid) const
 {
     int dist = grid->ManhattanDistance(
         actor->GetGridPosition()->Get(),
         dragon->GetGridPosition()->Get()
     );
-    return dist <= 3; // 공포의 외침 사거리 — spell_table.csv 기준
+    return dist <= 3; // S_DEB_020 range = 3칸 (spell_table.csv 기준)
 }
 
 // 이번 턴 내 드래곤 도달 가능 여부 (A* 경로 길이 <= 현재 MP)
@@ -372,14 +366,11 @@ bool FighterStrategy::CanReachThisTurn(Character* actor, Character* dragon, Grid
     Math::ivec2 myPos  = actor->GetGridPosition()->Get();
     Math::ivec2 tgtPos = dragon->GetGridPosition()->Get();
 
-    // 이미 공격 사거리 내라면 도달한 것으로 간주
-    int attackRange = actor->GetAttackRange();
-    if (grid->ManhattanDistance(myPos, tgtPos) <= attackRange)
+    // 이미 공격 사거리 내 (인접)
+    if (grid->ManhattanDistance(myPos, tgtPos) <= actor->GetAttackRange())
         return true;
 
     int mp = actor->GetMovementRange();
-
-    // 드래곤 인접 4방향 중 경로 탐색
     static const Math::ivec2 offsets[4] = { {0,1}, {0,-1}, {-1,0}, {1,0} };
     for (const auto& off : offsets)
     {
@@ -392,12 +383,10 @@ bool FighterStrategy::CanReachThisTurn(Character* actor, Character* dragon, Grid
     return false;
 }
 
-// 가용 슬롯 총합 데미지로 드래곤 확정 처치 가능 여부
-// (SpellSystem 연동 후 정교하게 구현 — 현재는 간소화 버전)
+// 확정 처치 가능 여부
+// TODO: SpellSystem::CalculateSpellDamage 연동 후 정교한 계산
 bool FighterStrategy::CanKillDragonThisTurn(Character* actor, Character* dragon, GridSystem* grid) const
 {
-    // TODO: SpellSystem::CalculateSpellDamage 연동 후 정교한 계산
-    // 현재는 HP 20% 이하면 처치 가능으로 간주
     (void)actor; (void)grid;
     return dragon->GetHPPercentage() <= 0.2f;
 }
@@ -405,9 +394,20 @@ bool FighterStrategy::CanKillDragonThisTurn(Character* actor, Character* dragon,
 
 ---
 
-### Task 8: FindCleric() 활성화
+### Task 8: FindCleric() 구현
 
 ```cpp
+Character* FighterStrategy::FindDragon()
+{
+    GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    for (auto* c : grid->GetAllCharacters())
+    {
+        if (c && c->IsAlive() && c->GetCharacterType() == CharacterTypes::Dragon)
+            return c;
+    }
+    return nullptr;
+}
+
 Character* FighterStrategy::FindCleric()
 {
     GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
@@ -428,168 +428,129 @@ Character* FighterStrategy::FindCleric()
 
 ```
 MakeDecision 호출:
-  → CanReachThisTurn: true (인접)
   → CanKillDragonThisTurn: false (드래곤 HP 70%)
-  → Phase_Decision: AP > 0 → adjacent → HP 40% 이하(35%) → MakeSurvivalDecision
-  → HasBuff("피의 갈망"): false → HasSpellSlot(2): true
-  → return UseAbility("피의 갈망")
+  → Phase_Decision: AP > 0 → adjacent → HP 35% ≤ 40% → MakeSurvivalDecision
+  → HasBuff("Lifesteal"): false (stub) → HasSpellSlot(2): true
+  → return UseAbility("S_ENH_010")  // Bloodlust
 
-다음 BattleOrchestrator 호출:
-  → Phase_Decision: AP > 0 → adjacent → HP 40% 이하 → MakeSurvivalDecision
-  → HasBuff("피의 갈망"): true → HasAnySpellSlot: true
-  → return UseAbility("강타")
+다음 BattleOrchestrator 호출 (Week 6+ StatusEffect 연동 후):
+  → MakeSurvivalDecision → HasBuff("Lifesteal"): true → HasAnySpellSlot: true
+  → return UseAbility("S_ATK_050")  // 강타 (피흡 극대화)
 ```
 
-### 생존 시나리오 (HP 35%, 피의 갈망 없음, 슬롯 없음)
+### 생존 시나리오 (HP 35%, 자원 없음)
 
 ```
-MakeDecision 호출:
-  → MakeSurvivalDecision
-  → HasBuff("피의 갈망"): false → HasSpellSlot(2): false
+MakeDecision → MakeSurvivalDecision
+  → HasBuff: false → HasSpellSlot(2): false
   → IsFearActive: false & HasSpellSlot(1): false
-  → return Attack (일반 공격, NOT EndTurn)
+  → return Attack  // 일반 공격 (NOT EndTurn — mmd 명시)
 ```
 
-### 정상 교전 — 축복+격앙 → 강타
+### 정상 교전 — 축복 없음, 클레릭 없음, 광란 없음, AP=2
 
 ```
-MakeDecision:
-  → MakeNormalCombatDecision
-  → hasBless: true → hasBurst: true → CheckSmiteSlot
-  → HasAnySpellSlot: true → return UseAbility("강타")
+MakeDecision → MakeNormalCombatDecision
+  → hasBless: false → clericAlive: false → hasBurst: false
+  → GetActionPoints() >= 2: true
+  → return UseAbility("S_ENH_020")  // 광란 (슬롯 불필요, AP만 소모)
 ```
 
-### 정상 교전 — 축복 없음, 클레릭 생존, 드래곤 공포 없음
+### 정상 교전 — 축복 없음, 클레릭 생존
 
 ```
-MakeDecision:
-  → MakeNormalCombatDecision
+MakeDecision → MakeNormalCombatDecision
   → hasBless: false → clericAlive: true
   → !IsFearActive: true → HasSpellSlot(1): true → IsInFearRange: true
-  → return UseAbility("공포의 외침")
+  → return UseAbility("S_DEB_020")  // 공포의 외침
 
 다음 호출 (IsFearActive: true):
   → clericAlive: true → IsFearActive: true
-  → return Attack (일반 공격, 강타 아님)
-```
-
-### 정상 교전 — 축복 없음, 클레릭 없음, 격앙 있음
-
-```
-MakeDecision:
-  → MakeNormalCombatDecision
-  → hasBless: false → clericAlive: false → hasBurst: true
-  → CheckSmiteSlot (공포 먼저 아님)
-  → HasAnySpellSlot: true → return UseAbility("강타")
+  → return Attack  // 일반 공격 (강타 아님, mmd 명시)
 ```
 
 ---
 
 ## Rigorous Testing
 
-### 테스트 1: 킬캐치 — 이번 턴 강타 루프 시작
+### 테스트 1: 킬캐치 — 강타(S_ATK_050) 진입
 
 ```cpp
-// 드래곤 HP를 15%로 설정
-dragon->SetHP(static_cast<int>(dragon->GetMaxHP() * 0.15f));
-// Fighter를 1칸 거리에 배치, MP > 0, 슬롯 보유
+dragon->SetHP(static_cast<int>(dragon->GetMaxHP() * 0.15f)); // HP ≤ 20%
 
 AIDecision decision = fighter_strategy.MakeDecision(fighter);
-ASSERT(decision.type == AIDecisionType::UseAbility, "Should enter kill loop with smite");
-ASSERT(decision.abilityName == "강타", "Kill loop ability should be 강타");
+ASSERT(decision.type == AIDecisionType::UseAbility, "Kill loop: smite");
+ASSERT(decision.abilityName == "S_ATK_050", "Kill loop abilityName must be CSV ID");
 ```
 
-### 테스트 2: 생존 — 피의 갈망 시전 우선
+### 테스트 2: 생존 — 피의 갈망(S_ENH_010) 시전
 
 ```cpp
-// Fighter HP 38%, 피의 갈망 없음, 2레벨 슬롯 있음, 드래곤 인접
 fighter->SetHP(static_cast<int>(fighter->GetMaxHP() * 0.38f));
+// HasSpellSlot(2) = true
 
 AIDecision decision = fighter_strategy.MakeDecision(fighter);
-ASSERT(decision.type == AIDecisionType::UseAbility, "Should use ability in survival");
-ASSERT(decision.abilityName == "피의 갈망", "Should cast bloodlust when HP <= 40% and no bloodlust");
+ASSERT(decision.type == AIDecisionType::UseAbility);
+ASSERT(decision.abilityName == "S_ENH_010", "Bloodlust CSV ID");
 ASSERT(decision.target == fighter, "Bloodlust targets self");
 ```
 
-### 테스트 3: 생존 — 슬롯 없음 시 일반 공격 (EndTurn 아님)
+### 테스트 3: 생존 — 자원 없음 → 일반 공격 (EndTurn 아님)
 
 ```cpp
-// Fighter HP 38%, 피의 갈망 없음, 슬롯 없음, 드래곤 인접
 fighter->SetHP(static_cast<int>(fighter->GetMaxHP() * 0.38f));
+fighter->SetSpellSlots({});
+
+AIDecision decision = fighter_strategy.MakeDecision(fighter);
+ASSERT(decision.type == AIDecisionType::Attack, "Normal attack when no resources (NOT EndTurn)");
+ASSERT(decision.target == dragon);
+```
+
+### 테스트 4: 광란 — 슬롯 없어도 AP만 있으면 시전 가능
+
+```cpp
+// HP > 40%, 축복 없음, 클레릭 없음, 광란 없음, AP=2, 슬롯=0 (레벨 2 없음)
 fighter->SetSpellSlots({}); // 슬롯 없음
+fighter->SetActionPoints(2);
 
 AIDecision decision = fighter_strategy.MakeDecision(fighter);
-ASSERT(decision.type == AIDecisionType::Attack, "Should normal attack when no resources (NOT EndTurn)");
-ASSERT(decision.target == dragon, "Attack target should be dragon");
+ASSERT(decision.type == AIDecisionType::UseAbility, "Burst needs no slot");
+ASSERT(decision.abilityName == "S_ENH_020", "Frenzy CSV ID");
+// S_ENH_020 = level 0 spell → HasSpellSlot 체크 불필요
 ```
 
-### 테스트 4: 정상 교전 — 축복+격앙 → 강타
+### 테스트 5: 공포의 외침 — CSV ID 검증
 
 ```cpp
-// HP > 40%, 축복 버프 있음, 격앙 버프 있음, 슬롯 있음, 드래곤 인접
-// (HasBuff stub이 false이므로 Week 6+ 이후 테스트 가능)
+// HP > 40%, 축복 없음, 클레릭 있음, 공포 없음, 1레벨 슬롯 있음, 3칸 내
 
 AIDecision decision = fighter_strategy.MakeDecision(fighter);
-ASSERT(decision.type == AIDecisionType::UseAbility, "Should smite");
-ASSERT(decision.abilityName == "강타", "Should use smite with bless+burst");
-ASSERT(decision.target == dragon, "Target should be dragon");
+ASSERT(decision.abilityName == "S_DEB_020", "Fear CSV ID");
+ASSERT(decision.target == dragon);
 ```
 
-### 테스트 5: 정상 교전 — 클레릭 생존 → 공포 후 일반 공격 (강타 아님)
+### 테스트 6: 이동 불가 시 원거리 공포
 
 ```cpp
-// HP > 40%, 축복 없음, 클레릭 생존, 드래곤 공포 없음, 1레벨 슬롯 있음
-// 첫 호출: 공포의 외침
-AIDecision first = fighter_strategy.MakeDecision(fighter);
-ASSERT(first.abilityName == "공포의 외침", "First: fear");
-
-// 두 번째 호출 (공포 적용 후 - IsFearActive stub이 false이므로 현재는 공포 반복)
-// Week 6+ StatusEffect 연동 후: 공포 적용됨 → 일반 공격
-AIDecision second = fighter_strategy.MakeDecision(fighter);
-// TODO: Week 6+에서 검증 — second.type == AIDecisionType::Attack (강타 아님)
-```
-
-### 테스트 6: 정상 교전 — 클레릭 없음, 격앙 있음 → 강타 직행 (공포 먼저 아님)
-
-```cpp
-// HP > 40%, 축복 없음, 격앙 있음, 클레릭 없음, 슬롯 있음
-// HasBuff stub 항상 false이므로 Week 6+ 이후 테스트 가능
-// 현재: hasBurst=false → 격앙 시전 시도 (2레벨 슬롯 없으면) → 공포 → 일반
-```
-
-### 테스트 7: 이동 불가 시 원거리 공포
-
-```cpp
-// Fighter를 이동 불가 위치에 배치 (MP=0)
-// 드래곤과 공포 사거리(3칸) 내, 1레벨 슬롯 있음
-fighter->SetActionPoints(1); // AP 있음 (인접이 아니어도 Fear 쏘려면)
-// SetMovementRange(0) 방법 필요
+// Fighter MP=0, 드래곤 3칸 내, 1레벨 슬롯 있음
 
 AIDecision decision = fighter_strategy.MakeDecision(fighter);
-ASSERT(decision.type == AIDecisionType::UseAbility, "Should cast fear from range");
-ASSERT(decision.abilityName == "공포의 외침", "Should use fear when can't move");
+ASSERT(decision.type == AIDecisionType::UseAbility);
+ASSERT(decision.abilityName == "S_DEB_020", "Fear from range");
 ```
 
-### 테스트 8: HP 임계값 경계 (40% 정확히)
+### 테스트 7: HP 임계값 경계 (40%)
 
 ```cpp
-// HP 정확히 40% → IsInDanger: <= 0.4f → true → Survival sequence
 fighter->SetHP(static_cast<int>(fighter->GetMaxHP() * 0.40f));
-AIDecision survival = fighter_strategy.MakeDecision(fighter);
-// MakeSurvivalDecision 진입 확인
+// IsInDanger: 0.40 <= 0.4f → true → Survival sequence
+AIDecision s = fighter_strategy.MakeDecision(fighter);
+// Survival sequence 진입 확인
 
-// HP 41% → IsInDanger: false → Normal combat
 fighter->SetHP(static_cast<int>(fighter->GetMaxHP() * 0.41f));
-AIDecision normal = fighter_strategy.MakeDecision(fighter);
-// MakeNormalCombatDecision 진입 확인
-```
-
-### 테스트 9: CanReachThisTurn — 이미 인접 시 true
-
-```cpp
-// Fighter와 Dragon을 인접 배치 (distance == 1)
-// CanReachThisTurn이 true여야 함 (MP 관계없이)
-// → Kill loop 진입 가능
+// IsInDanger: false → Normal combat
+AIDecision n = fighter_strategy.MakeDecision(fighter);
+// Normal combat 진입 확인
 ```
 
 ---
@@ -600,47 +561,59 @@ AIDecision normal = fighter_strategy.MakeDecision(fighter);
 
 `BattleOrchestrator::HandleAITurn`은 매 프레임:
 
-1. `MovementComponent::IsMoving()` 체크 → 이동 중이면 대기
+1. `MovementComponent::IsMoving()` → 이동 중이면 대기
 2. 0.4초 busy-wait
 3. `ai_system->MakeDecision(actor)` → 단 하나의 행동 결정
-4. `EndTurn` → `turn_manager->EndCurrentTurn()` / 그 외 → `ai_system->ExecuteDecision()` → return
+4. `EndTurn` → `EndCurrentTurn()` / 그 외 → `ExecuteDecision()` → return
 
-**fighter_strategy.md의 "Phase_Decision 루프"는 BattleOrchestrator의 반복 호출로 구현됩니다.**
-`MakeDecision`은 항상 단일 행동 하나를 반환해야 합니다 (재귀/내부 루프 금지).
+**fighter.mmd의 "Phase_Decision 루프"는 BattleOrchestrator의 반복 호출로 구현됩니다.**
 
 ---
 
-### ⚠️ 필수 전제 조건: SpellSystem 등록
+### ⚠️ UseAbility 실행 경로 (spell_system.md 기준)
 
-`AISystem::ExecuteDecision`의 `UseAbility` 처리:
+`AISystem::ExecuteDecision`의 UseAbility:
 
 ```cpp
 case AIDecisionType::UseAbility:
-  if (spell_system)  // GetGSComponent<SpellSystem>()
+  if (spell_system)
     spell_system->CastSpell(actor, decision.abilityName, decision.target->GetGridPosition()->Get());
   break;
 ```
 
-**현재 `GamePlay::Load()`에 `SpellSystem`이 등록되지 않아** `spell_system == nullptr`.
-`UseAbility` 결정이 반환되면 아무 일도 안 일어나고 AP/슬롯 소모도 없어 **무한 루프** 발생.
+**`CastSpell`은 `spells_[spell_id]`로 조회** → `decision.abilityName`이 `"강타"` 등 한글 이름이면 스펠 미검색.
 
-**수정 필요** (`GamePlay::Load()` 내):
+**현재 SpellSystem 상태**: `MockSpellBase` 기반 구형 구현. `spell_system.md`의 CSV 기반 재구현 완료 후 동작 가능.
 
-```cpp
-AddGSComponent(new SpellSystem());
-GetGSComponent<SpellSystem>()->SetEventBus(GetGSComponent<EventBus>());
-```
-
-`SpellSystem`이 등록될 때까지 `UseAbility` 계열 어빌리티(강타, 피의 갈망, 공포의 외침, 격앙)는 **실행되지 않습니다**.
-현재 동작 가능한 결정: `Attack`(일반 공격), `Move`(이동), `EndTurn`(턴 종료).
+현재 동작 가능한 Fighter 결정: **`Attack`(일반), `Move`(이동), `EndTurn`**
 
 ---
 
-### UseAbility 자기 자신 타겟 (피의 갈망, 격앙)
+### stub 현황 및 Week 6+ 해제 목록
 
-`AISystem::ExecuteDecision`은 `decision.target->GetGridPosition()->Get()`을 사용합니다.
-자신이 타겟인 어빌리티(피의 갈망, 격앙)는 `target = actor`로 설정하면 크래시 없이 처리됩니다.
+| stub                         | 현재      | 해제 조건                        |
+| ---------------------------- | ------- | ----------------------------- |
+| `HasBuff(actor, "Lifesteal")` | `false` | `actor->HasBuff("Lifesteal")` |
+| `HasBuff(actor, "Blessing")`  | `false` | `actor->HasBuff("Blessing")`  |
+| `HasBuff(actor, "Frenzy")`    | `false` | `actor->HasBuff("Frenzy")`    |
+| `IsFearActive(dragon)`        | `false` | `dragon->HasDebuff("Fear")`   |
 
-```cpp
-return { AIDecisionType::UseAbility, actor, {}, "피의 갈망", "..." };  // target = actor (self)
-```
+**stub 상태의 실제 동작 (HP > 40%, 인접 시)**:
+
+- hasBless=false, clericAlive=false, hasBurst=false → 광란(S_ENH_020) 시전 시도
+- SpellSystem 미등록 시 → 아무것도 안 일어남 (AP 미소모) → **무한 루프**
+- SpellSystem 등록 후 → 광란 성공 → 다음 호출 → hasBurst=false(stub) → 광란 재시전 반복
+
+→ **Fighter 전략 완전 동작은 Week 6+ StatusEffect 연동 후 가능**
+
+---
+
+### 미구현: 최후의 저항 (S_ENH_070)
+
+`S_ENH_070` (파이터 + 로그/위자드/클레릭 공유)는 **특수 조건 스펠**로 현재 FighterStrategy에 미반영:
+
+- 발동 조건: "아군 2명 이상 사망"
+- level 0 (슬롯 불필요), 전투 1회 한정
+- 효과: 2레벨 슬롯 1 회복 + 디버프 제거 + 2d10 회복 + 축복/신속 부여
+
+구현 시 `MakeSurvivalDecision` 앞단에 조건 체크 추가 필요 (아군 사망 수 카운트 API 필요).

@@ -5,6 +5,7 @@
 **작성일**: 2026-03-08
 
 **관련 파일**:
+
 - [GamePlayUIManager.h/cpp](../../../DragonicTactics/source/Game/DragonicTactics/States/GamePlayUIManager.h)
 - [PlayerInputHandler.h/cpp](../../../DragonicTactics/source/Game/DragonicTactics/States/PlayerInputHandler.h)
 - [IRenderer2D.h](../../../DragonicTactics/source/CS200/IRenderer2D.h)
@@ -18,6 +19,7 @@
 `ButtonManager`는 게임 월드 좌표 어디에든 버튼을 배치할 수 있는 커스텀 UI 시스템을 제공합니다.
 
 ### 요구사항
+
 - 원하는 위치에 버튼 생성/제거
 - 호버(Hover), 클릭(Pressed), 비활성화(Disabled) 상태 처리
 - 마우스 입력 감지
@@ -487,6 +489,7 @@ for (int i = 0; i < static_cast<int>(available.size()); ++i)
 ## Rigorous Testing
 
 ### 테스트 1: 버튼 클릭 감지
+
 ```cpp
 ButtonManager btns;
 btns.AddButton({ "test_btn", {100.0, 100.0}, {80.0, 30.0}, "Test" });
@@ -501,6 +504,7 @@ ASSERT(!btns.IsPressed("test_btn"), "Button outside click must not register");
 ```
 
 ### 테스트 2: 비활성화 상태
+
 ```cpp
 btns.SetDisabled("test_btn", true);
 btns.Update({130.0, 85.0}, true);
@@ -508,6 +512,7 @@ ASSERT(!btns.IsPressed("test_btn"), "Disabled button must not respond to clicks"
 ```
 
 ### 테스트 3: 가시성 토글
+
 ```cpp
 btns.SetVisible("test_btn", false);
 btns.Update({130.0, 85.0}, true);
@@ -515,12 +520,14 @@ ASSERT(!btns.IsPressed("test_btn"), "Hidden button must not respond to clicks");
 ```
 
 ### 테스트 4: 레이블 변경
+
 ```cpp
 btns.SetLabel("btn_move", "Cancel Move");
 // Draw()에서 "Cancel Move"가 표시되어야 함 (시각적 확인)
 ```
 
 ### 게임 내 수동 테스트
+
 1. 게임 실행 후 하단 버튼 영역 확인
 2. Move 버튼 클릭 → 이동 가능 타일 하이라이트
 3. Action 버튼 클릭 → Attack/Spell 서브 버튼 표시

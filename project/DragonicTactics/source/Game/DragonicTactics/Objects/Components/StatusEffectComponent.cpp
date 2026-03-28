@@ -1,0 +1,5 @@
+#include "pch.h"
+#include "StatusEffectComponent.h"
+#include "../../StateComponents/EventBus.h"
+#include "../../Types/Events.h"
+#include "../../Objects/Character.h"
