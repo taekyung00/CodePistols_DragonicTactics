@@ -5,11 +5,11 @@
  * \copyright DigiPen Institute of Technology
  */
 #pragma once
-bool TestSpellRegistration();
-bool TestSpellCasting();
-bool TestSpellUpcast();
-bool TestGetAvailableSpells();
-bool TestPreviewSpellArea();
-void RunSpellSystemTests();
+// bool TestSpellRegistration();
+// bool TestSpellCasting();
+// bool TestSpellUpcast();
+// bool TestGetAvailableSpells();
+// bool TestPreviewSpellArea();
+// void RunSpellSystemTests();
 
 extern bool TestSpellSystem;

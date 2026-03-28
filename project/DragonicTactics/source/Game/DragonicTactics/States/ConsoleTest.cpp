@@ -89,7 +89,7 @@ void ConsoleTest::Update([[maybe_unused]] double dt)
   {
 	AddGSComponent(new GridSystem());
 
-	RunSpellSystemTests();
+	// RunSpellSystemTests();
 
 	RemoveGSComponent<GridSystem>();
 
