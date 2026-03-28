@@ -256,3 +256,7 @@ void GamePlayUIManager::InitButtons()
         false  // 초기에는 숨김
     });
 }
+
+ButtonManager& GamePlayUIManager::GetButtons(){
+  return button_manager_;
+}

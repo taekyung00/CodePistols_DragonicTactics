@@ -48,7 +48,7 @@ PlayerInputHandler::PlayerInputHandler() : m_state(ActionState::None)
 void PlayerInputHandler::Update(double dt, Character* current_character, GridSystem* grid, CombatSystem* combat_system)
 {
   // ButtonManager 참조 (GamePlayUIManager에서)
-    GamePlayUIManager* m_ui_manager;
+    GamePlayUIManager* m_ui_manager = Engine::GetGameStateManager().GetGSComponent<GamePlayUIManager>();
     ButtonManager& btns = m_ui_manager->GetButtons();
  
     // Move 버튼 클릭
@@ -134,27 +134,8 @@ void PlayerInputHandler::Update(double dt, Character* current_character, GridSys
 
 	  // Engine::GetLogger().LogEvent("Dragon finished moving.");
 	}
-  }
-  // 특정 스펠 사용 가능 시 스펠 버튼 추가
-	SpellSystem* ss = GetGSComponent<SpellSystem>();
-	auto available = ss->GetAvailableSpells(current_character);
-
-	// 기존 스펠 버튼 제거
-	for (const auto& spell : cached_spell_buttons_)
-		button_manager_.RemoveButton("spell_" + spell.id);
-
-	// 새 스펠 버튼 생성
-	for (int i = 0; i < static_cast<int>(available.size()); ++i)
-	{
-		button_manager_.AddButton({
-			"spell_" + available[i].id,
-			{ 500.0 + i * 130.0, 700.0 },
-			{ 120.0, 35.0 },
-			available[i].spell_name,
-			false,  // 초기 visible
-			current_character->GetSpellSlotCount(available[i].spell_level) == 0  // 슬롯 없으면 disabled
-		});
-	}
+  } 
+  
   HandleDragonInput(dt, dragon, grid, combat_system);
 }
 

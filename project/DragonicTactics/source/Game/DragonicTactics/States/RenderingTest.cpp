@@ -47,6 +47,9 @@ void RenderingTest::Draw()
 
 void RenderingTest::DrawImGui()
 {
+#if defined(DEVELOPER_VERSION)
+    // ... ImGui 코드
+#endif
 }
 
 void RenderingTest::Unload()

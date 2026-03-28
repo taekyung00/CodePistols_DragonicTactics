@@ -77,7 +77,7 @@ void ButtonManager::Update(Math::vec2 mouse_pos, bool mouse_just_clicked)
     }
 }
 
-void ButtonManager::Draw(Math::TransformationMatrix camera_matrix) const
+void ButtonManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_matrix) const
 {
     auto* renderer = CS230::TextureManager::GetRenderer2D();
     auto& text_mgr = Engine::GetTextManager();

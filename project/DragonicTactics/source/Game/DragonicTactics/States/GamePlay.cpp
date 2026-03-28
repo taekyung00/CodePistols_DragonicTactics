@@ -60,6 +60,7 @@ void GamePlay::Load()
   m_input_handler = std::make_unique<PlayerInputHandler>();
   m_ui_manager	  = std::make_unique<GamePlayUIManager>();
   m_orchestrator  = std::make_unique<BattleOrchestrator>();
+  m_button_manager= std::make_unique<ButtonManager>();
 
   AddGSComponent(new EventBus());
   AddGSComponent(new DiceManager());
@@ -289,11 +290,14 @@ void GamePlay::Draw()
 
   GetGSComponent<DebugManager>()->Draw(grid_system);
 
+  //m_button_manager->SetLabel("btn_move", "Cancel Move");
+
   renderer_2d->EndScene();
 }
 
 void GamePlay::DrawImGui()
 {
+#if defined(DEVELOPER_VERSION)
   GridSystem* grid_system = GetGSComponent<GridSystem>();
   GetGSComponent<DebugManager>()->DrawImGui(grid_system);
 
@@ -480,6 +484,7 @@ void GamePlay::DrawImGui()
 
 	ImGui::End();
   }
+#endif // DEVELOPER_VERSION
 }
 
 gsl::czstring GamePlay::GetName() const
