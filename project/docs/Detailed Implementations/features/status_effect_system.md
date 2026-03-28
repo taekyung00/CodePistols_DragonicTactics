@@ -6,11 +6,13 @@
 
 **관련 파일**:
 
-- [StatusEffectComponent.h/cpp](../../../DragonicTactics/source/Game/DragonicTactics/Objects/Components/StatusEffectComponent.h) ← 신규 생성
+- [StatusEffectComponent.h/cpp](../../../DragonicTactics/source/Game/DragonicTactics/Objects/Components/StatusEffectComponent.h) ← 신규 생성 (상태 저장소)
+- [StatusEffectHandler.h/cpp](../../../DragonicTactics/source/Game/DragonicTactics/StateComponents/StatusEffectHandler.h) ← **신규 생성 (실행 로직)** ★
 - [Character.h/cpp](../../../DragonicTactics/source/Game/DragonicTactics/Objects/Character.h) ← HasBuff/HasDebuff/AddBuff/AddDebuff 추가
-- [SpellSystem.cpp](../../../DragonicTactics/source/Game/DragonicTactics/StateComponents/SpellSystem.cpp) ← ApplySpellEffect 버프 처리 (spell_system.md 소유)
-- [TurnManager.cpp](../../../DragonicTactics/source/Game/DragonicTactics/StateComponents/TurnManager.cpp) ← StartNextTurn에 TickDown 추가
-- [CombatSystem.cpp](../../../DragonicTactics/source/Game/DragonicTactics/StateComponents/CombatSystem.cpp) ← 피해 계산에 버프/디버프 반영
+- [SpellSystem.cpp](../../../DragonicTactics/source/Game/DragonicTactics/StateComponents/SpellSystem.cpp) ← ApplySpellEffect에 OnApplied 추가 (spell_system.md 소유)
+- [TurnManager.cpp](../../../DragonicTactics/source/Game/DragonicTactics/StateComponents/TurnManager.cpp) ← StartNextTurn에 TickDown + OnTurnStart 추가
+- [CombatSystem.cpp](../../../DragonicTactics/source/Game/DragonicTactics/StateComponents/CombatSystem.cpp) ← ExecuteAttack → StatusEffectHandler 위임
+- [States/GamePlay.cpp](../../../DragonicTactics/source/Game/DragonicTactics/States/GamePlay.cpp) ← AddGSComponent(new StatusEffectHandler()) 추가
 - [Types/Events.h](../../../DragonicTactics/source/Game/DragonicTactics/Types/Events.h) ← 이미 이벤트 구조체 정의됨
 - [spell_system.md](./spell_system.md) ← CastSpell / ApplySpellEffect 소유
 - [Assets/Data/status_effect.csv](../../../DragonicTactics/Assets/Data/status_effect.csv) ← effectName 정의 파일
@@ -30,31 +32,39 @@
 
 ### 각 시스템의 책임 경계
 
-| 시스템                       | 책임                                              |
-| ------------------------- | ----------------------------------------------- |
-| **SpellSystem**           | 스펠 실행 + 효과 적용 + 상태 기록(`AddBuff`/`AddDebuff` 호출) |
-| **StatusEffectComponent** | 현재 활성 효과 목록 저장 + 쿼리 + 만료 관리                     |
-| **CombatSystem**          | 상태 읽기(`HasBuff`/`HasDebuff`) + 피해 보정            |
-| **TurnManager**           | 턴 시작 시 `TickDown` 호출                            |
-| **Strategy**              | 상태 쿼리만 (`actor->HasBuff("Frenzy")`) — 직접 변경 없음  |
+| 시스템                       | 책임                                                                          |
+| ------------------------- | --------------------------------------------------------------------------- |
+| **SpellSystem**           | 스펠 실행 + 상태 기록(`AddBuff`/`AddDebuff`) + `handler->OnApplied()` 호출            |
+| **StatusEffectHandler** ★ | **각 효과의 실행 로직 정의** — OnApplied / ModifyDamage / OnAfterAttack / OnTurnStart |
+| **StatusEffectComponent** | 현재 활성 효과 목록 저장 + 쿼리 + 만료 관리                                                 |
+| **CombatSystem**          | `handler->ModifyDamage*()` / `handler->OnAfterAttack()` 호출                  |
+| **TurnManager**           | 턴 시작 시 `TickDown` + `handler->OnTurnStart()` 호출                             |
+| **Strategy**              | 상태 쿼리만 (`actor->HasBuff("Frenzy")`) — 직접 변경 없음                              |
+
+> ★ **신규 클래스**: `StateComponents/StatusEffectHandler.h/cpp`
 
 ### 호출 체인
 
 ```
 SpellSystem::CastSpell
-  → SpellSystem::ApplySpellEffect   ← spell_system.md 소유
+  → SpellSystem::ApplySpellEffect
       → 효과 적용 (피해/회복 등)
-      → character->AddBuff / AddDebuff  ← 상태 기록
-          → StatusEffectComponent::AddEffect (저장)
+      → character->AddEffect               ← 상태 기록
+          → StatusEffectComponent::AddEffect
           → StatusEffectAddedEvent 발행
+      → StatusEffectHandler::OnApplied()   ← 즉시 실행 효과 (Purify 등)
 
 TurnManager::StartNextTurn
-  → StatusEffectComponent::TickDown  ← 만료 관리
+  → StatusEffectComponent::TickDown        ← 만료 관리
       → StatusEffectRemovedEvent 발행 (만료 시)
+  → character->RefreshActionPoints()
+  → StatusEffectHandler::OnTurnStart()     ← Exhaustion, Haste 처리 (복원 후)
 
 CombatSystem::ExecuteAttack
-  → attacker->HasBuff("Frenzy")  ← 상태 읽기만
-  → 피해 보정 적용
+  → StatusEffectHandler::ModifyDamageDealt()   ← Blessing+3, Fear-3, Curse-3, Stealth×2
+  → StatusEffectHandler::ModifyDamageTaken()   ← Blessing-3, Curse+3
+  → ApplyDamage(target, final_damage)
+  → StatusEffectHandler::OnAfterAttack()       ← Lifesteal 회복, Frenzy 디버프, Stealth 소모
 ```
 
 ### Events.h에 이미 정의된 이벤트 (신규 추가 불필요)
@@ -71,20 +81,20 @@ StatusEffectTickEvent    { target, effectName, damageOrHealing }
 
 effectName은 `status_effect.csv`의 NAME 컬럼과 **정확히 일치**해야 합니다.
 
-| 스펠 ID       | 이름 (CSV Name)      | effectName     | 종류  | 지속 턴 | 상태 기록 위치                     |
-| ----------- | ------------------ | -------------- | --- | ---- | ---------------------------- |
-| `S_ENH_010` | Bloodlust          | `"Lifesteal"`  | 버프  | 1    | `AddBuff("Lifesteal", 1)`    |
-| `S_ENH_020` | Frenzy             | `"Frenzy"`     | 버프  | 1    | `AddBuff("Frenzy", 1)`       |
-| `S_ENH_060` | Shadow Hide        | `"Stealth"`    | 버프  | 1    | `AddBuff("Stealth", 1)`      |
-| `S_BUF_010` | Divine Shield      | `"Blessing"`   | 버프  | 3    | `AddBuff("Blessing", 3)`     |
-| `S_BUF_020` | Gale Step          | `"Haste"`      | 버프  | 2    | `AddBuff("Haste", 2)`        |
-| `S_ENH_050` | Purify             | `"Purify"`     | 버프  | 1    | `AddBuff("Purify", 1)`       |
-| `S_DEB_020` | Fearful Cry        | `"Fear"`       | 디버프 | 3    | `AddDebuff("Fear", 3)`       |
-| `S_DEB_010` | Curse of Suffering | `"Curse"`      | 디버프 | 3    | `AddDebuff("Curse", 3)`      |
-| `S_ATK_040` | Meteor             | `"Exhaustion"` | 디버프 | 1    | `AddDebuff("Exhaustion", 1)` |
+| 스펠 ID       | 이름 (CSV Name)      | effectName     | 지속 턴 | 상태 기록 위치                     |
+| ----------- | ------------------ | -------------- | ---- | ---------------------------- |
+| `S_ENH_010` | Bloodlust          | `"Lifesteal"`  | 1    | `AddEffect("Lifesteal", 1)`  |
+| `S_ENH_020` | Frenzy             | `"Frenzy"`     | 1    | `AddEffect("Frenzy", 1)`     |
+| `S_ENH_060` | Shadow Hide        | `"Stealth"`    | 1    | `AddEffect("Stealth", 1)`    |
+| `S_BUF_010` | Divine Shield      | `"Blessing"`   | 3    | `AddEffect("Blessing", 3)`   |
+| `S_BUF_020` | Gale Step          | `"Haste"`      | 2    | `AddEffect("Haste", 2)`      |
+| `S_ENH_050` | Purify             | `"Purify"`     | 1    | `AddEffect("Purify", 1)`     |
+| `S_DEB_020` | Fearful Cry        | `"Fear"`       | 3    | `AddEffect("Fear", 3)`       |
+| `S_DEB_010` | Curse of Suffering | `"Curse"`      | 3    | `AddEffect("Curse", 3)`      |
+| `S_ATK_040` | Meteor             | `"Exhaustion"` | 1    | `AddEffect("Exhaustion", 1)` |
 
-> **effectName은 Strategy의 HasBuff/HasDebuff 인수와 일치해야 합니다.**
-> `HasBuff(actor, "Blessing")` → `actor->HasBuff("Blessing")` → `StatusEffectComponent::HasBuff("Blessing")`
+> **effectName은 Strategy의 `Has()` 인수와 정확히 일치해야 합니다.**
+> `Has(actor, "Blessing")` → `actor->Has("Blessing")` → `StatusEffectComponent::Has("Blessing")`
 
 ---
 
@@ -113,7 +123,6 @@ struct ActiveEffect
     std::string name;      // status_effect.csv의 NAME — "Blessing", "Fear", "Stealth" 등
     int         duration;  // 남은 턴 수
     int         magnitude; // 수치 강도 (없으면 0)
-    bool        is_buff;   // true = 버프, false = 디버프
 };
 
 class StatusEffectComponent : public CS230::Component
@@ -122,13 +131,12 @@ public:
     void Update(double dt) override { (void)dt; }
 
     // --- 상태 추가 / 제거 ---
-    void AddEffect(const std::string& name, int duration, int magnitude, bool is_buff);
+    void AddEffect(const std::string& name, int duration, int magnitude = 0);
     void RemoveEffect(const std::string& name);
-    void RemoveAllDebuffs();
+    void RemoveAllEffects();
 
     // --- 상태 쿼리 ---
-    bool HasBuff(const std::string& name) const;
-    bool HasDebuff(const std::string& name) const;
+    bool Has(const std::string& name) const;
     int  GetMagnitude(const std::string& name) const;
 
     // --- 턴 갱신 (TurnManager::StartNextTurn에서 호출) ---
@@ -148,8 +156,7 @@ private:
 #include "../../Types/Events.h"
 #include "../../Objects/Character.h"
 
-void StatusEffectComponent::AddEffect(const std::string& name, int duration,
-                                       int magnitude, bool is_buff)
+void StatusEffectComponent::AddEffect(const std::string& name, int duration, int magnitude)
 {
     // 이미 있으면 지속시간 갱신
     for (auto& e : effects_)
@@ -161,7 +168,7 @@ void StatusEffectComponent::AddEffect(const std::string& name, int duration,
             return;
         }
     }
-    effects_.push_back({ name, duration, magnitude, is_buff });
+    effects_.push_back({ name, duration, magnitude });
 }
 
 void StatusEffectComponent::RemoveEffect(const std::string& name)
@@ -172,25 +179,15 @@ void StatusEffectComponent::RemoveEffect(const std::string& name)
         effects_.end());
 }
 
-void StatusEffectComponent::RemoveAllDebuffs()
+void StatusEffectComponent::RemoveAllEffects()
 {
-    effects_.erase(
-        std::remove_if(effects_.begin(), effects_.end(),
-                       [](const ActiveEffect& e) { return !e.is_buff; }),
-        effects_.end());
+    effects_.clear();
 }
 
-bool StatusEffectComponent::HasBuff(const std::string& name) const
+bool StatusEffectComponent::Has(const std::string& name) const
 {
     for (const auto& e : effects_)
-        if (e.name == name && e.is_buff) return true;
-    return false;
-}
-
-bool StatusEffectComponent::HasDebuff(const std::string& name) const
-{
-    for (const auto& e : effects_)
-        if (e.name == name && !e.is_buff) return true;
+        if (e.name == name) return true;
     return false;
 }
 
@@ -234,15 +231,13 @@ void StatusEffectComponent::TickDown(Character* owner, EventBus* bus)
 // 생성자에서 컴포넌트 등록 (Character.cpp)
 // AddGOComponent(new StatusEffectComponent());
 
-// --- 버프/디버프 쿼리 (Strategy에서 사용) ---
-bool HasBuff(const std::string& buff_name) const;
-bool HasDebuff(const std::string& debuff_name) const;
+// --- 효과 쿼리 (Strategy에서 사용) ---
+bool Has(const std::string& effect_name) const;
 
-// --- 버프/디버프 상태 변경 (SpellSystem과 CombatSystem에서만 호출) ---
-void AddBuff(const std::string& name, int duration, int magnitude = 0);
-void AddDebuff(const std::string& name, int duration, int magnitude = 0);
-void RemoveBuff(const std::string& name);
-void RemoveAllDebuffs();
+// --- 효과 추가 / 제거 (SpellSystem, CombatSystem, StatusEffectHandler에서 호출) ---
+void AddEffect(const std::string& name, int duration, int magnitude = 0);
+void RemoveEffect(const std::string& name);
+void RemoveAllEffects();
 ```
 
 **Character.cpp 구현**:
@@ -251,50 +246,33 @@ void RemoveAllDebuffs();
 // 생성자 내부
 AddGOComponent(new StatusEffectComponent());
 
-bool Character::HasBuff(const std::string& buff_name) const
+bool Character::Has(const std::string& effect_name) const
 {
     auto* se = GetGOComponent<StatusEffectComponent>();
-    return se && se->HasBuff(buff_name);
+    return se && se->Has(effect_name);
 }
 
-bool Character::HasDebuff(const std::string& debuff_name) const
-{
-    auto* se = GetGOComponent<StatusEffectComponent>();
-    return se && se->HasDebuff(debuff_name);
-}
-
-void Character::AddBuff(const std::string& name, int duration, int magnitude)
+void Character::AddEffect(const std::string& name, int duration, int magnitude)
 {
     auto* se = GetGOComponent<StatusEffectComponent>();
     if (!se) return;
-    se->AddEffect(name, duration, magnitude, true);
+    se->AddEffect(name, duration, magnitude);
 
     auto* bus = Engine::GetGameStateManager().GetGSComponent<EventBus>();
     if (bus)
         bus->Publish(StatusEffectAddedEvent{ this, name, duration, magnitude });
 }
 
-void Character::AddDebuff(const std::string& name, int duration, int magnitude)
-{
-    auto* se = GetGOComponent<StatusEffectComponent>();
-    if (!se) return;
-    se->AddEffect(name, duration, magnitude, false);
-
-    auto* bus = Engine::GetGameStateManager().GetGSComponent<EventBus>();
-    if (bus)
-        bus->Publish(StatusEffectAddedEvent{ this, name, duration, magnitude });
-}
-
-void Character::RemoveBuff(const std::string& name)
+void Character::RemoveEffect(const std::string& name)
 {
     if (auto* se = GetGOComponent<StatusEffectComponent>())
         se->RemoveEffect(name);
 }
 
-void Character::RemoveAllDebuffs()
+void Character::RemoveAllEffects()
 {
     if (auto* se = GetGOComponent<StatusEffectComponent>())
-        se->RemoveAllDebuffs();
+        se->RemoveAllEffects();
 }
 ```
 
@@ -332,42 +310,44 @@ attacker->SetHasAttackedThisTurn(true);
 
 ---
 
-### Task 4: SpellSystem::ApplySpellEffect 연동 확인
+### Task 4: SpellSystem::ApplySpellEffect에 handler->OnApplied() 추가
 
-> **이 Task는 `spell_system.md`의 신형 ApplySpellEffect가 완성되면 자동으로 충족됩니다.**
-> `spell_school` 기반 stub 교체 작업은 더 이상 필요하지 않습니다.
+신형 `ApplySpellEffect`(spell_system.md 소유)의 `AddBuff`/`AddDebuff` 직후, **Task 6의 StatusEffectHandler**에 즉시 실행 효과를 위임합니다.
 
-신형 `ApplySpellEffect`(spell_system.md 소유)는 Effect 필드의 `effect_status`로 분기하여
-`AddBuff`/`AddDebuff`를 직접 호출합니다:
+`spell_system.md`의 상태 효과 블록 전체 (참조용):
 
 ```cpp
-// spell_system.md의 신형 ApplySpellEffect 내부 (참조용)
+// spell_system.md의 신형 ApplySpellEffect 내부 — 상태 효과 블록
 if (spell.effect_status != "Basic" && spell.effect_duration > 0)
 {
-    static const std::set<std::string> DEBUFFS = { "Fear", "Curse", "Exhaustion" };
-    bool is_debuff = (DEBUFFS.count(spell.effect_status) > 0);
-
-    // ... target->AddBuff(spell.effect_status, spell.effect_duration)
-    //     target->AddDebuff(spell.effect_status, spell.effect_duration)
-}
-```
-
-StatusEffectComponent(Task 1)와 Character facade(Task 2)가 완성되면 이 호출이 즉시 동작합니다.
-
-**Purify 특수 처리** — `effect_status == "Purify"` 시 `RemoveAllDebuffs()` 호출로 구현:
-
-```cpp
-// ApplySpellEffect 내 Purify 처리 (spell_system.md Task 2 확장 시 추가)
-if (spell.effect_status == "Purify")
-{
+    auto* handler    = Engine::GetGameStateManager().GetGSComponent<StatusEffectHandler>();
     Character* se_target = target ? target : caster;
-    if (se_target) se_target->RemoveAllDebuffs();
+
+    if (spell.target_type == "Enemies Around Caster" || ...)
+    {
+        for (auto* c : grid->GetAllCharacters())
+        {
+            // ... 거리 필터 ...
+            c->AddEffect(spell.effect_status, spell.effect_duration);
+            if (handler) handler->OnApplied(c, spell.effect_status); // ← 즉시 실행
+        }
+    }
+    else if (se_target)
+    {
+        se_target->AddEffect(spell.effect_status, spell.effect_duration);
+        if (handler) handler->OnApplied(se_target, spell.effect_status); // ← 즉시 실행
+    }
 }
 ```
+
+> `OnApplied`는 현재 **Purify** 한 가지에만 즉시 로직이 있습니다.
+> 다른 효과는 `OnApplied` 내에서 아무것도 하지 않고 통과합니다 (등록은 이미 `AddEffect`에서 완료).
+
+StatusEffectComponent(Task 1) · Character facade(Task 2) · StatusEffectHandler(Task 6)가 완성되면 이 호출이 즉시 동작합니다.
 
 ---
 
-### Task 5: TurnManager::StartNextTurn에 TickDown 추가
+### Task 5: TurnManager::StartNextTurn에 TickDown + OnTurnStart 추가
 
 **수정 파일**: `TurnManager.cpp`
 
@@ -377,68 +357,235 @@ void TurnManager::StartNextTurn()
     Character* current = GetCurrentCharacter();
     if (current)
     {
+        // 1. TickDown: 지속시간 감소 + 만료 제거
         auto* se = current->GetGOComponent<StatusEffectComponent>();
-        if (se)
-            se->TickDown(current, eventBus); // 지속시간 감소 + 만료 제거
+        if (se) se->TickDown(current, eventBus);
 
-        current->RefreshActionPoints();      // has_attacked_this_turn_ 리셋도 여기서
+        // 2. AP/이동력 기본값 복원 (has_attacked_this_turn_ 리셋 포함)
+        current->RefreshActionPoints();
+
+        // 3. OnTurnStart: Exhaustion/Haste 적용 (반드시 복원 이후)
+        //    Exhaustion은 RefreshActionPoints로 복원된 AP를 다시 0으로 덮어씁니다.
+        //    Haste는 복원된 AP에 +1을 더합니다.
+        auto* handler = Engine::GetGameStateManager().GetGSComponent<StatusEffectHandler>();
+        if (handler) handler->OnTurnStart(current);
     }
     // ... 기존 이벤트 발행 ...
 }
 ```
 
+> **순서 중요**: `RefreshActionPoints` → `OnTurnStart` 순서여야 합니다.
+> `OnTurnStart`를 먼저 호출하면 `RefreshActionPoints`가 Haste/Exhaustion 효과를 덮어씁니다.
+
 ---
 
-### Task 6: CombatSystem에 버프/디버프 피해 보정 반영
+### Task 6: StatusEffectHandler 신규 생성
+
+각 status effect의 **실행 로직**을 한 곳에 모아둡니다.
+다른 시스템은 "언제 실행할지"만 알고, "어떻게 실행할지"는 이 클래스가 정의합니다.
+
+**신규 파일**: `StateComponents/StatusEffectHandler.h`
+
+```cpp
+#pragma once
+#include "./Engine/Component.h"
+#include <string>
+
+class Character;
+class DiceManager;
+
+/**
+ * @brief 각 status effect의 실행 로직 중앙 집중 관리
+ *
+ * 타이밍별 훅:
+ *   SpellSystem::ApplySpellEffect  → OnApplied()           즉시 실행 효과
+ *   CombatSystem::ExecuteAttack    → ModifyDamage*()       피해 보정
+ *                                  → OnAfterAttack()       공격 후 효과
+ *   TurnManager::StartNextTurn     → OnTurnStart()         턴 시작 효과
+ */
+class StatusEffectHandler : public CS230::Component
+{
+public:
+    void SetDiceManager(DiceManager* dice) { diceManager_ = dice; }
+
+    // SpellSystem::ApplySpellEffect에서 AddBuff/AddDebuff 직후 호출
+    // 현재: Purify → 즉시 모든 디버프 제거
+    void OnApplied(Character* target, const std::string& effect_name);
+
+    // CombatSystem::ExecuteAttack — 피해 계산 단계에서 호출
+    int ModifyDamageDealt(Character* attacker, int base_damage) const;
+    int ModifyDamageTaken(Character* defender, int base_damage) const;
+
+    // CombatSystem::ExecuteAttack — ApplyDamage 직후 호출
+    void OnAfterAttack(Character* attacker, Character* defender, int damage_dealt);
+
+    // TurnManager::StartNextTurn — RefreshActionPoints 직후 호출
+    void OnTurnStart(Character* character);
+
+    // 타겟 가능 여부 체크 — PlayerInputHandler/GridSystem에서 호출
+    // Stealth 중인 캐릭터는 타겟 불가
+    bool IsTargetable(const Character* target) const;
+
+private:
+    DiceManager* diceManager_ = nullptr;
+};
+```
+
+**신규 파일**: `StateComponents/StatusEffectHandler.cpp`
+
+```cpp
+#include "pch.h"
+#include "StatusEffectHandler.h"
+#include "../Objects/Character.h"
+#include "DiceManager.h"
+
+// ──────────────────────────────────────────────
+// OnApplied: AddEffect 직후 즉시 실행
+// ──────────────────────────────────────────────
+void StatusEffectHandler::OnApplied(Character* target, const std::string& effect_name)
+{
+    // Purify: 즉시 모든 효과 제거
+    if (effect_name == "Purify")
+        target->RemoveAllEffects();
+
+    // 나머지 효과는 StatusEffectComponent에 등록만 됨
+    // (실행은 ModifyDamage* / OnAfterAttack / OnTurnStart 타이밍에 발생)
+}
+
+// ──────────────────────────────────────────────
+// ModifyDamageDealt: 공격자 측 피해 보정
+// ──────────────────────────────────────────────
+int StatusEffectHandler::ModifyDamageDealt(Character* attacker, int base_damage) const
+{
+    int damage = base_damage;
+    if (attacker->Has("Blessing"))  damage += 3;  // Blessing: 피해 +3
+    if (attacker->Has("Fear"))      damage -= 3;  // Fear: 피해 -3
+    if (attacker->Has("Curse"))     damage -= 3;  // Curse: 피해 -3
+    if (attacker->Has("Stealth"))   damage *= 2;  // Stealth: 첫 공격 2배 (평탄 보정 후)
+    return std::max(0, damage);
+}
+
+// ──────────────────────────────────────────────
+// ModifyDamageTaken: 수비자 측 피해 보정
+// ──────────────────────────────────────────────
+int StatusEffectHandler::ModifyDamageTaken(Character* defender, int base_damage) const
+{
+    int damage = base_damage;
+    if (defender->Has("Blessing"))  damage -= 3;  // Blessing: 피해 감소 -3
+    if (defender->Has("Curse"))     damage += 3;  // Curse: 피해 증가 +3
+    return std::max(0, damage);
+}
+
+// ──────────────────────────────────────────────
+// OnAfterAttack: ApplyDamage 이후 트리거
+// ──────────────────────────────────────────────
+void StatusEffectHandler::OnAfterAttack(Character* attacker, Character* defender, int damage_dealt)
+{
+    // ── Stealth: 공격 즉시 소모 ──
+    if (attacker->Has("Stealth"))
+        attacker->RemoveEffect("Stealth");
+
+    // ── Lifesteal: 피해의 50% 회복 (내림) ──
+    if (attacker->Has("Lifesteal"))
+    {
+        int heal = damage_dealt / 2;
+        attacker->SetHP(std::min(attacker->GetHP() + heal, attacker->GetMaxHP()));
+    }
+
+    // ── Frenzy: 10 이상 피해 → 타겟에 무작위 효과, 미만 → 자신에게, 소모 ──
+    if (attacker->Has("Frenzy"))
+    {
+        attacker->RemoveEffect("Frenzy");
+
+        // 무작위 부정 효과: Curse(0) / Fear(1) / Exhaustion(2)
+        static const std::string FRENZY_EFFECTS[] = { "Curse", "Fear", "Exhaustion" };
+        int roll = diceManager_ ? (diceManager_->Roll("1d3") - 1) : 0;
+        const std::string& effect = FRENZY_EFFECTS[roll];
+
+        if (damage_dealt >= 10)
+            defender->AddEffect(effect, 1);
+        else
+            attacker->AddEffect(effect, 1);
+    }
+}
+
+// ──────────────────────────────────────────────
+// OnTurnStart: RefreshActionPoints 이후 호출
+// ──────────────────────────────────────────────
+void StatusEffectHandler::OnTurnStart(Character* character)
+{
+    // ── Exhaustion: 속도/AP를 0으로 (RefreshActionPoints가 복원한 값을 덮어씀) ──
+    if (character->Has("Exhaustion"))
+    {
+        character->SetActionPoints(0);
+        // TODO: character->SetMovementRange(0) — Character::SetMovementRange() 구현 필요
+    }
+
+    // ── Haste: 행동 +1, 속도 +1 (RefreshActionPoints가 복원한 값에 추가) ──
+    if (character->Has("Haste"))
+    {
+        character->SetActionPoints(character->GetActionPoints() + 1);
+        // TODO: character->SetMovementRange(character->GetMovementRange() + 1) — 구현 필요
+    }
+}
+
+// ──────────────────────────────────────────────
+// IsTargetable: Stealth 중 타겟 불가
+// ──────────────────────────────────────────────
+bool StatusEffectHandler::IsTargetable(const Character* target) const
+{
+    return !target->Has("Stealth");
+}
+```
+
+**GamePlay::Load() 추가 필요**:
+
+```cpp
+// GamePlay::Load() 내 AddGSComponent 목록에 추가
+AddGSComponent(new StatusEffectHandler());
+// ...
+GetGSComponent<StatusEffectHandler>()->SetDiceManager(GetGSComponent<DiceManager>());
+```
+
+---
+
+### Task 7: CombatSystem에서 StatusEffectHandler 위임
 
 **수정 파일**: `CombatSystem.cpp`의 `ExecuteAttack`
 
-CombatSystem은 상태를 **읽기만** 합니다. 직접 AddBuff/AddDebuff하지 않습니다.
-단, Stealth와 Frenzy는 공격 시 소모되므로 `RemoveBuff`는 호출합니다.
+CombatSystem은 직접 효과 로직을 알지 않습니다. `StatusEffectHandler`에 위임합니다.
 
 ```cpp
 void CombatSystem::ExecuteAttack(Character* attacker, Character* target)
 {
-    int base_damage = /* 기존 주사위 로직 */;
+    auto* handler = Engine::GetGameStateManager().GetGSComponent<StatusEffectHandler>();
 
-    // ── 피해 보정 읽기 ──
-    if (attacker->HasBuff("Blessing"))
-        base_damage += attacker->GetGOComponent<StatusEffectComponent>()->GetMagnitude("Blessing");
+    // 1. 기본 피해 계산 (주사위)
+    int base_damage = RollAttackDamage(attacker->GetAttackDice(), attacker->GetBaseDamage());
 
-    if (attacker->HasDebuff("Fear"))
-        base_damage += attacker->GetGOComponent<StatusEffectComponent>()->GetMagnitude("Fear"); // 음수
-
-    // ── Stealth: 첫 피해 2배, 공격 시 소모 ──
-    if (attacker->HasBuff("Stealth"))
+    // 2. 상태 효과 피해 보정 (Blessing, Fear, Curse, Stealth)
+    if (handler)
     {
-        base_damage *= 2;
-        attacker->RemoveBuff("Stealth");
+        base_damage = handler->ModifyDamageDealt(attacker, base_damage);
+        base_damage = handler->ModifyDamageTaken(target, base_damage);
     }
 
-    bool has_lifesteal = attacker->HasBuff("Lifesteal");
-    bool has_frenzy    = attacker->HasBuff("Frenzy");
-
+    // 3. 피해 적용
     ApplyDamage(target, base_damage);
     attacker->SetHasAttackedThisTurn(true);
 
-    // ── Lifesteal: 피해의 절반 회복 ──
-    if (has_lifesteal)
-    {
-        int heal = base_damage / 2;
-        attacker->SetHP(std::min(attacker->GetHP() + heal, attacker->GetMaxHP()));
-    }
-
-    // ── Frenzy: 10 이상 피해 시 타겟에, 미만 시 자신에게 무작위 디버프, 소모 ──
-    if (has_frenzy)
-    {
-        attacker->RemoveBuff("Frenzy");
-        if (base_damage >= 10)
-            target->AddDebuff("Curse", 1);   // TODO: 실제 무작위 디버프 (Curse/Fear/Exhaustion)
-        else
-            attacker->AddDebuff("Curse", 1); // TODO: 실제 무작위 디버프
-    }
+    // 4. 공격 후 효과 (Lifesteal 회복, Frenzy 디버프, Stealth 소모)
+    if (handler)
+        handler->OnAfterAttack(attacker, target, base_damage);
 }
 ```
+
+> **Stealth 타겟팅**: Stealth 중인 캐릭터는 타겟 선택 단계에서 제외해야 합니다.
+> `PlayerInputHandler` 또는 `GridSystem`에서 타겟 후보를 필터링할 때:
+> 
+> ```cpp
+> if (handler && !handler->IsTargetable(candidate)) continue;
+> ```
 
 ---
 
@@ -446,57 +593,56 @@ void CombatSystem::ExecuteAttack(Character* attacker, Character* target)
 
 | 파일                    | stub 메서드                      | 해제 후                                  |
 | --------------------- | ----------------------------- | ------------------------------------- |
-| `FighterStrategy.cpp` | `HasBuff(actor, "Lifesteal")` | `return actor->HasBuff(buffName)`     |
-| `FighterStrategy.cpp` | `HasBuff(actor, "Blessing")`  | `return actor->HasBuff(buffName)`     |
-| `FighterStrategy.cpp` | `HasBuff(actor, "Frenzy")`    | `return actor->HasBuff(buffName)`     |
-| `FighterStrategy.cpp` | `IsFearActive(dragon)`        | `return dragon->HasDebuff("Fear")`    |
-| `RogueStrategy.cpp`   | `IsInStealth(actor)`          | `return actor->HasBuff("Stealth")`    |
-| `RogueStrategy.cpp`   | `HasBuff(actor, "Haste")`     | `return actor->HasBuff(buffName)`     |
+| `FighterStrategy.cpp` | `HasBuff(actor, "Lifesteal")` | `return actor->Has("Lifesteal")`      |
+| `FighterStrategy.cpp` | `HasBuff(actor, "Blessing")`  | `return actor->Has("Blessing")`       |
+| `FighterStrategy.cpp` | `HasBuff(actor, "Frenzy")`    | `return actor->Has("Frenzy")`         |
+| `FighterStrategy.cpp` | `IsFearActive(dragon)`        | `return dragon->Has("Fear")`          |
+| `RogueStrategy.cpp`   | `IsInStealth(actor)`          | `return actor->Has("Stealth")`        |
+| `RogueStrategy.cpp`   | `HasBuff(actor, "Haste")`     | `return actor->Has("Haste")`          |
 | `RogueStrategy.cpp`   | `HasAttackedThisTurn(actor)`  | `return actor->HasAttackedThisTurn()` |
 
 ---
 
 ## Rigorous Testing
 
-### 테스트 1: AddBuff → HasBuff 즉시 확인
+### 테스트 1: AddEffect → Has 즉시 확인
 
 ```cpp
-fighter->AddBuff("Blessing", 3, 3);
-ASSERT(fighter->HasBuff("Blessing"),    "HasBuff after AddBuff");
-ASSERT(!fighter->HasDebuff("Blessing"), "Blessing is buff not debuff");
+fighter->AddEffect("Blessing", 3);
+ASSERT(fighter->Has("Blessing"), "Has after AddEffect");
 ```
 
 ### 테스트 2: TickDown — 지속시간 1 → 만료
 
 ```cpp
-dragon->AddDebuff("Fear", 1, -3);
+dragon->AddEffect("Fear", 1);
 auto* se = dragon->GetGOComponent<StatusEffectComponent>();
 se->TickDown(dragon, eventBus);
-ASSERT(!dragon->HasDebuff("Fear"), "Fear expired after 1 tick");
+ASSERT(!dragon->Has("Fear"), "Fear expired after 1 tick");
 ```
 
 ### 테스트 3: TickDown — 지속시간 3 → 2회 후 유지
 
 ```cpp
-fighter->AddBuff("Blessing", 3);
+fighter->AddEffect("Blessing", 3);
 auto* se = fighter->GetGOComponent<StatusEffectComponent>();
 se->TickDown(fighter, eventBus);
 se->TickDown(fighter, eventBus);
-ASSERT(fighter->HasBuff("Blessing"), "Blessing still active after 2 ticks");
+ASSERT(fighter->Has("Blessing"), "Blessing still active after 2 ticks");
 se->TickDown(fighter, eventBus);
-ASSERT(!fighter->HasBuff("Blessing"), "Blessing expired after 3 ticks");
+ASSERT(!fighter->Has("Blessing"), "Blessing expired after 3 ticks");
 ```
 
-### 테스트 4: RemoveAllDebuffs (Purify)
+### 테스트 4: RemoveAllEffects (Purify)
 
 ```cpp
-fighter->AddDebuff("Fear", 3);
-fighter->AddDebuff("Curse", 2);
-fighter->AddBuff("Blessing", 3);
-fighter->RemoveAllDebuffs();
-ASSERT(!fighter->HasDebuff("Fear"),  "Fear removed");
-ASSERT(!fighter->HasDebuff("Curse"), "Curse removed");
-ASSERT(fighter->HasBuff("Blessing"), "Blessing preserved");
+fighter->AddEffect("Fear", 3);
+fighter->AddEffect("Curse", 2);
+fighter->AddEffect("Blessing", 3);
+fighter->RemoveAllEffects();
+ASSERT(!fighter->Has("Fear"),    "Fear removed");
+ASSERT(!fighter->Has("Curse"),   "Curse removed");
+ASSERT(!fighter->Has("Blessing"),"Blessing also removed (RemoveAllEffects는 전부 제거)");
 ```
 
 ### 테스트 5: HasAttackedThisTurn — 공격 후 설정, 턴 시작 시 리셋
@@ -509,15 +655,15 @@ rogue->RefreshActionPoints();
 ASSERT(!rogue->HasAttackedThisTurn(), "Reset on turn start");
 ```
 
-### 테스트 6: 중복 AddBuff → 지속시간 갱신
+### 테스트 6: 중복 AddEffect → 지속시간 갱신
 
 ```cpp
-fighter->AddBuff("Blessing", 1);
-fighter->AddBuff("Blessing", 3);
+fighter->AddEffect("Blessing", 1);
+fighter->AddEffect("Blessing", 3);
 auto* se = fighter->GetGOComponent<StatusEffectComponent>();
 se->TickDown(fighter, eventBus);
 se->TickDown(fighter, eventBus);
-ASSERT(fighter->HasBuff("Blessing"), "Duration refreshed to 3");
+ASSERT(fighter->Has("Blessing"), "Duration refreshed to 3");
 ```
 
 ### 테스트 7: StatusEffectAddedEvent 발행 확인
@@ -527,8 +673,8 @@ bool received = false;
 eventBus->Subscribe<StatusEffectAddedEvent>([&](const StatusEffectAddedEvent& e) {
     if (e.effectName == "Blessing" && e.target == fighter) received = true;
 });
-fighter->AddBuff("Blessing", 3, 3);
-ASSERT(received, "Event published on AddBuff");
+fighter->AddEffect("Blessing", 3);
+ASSERT(received, "Event published on AddEffect");
 ```
 
 ### 테스트 8: StatusEffectRemovedEvent 발행 확인
@@ -538,9 +684,77 @@ bool removed = false;
 eventBus->Subscribe<StatusEffectRemovedEvent>([&](const StatusEffectRemovedEvent& e) {
     if (e.effectName == "Fear" && e.reason == "expired") removed = true;
 });
-dragon->AddDebuff("Fear", 1);
+dragon->AddEffect("Fear", 1);
 dragon->GetGOComponent<StatusEffectComponent>()->TickDown(dragon, eventBus);
 ASSERT(removed, "Event published on expiry");
+```
+
+---
+
+### StatusEffectHandler 테스트
+
+```cpp
+StatusEffectHandler handler;
+handler.SetDiceManager(GetGSComponent<DiceManager>());
+```
+
+### 테스트 9: OnApplied("Purify") — 즉시 모든 효과 제거
+
+```cpp
+fighter->AddEffect("Fear", 3);
+fighter->AddEffect("Curse", 2);
+fighter->AddEffect("Blessing", 3);
+handler.OnApplied(fighter, "Purify");
+ASSERT(!fighter->Has("Fear"),    "Purify removes Fear");
+ASSERT(!fighter->Has("Curse"),   "Purify removes Curse");
+ASSERT(!fighter->Has("Blessing"),"Purify removes all effects (버프/디버프 구분 없음)");
+```
+
+### 테스트 10: ModifyDamageDealt — Blessing/Fear/Stealth 보정
+
+```cpp
+// Blessing: +3
+fighter->AddEffect("Blessing", 3);
+ASSERT(handler.ModifyDamageDealt(fighter, 10) == 13, "Blessing adds 3 to dealt");
+fighter->RemoveEffect("Blessing");
+
+// Fear: -3
+fighter->AddEffect("Fear", 3);
+ASSERT(handler.ModifyDamageDealt(fighter, 10) == 7, "Fear removes 3 from dealt");
+fighter->RemoveEffect("Fear");
+
+// Stealth: ×2 (평탄 보정 후 마지막 적용)
+fighter->AddEffect("Stealth", 1);
+ASSERT(handler.ModifyDamageDealt(fighter, 8) == 16, "Stealth doubles damage");
+```
+
+### 테스트 11: OnAfterAttack — Lifesteal 회복
+
+```cpp
+fighter->AddEffect("Lifesteal", 1);
+int hp_before = fighter->GetHP();
+handler.OnAfterAttack(fighter, dragon, 10);  // 10 피해, 회복 = 5
+ASSERT(fighter->GetHP() == hp_before + 5, "Lifesteal heals 50% of damage");
+ASSERT(fighter->Has("Lifesteal"), "Lifesteal is NOT removed after attack");
+// (Lifesteal은 지속시간이 만료될 때까지 유지, TickDown에서 제거)
+```
+
+### 테스트 12: OnTurnStart — Exhaustion
+
+```cpp
+dragon->AddEffect("Exhaustion", 1);
+dragon->RefreshActionPoints();          // AP = 기본값(예: 2)으로 복원
+handler.OnTurnStart(dragon);
+ASSERT(dragon->GetActionPoints() == 0, "Exhaustion sets AP to 0");
+```
+
+### 테스트 13: OnTurnStart — Haste
+
+```cpp
+fighter->AddEffect("Haste", 2);
+fighter->RefreshActionPoints();         // AP = 기본값(예: 2)으로 복원
+handler.OnTurnStart(fighter);
+ASSERT(fighter->GetActionPoints() == 3, "Haste adds 1 to AP");
 ```
 
 ---
@@ -548,15 +762,34 @@ ASSERT(removed, "Event published on expiry");
 ## 구현 순서
 
 ```
-1. StatusEffectComponent.h/cpp 신규 생성
-2. Character.h/cpp에 컴포넌트 등록 + facade 추가
-3. Character.h/cpp에 has_attacked_this_turn_ 추가 + RefreshActionPoints 리셋
-4. CombatSystem::ExecuteAttack에 SetHasAttackedThisTurn + 피해 보정 추가
-5. TurnManager::StartNextTurn에 TickDown 추가
-6. spell_system.md의 신형 ApplySpellEffect 구현 (Task 4 자동 충족)
-7. FighterStrategy / RogueStrategy stub 해제
-8. cmake --preset windows-debug 재실행 (신규 파일 감지)
-9. 테스트 실행
+1. StatusEffectComponent.h/cpp 신규 생성           (Task 1)
+2. Character.h/cpp에 컴포넌트 등록 + facade 추가   (Task 2)
+3. Character.h/cpp에 has_attacked_this_turn_ 추가  (Task 3)
+4. StatusEffectHandler.h/cpp 신규 생성             (Task 6)
+5. GamePlay::Load()에 StatusEffectHandler 등록
+6. TurnManager::StartNextTurn에 TickDown
+         + RefreshActionPoints 순서 확인
+         + OnTurnStart 추가                        (Task 5)
+7. CombatSystem::ExecuteAttack — handler 위임 교체  (Task 7)
+8. spell_system.md의 신형 ApplySpellEffect에
+         handler->OnApplied() 추가                 (Task 4)
+9. FighterStrategy / RogueStrategy stub 해제
+10. cmake --preset windows-debug 재실행            (신규 파일 StatusEffectHandler 감지)
+11. 테스트 실행
 ```
 
-> **⚠️ 8번(CMake 재실행) 전에 빌드하면 StatusEffectComponent를 찾지 못합니다.**
+> **⚠️ 10번(CMake 재실행) 전에 빌드하면 StatusEffectHandler / StatusEffectComponent를 찾지 못합니다.**
+
+### 각 effect 실행 위치 요약
+
+| effect     | 타입  | 실행 위치               | 훅                                     |
+| ---------- | --- | ------------------- | ------------------------------------- |
+| Purify     | 버프  | 스펠 시전 즉시            | `OnApplied`                           |
+| Blessing   | 버프  | 피해 계산 시             | `ModifyDamageDealt/Taken`             |
+| Curse      | 디버프 | 피해 계산 시             | `ModifyDamageDealt/Taken`             |
+| Fear       | 디버프 | 피해 계산 시 (공격자 측)     | `ModifyDamageDealt`                   |
+| Stealth    | 버프  | 피해 계산(2배) + 공격 후 소모 | `ModifyDamageDealt` + `OnAfterAttack` |
+| Lifesteal  | 버프  | 공격 후 회복             | `OnAfterAttack`                       |
+| Frenzy     | 버프  | 공격 후 무작위 디버프 + 소모   | `OnAfterAttack`                       |
+| Exhaustion | 디버프 | 턴 시작 (AP/Speed = 0) | `OnTurnStart`                         |
+| Haste      | 버프  | 턴 시작 (+1 AP/Speed)  | `OnTurnStart`                         |

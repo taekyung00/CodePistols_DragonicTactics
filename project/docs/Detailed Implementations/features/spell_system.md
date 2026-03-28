@@ -166,7 +166,7 @@ AI가 스펠을 사용하려면 Strategy에서 `decision.type = AIDecisionType::
 - `ParseCSVRow(col)`: 9개 컬럼 벡터를 `SpellData` 필드에 매핑한다. Classes는 `SplitByDelimiter(col[3], ',')`. `upcastable`은 `"TRUE"`일 때 `true`.
 - `ParseEffectField(effect_str, data)`: Effect 4줄 템플릿을 파싱해 `SpellData`의 `damage_formula`, `effect_status`, `effect_duration`, `move_type`, `summon_type`을 채운다.
 - `CalculateSpellDamage`: `damage_formula`의 주사위 표기법(`"3d8"`, `"2d8"`)을 `DiceManager::RollDiceFromString`으로 계산한다. 업캐스트 레벨만큼 추가 다이스를 굴린다. `"0"`이면 0 반환.
-- `ApplySpellEffect`: `spell.damage_formula != "0"` → 피해 적용. `spell.effect_status != "Basic"` → `AddBuff`/`AddDebuff` 호출. `spell.summon_type != "NULL"` → 지형 생성. `spell.move_type != "current location"` → 특수 이동. 분기 기준을 `spell_school`이 아닌 **파싱된 Effect 필드**로 결정한다.
+- `ApplySpellEffect`: `spell.damage_formula != "0"` → 피해 적용. `spell.effect_status != "Basic"` → `AddEffect` 호출 + `StatusEffectHandler::OnApplied()` 위임. `spell.summon_type != "NULL"` → 지형 생성. `spell.move_type != "current location"` → 특수 이동. 분기 기준을 `spell_school`이 아닌 **파싱된 Effect 필드**로 결정한다.
 - `CastSpell`: 스펠 존재 확인 → `CanCast` 검증 → `ConsumeSpell`로 슬롯 소모 → `ApplySpellEffect` 순서로 실행한다.
 
 ---
@@ -852,17 +852,12 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell,
     // ── 상태 효과 ──
     if (spell.effect_status != "Basic" && spell.effect_duration > 0)
     {
-        // 버프/디버프 판정: status_effect.csv에 정의된 이름 기준
-        // 현재는 이름으로 판정 (Lifesteal, Frenzy, Stealth, Haste, Blessing = 버프
-        //                      Fear, Curse, Exhaustion = 디버프)
+        auto* handler    = Engine::GetGameStateManager().GetGSComponent<StatusEffectHandler>();
         Character* se_target = target ? target : caster;
-
-        static const std::set<std::string> DEBUFFS = { "Fear", "Curse", "Exhaustion" };
-        bool is_debuff = (DEBUFFS.count(spell.effect_status) > 0);
 
         if (spell.target_type == "Enemies Around Caster" || spell.target_type == "All Enemies in Straight Line")
         {
-            // 범위 디버프: 시전자 주변 spell.range칸 내 모든 적
+            // 범위 효과: 시전자 주변 spell.range칸 내 모든 적
             for (auto* c : grid->GetAllCharacters())
             {
                 if (!c || !c->IsAlive() || c == caster) continue;
@@ -870,15 +865,17 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell,
                     caster->GetGridPosition()->Get(), c->GetGridPosition()->Get());
                 if (dist <= spell.range)
                 {
-                    if (is_debuff) c->AddDebuff(spell.effect_status, spell.effect_duration);
-                    else           c->AddBuff(spell.effect_status, spell.effect_duration);
+                    c->AddEffect(spell.effect_status, spell.effect_duration);
+                    // 즉시 실행 효과 (Purify 등) 위임
+                    if (handler) handler->OnApplied(c, spell.effect_status);
                 }
             }
         }
         else if (se_target)
         {
-            if (is_debuff) se_target->AddDebuff(spell.effect_status, spell.effect_duration);
-            else           se_target->AddBuff(spell.effect_status, spell.effect_duration);
+            se_target->AddEffect(spell.effect_status, spell.effect_duration);
+            // 즉시 실행 효과 (Purify 등) 위임
+            if (handler) handler->OnApplied(se_target, spell.effect_status);
         }
     }
 
