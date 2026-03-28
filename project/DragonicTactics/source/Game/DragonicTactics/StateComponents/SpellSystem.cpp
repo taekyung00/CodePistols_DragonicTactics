@@ -265,9 +265,6 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
         if (damage > 0 && target)
         {
             combat->ApplyDamage(caster, target, damage);
-            if (bus)
-                bus->Publish(CharacterDamagedEvent{ target, damage,
-                                                    target->GetHP(), caster, false });
         }
         else if (damage < 0 && target) // 음수 = 회복 (S_ENH_030 Healing Touch)
         {
