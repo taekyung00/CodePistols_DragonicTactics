@@ -37,10 +37,9 @@ class FighterStrategy : public IAIStrategy
   AIDecision MakeNormalCombatDecision(Character* actor, Character* dragon, GridSystem* grid);
 
   //old
-  bool IsInDanger(Character* actor) const; // Fighter: HP 30% 이하
   bool ShouldUseSpellAttack(Character* actor, Character* target) const;
 
-  Math::ivec2 FindNextMovePos(Character* actor, Character* target, GridSystem* grid);
+
 
   // 공격 전략
   AIDecision DecideAttackAction(Character* actor, Character* target, int distance);

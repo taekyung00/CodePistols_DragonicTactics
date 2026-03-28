@@ -71,17 +71,17 @@ StatusEffectTickEvent    { target, effectName, damageOrHealing }
 
 effectName은 `status_effect.csv`의 NAME 컬럼과 **정확히 일치**해야 합니다.
 
-| 스펠 ID       | 이름 (CSV Name)      | effectName      | 종류  | 지속 턴 | 상태 기록 위치                     |
-| ----------- | ------------------ | --------------- | --- | ---- | ----------------------------- |
-| `S_ENH_010` | Bloodlust          | `"Lifesteal"`   | 버프  | 1    | `AddBuff("Lifesteal", 1)`     |
-| `S_ENH_020` | Frenzy             | `"Frenzy"`      | 버프  | 1    | `AddBuff("Frenzy", 1)`        |
-| `S_ENH_060` | Shadow Hide        | `"Stealth"`     | 버프  | 1    | `AddBuff("Stealth", 1)`       |
-| `S_BUF_010` | Divine Shield      | `"Blessing"`    | 버프  | 3    | `AddBuff("Blessing", 3)`      |
-| `S_BUF_020` | Gale Step          | `"Haste"`       | 버프  | 2    | `AddBuff("Haste", 2)`         |
-| `S_ENH_050` | Purify             | `"Purify"`      | 버프  | 1    | `AddBuff("Purify", 1)`        |
-| `S_DEB_020` | Fearful Cry        | `"Fear"`        | 디버프 | 3    | `AddDebuff("Fear", 3)`        |
-| `S_DEB_010` | Curse of Suffering | `"Curse"`       | 디버프 | 3    | `AddDebuff("Curse", 3)`       |
-| `S_ATK_040` | Meteor             | `"Exhaustion"`  | 디버프 | 1    | `AddDebuff("Exhaustion", 1)`  |
+| 스펠 ID       | 이름 (CSV Name)      | effectName     | 종류  | 지속 턴 | 상태 기록 위치                     |
+| ----------- | ------------------ | -------------- | --- | ---- | ---------------------------- |
+| `S_ENH_010` | Bloodlust          | `"Lifesteal"`  | 버프  | 1    | `AddBuff("Lifesteal", 1)`    |
+| `S_ENH_020` | Frenzy             | `"Frenzy"`     | 버프  | 1    | `AddBuff("Frenzy", 1)`       |
+| `S_ENH_060` | Shadow Hide        | `"Stealth"`    | 버프  | 1    | `AddBuff("Stealth", 1)`      |
+| `S_BUF_010` | Divine Shield      | `"Blessing"`   | 버프  | 3    | `AddBuff("Blessing", 3)`     |
+| `S_BUF_020` | Gale Step          | `"Haste"`      | 버프  | 2    | `AddBuff("Haste", 2)`        |
+| `S_ENH_050` | Purify             | `"Purify"`     | 버프  | 1    | `AddBuff("Purify", 1)`       |
+| `S_DEB_020` | Fearful Cry        | `"Fear"`       | 디버프 | 3    | `AddDebuff("Fear", 3)`       |
+| `S_DEB_010` | Curse of Suffering | `"Curse"`      | 디버프 | 3    | `AddDebuff("Curse", 3)`      |
+| `S_ATK_040` | Meteor             | `"Exhaustion"` | 디버프 | 1    | `AddDebuff("Exhaustion", 1)` |
 
 > **effectName은 Strategy의 HasBuff/HasDebuff 인수와 일치해야 합니다.**
 > `HasBuff(actor, "Blessing")` → `actor->HasBuff("Blessing")` → `StatusEffectComponent::HasBuff("Blessing")`
@@ -444,15 +444,15 @@ void CombatSystem::ExecuteAttack(Character* attacker, Character* target)
 
 ## stub 해제 목록
 
-| 파일                    | stub 메서드                        | 해제 후                                  |
-| --------------------- | -------------------------------- | ------------------------------------- |
-| `FighterStrategy.cpp` | `HasBuff(actor, "Lifesteal")`    | `return actor->HasBuff(buffName)`     |
-| `FighterStrategy.cpp` | `HasBuff(actor, "Blessing")`     | `return actor->HasBuff(buffName)`     |
-| `FighterStrategy.cpp` | `HasBuff(actor, "Frenzy")`       | `return actor->HasBuff(buffName)`     |
-| `FighterStrategy.cpp` | `IsFearActive(dragon)`           | `return dragon->HasDebuff("Fear")`    |
-| `RogueStrategy.cpp`   | `IsInStealth(actor)`             | `return actor->HasBuff("Stealth")`    |
-| `RogueStrategy.cpp`   | `HasBuff(actor, "Haste")`        | `return actor->HasBuff(buffName)`     |
-| `RogueStrategy.cpp`   | `HasAttackedThisTurn(actor)`     | `return actor->HasAttackedThisTurn()` |
+| 파일                    | stub 메서드                      | 해제 후                                  |
+| --------------------- | ----------------------------- | ------------------------------------- |
+| `FighterStrategy.cpp` | `HasBuff(actor, "Lifesteal")` | `return actor->HasBuff(buffName)`     |
+| `FighterStrategy.cpp` | `HasBuff(actor, "Blessing")`  | `return actor->HasBuff(buffName)`     |
+| `FighterStrategy.cpp` | `HasBuff(actor, "Frenzy")`    | `return actor->HasBuff(buffName)`     |
+| `FighterStrategy.cpp` | `IsFearActive(dragon)`        | `return dragon->HasDebuff("Fear")`    |
+| `RogueStrategy.cpp`   | `IsInStealth(actor)`          | `return actor->HasBuff("Stealth")`    |
+| `RogueStrategy.cpp`   | `HasBuff(actor, "Haste")`     | `return actor->HasBuff(buffName)`     |
+| `RogueStrategy.cpp`   | `HasAttackedThisTurn(actor)`  | `return actor->HasAttackedThisTurn()` |
 
 ---
 

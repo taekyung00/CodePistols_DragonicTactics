@@ -207,7 +207,7 @@ bool FighterStrategy::IsInDanger(Character* actor) const
   return (actor->GetHPPercentage() <= 0.3f);
 }
 
-bool FighterStrategy::CanKillDragonThisTurn(Character* actor, Character* dragon, GridSystem* grid) const
+bool FighterStrategy::CanKillDragonThisTurn([[maybe_unused]] Character* actor, [[maybe_unused]] Character* dragon, [[maybe_unused]] GridSystem* grid) const
 {
   return false;
 }
