@@ -209,11 +209,11 @@ void GamePlayUIManager::InitButtons()
     // 화면 하단 중앙에 버튼 배치 (1200x800 기준)
     // 좌상단 원점 기준, y가 아래로 증가하는 화면 좌표
 
-    constexpr double BTN_W = 120.0;  // 버튼 너비
-    constexpr double BTN_H = 40.0;   // 버튼 높이
+    constexpr double BTN_W = 170.0;  // 버튼 너비
+    constexpr double BTN_H = 50.0;   // 버튼 높이
     constexpr double BTN_Y = 750.0;  // 하단에서 50px 위 (y=800기준)
-    constexpr double GAP   = 10.0;   // 버튼 간격
-    constexpr double START_X = 400.0; // 시작 x
+    constexpr double GAP   = 20.0;   // 버튼 간격
+    constexpr double START_X = 30.0; // 시작 x
 
     // Move 버튼
     button_manager_.AddButton({

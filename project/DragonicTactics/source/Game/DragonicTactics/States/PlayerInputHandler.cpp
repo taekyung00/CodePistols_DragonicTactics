@@ -45,11 +45,8 @@ PlayerInputHandler::PlayerInputHandler() : m_state(ActionState::None)
 {
 }
 
-void PlayerInputHandler::Update(double dt, Character* current_character, GridSystem* grid, CombatSystem* combat_system)
+void PlayerInputHandler::Update(double dt, Character* current_character, GridSystem* grid, CombatSystem* combat_system, ButtonManager& btns)
 {
-  // ButtonManager 참조 (GamePlayUIManager에서)
-    GamePlayUIManager* m_ui_manager = Engine::GetGameStateManager().GetGSComponent<GamePlayUIManager>();
-    ButtonManager& btns = m_ui_manager->GetButtons();
  
     // Move 버튼 클릭
     if (btns.IsPressed("btn_move"))

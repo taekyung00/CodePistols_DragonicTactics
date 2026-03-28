@@ -16,6 +16,7 @@ class Character;
 class Dragon;
 class GridSystem;
 class CombatSystem;
+class ButtonManager;
 
 class PlayerInputHandler
 {
@@ -33,7 +34,7 @@ class PlayerInputHandler
   PlayerInputHandler();
   ~PlayerInputHandler() = default;
 
-  void Update(double dt, Character* current_character, GridSystem* grid, CombatSystem* combat_system);
+  void Update(double dt, Character* current_character, GridSystem* grid, CombatSystem* combat_system, ButtonManager& btns);
 
   void CancelCurrentAction();
 

@@ -46,7 +46,6 @@ class GamePlay : public CS230::GameState
   std::unique_ptr<PlayerInputHandler> m_input_handler;
   std::unique_ptr<GamePlayUIManager>  m_ui_manager;
   std::unique_ptr<BattleOrchestrator> m_orchestrator;
-  std::unique_ptr<ButtonManager> m_button_manager;
 
   void DisplayDamageAmount(const CharacterDamagedEvent& event);
 	void DisplayDamageLog(const CharacterDamagedEvent& event);

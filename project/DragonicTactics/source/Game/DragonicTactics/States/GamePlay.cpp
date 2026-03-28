@@ -60,7 +60,7 @@ void GamePlay::Load()
   m_input_handler = std::make_unique<PlayerInputHandler>();
   m_ui_manager	  = std::make_unique<GamePlayUIManager>();
   m_orchestrator  = std::make_unique<BattleOrchestrator>();
-  m_button_manager= std::make_unique<ButtonManager>();
+  m_ui_manager->InitButtons();
 
   AddGSComponent(new EventBus());
   AddGSComponent(new DiceManager());
@@ -238,7 +238,7 @@ void GamePlay::Update(double dt)
 
   if (current != nullptr)
   {
-	m_input_handler->Update(dt, current, grid, combatSystem);
+	m_input_handler->Update(dt, current, grid, combatSystem, m_ui_manager->GetButtons());
 	m_orchestrator->Update(dt, turnMgr, aiSystem);
 	m_ui_manager->Update(dt);
   }
