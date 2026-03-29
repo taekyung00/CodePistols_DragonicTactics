@@ -6,7 +6,7 @@
  */
 #pragma once
 #include "../../../Engine/GameState.h"
-
+#include "Game/Samurai.h"
 class RenderingTest : public CS230::GameState
 {
   public:

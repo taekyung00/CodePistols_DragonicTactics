@@ -22,5 +22,6 @@ enum class GameObjectTypes
   Laser,
   Particle,
   Character,
+  Samurai,
   Count,
 };

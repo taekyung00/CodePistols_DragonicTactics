@@ -80,6 +80,7 @@ std::vector<Math::ivec2> GetLineTiles(Math::ivec2 center, int reach) const;
   /// @brief 특정 타일이 이동 가능한지 확인
   bool IsReachable(Math::ivec2 tile) const;
 
+  
   private:
   static const int MAP_WIDTH  = 8;
   static const int MAP_HEIGHT = 8;

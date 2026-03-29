@@ -18,6 +18,13 @@
 class Character;
 class EventBus;
 
+struct SpellMove
+{
+  std::string mover;	 // "self", "target"
+  std::string move_type; // "stay", "knockback", "teleport"
+  int		  distance;	 // 거리. "selected" 이면 -1 (target_tile 사용)
+};
+
 struct SpellTargeting
 {
   std::string filter;	// "Enemy", "Ally", "Self", "Any", "Empty"
@@ -33,7 +40,7 @@ struct SpellData
   std::string	 category;	  // col[2]  "Attack", "Buff", "Terrain Change" (빈 값 허용)
   int			 spell_level; // col[4]  요구 슬롯 레벨 (0 = 슬롯 불필요)
   SpellTargeting targeting;
-  bool			 upcastable; // col[7]  TRUE / FALSE
+  bool			 upcastable; //   TRUE / FALSE
 
   std::vector<std::string> usable_classes; // col[3]  ["Dragon", "Fighter"] — ", " 구분
 
@@ -41,7 +48,8 @@ struct SpellData
   std::string damage_formula;  // "3d8", "0", "-(1d10)", "8 * (Spell Level + 1 - ...)"
   std::string effect_status;   // status_effect.csv의 NAME. "Basic" = 상태 없음
   int		  effect_duration; // 상태 지속 턴 ("Basic"이면 0)
-  std::string move_type;	   // "current location", "furthest position from the Dragon..."
+  SpellMove	  move;			   // ← move_type 문자열 대신 파싱된 구조체
+							   //   std::string move_type;	   // "current location", "furthest position from the Dragon..."
   std::string summon_type;	   // "NULL", "Lava Zone", "Wall"
 
   std::string effect_raw;	  // 파싱 전 원본 Effect 문자열 (디버그/툴팁용)
@@ -56,9 +64,8 @@ class SpellSystem : public CS230::Component
 
   bool					   HasSpell(const std::string& spell_id) const;
   std::vector<std::string> GetAvailableSpells(Character* caster) const;
-  bool CanCast(Character* caster, const std::string& spell_id,
-             Math::ivec2 target_tile, int upcast_level = 0) const;
-  bool CastSpell(Character* caster, const std::string& spell_id, Math::ivec2 target_tile, int upcast_level = 0);
+  bool					   CanCast(Character* caster, const std::string& spell_id, Math::ivec2 target_tile, int upcast_level = 0) const;
+  bool					   CastSpell(Character* caster, const std::string& spell_id, Math::ivec2 target_tile, int upcast_level = 0);
 
   const SpellData* GetSpellData(const std::string& spell_id) const;
 
@@ -75,8 +82,10 @@ class SpellSystem : public CS230::Component
   SpellTargeting ParseTargeting(const std::string& targeting_str) const; // ← 신규
 
 
-  void ApplySpellEffect(Character* caster, const SpellData& spell, Math::ivec2 target_tile, int upcast_level);
-  int  CalculateSpellDamage(const SpellData& spell, int upcast_level);
-  void ApplySpecialEffect(Character* caster, const SpellData& spell, int upcast_level);
-  void ParseDamageFormula(const std::string& formula_str, SpellData& data) const;
+  void		ApplySpellEffect(Character* caster, const SpellData& spell, Math::ivec2 target_tile, int upcast_level);
+  int		CalculateSpellDamage(const SpellData& spell, int upcast_level);
+  void		ApplySpecialEffect(Character* caster, const SpellData& spell, int upcast_level);
+  void		ParseDamageFormula(const std::string& formula_str, SpellData& data) const;
+  SpellMove ParseMoveField(const std::string& move_str) const;
+  void		ApplyMoveEffect(Character* caster, const std::vector<Character*>& targets, const SpellData& spell, Math::ivec2 target_tile);
 };

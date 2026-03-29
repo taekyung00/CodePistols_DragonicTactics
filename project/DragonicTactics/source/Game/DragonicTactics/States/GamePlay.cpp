@@ -34,6 +34,7 @@ Created:    November 5, 2025
 #include "Game/DragonicTactics/StateComponents/StatusEffectHandler.h"
 #include "Game/DragonicTactics/StateComponents/TurnManager.h"
 #include "Game/DragonicTactics/Objects/Components/SpellSlots.h"
+#include "Engine/Camera.h"
 
 #include "../Debugger/DebugManager.h"
 
@@ -76,6 +77,8 @@ void GamePlay::Load()
   AddGSComponent(new MapDataRegistry());
   AddGSComponent(new SpellSystem());
   AddGSComponent(new StatusEffectHandler());
+//   AddGSComponent(new CS230::Camera());
+
 
   GetGSComponent<EventBus>()->Clear();
   GetGSComponent<DiceManager>()->SetSeed(100);
@@ -282,7 +285,7 @@ void GamePlay::Draw()
   CS230::GameObjectManager* goMgr = GetGSComponent<CS230::GameObjectManager>();
   if (goMgr)
   {
-	goMgr->DrawAll(camera_matrix);
+	goMgr->DrawAll(Math::TransformationMatrix{}); 
   }
 
   m_ui_manager->Draw(camera_matrix);

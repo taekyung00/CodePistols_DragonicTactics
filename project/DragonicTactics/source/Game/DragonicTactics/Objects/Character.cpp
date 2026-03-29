@@ -25,7 +25,7 @@ Updated:    Oct 10, 2025
 #include "Components/GridPosition.h"
 
 Character::Character(CharacterTypes charType, Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level)
-	: CS230::GameObject(Math::vec2{ 0, 0 }), m_character_type(charType)
+	: CS230::GameObject({static_cast<double>(start_coordinates.x * GridSystem::TILE_SIZE), static_cast<double>(start_coordinates.y * GridSystem::TILE_SIZE)}), m_character_type(charType)
 {
   InitializeComponents(start_coordinates, max_action_points, max_slots_per_level);
 }
@@ -338,3 +338,4 @@ void Character::RemoveAllEffects()
     if (StatusEffectComponent* se = GetGOComponent<StatusEffectComponent>())
         se->RemoveAllEffects();
 }
+

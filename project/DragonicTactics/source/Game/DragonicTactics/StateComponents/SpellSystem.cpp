@@ -192,7 +192,7 @@ void SpellSystem::ParseEffectField(const std::string& effect_str, SpellData& dat
 	  data.effect_duration = 0;
   }
 
-  // Line 3: "Move to {location}."
+  // Line 3: "Move to {template}."
   if (std::getline(ss, line))
   {
 	const std::string prefix = "Move to ";
@@ -202,7 +202,11 @@ void SpellSystem::ParseEffectField(const std::string& effect_str, SpellData& dat
 	  std::string loc = line.substr(p + prefix.size());
 	  if (!loc.empty() && loc.back() == '.')
 		loc.pop_back();
-	  data.move_type = loc; // "current location", "furthest position..."
+	  data.move = ParseMoveField(loc); // ← 구조체로 저장
+	}
+	else
+	{
+	  data.move = { "self", "stay", 0 };
 	}
   }
 
@@ -263,38 +267,64 @@ void SpellSystem::ApplySpecialEffect(Character* caster, const SpellData& spell, 
 
 int SpellSystem::CalculateSpellDamage(const SpellData& spell, int upcast_level)
 {
-  if (spell.damage_formula == "0" || spell.damage_formula.empty())
-	return 0;
+    // ── 조기 반환: 피해 없음 ──
+    if (spell.damage_formula == "0" || spell.damage_formula.empty())
+    {
+        // [Mana Conversion 패턴] damage_formula=="0" 이지만 upcast_dice가 있으면
+        // "0 + (level_diff+1)d10" 의미 → 여기서 굴리고 반환
+        if (!spell.upcast_dice.empty())
+        {
+            auto* dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
+            if (!dice) return 0;
 
-  auto* dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
-  if (!dice)
-	return 0;
+            int level_diff = std::max(0, upcast_level - spell.spell_level) + 1; // +1: 기본도 1회
 
-  int  level_diff = std::max(0, upcast_level - spell.spell_level);
-  bool negative	  = (!spell.damage_formula.empty() && spell.damage_formula[0] == '-');
+            auto d_pos = spell.upcast_dice.find('d');
+            if (d_pos != std::string::npos)
+            {
+                int         per_level  = (d_pos > 0) ? std::stoi(spell.upcast_dice.substr(0, d_pos)) : 1;
+                std::string face       = spell.upcast_dice.substr(d_pos);          // "d10"
+                std::string rolled_str = std::to_string(level_diff * per_level) + face; // "1d10", "3d10"
+                return dice->RollDiceFromString(rolled_str);
+            }
+        }
+        return 0; // upcast_dice도 없으면 진짜 0
+    }
 
-  // 베이스 다이스 굴림 (힐링이면 음수 래퍼 제거 후 굴림)
-  std::string base_str = spell.damage_formula;
-  if (negative)
-	base_str = base_str.substr(2, base_str.size() - 3); // "-(X)" → "X"
+    // ── flat_per_level:N (Magic Missile) ──
+    if (spell.damage_formula.rfind("flat_per_level:", 0) == 0)
+    {
+        int multiplier = std::stoi(spell.damage_formula.substr(15));
+        int level_diff = std::max(0, upcast_level - spell.spell_level) + 1;
+        return multiplier * level_diff;
+    }
 
-  int total = dice->RollDiceFromString(base_str);
+    auto* dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
+    if (!dice) return 0;
 
-  // 업캐스트 보너스 다이스
-  // upcast_dice = "1d6" → level_diff=2 → "2d6" 로 굴림 (2개를 독립 굴림)
-  if (level_diff > 0 && spell.upcastable && !spell.upcast_dice.empty())
-  {
-	auto d_pos = spell.upcast_dice.find('d');
-	if (d_pos != std::string::npos)
-	{
-	  int         per_level  = (d_pos > 0) ? std::stoi(spell.upcast_dice.substr(0, d_pos)) : 1;
-	  std::string face       = spell.upcast_dice.substr(d_pos); // "d6"
-	  std::string rolled_str = std::to_string(level_diff * per_level) + face; // "2d6"
-	  total += dice->RollDiceFromString(rolled_str);
-	}
-  }
+    int  level_diff = std::max(0, upcast_level - spell.spell_level);
+    bool negative   = (!spell.damage_formula.empty() && spell.damage_formula[0] == '-');
 
-  return negative ? -total : total;
+    std::string base_str = spell.damage_formula;
+    if (negative)
+        base_str = base_str.substr(2, base_str.size() - 3); // "-(X)" → "X"
+
+    int total = dice->RollDiceFromString(base_str);
+
+    // 업캐스트 보너스 다이스
+    if (level_diff > 0 && spell.upcastable && !spell.upcast_dice.empty())
+    {
+        auto d_pos = spell.upcast_dice.find('d');
+        if (d_pos != std::string::npos)
+        {
+            int         per_level  = (d_pos > 0) ? std::stoi(spell.upcast_dice.substr(0, d_pos)) : 1;
+            std::string face       = spell.upcast_dice.substr(d_pos);
+            std::string rolled_str = std::to_string(level_diff * per_level) + face;
+            total += dice->RollDiceFromString(rolled_str);
+        }
+    }
+
+    return negative ? -total : total;
 }
 
 void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Math::ivec2 target_tile, int upcast_level)
@@ -380,16 +410,26 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
   // 피해 적용
   // ─────────────────────────────────────────────────
   if (spell.damage_formula != "0" && !spell.damage_formula.empty())
-  {
-	int damage = CalculateSpellDamage(spell, upcast_level);
-	for (auto* tgt : targets)
-	{
-	  if (damage > 0)
-		combat->ApplyDamage(caster, tgt, damage);
-	  else if (damage < 0)
-		tgt->SetHP(std::min(tgt->GetHP() + (-damage), tgt->GetMaxHP()));
-	}
-  }
+{
+    auto* dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
+
+    for (auto* tgt : targets)
+    {
+        int damage = CalculateSpellDamage(spell, upcast_level);
+
+        // Weakpoint Strike: 대상이 디버프 상태이면 2d20으로 교체
+        if (!spell.special_effect.empty()
+            && spell.special_effect.find("If target is debuffed") != std::string::npos)
+        {
+            bool is_debuffed = tgt->Has("Curse") || tgt->Has("Fear") || tgt->Has("Exhaustion");
+            if (is_debuffed && dice)
+                damage = dice->RollDiceFromString("2d20");
+        }
+
+        if (damage > 0)       combat->ApplyDamage(caster, tgt, damage);
+        else if (damage < 0)  tgt->SetHP(std::min(tgt->GetHP() + (-damage), tgt->GetMaxHP()));
+    }
+}
 
   // ─────────────────────────────────────────────────
   // 상태 효과 적용 (기존 로직 유지, targets 루프로 통합)
@@ -414,8 +454,7 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
   if (spell.summon_type != "NULL" && !spell.summon_type.empty())
 	Engine::GetLogger().LogEvent("SpellSystem: Summon " + spell.summon_type + " at ...");
 
-  if (spell.move_type != "current location" && !spell.move_type.empty())
-	Engine::GetLogger().LogEvent("SpellSystem: Special move — " + spell.move_type);
+  ApplyMoveEffect(caster, targets, spell, target_tile);
 
   // Special 효과 처리
   ApplySpecialEffect(caster, spell, upcast_level);
@@ -574,4 +613,110 @@ void SpellSystem::ParseDamageFormula(const std::string& formula_str, SpellData& 
   }
 
   data.upcast_dice = "";
+}
+
+SpellMove SpellSystem::ParseMoveField(const std::string& move_str) const
+{
+  // "current location" → {self, stay, 0}
+  if (move_str == "current location" || move_str.empty())
+	return { "self", "stay", 0 };
+
+  // "target:knockback:2" → {target, knockback, 2}
+  // "self:teleport:selected" → {self, teleport, -1}
+  auto		parts = SplitByDelimiter(move_str, ':');
+  SpellMove m;
+  m.mover	  = (parts.size() > 0) ? parts[0] : "self";
+  m.move_type = (parts.size() > 1) ? parts[1] : "stay";
+
+  if (parts.size() > 2)
+  {
+	if (parts[2] == "selected")
+	  m.distance = -1; // target_tile 사용
+	else
+	{
+	  try
+	  {
+		m.distance = std::stoi(parts[2]);
+	  }
+	  catch (...)
+	  {
+		m.distance = 0;
+	  }
+	}
+  }
+  else
+  {
+	m.distance = 0;
+  }
+  return m;
+}
+
+void SpellSystem::ApplyMoveEffect(Character* caster, const std::vector<Character*>& targets, const SpellData& spell, Math::ivec2 target_tile)
+{
+  if (spell.move.move_type == "stay")
+	return;
+
+  auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+  if (!grid)
+	return;
+
+  // ── knockback: 피격 대상을 시전자 기준 밀쳐냄 ──
+  if (spell.move.move_type == "knockback")
+  {
+	int			dist	   = spell.move.distance;
+	Math::ivec2 caster_pos = caster->GetGridPosition()->Get();
+
+	for (auto* tgt : targets)
+	{
+	  if (!tgt || tgt == caster)
+		continue;
+	  Math::ivec2 tgt_pos = tgt->GetGridPosition()->Get();
+
+	  // 밀쳐내는 방향: 시전자 → 대상 방향
+	  int dx = tgt_pos.x - caster_pos.x;
+	  int dy = tgt_pos.y - caster_pos.y;
+
+	  // 지배적인 축 기준 단위 벡터 (대각선 불가)
+	  Math::ivec2 dir{ 0, 0 };
+	  if (std::abs(dx) >= std::abs(dy))
+		dir.x = (dx >= 0) ? 1 : -1;
+	  else
+		dir.y = (dy >= 0) ? 1 : -1;
+
+	  // 가능한 만큼 이동 (벽/맵 끝에서 멈춤)
+	  Math::ivec2 new_pos = tgt_pos;
+	  for (int step = 0; step < dist; ++step)
+	  {
+		Math::ivec2 next{ new_pos.x + dir.x, new_pos.y + dir.y };
+		if (!grid->IsValidTile(next))
+		  break;
+		if (!grid->IsWalkable(next))
+		  break;
+		if (grid->IsOccupied(next))
+		  break;
+		new_pos = next;
+	  }
+
+	  if (new_pos.x != tgt_pos.x || new_pos.y != tgt_pos.y)
+	  {
+		grid->MoveCharacter(tgt_pos, new_pos);
+		tgt->GetGridPosition()->Set(new_pos);
+	  }
+	}
+  }
+
+  // ── teleport (self:teleport:selected): 시전자를 target_tile로 이동 ──
+  else if (spell.move.move_type == "teleport" && spell.move.mover == "self")
+  {
+	Math::ivec2 caster_pos = caster->GetGridPosition()->Get();
+	Math::ivec2 dest	   = (spell.move.distance == -1) ? target_tile : target_tile;
+	// Empty:Point 타겟팅이 이미 빈 타일만 선택하게 보장함
+
+	if (grid->IsValidTile(dest) && !grid->IsOccupied(dest))
+	{
+	  grid->MoveCharacter(caster_pos, dest);
+	  caster->GetGridPosition()->Set(dest);
+	  Engine::GetLogger().LogEvent(caster->TypeName() + " teleported to (" + std::to_string(dest.x) + ", " + std::to_string(dest.y) + ")");
+	}
+  }
 }
