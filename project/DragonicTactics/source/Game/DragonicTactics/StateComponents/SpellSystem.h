@@ -47,7 +47,6 @@ class SpellSystem : public CS230::Component
 {
 public:
     void LoadFromCSV(const std::string& csv_path);
-    void LoadStatusEffectsFromCSV(const std::string& csv_path); // status_effect.csv
 
     bool                     HasSpell(const std::string& spell_id) const;
     std::vector<std::string> GetAvailableSpells(Character* caster) const;
@@ -56,11 +55,9 @@ public:
     bool CastSpell(Character* caster, const std::string& spell_id, Math::ivec2 target_tile, int upcast_level = 0);
 
     const SpellData* GetSpellData(const std::string& spell_id) const;
-    std::string      GetStatusEffectDesc(const std::string& name) const; // 툴팁용
 
 private:
     std::map<std::string, SpellData> spells_;
-    std::map<std::string, std::string> status_effects_; // status_effect.csv 로드
 
     std::vector<std::string> ReadCSVRecord(std::ifstream& file) const;
     SpellData                ParseCSVRow(const std::vector<std::string>& columns) const;

@@ -63,4 +63,10 @@ void SpellSlots::SetSpellSlots(std::map<int, int> spellSlots)
   }
 }
 
+int SpellSlots::GetMaxSlotCount(int level) const
+{
+   auto it = max_slots.find(level);
+    return (it != max_slots.end()) ? it->second : 0;
+}
+
 ///////////////////

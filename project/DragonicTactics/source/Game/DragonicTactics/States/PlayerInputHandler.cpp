@@ -32,7 +32,7 @@ Created:    November 24, 2025
 #include "Game/DragonicTactics/Objects/Fighter.h"
 #include "Game/DragonicTactics/StateComponents/SpellSystem.h"
 
-//helper function to convert screen coordinates to grid coordinates
+// helper function to convert screen coordinates to grid coordinates
 Math::ivec2 PlayerInputHandler::ConvertScreenToGrid(Math::vec2 world_pos)
 {
   int grid_x = static_cast<int>(world_pos.x / GridSystem::TILE_SIZE);
@@ -147,7 +147,9 @@ void PlayerInputHandler::HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, 
 		}
 	  }
 	  break;
-
+	case ActionState::SelectingSpell:
+	  // 스펠 목록 선택 중에는 타일 클릭 무시
+	  break;
 	case ActionState::Moving:
 	  {
 		MovementComponent* move_comp = dragon->GetGOComponent<MovementComponent>();
@@ -163,23 +165,22 @@ void PlayerInputHandler::HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, 
 	  // 행동 선택 중에는 클릭 무시
 	  break;
 
-	case ActionState::TargetingForSpell: {
-		Math::ivec2  clicked_tile = ConvertScreenToGrid(mouse_pos);
-		SpellSystem* spell_sys  = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
+	case ActionState::TargetingForSpell:
+	  {
+		Math::ivec2	 clicked_tile = ConvertScreenToGrid(mouse_pos);
+		SpellSystem* spell_sys	  = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
 
 		if (spell_sys && spell_sys->CanCast(dragon, m_selected_spell_id, clicked_tile))
 		{
-			spell_sys->CastSpell(dragon, m_selected_spell_id, clicked_tile);
-			m_state = ActionState::None;
+		  spell_sys->CastSpell(dragon, m_selected_spell_id, clicked_tile);
+		  m_state = ActionState::None;
+		  if (grid) grid->DisableSpellTargetingMode();
 		}
-		else {
-			Engine::GetLogger().LogDebug(
-				"Cannot cast " + m_selected_spell_id + " at ("
-				+ std::to_string(clicked_tile.x) + ", "
-				+ std::to_string(clicked_tile.y) + ")"
-			);
+		else
+		{
+		  Engine::GetLogger().LogDebug("Cannot cast " + m_selected_spell_id + " at (" + std::to_string(clicked_tile.x) + ", " + std::to_string(clicked_tile.y) + ")");
 		}
-	}
+	  }
 	  break;
 
 	case ActionState::None: break;
@@ -195,8 +196,14 @@ void PlayerInputHandler::HandleRightClick(Dragon* dragon)
   {
 	auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
 	Engine::GetLogger().LogEvent("Movement mode cancelled by right-click");
-	grid->DisableMovementMode();	
+	grid->DisableMovementMode();
   }
+
+  if (m_state == ActionState::TargetingForSpell)
+{
+    auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    if (grid) grid->DisableSpellTargetingMode();
+}
 
   if (m_state == ActionState::Moving)
   {
@@ -205,8 +212,6 @@ void PlayerInputHandler::HandleRightClick(Dragon* dragon)
 
   m_state = ActionState::None;
 }
-
-
 
 void PlayerInputHandler::CancelCurrentAction()
 {
@@ -219,4 +224,19 @@ void PlayerInputHandler::CancelCurrentAction()
   }
 
   m_state = ActionState::None;
+}
+
+void PlayerInputHandler::SelectSpell(const std::string& spell_id, Character* caster)
+{
+    m_selected_spell_id = spell_id;
+    m_state = ActionState::TargetingForSpell;
+
+    auto* spell_sys = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
+    auto* grid      = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    if (spell_sys && grid && caster)
+    {
+        const SpellData* spell = spell_sys->GetSpellData(spell_id);
+        if (spell)
+            grid->EnableSpellTargetingMode(caster->GetGridPosition()->Get(), spell->range);
+    }
 }

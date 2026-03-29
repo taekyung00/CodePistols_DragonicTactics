@@ -15,6 +15,7 @@ Updated:    Oct 09, 2025
 #include "Engine/Input.h"
 #include "Engine/Matrix.h"
 #include "Game/DragonicTactics/Objects/Actions/Action.h"
+#include "Game/DragonicTactics/Objects/Components/StatusEffectComponent.h"
 #include "Game/DragonicTactics/Types/CharacterTypes.h"
 #include "Game/DragonicTactics/Types/GameTypes.h"
 #include <map>
@@ -35,7 +36,7 @@ class MovementComponent;
 
 class Character : public CS230::GameObject
 {
-public:
+  public:
   virtual ~Character() = default;
 
   void Update(double dt) override;
@@ -91,33 +92,58 @@ public:
   bool HasSpell(std::string spell_name);
 
   // ========================================
-    // 상태 쿼리 메서드 (Fact Queries)
-    // AI 전략 및 다른 시스템에서 사용
-    // ========================================
+  // 상태 쿼리 메서드 (Fact Queries)
+  // AI 전략 및 다른 시스템에서 사용
+  // ========================================
 
-    /// @brief HP 백분율 조회 (0.0 ~ 1.0)
-    /// @return 현재 HP / 최대 HP, StatsComponent 없으면 0.0
-    float GetHPPercentage() ;
+  /// @brief HP 백분율 조회 (0.0 ~ 1.0)
+  /// @return 현재 HP / 최대 HP, StatsComponent 없으면 0.0
+  float GetHPPercentage();
 
-    /// @brief 보물 소유 여부 조회
-    /// @return true if has treasure
-    bool HasTreasure() const { return has_treasure_; }
+  /// @brief 보물 소유 여부 조회
+  /// @return true if has treasure
+  bool HasTreasure() const
+  {
+	return has_treasure_;
+  }
 
-    /// @brief 보물 소유 상태 설정 (보물 시스템에서 호출)
-    void SetTreasure(bool value) { has_treasure_ = value; }
+  /// @brief 보물 소유 상태 설정 (보물 시스템에서 호출)
+  void SetTreasure(bool value)
+  {
+	has_treasure_ = value;
+  }
 
-    /// @brief 특정 레벨의 주문 슬롯 잔여량 조회
-    /// @param level 주문 레벨 (1-9)
-    /// @return 잔여 슬롯 개수, SpellSlots 없으면 0
-    int GetAvailableSpellSlots(int level) ;
+  /// @brief 특정 레벨의 주문 슬롯 잔여량 조회
+  /// @param level 주문 레벨 (1-9)
+  /// @return 잔여 슬롯 개수, SpellSlots 없으면 0
+  int GetAvailableSpellSlots(int level);
 
-    /// @brief 모든 레벨의 주문 슬롯 중 1개라도 있는지
-    /// @return true if has any spell slots
-    bool HasAnySpellSlot();
+  /// @brief 모든 레벨의 주문 슬롯 중 1개라도 있는지
+  /// @return true if has any spell slots
+  bool HasAnySpellSlot();
 
-    // TODO: Week 6+ StatusEffect 시스템 구현 후 추가
-    // bool HasBuff(const std::string& buff_name) const;
-    // bool HasDebuff(const std::string& debuff_name) const;
+  bool HasAttackedThisTurn() const
+  {
+	return has_attacked_this_turn_;
+  }
+
+  void SetHasAttackedThisTurn(bool value)
+  {
+	has_attacked_this_turn_ = value;
+  }
+
+  // TODO: Week 6+ StatusEffect 시스템 구현 후 추가
+  // bool HasBuff(const std::string& buff_name) const;
+  // bool HasDebuff(const std::string& debuff_name) const;
+
+  // --- 효과 쿼리 (Strategy에서 사용) ---
+  bool Has(const std::string& effect_name) ;
+
+  // --- 효과 추가 / 제거 (SpellSystem, CombatSystem, StatusEffectHandler에서 호출) ---
+  void AddEffect(const std::string& name, int duration, int magnitude = 0);
+  void RemoveEffect(const std::string& name);
+  void RemoveAllEffects();
+  const std::vector<ActiveEffect>& GetActiveEffects() ;
 
   protected:
   Character(CharacterTypes charType, Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level);
@@ -143,5 +169,6 @@ public:
 
 
   private:
-  bool has_treasure_ = false; // 보물 소유 여부
+  bool has_attacked_this_turn_ = false;
+  bool has_treasure_		   = false; // 보물 소유 여부
 };

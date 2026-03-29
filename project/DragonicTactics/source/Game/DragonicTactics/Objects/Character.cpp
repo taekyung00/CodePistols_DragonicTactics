@@ -14,6 +14,7 @@ Updated:    Oct 10, 2025
 #include "./Engine/Engine.h"
 #include "./Engine/GameObject.h"
 #include "./Engine/Logger.h"
+#include "Game/DragonicTactics/StateComponents/EventBus.h"
 #include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
 #include "./Game/DragonicTactics/Objects/Components/MovementComponent.h"
 #include "./Game/DragonicTactics/Objects/Components/SpellSlots.h"
@@ -38,7 +39,10 @@ void Character::InitializeComponents(Math::ivec2 start_coordinates, int max_acti
   AddGOComponent(new ActionPoints(max_action_points));
   AddGOComponent(new SpellSlots(max_slots_per_level));
   AddGOComponent(new MovementComponent(this));
+  AddGOComponent(new StatusEffectComponent());
 }
+
+
 
 float Character::GetHPPercentage()
 {
@@ -76,6 +80,8 @@ bool Character::HasAnySpellSlot()
 void Character::RefreshActionPoints()
 {
   GetGOComponent<ActionPoints>()->Refresh();
+
+   has_attacked_this_turn_ = false; // 턴 시작 시 리셋
 }
 
 void Character::Update(double dt)
@@ -261,10 +267,15 @@ void Character::SetSpellSlots(std::map<int, int> spellSlot)
 }
 
 void Character::ConsumeSpell(int level)
-{ // REALLY? WHAT THE FUCK? WHERE IS THE USE OF CONSUME IN MD FILE?
+{ 
   GetGOComponent<SpellSlots>()->Consume(level);
 }
-
+const std::vector<ActiveEffect>& Character::GetActiveEffects()
+{
+    static const std::vector<ActiveEffect> empty;
+    const auto* se = GetGOComponent<StatusEffectComponent>();
+    return se ? se->GetAllEffects() : empty;
+}
 // void Character::RefreshActionPoints()
 // {
 //     GetGOComponent<ActionPoints>()->Refresh();
@@ -297,4 +308,33 @@ bool Character::HasSpell([[maybe_unused]] std::string spell_name)
 void Character::SetActionPoints(int new_points)
 {
   return GetGOComponent<ActionPoints>()->SetPoints(new_points);
+}
+
+bool Character::Has(const std::string& effect_name) 
+{
+  StatusEffectComponent* se = GetGOComponent<StatusEffectComponent>();
+    return se && se->Has(effect_name);
+}
+
+void Character::AddEffect(const std::string& name, int duration, int magnitude)
+{
+    StatusEffectComponent* se = GetGOComponent<StatusEffectComponent>();
+    if (!se) return;
+    se->AddEffect(name, duration, magnitude);
+
+    EventBus* bus = Engine::GetGameStateManager().GetGSComponent<EventBus>();
+    if (bus)
+        bus->Publish(StatusEffectAddedEvent{ this, name, duration, magnitude });
+}
+
+void Character::RemoveEffect(const std::string& name)
+{
+    if (StatusEffectComponent* se = GetGOComponent<StatusEffectComponent>())
+        se->RemoveEffect(name);
+}
+
+void Character::RemoveAllEffects()
+{
+    if (StatusEffectComponent* se = GetGOComponent<StatusEffectComponent>())
+        se->RemoveAllEffects();
 }
