@@ -35,6 +35,7 @@ Created:    November 5, 2025
 #include "Game/DragonicTactics/StateComponents/TurnManager.h"
 #include "Game/DragonicTactics/Objects/Components/SpellSlots.h"
 #include "Engine/Camera.h"
+#include "Engine/SoundManager.h"
 
 #include "../Debugger/DebugManager.h"
 
@@ -145,6 +146,11 @@ void GamePlay::Load()
 		msg += " has escaped.";
 		Engine::GetLogger().LogDebug(msg);
 	  });
+
+  Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/SFX_test.wav");
+
+  Engine::GetSoundManager().LoadBGM("Assets/Audio/BGM/BGM_test.ogg");
+  Engine::GetSoundManager().PlayBGM("Assets/Audio/BGM/BGM_test.ogg");
 }
 
 void GamePlay::DisplayDamageAmount(const CharacterDamagedEvent& event)

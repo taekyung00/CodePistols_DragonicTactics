@@ -18,7 +18,7 @@ if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/stb_implementation.cpp)
     #include \"stb_image.h\"
     #define STB_PERLIN_IMPLEMENTATION
     #include \"stb_perlin.h\"
-    //#include \"stb_vorbis.c\"
+    #include \"stb_vorbis.c\"
     ")
 
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/stb_implementation.cpp ${STB_IMPLEMENTATION_CODE})
