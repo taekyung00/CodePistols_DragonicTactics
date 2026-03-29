@@ -27,4 +27,3 @@ endif()
 
 add_library(the_stb STATIC ${CMAKE_CURRENT_BINARY_DIR}/stb_implementation.cpp)
 target_include_directories(the_stb SYSTEM PUBLIC ${stb_github_SOURCE_DIR})
-
