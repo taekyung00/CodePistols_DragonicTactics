@@ -65,8 +65,21 @@ void SpellSlots::SetSpellSlots(std::map<int, int> spellSlots)
 
 int SpellSlots::GetMaxSlotCount(int level) const
 {
-   auto it = max_slots.find(level);
-    return (it != max_slots.end()) ? it->second : 0;
+  auto it = max_slots.find(level);
+  return (it != max_slots.end()) ? it->second : 0;
+}
+
+// SpellSlots.cpp
+void SpellSlots::RestoreOne(int level)
+{
+  auto it = current_slots.find(level);
+  if (it == current_slots.end())
+	return;
+
+  auto max_it = max_slots.find(level);
+  int  cap	  = (max_it != max_slots.end()) ? max_it->second : 0;
+  if (it->second < cap)
+	it->second++;
 }
 
 ///////////////////

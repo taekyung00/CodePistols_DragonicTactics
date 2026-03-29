@@ -188,20 +188,59 @@ void GridSystem::Draw() const
   }
 }
 
-void GridSystem::EnableSpellTargetingMode(Math::ivec2 center, int range)
+void GridSystem::EnableSpellTargetingMode(Math::ivec2 center,
+                                           const std::string& geometry, int range)
 {
-  spell_targeting_mode_active_ = true;
-  spell_targetable_tiles_.clear();
+    spell_targeting_mode_active_ = true;
+    spell_targetable_tiles_.clear();
 
-  for (int y = 0; y < MAP_HEIGHT; ++y)
-  {
-	for (int x = 0; x < MAP_WIDTH; ++x)
-	{
-	  Math::ivec2 tile{ x, y };
-	  if (IsValidTile(tile) && ManhattanDistance(center, tile) <= range)
-		spell_targetable_tiles_.insert(tile);
-	}
-  }
+    if (geometry == "Self")
+    {
+        spell_targetable_tiles_.insert(center);
+    }
+    else if (geometry == "Line")
+    {
+        for (const auto& tile : GetLineTiles(center, (range < 0 ? MAP_HEIGHT : range)))
+            spell_targetable_tiles_.insert(tile);
+    }
+    else if (geometry == "OddEven")
+    {
+        // 전체 타일 표시
+        for (int y = 0; y < MAP_HEIGHT; ++y)
+            for (int x = 0; x < MAP_WIDTH; ++x)
+                spell_targetable_tiles_.insert({ x, y });
+    }
+    else
+    {
+        // Single / Around / Point — 맨해튼 거리 이내 모든 타일
+        int r = (range < 0) ? MAP_HEIGHT + MAP_WIDTH : range;
+        for (int y = 0; y < MAP_HEIGHT; ++y)
+        {
+            for (int x = 0; x < MAP_WIDTH; ++x)
+            {
+                Math::ivec2 tile{ x, y };
+                if (IsValidTile(tile) && ManhattanDistance(center, tile) <= r)
+                    spell_targetable_tiles_.insert(tile);
+            }
+        }
+    }
+}
+
+std::vector<Math::ivec2> GridSystem::GetLineTiles(Math::ivec2 center, int reach) const
+{
+    std::vector<Math::ivec2> result;
+    const Math::ivec2 dirs[4] = { {1,0},{-1,0},{0,1},{0,-1} };
+    for (const auto& dir : dirs)
+    {
+        for (int step = 1; step <= reach; ++step)
+        {
+            Math::ivec2 tile{ center.x + dir.x * step, center.y + dir.y * step };
+            if (!IsValidTile(tile)) break;
+            if (GetTileType(tile) == TileType::Wall) break;
+            result.push_back(tile);
+        }
+    }
+    return result;
 }
 
 void GridSystem::DisableSpellTargetingMode()

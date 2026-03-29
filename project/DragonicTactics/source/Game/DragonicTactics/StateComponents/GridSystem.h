@@ -56,7 +56,10 @@ class GridSystem : public CS230::Component
   /// @brief 스펠 타겟팅 가능 타일 계산 (맨해튼 거리 기반)
   /// @param center  시전자 위치
   /// @param range   스펠 사거리
-  void EnableSpellTargetingMode(Math::ivec2 center, int range);
+  void EnableSpellTargetingMode(Math::ivec2 center, const std::string& geometry, int range);
+
+  /// @brief 4방향 직선 타일 목록 반환 (Line 기하학 시각화용)
+std::vector<Math::ivec2> GetLineTiles(Math::ivec2 center, int reach) const;
   
   /// @brief 스펠 타겟팅 모드 해제 (시각화 데이터 초기화)
   void DisableSpellTargetingMode();

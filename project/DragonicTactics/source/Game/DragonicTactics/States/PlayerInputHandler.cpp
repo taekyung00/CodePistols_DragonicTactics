@@ -170,9 +170,10 @@ void PlayerInputHandler::HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, 
 		Math::ivec2	 clicked_tile = ConvertScreenToGrid(mouse_pos);
 		SpellSystem* spell_sys	  = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
 
-		if (spell_sys && spell_sys->CanCast(dragon, m_selected_spell_id, clicked_tile))
+		if (spell_sys && spell_sys->CanCast(dragon, m_selected_spell_id,
+                                         clicked_tile, m_selected_upcast_level))
 		{
-		  spell_sys->CastSpell(dragon, m_selected_spell_id, clicked_tile);
+		  spell_sys->CastSpell(dragon, m_selected_spell_id, clicked_tile, m_selected_upcast_level);
 		  m_state = ActionState::None;
 		  if (grid) grid->DisableSpellTargetingMode();
 		}
@@ -226,9 +227,10 @@ void PlayerInputHandler::CancelCurrentAction()
   m_state = ActionState::None;
 }
 
-void PlayerInputHandler::SelectSpell(const std::string& spell_id, Character* caster)
+void PlayerInputHandler::SelectSpell(const std::string& spell_id, Character* caster, int upcast_level)
 {
     m_selected_spell_id = spell_id;
+	m_selected_upcast_level = upcast_level;
     m_state = ActionState::TargetingForSpell;
 
     auto* spell_sys = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
@@ -237,6 +239,10 @@ void PlayerInputHandler::SelectSpell(const std::string& spell_id, Character* cas
     {
         const SpellData* spell = spell_sys->GetSpellData(spell_id);
         if (spell)
-            grid->EnableSpellTargetingMode(caster->GetGridPosition()->Get(), spell->range);
+            grid->EnableSpellTargetingMode(
+                caster->GetGridPosition()->Get(),
+                spell->targeting.geometry,   // ← geometry 전달
+                spell->targeting.range
+            );
     }
 }

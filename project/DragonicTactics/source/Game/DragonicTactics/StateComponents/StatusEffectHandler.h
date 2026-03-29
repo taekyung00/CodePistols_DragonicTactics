@@ -18,8 +18,11 @@ class StatusEffectHandler : public CS230::Component
 public:
 
     // SpellSystem::ApplySpellEffect에서 AddBuff/AddDebuff 직후 호출
-    // 현재: Purify → 즉시 모든 디버프 제거
     void OnApplied(Character* target, const std::string& effect_name);
+
+    // StatusEffectComponent::TickDown에서 효과 만료 시, 또는 Purify 적용 전 호출
+    // Fear/Haste 적용으로 변경된 base speed를 복원
+    void OnRemoved(Character* target, const std::string& effect_name);
 
     // CombatSystem::ExecuteAttack — 피해 계산 단계에서 호출
     int ModifyDamageDealt(Character* attacker, int base_damage) const;

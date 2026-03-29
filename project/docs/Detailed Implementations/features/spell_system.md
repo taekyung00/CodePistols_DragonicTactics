@@ -1831,7 +1831,7 @@ ID, Name, Category, Classes, SpellLevel, Targeting, Upcastable, Effect
 
 ### 수정 1: SpellSystem.h — SpellTargeting 구조체 추가, SpellData 수정
 
-```cpp
+```c
 // SpellData 위에 추가
 struct SpellTargeting
 {
@@ -2235,3 +2235,533 @@ ID,Name,Category,Classes,Required Slot Level,Targeting,Upcasting Effect,Effect
 - **Fire Bolt** (`Enemy:Single:4`): 반경 4 이내 타일 빨간색
 - **Tail Swipe** (`Enemy:Around:2`): 반경 2 원형 → 시전 시 반경 내 모든 적 피해
 - **Magic Missile** (`Enemy:Single:-1`): 맵 전체 타일 빨간색 (무한 사거리)
+
+---
+
+## Effect Special 파트 처리
+
+### 문제
+
+Mana Conversion의 Effect 필드는 4줄 템플릿 이후 5번째 줄에 `Special:` 항목이 존재한다:
+
+```
+Deals (Spell Level - Required Spell Level + 1)d10 damage.
+Applies "Basic" status for 0 turns.
+Move to current location.
+Summons NULL at current location.
+Special: Recover a Spell Slot of (Spell Level - Required Spell Level + 1) level.
+```
+
+현재 `ParseEffectField`는 4줄만 읽고 종료하므로 Special 줄이 완전히 무시된다.
+
+---
+
+### 설계
+
+- `SpellData`에 `special_effect` 필드 추가 (raw 문자열, 없으면 빈 문자열)
+- `ParseEffectField`: 4줄 이후 잔여 줄 전체를 while로 읽어 `"Special:"` 접두어 줄 저장
+- `SpellSlots`에 `RestoreOne(int level)` 메서드 추가
+  (기존 `Recover(max_level)`은 지정 레벨 이하 전체 복구라 부적합)
+- `ApplySpellEffect` 끝에서 `ApplySpecialEffect` 호출 (키워드 디스패치)
+
+> 향후 Special 종류가 늘어나도 `ApplySpecialEffect` 안에 케이스만 추가하면 된다.
+
+---
+
+### 수정 1: SpellData — special_effect 필드 추가
+
+```cpp
+struct SpellData
+{
+    // ... 기존 필드 ...
+    std::string special_effect; // "Special:" 줄 내용. 없으면 빈 문자열
+};
+```
+
+---
+
+### 수정 2: SpellSystem.cpp — ParseEffectField 끝에 Special 파싱 추가
+
+4줄 블록(Summons 파싱) 직후에 추가:
+
+```cpp
+// Line 5+: "Special: ..." (선택적, 복수 줄 가능)
+while (std::getline(ss, line))
+{
+    const std::string special_prefix = "Special:";
+    if (line.rfind(special_prefix, 0) == 0)
+    {
+        std::string content = line.substr(special_prefix.size());
+        // 앞 공백 제거
+        auto start = content.find_first_not_of(" \t");
+        if (start != std::string::npos)
+            content = content.substr(start);
+
+        // 복수 Special 줄은 "; "로 이어붙임
+        if (data.special_effect.empty())
+            data.special_effect = content;
+        else
+            data.special_effect += "; " + content;
+    }
+}
+```
+
+---
+
+### 수정 3: SpellSlots.h / .cpp — RestoreOne 추가
+
+```cpp
+// SpellSlots.h
+/// @brief 특정 레벨 슬롯 1개 복구 (max_slots 초과 불가)
+void RestoreOne(int level);
+```
+
+```cpp
+// SpellSlots.cpp
+void SpellSlots::RestoreOne(int level)
+{
+    auto it = current_slots.find(level);
+    if (it == current_slots.end()) return;
+
+    auto max_it = max_slots.find(level);
+    int  cap    = (max_it != max_slots.end()) ? max_it->second : 0;
+    if (it->second < cap)
+        it->second++;
+}
+```
+
+---
+
+### 수정 4: SpellSystem.h — ApplySpecialEffect 선언 추가
+
+```cpp
+private:
+    // ... 기존 헬퍼 ...
+    void ApplySpecialEffect(Character* caster, const SpellData& spell, int upcast_level);
+```
+
+---
+
+### 수정 5: SpellSystem.cpp — ApplySpecialEffect 구현
+
+```cpp
+void SpellSystem::ApplySpecialEffect(Character* caster,
+                                      const SpellData& spell,
+                                      int upcast_level)
+{
+    if (spell.special_effect.empty()) return;
+
+    // ── "Recover a Spell Slot of (formula) level." ──
+    if (spell.special_effect.find("Recover a Spell Slot") != std::string::npos)
+    {
+        // 공식: Spell Level - Required Spell Level + 1
+        int used_level    = (upcast_level > 0) ? upcast_level : spell.spell_level;
+        int restore_level = used_level - spell.spell_level + 1;
+        restore_level     = std::max(1, restore_level); // 최소 1레벨
+
+        SpellSlots* slots = caster->GetSpellSlots();
+        if (slots)
+        {
+            slots->RestoreOne(restore_level);
+            Engine::GetLogger().LogEvent(
+                caster->TypeName() + " recovered 1 level-"
+                + std::to_string(restore_level) + " slot via Mana Conversion");
+        }
+    }
+    // 향후 다른 Special 패턴은 여기 추가
+}
+```
+
+---
+
+### 수정 6: SpellSystem.cpp — ApplySpellEffect 끝에 Special 호출
+
+기존 지형/이동 처리 블록 **맨 끝**에 한 줄 추가:
+
+```cpp
+// ... summon / move 로그 ...
+
+// Special 효과 처리
+ApplySpecialEffect(caster, spell, upcast_level);
+```
+
+---
+
+### 구현 순서
+
+```
+1. SpellSystem.h      — SpellData에 special_effect 추가
+                        ApplySpecialEffect 선언 추가
+2. SpellSlots.h       — RestoreOne(int level) 선언 추가
+3. SpellSlots.cpp     — RestoreOne 구현
+4. SpellSystem.cpp    — ParseEffectField: while 루프로 Special 라인 파싱 추가
+5. SpellSystem.cpp    — ApplySpecialEffect 구현
+6. SpellSystem.cpp    — ApplySpellEffect 끝에 ApplySpecialEffect 호출 추가
+```
+
+### 검증
+
+- Mana Conversion 시전 전: Dragon 레벨 1 슬롯 수 기록
+- 시전 후 (upcast_level=0): 레벨 1 슬롯 1개 복구 확인 (스탯 패널에서 `Lv1:N/M` 증가)
+- 이미 풀인 슬롯에 시전: 초과 복구 안 됨 확인
+- 업캐스트 (레벨 2 슬롯 사용, upcast_level=2): 레벨 3 슬롯 복구 확인
+- Special 없는 스펠 (Fire Bolt 등): `ApplySpecialEffect` 즉시 반환, 부작용 없음
+
+---
+
+## 업캐스팅 UI / 흐름 구현
+
+### 문제
+
+- Spell List 패널에서 업캐스트 가능 여부가 표시되지 않음
+- 스펠 클릭 시 슬롯 레벨 선택 없이 무조건 `upcast_level=0`으로 시전됨
+- `CalculateSpellDamage`가 업캐스트 다이스를 하드코딩(`1d8`)으로 계산 (TODO 주석 있음)
+
+---
+
+### 업캐스팅 흐름
+
+```
+SelectingSpell
+  │
+  ├─ 비업캐스트 스펠 클릭 → SelectSpell(id, caster, spell_level)
+  │                         → TargetingForSpell
+  │
+  └─ 업캐스트 스펠의 레벨 버튼 클릭 → SelectSpell(id, caster, chosen_level)
+                                       → TargetingForSpell
+```
+
+Spell List 패널에서 업캐스트 가능 스펠은 슬롯 레벨 버튼(Lv1~Lv5)을 인라인으로 표시한다.
+새 `ActionState`는 불필요 — `SelectingSpell` 상태 안에서 UI만 확장한다.
+
+---
+
+### 수정 1: SpellData — upcast_dice 필드 추가
+
+```cpp
+struct SpellData
+{
+    // ... 기존 필드 ...
+    std::string upcast_dice; // 레벨 차이당 굴리는 주사위. "1d6", "2d6" 등. 없으면 빈 문자열
+};
+```
+
+> `damage_formula`는 **베이스 주사위만** 저장하도록 변경됨.
+> 업캐스트 부분(`+ (...)d6`)은 `ParseDamageFormula` 헬퍼가 분리해 `upcast_dice`에 저장.
+
+---
+
+### 수정 2: SpellSystem.h — ParseDamageFormula 선언 추가
+
+```cpp
+private:
+    // 기존 헬퍼들 ...
+    void ParseDamageFormula(const std::string& formula_str, SpellData& data) const;
+```
+
+---
+
+### 수정 3: SpellSystem.cpp — ParseDamageFormula 구현
+
+`damage_formula` 원본 문자열을 받아 `data.damage_formula`(베이스)와 `data.upcast_dice`(레벨당 주사위)로 분리한다.
+
+```cpp
+void SpellSystem::ParseDamageFormula(const std::string& formula_str, SpellData& data) const
+{
+    // 힐링: "-(...)" — 음수 래퍼 처리
+    bool negative = (formula_str.size() >= 2
+                     && formula_str[0] == '-' && formula_str[1] == '(');
+    std::string f = negative
+                    ? formula_str.substr(2, formula_str.size() - 3) // "-(X)" → "X"
+                    : formula_str;
+
+    // " + " 로 베이스와 업캐스트 분리
+    auto plus_pos = f.find(" + ");
+    if (plus_pos == std::string::npos)
+    {
+        // 업캐스트 없음: 전체가 베이스
+        data.damage_formula = negative ? "-(" + f + ")" : f;
+        data.upcast_dice    = "";
+        return;
+    }
+
+    std::string base_part   = f.substr(0, plus_pos);      // "2d8", "(...)d10" 등
+    std::string upcast_part = f.substr(plus_pos + 3);     // "(...)d6" 또는 "(...) * 2d6"
+
+    data.damage_formula = negative ? "-(" + base_part + ")" : base_part;
+
+    // 업캐스트 주사위 추출
+    // 패턴 A: "(...) * NdX" → "NdX"
+    auto star_pos = upcast_part.find("* ");
+    if (star_pos != std::string::npos)
+    {
+        data.upcast_dice = upcast_part.substr(star_pos + 2); // "2d6", "1d20"
+        return;
+    }
+    // 패턴 B: "(...)dX" → "1dX"
+    auto d_pos = upcast_part.rfind('d');
+    if (d_pos != std::string::npos)
+    {
+        data.upcast_dice = "1" + upcast_part.substr(d_pos); // "1d6", "1d8"
+        return;
+    }
+
+    data.upcast_dice = "";
+}
+```
+
+**파싱 예시**:
+
+| 원본 damage_formula     | damage_formula (저장) | upcast_dice |
+| --------------------- | ------------------- | ----------- |
+| `2d8 + (...)d6`       | `2d8`               | `1d6`       |
+| `4d6 + (...) * 2d6`   | `4d6`               | `2d6`       |
+| `3d20 + (...) * 1d20` | `3d20`              | `1d20`      |
+| `-(1d10 + (...)d10)`  | `-(1d10)`           | `1d10`      |
+| `0`                   | `0`                 | ``          |
+
+---
+
+### 수정 4: SpellSystem.cpp — ParseEffectField에서 ParseDamageFormula 호출
+
+Line 1 파싱 블록을 교체:
+
+```cpp
+// Line 1: "Deals X damage." — 전체 formula 문자열 추출 후 ParseDamageFormula에 위임
+if (std::getline(ss, line))
+{
+    const std::string prefix = "Deals ";
+    const std::string suffix = " damage.";
+    auto p = line.find(prefix);
+    auto s = line.rfind(suffix);          // rfind: suffix가 문장 끝에 있음
+    if (p != std::string::npos && s != std::string::npos)
+    {
+        std::string full_formula = line.substr(p + prefix.size(),
+                                               s - (p + prefix.size()));
+        ParseDamageFormula(full_formula, data);
+    }
+    else
+    {
+        data.damage_formula = "0";
+        data.upcast_dice    = "";
+    }
+}
+```
+
+---
+
+### 수정 5: SpellSystem.cpp — CalculateSpellDamage 개선
+
+```cpp
+int SpellSystem::CalculateSpellDamage(const SpellData& spell, int upcast_level)
+{
+    if (spell.damage_formula == "0" || spell.damage_formula.empty())
+        return 0;
+
+    auto* dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
+    if (!dice) return 0;
+
+    int  level_diff = std::max(0, upcast_level - spell.spell_level);
+    bool negative   = (!spell.damage_formula.empty() && spell.damage_formula[0] == '-');
+
+    // 베이스 다이스 굴림 (힐링이면 음수 래퍼 제거 후 굴림)
+    std::string base_str = spell.damage_formula;
+    if (negative)
+        base_str = base_str.substr(2, base_str.size() - 3); // "-(X)" → "X"
+
+    int total = dice->RollDiceFromString(base_str);
+
+    // 업캐스트 보너스 다이스
+    if (level_diff > 0 && spell.upcastable && !spell.upcast_dice.empty())
+        total += level_diff * dice->RollDiceFromString(spell.upcast_dice);
+
+    return negative ? -total : total;
+}
+```
+
+---
+
+### 수정 6: SpellSystem.h — CanCast 시그니처 변경
+
+```cpp
+// 변경 전
+bool CanCast(Character* caster, const std::string& spell_id, Math::ivec2 target_tile) const;
+
+// 변경 후
+bool CanCast(Character* caster, const std::string& spell_id,
+             Math::ivec2 target_tile, int upcast_level = 0) const;
+```
+
+---
+
+### 수정 7: SpellSystem.cpp — CanCast 슬롯 체크 수정
+
+```cpp
+// 기존: if (spell.spell_level > 0 && !caster->HasSpellSlot(spell.spell_level)) return false;
+// 교체:
+
+if (upcast_level > 0)
+{
+    // 특정 레벨로 시전: 해당 레벨 >= spell_level 이고 슬롯 존재 확인
+    if (upcast_level < spell.spell_level) return false;
+    if (!caster->HasSpellSlot(upcast_level))   return false;
+}
+else if (spell.spell_level > 0)
+{
+    // GetAvailableSpells 호출 (레벨 미지정): spell_level 이상 슬롯 하나라도 있으면 OK
+    bool has_any = false;
+    for (int lv = spell.spell_level; lv <= 5; ++lv)
+        if (caster->HasSpellSlot(lv)) { has_any = true; break; }
+    if (!has_any) return false;
+}
+```
+
+---
+
+### 수정 8: SpellSystem.cpp — CastSpell 슬롯 소모 수정
+
+```cpp
+// 기존: caster->ConsumeSpell(spell.spell_level);
+// 교체:
+int consume_level = (upcast_level > 0) ? upcast_level : spell.spell_level;
+if (consume_level > 0)
+    caster->ConsumeSpell(consume_level);
+```
+
+---
+
+### 수정 9: PlayerInputHandler.h — upcast_level 필드 추가, SelectSpell 시그니처 변경
+
+```cpp
+private:
+    ActionState m_state              = ActionState::None;
+    std::string m_selected_spell_id;
+    int         m_selected_upcast_level = 0;             // ← 신규
+
+public:
+    // 변경 전: void SelectSpell(const std::string& spell_id, Character* caster);
+    // 변경 후:
+    void SelectSpell(const std::string& spell_id, Character* caster, int upcast_level);
+```
+
+---
+
+### 수정 10: PlayerInputHandler.cpp — SelectSpell upcast_level 저장
+
+```cpp
+void PlayerInputHandler::SelectSpell(const std::string& spell_id,
+                                      Character* caster, int upcast_level)
+{
+    m_selected_spell_id     = spell_id;
+    m_selected_upcast_level = upcast_level;              // ← 저장
+    m_state = ActionState::TargetingForSpell;
+
+    auto* spell_sys = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
+    auto* grid      = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    if (spell_sys && grid && caster)
+    {
+        const SpellData* spell = spell_sys->GetSpellData(spell_id);
+        if (spell)
+            grid->EnableSpellTargetingMode(
+                caster->GetGridPosition()->Get(),
+                spell->targeting.geometry,
+                spell->targeting.range);
+    }
+}
+```
+
+---
+
+### 수정 11: PlayerInputHandler.cpp — TargetingForSpell에서 upcast_level 전달
+
+```cpp
+case ActionState::TargetingForSpell:
+{
+    // ...
+    if (spell_sys && spell_sys->CanCast(dragon, m_selected_spell_id,
+                                         clicked_tile, m_selected_upcast_level)) // ← 추가
+    {
+        spell_sys->CastSpell(dragon, m_selected_spell_id,
+                              clicked_tile, m_selected_upcast_level);             // ← 추가
+        m_state = ActionState::None;
+        if (grid) grid->DisableSpellTargetingMode();
+    }
+    // ...
+}
+```
+
+---
+
+### 수정 12: GamePlay.cpp — Spell List 패널 업캐스트 UI
+
+```cpp
+for (const auto& spell_id : available)
+{
+    const SpellData* spell = spell_sys->GetSpellData(spell_id);
+    if (!spell) continue;
+
+    if (!spell->upcastable)
+    {
+        // ── 비업캐스트: 기존 단일 버튼 ──
+        std::string label = spell->spell_name
+                          + " (Lv." + std::to_string(spell->spell_level) + ")"
+                          + "##" + spell_id;
+        if (ImGui::Button(label.c_str()))
+            m_input_handler->SelectSpell(spell_id, current, spell->spell_level);
+    }
+    else
+    {
+        // ── 업캐스트 가능: 이름 표시 + 레벨 버튼 ──
+        ImGui::Text("%s (Lv.%d ↑)", spell->spell_name.c_str(), spell->spell_level);
+        ImGui::SameLine();
+
+        SpellSlots* slots = current->GetSpellSlots();
+        for (int lv = spell->spell_level; lv <= 5; ++lv)
+        {
+            bool has_slot = slots && slots->HasSlot(lv);
+            if (!has_slot) ImGui::BeginDisabled();
+
+            std::string lv_label = "Lv" + std::to_string(lv)
+                                 + "##" + spell_id + std::to_string(lv);
+            if (ImGui::Button(lv_label.c_str()))
+                m_input_handler->SelectSpell(spell_id, current, lv);
+
+            if (!has_slot) ImGui::EndDisabled();
+            ImGui::SameLine();
+        }
+        ImGui::NewLine();
+    }
+}
+```
+
+> `spell_level=1` 이고 Lv1 슬롯이 없고 Lv2만 있으면 `Lv1` 버튼은 비활성, `Lv2` 버튼만 활성.
+
+---
+
+### 구현 순서
+
+```
+1. SpellData (SpellSystem.h)     — upcast_dice 필드 추가
+2. SpellSystem.h                 — ParseDamageFormula 선언 추가
+                                   CanCast 시그니처에 upcast_level=0 추가
+3. SpellSystem.cpp               — ParseDamageFormula 구현
+4. SpellSystem.cpp               — ParseEffectField Line 1: ParseDamageFormula 호출로 교체
+5. SpellSystem.cpp               — CalculateSpellDamage: upcast_dice 사용으로 교체
+6. SpellSystem.cpp               — CanCast: 슬롯 체크 로직 교체
+7. SpellSystem.cpp               — CastSpell: consume_level = upcast_level > 0 ? ... 교체
+8. PlayerInputHandler.h          — m_selected_upcast_level 추가, SelectSpell 시그니처 변경
+9. PlayerInputHandler.cpp        — SelectSpell: m_selected_upcast_level 저장
+10. PlayerInputHandler.cpp       — TargetingForSpell case: upcast_level 전달
+11. GamePlay.cpp                 — Spell List 패널: 업캐스트 레벨 버튼 UI 추가
+```
+
+### 검증
+
+- **Fire Bolt** (Lv.1 required, upcastable):
+  - Spell List에 `Fire Bolt (↑)` + `[Lv1][Lv2][Lv3][Lv4][Lv5]` 버튼 표시
+  - 없는 슬롯 버튼은 회색(비활성)
+  - Lv1 선택 → 시전 시 2d8 데미지, Lv1 슬롯 소모
+  - Lv3 선택 → 시전 시 2d8 + 2×1d6 데미지, Lv3 슬롯 소모
+- **Tail Swipe** (Lv.2 required, not upcastable):
+  - `Tail Swipe (Lv.2)` 단일 버튼만 표시
+- **슬롯 소모 확인**: 시전 후 스탯 패널의 해당 레벨 슬롯 수 감소 확인

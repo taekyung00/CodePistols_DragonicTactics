@@ -48,11 +48,12 @@ class PlayerInputHandler
 	  m_state = new_state;
   }
 
-  void SelectSpell(const std::string& spell_id, Character* caster);
+  void SelectSpell(const std::string& spell_id, Character* caster, int upcast_level);
 
   private:
   ActionState m_state = ActionState::None;
   std::string m_selected_spell_id;
+  int         m_selected_upcast_level = 0;
 
   //helper function
   Math::ivec2 ConvertScreenToGrid(Math::vec2 world_pos);
