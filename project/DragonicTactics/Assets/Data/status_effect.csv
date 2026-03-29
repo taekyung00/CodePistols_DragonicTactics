@@ -1,0 +1,9 @@
+Lifesteal,Recover 50% of damage dealt this turn (round down)
+Frenzy,"If next attack deals 10+ damage, target receives random debuff (Curse, Fear, Exhaustion); otherwise, the Fighter receives it. "
+Exhaustion,Speed and Action points become 0 next turn
+Purify,Removes all status effects from self
+Blessing,"All damage taken -3, all damage dealt +3"
+Curse,"All damage taken +3, all damage dealt -3"
+Haste,"Speed +1, Actions +1"
+Stealth,Untargetable. The first damage dealt next turn is doubled. Cannot be used after attacking. Stealth is removed upon attacking.
+Fear,"all damage dealt -3, speed -1"

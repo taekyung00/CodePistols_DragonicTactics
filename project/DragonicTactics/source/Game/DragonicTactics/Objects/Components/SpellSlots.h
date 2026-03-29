@@ -30,6 +30,10 @@ class SpellSlots : public CS230::Component
 	return max_slots;
   }
 
+  // SpellSlots.h
+  /// @brief 특정 레벨 슬롯 1개 복구 (max_slots 초과 불가)
+  void RestoreOne(int level);
+
   private:
   std::map<int, int> max_slots;
   std::map<int, int> current_slots;

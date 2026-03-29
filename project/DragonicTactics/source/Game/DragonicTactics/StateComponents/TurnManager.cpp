@@ -76,7 +76,7 @@ void TurnManager::StartCombat()
 
 void TurnManager::StartNextTurn()
 {
-  Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - BEGIN");
+  // Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - BEGIN");
   if (!combatActive)
   {
 	Engine::GetLogger().LogError("TurnManager: Combat not active");
@@ -121,7 +121,7 @@ void TurnManager::StartNextTurn()
   if (se)
 	se->TickDown(currentChar, eventBus);
 
-  Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - Calling OnTurnStart");
+  // Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - Calling OnTurnStart");
   currentChar->OnTurnStart();
 
   // ── 신규: Exhaustion/Haste 효과 적용 (복원 후) ──
@@ -134,12 +134,12 @@ void TurnManager::StartNextTurn()
   // Publish turn start event
   PublishTurnStartEvent();
 
-  Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - END");
+  // Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - END");
 }
 
 void TurnManager::EndCurrentTurn()
 {
-  Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - BEGIN");
+  // Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - BEGIN");
   if (!combatActive)
   {
 	Engine::GetLogger().LogError("TurnManager: Combat not active");
@@ -149,7 +149,7 @@ void TurnManager::EndCurrentTurn()
   Character* currentChar = turnOrder[static_cast<std::size_t>(currentTurnIndex)];
 
   // Call OnTurnEnd
-  Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - Calling OnTurnEnd");
+  // Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - Calling OnTurnEnd");
   currentChar->OnTurnEnd();
 
   // Publish turn end event
@@ -200,7 +200,7 @@ void TurnManager::EndCurrentTurn()
   // Start next turn
   StartNextTurn();
 
-  Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - END");
+  // Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - END");
 }
 
 void TurnManager::EndCombat()

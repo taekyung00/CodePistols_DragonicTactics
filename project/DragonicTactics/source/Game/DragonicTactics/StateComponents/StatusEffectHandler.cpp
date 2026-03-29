@@ -1,5 +1,7 @@
 #include "StatusEffectHandler.h"
 #include "../Objects/Character.h"
+#include "../Objects/Components/StatsComponent.h"
+#include "../Objects/Components/StatusEffectComponent.h"
 #include "DiceManager.h"
 #include "pch.h"
 // ──────────────────────────────────────────────
@@ -33,12 +35,45 @@ bool StatusEffectHandler::IsKnownEffect(const std::string& name)
 // ──────────────────────────────────────────────
 void StatusEffectHandler::OnApplied(Character* target, const std::string& effect_name)
 {
-  // Purify: 즉시 모든 효과 제거
-  if (effect_name == "Purify")
+  // Fear: base speed -1 즉시 적용
+  if (effect_name == "Fear")
+  {
+	auto* stats = target->GetGOComponent<StatsComponent>();
+	if (stats) { stats->ModifyBaseSpeed(-1); stats->RefreshSpeed(); }
+  }
+  // Haste: base speed +1 즉시 적용
+  else if (effect_name == "Haste")
+  {
+	auto* stats = target->GetGOComponent<StatsComponent>();
+	if (stats) { stats->ModifyBaseSpeed(+1); stats->RefreshSpeed(); }
+  }
+  // Purify: base speed 등 변경된 스탯 먼저 복원한 뒤 모든 효과 제거
+  else if (effect_name == "Purify")
+  {
+	auto* sec = target->GetGOComponent<StatusEffectComponent>();
+	if (sec)
+	  for (const auto& e : sec->GetAllEffects())
+		OnRemoved(target, e.name);
 	target->RemoveAllEffects();
+  }
+}
 
-  // 나머지 효과는 StatusEffectComponent에 등록만 됨
-  // (실행은 ModifyDamage* / OnAfterAttack / OnTurnStart 타이밍에 발생)
+// ──────────────────────────────────────────────
+// OnRemoved: 효과 만료(TickDown) 또는 Purify 적용 시 호출
+// OnApplied에서 변경한 base speed를 복원
+// ──────────────────────────────────────────────
+void StatusEffectHandler::OnRemoved(Character* target, const std::string& effect_name)
+{
+  if (effect_name == "Fear")
+  {
+	auto* stats = target->GetGOComponent<StatsComponent>();
+	if (stats) { stats->ModifyBaseSpeed(+1); stats->RefreshSpeed(); }
+  }
+  else if (effect_name == "Haste")
+  {
+	auto* stats = target->GetGOComponent<StatsComponent>();
+	if (stats) { stats->ModifyBaseSpeed(-1); stats->RefreshSpeed(); }
+  }
 }
 
 // ──────────────────────────────────────────────
@@ -113,15 +148,13 @@ void StatusEffectHandler::OnTurnStart(Character* character)
   if (character->Has("Exhaustion"))
   {
 	character->SetActionPoints(0);
-	// TODO: character->SetMovementRange(0) — Character::SetMovementRange() 구현 필요
+	auto* stats = character->GetGOComponent<StatsComponent>();
+	if (stats) stats->ReduceSpeed(stats->GetSpeed()); // 현재 speed를 0으로
   }
 
-  // ── Haste: 행동 +1, 속도 +1 (RefreshActionPoints가 복원한 값에 추가) ──
+  // ── Haste: 행동 +1 (speed는 OnApplied/OnRemoved에서 base 조정) ──
   if (character->Has("Haste"))
-  {
 	character->SetActionPoints(character->GetActionPoints() + 1);
-	// TODO: character->SetMovementRange(character->GetMovementRange() + 1) — 구현 필요
-  }
 }
 
 // ──────────────────────────────────────────────

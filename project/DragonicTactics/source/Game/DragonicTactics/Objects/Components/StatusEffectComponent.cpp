@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "StatusEffectComponent.h"
 #include "../../StateComponents/EventBus.h"
+#include "../../StateComponents/StatusEffectHandler.h"
 #include "../../Types/Events.h"
 #include "../../Objects/Character.h"
 
@@ -59,6 +60,9 @@ void StatusEffectComponent::TickDown(Character* owner, EventBus* bus)
     for (const auto& e : expired)
     {
         RemoveEffect(e.name);
+        auto* handler = Engine::GetGameStateManager().GetGSComponent<StatusEffectHandler>();
+        if (handler)
+            handler->OnRemoved(owner, e.name);
         if (bus)
             bus->Publish(StatusEffectRemovedEvent{ owner, e.name, "expired" });
     }

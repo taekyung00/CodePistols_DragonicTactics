@@ -33,6 +33,7 @@ Created:    November 5, 2025
 #include "Game/DragonicTactics/StateComponents/SpellSystem.h"
 #include "Game/DragonicTactics/StateComponents/StatusEffectHandler.h"
 #include "Game/DragonicTactics/StateComponents/TurnManager.h"
+#include "Game/DragonicTactics/Objects/Components/SpellSlots.h"
 
 #include "../Debugger/DebugManager.h"
 
@@ -496,21 +497,42 @@ void GamePlay::DrawImGui()
 	  }
 
 	  for (const auto& spell_id : available)
-	  {
-		const SpellData* spell = spell_sys->GetSpellData(spell_id);
-		if (!spell)
-		  continue;
+{
+    const SpellData* spell = spell_sys->GetSpellData(spell_id);
+    if (!spell) continue;
 
-		// 버튼 레이블: "Fire Bolt (Lv.1)"
-		// ##spell_id 로 ImGui 내부 ID 충돌 방지
-		std::string label = spell->spell_name + " (Lv." + std::to_string(spell->spell_level) + ")" + "##" + spell_id;
+    if (!spell->upcastable)
+    {
+        // ── 비업캐스트: 기존 단일 버튼 ──
+        std::string label = spell->spell_name
+                          + " (Lv." + std::to_string(spell->spell_level) + ")"
+                          + "##" + spell_id;
+        if (ImGui::Button(label.c_str()))
+            m_input_handler->SelectSpell(spell_id, current, spell->spell_level);
+    }
+    else
+    {
+        // ── 업캐스트 가능: 이름 표시 + 레벨 버튼 ──
+        ImGui::Text("%s (Lv.%d Up)", spell->spell_name.c_str(), spell->spell_level);
+        ImGui::SameLine();
 
-		if (ImGui::Button(label.c_str()))
-		{
-		  Engine::GetLogger().LogEvent("UI: Spell '" + spell->spell_name + "' selected. Now targeting.");
-		  m_input_handler->SelectSpell(spell_id, current); // → TargetingForSpell로 전환
-		}
-	  }
+        SpellSlots* slots = current->GetSpellSlots();
+        for (int lv = spell->spell_level; lv <= 5; ++lv)
+        {
+            bool has_slot = slots && slots->HasSlot(lv);
+            if (!has_slot) ImGui::BeginDisabled();
+
+            std::string lv_label = "Lv" + std::to_string(lv)
+                                 + "##" + spell_id + std::to_string(lv);
+            if (ImGui::Button(lv_label.c_str()))
+                m_input_handler->SelectSpell(spell_id, current, lv);
+
+            if (!has_slot) ImGui::EndDisabled();
+            ImGui::SameLine();
+        }
+        ImGui::NewLine();
+    }
+}
 	}
 
 	if (ImGui::Button("Cancel"))
