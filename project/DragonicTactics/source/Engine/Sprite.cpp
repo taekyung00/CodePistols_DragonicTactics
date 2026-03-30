@@ -9,7 +9,7 @@ Project:    CS230 Engine
 Author:     Taekyung Ho
 Created:    March 19, 2025
 */
-
+#include <numbers>
 #include "GameObject.h"
 #include "Logger.h"
 #include "Path.h"
@@ -109,6 +109,18 @@ void CS230::Sprite::Load(const std::filesystem::path& sprite_file, GameObject* _
 	  in_file >> hotspot_y;
 	  hotspots.push_back({ hotspot_x, hotspot_y });
 	}
+	else if(text == "Scale")
+	{
+	  in_file >> scale;
+	}
+	else if (text == "Translate")
+	{
+	  in_file >> translate.x >> translate.y;
+	}
+	else if (text == "Rotate")
+	{
+	  in_file >> rotate;
+	}
 	else if (text == "Anim")
 	{
 	  in_file >> text;
@@ -160,7 +172,7 @@ void CS230::Sprite::Load(const std::filesystem::path& sprite_file, GameObject* _
 
 void CS230::Sprite::Draw(Math::TransformationMatrix display_matrix)
 {
-  texture->Draw(display_matrix * Math::TranslationMatrix(-GetHotSpot(0)), GetFrameTexel(animations[current_animation]->CurrentFrame()), GetFrameSize());
+  texture->Draw(display_matrix * Math::TranslationMatrix(-GetHotSpot(0)) * Math::TranslationMatrix(Math::to_vec2(translate)) * Math::RotationMatrix(static_cast<double>(rotate / 180 * std::numbers::pi_v<float>)) * Math::ScaleMatrix(scale), GetFrameTexel(animations[current_animation]->CurrentFrame()), GetFrameSize());
 }
 
 Math::ivec2 CS230::Sprite::GetHotSpot(size_t index)

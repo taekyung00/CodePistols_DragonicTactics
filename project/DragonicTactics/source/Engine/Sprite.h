@@ -52,6 +52,9 @@ private:
 	// Texture* texture;
 	std::shared_ptr<CS230::Texture> texture;
 	std::vector<Math::ivec2>		hotspots;
+	double							scale = 1.0;
+	Math::vec2						translate = { 0.0, 0.0 };
+	double							rotate = 0.0;
 
 	size_t					 current_animation;
 	Math::ivec2				 frame_size;

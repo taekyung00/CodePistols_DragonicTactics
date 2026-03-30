@@ -6,7 +6,7 @@
  */
 #pragma once
 #include "../../../Engine/GameState.h"
-#include "Game/Samurai.h"
+#include "Engine/Vec2.h"
 class RenderingTest : public CS230::GameState
 {
   public:
@@ -21,4 +21,11 @@ class RenderingTest : public CS230::GameState
   {
 	return "Rendering Test";
   }
+
+  std::unique_ptr<CS230::GameObject> dragon;
+  std::unique_ptr<CS230::GameObject> fighter;
+  Math::fvec2 scale = {1.f,1.f};
+	float rotate = 0.f;
+	Math::fvec2 translate = {0.f,0.f};
+	Math::ivec2 window_size;
 };

@@ -19,6 +19,7 @@
 #include "Game/DragonicTactics/Factories/CharacterFactory.h"
 #include "Game/DragonicTactics/Objects/Character.h"
 #include "Game/Samurai.h"
+#include <numbers>
 
 RenderingTest::RenderingTest()
 {
@@ -30,14 +31,16 @@ void RenderingTest::Load()
   AddGSComponent(new CharacterFactory());
   [[maybe_unused]] CS230::GameObjectManager* go_manager		  = GetGSComponent<CS230::GameObjectManager>();
   CharacterFactory*			character_factory = GetGSComponent<CharacterFactory>();
-  auto						player_ptr		  = character_factory->Create(CharacterTypes::Dragon, { 5, 5 });
-  go_manager->Add(std::move(player_ptr));
-  go_manager->Add(std::make_unique<Samurai>());
+  dragon		  = character_factory->Create(CharacterTypes::Dragon, { 5, 5 });
+  dragon->SetPosition({ 0.0,0.0 });
+  fighter		  = character_factory->Create(CharacterTypes::Fighter, { 5, 5 });
 
 }
 
 void RenderingTest::Update([[maybe_unused]] double dt)
 {
+  dragon->Update(dt);
+  fighter->Update(dt);
   if (Engine::GetInput().KeyJustReleased(CS230::Input::Keys::Escape))
   {
 	Engine::GetGameStateManager().PopState();
@@ -52,17 +55,23 @@ void RenderingTest::Draw()
 
   Math::TransformationMatrix camera_matrix = CS200::build_ndc_matrix(Engine::GetWindow().GetSize());
   renderer_2d->BeginScene(camera_matrix);
-  CS230::GameObjectManager* goMgr = GetGSComponent<CS230::GameObjectManager>();
-  if (goMgr)
-  {
-	goMgr->DrawAll(Math::TransformationMatrix());
-  }
+  dragon->Draw(Math::TranslationMatrix(Math::to_vec2(translate)) * Math::RotationMatrix(static_cast<double>(rotate / 180 * std::numbers::pi_v<float>)) * Math::ScaleMatrix(Math::to_vec2(scale)));
+  fighter->Draw(Math::TransformationMatrix{});
 
   renderer_2d->EndScene();
 }
 
 void RenderingTest::DrawImGui()
 {
+  if (ImGui::Begin("Texture Controls"))
+	{
+		ImGui::SliderFloat("Scale X", &(scale.x), -20.f, 20.0f, "%.1f px/s");
+		ImGui::SliderFloat("Scale Y", &(scale.y), -20.f, 20.0f, "%.1f px/s");
+		ImGui::SliderFloat("Rotate", &rotate, 0.f, 360.0f, "%.1f px/s");
+		ImGui::SliderFloat("Translate X", &(translate.x), -(static_cast<float>(window_size.x) - 100.f), static_cast<float>(window_size.x) - 100.f, "%.1f px/s");
+		ImGui::SliderFloat("Translate Y", &(translate.y), -(static_cast<float>(window_size.y) - 100.f), static_cast<float>(window_size.y) - 100.f, "%.1f px/s");
+	}
+	ImGui::End();
 }
 
 void RenderingTest::Unload()
