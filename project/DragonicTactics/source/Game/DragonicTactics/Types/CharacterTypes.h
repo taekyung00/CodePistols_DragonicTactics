@@ -52,16 +52,4 @@ struct CharacterData
   std::vector<std::string> known_abilities; // ["MeleeAttack", "ShieldBash"]
 };
 
-struct SpellData
-{
-  std::string spell_name;
-  int		  spell_level;
-  std::string spell_school;
-  int		  range;
-  std::string target_type;
-  int		  area_radius;
-  std::string base_damage;
-  std::string damage_type;
-  std::string upcast_bonus;
-  std::string description;
-};
+// Note: SpellData is now defined in SpellSystem.h to avoid duplication

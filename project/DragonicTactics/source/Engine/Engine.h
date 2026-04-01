@@ -33,7 +33,7 @@ namespace CS200
 }
 
 class TextManager;
-
+class SoundManager;
 /**
  * \brief Runtime information about the window and application state
  *
@@ -241,6 +241,8 @@ class Engine
    * - Support for different texture formats and properties
    */
   static CS230::TextureManager& GetTextureManager();
+
+  static SoundManager& GetSoundManager();
 
   static TextManager& GetTextManager();
 

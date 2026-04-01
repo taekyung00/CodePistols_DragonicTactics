@@ -27,6 +27,7 @@ class PlayerInputHandler
 	SelectingMove,
 	Moving,
 	SelectingAction,
+  SelectingSpell,
 	TargetingForAttack,
 	TargetingForSpell
   };
@@ -40,16 +41,23 @@ class PlayerInputHandler
 
   ActionState GetCurrentState() const
   {
-	return m_state;
+	  return m_state;
   }
 
   void SetState(ActionState new_state)
   {
-	m_state = new_state;
+	  m_state = new_state;
   }
+
+  void SelectSpell(const std::string& spell_id, Character* caster, int upcast_level);
 
   private:
   ActionState m_state = ActionState::None;
+  std::string m_selected_spell_id;
+  int         m_selected_upcast_level = 0;
+
+  //helper function
+  Math::ivec2 ConvertScreenToGrid(Math::vec2 world_pos);
 
   void HandleDragonInput(double dt, Dragon* dragon, GridSystem* grid, CombatSystem* combat_system);
   void HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, GridSystem* grid, CombatSystem* combat_system);

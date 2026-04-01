@@ -9,8 +9,8 @@
 #include "./Engine/Vec2.h"
 #include "./Game/DragonicTactics/Objects/Character.h"
 // #include "./Game/DragonicTactics/States/Test.h"
-#include "./Game/DragonicTactics/Test/Week1TestMocks.h"
 #include "./Game/DragonicTactics/StateComponents/MapDataRegistry.h"
+#include "./Game/DragonicTactics/Test/Week1TestMocks.h"
 #include <map>
 
 struct MapData;
@@ -28,7 +28,7 @@ class GridSystem : public CS230::Component
 	Invalid
   };
 
-  //출구 위치 관리
+  // 출구 위치 관리
   void SetExitPosition(Math::ivec2 pos);
 
   Math::ivec2 GetExitPosition() const;
@@ -53,6 +53,17 @@ class GridSystem : public CS230::Component
   /// @brief 이동 모드 비활성화 (시각화 데이터 초기화)
   void DisableMovementMode();
 
+  /// @brief 스펠 타겟팅 가능 타일 계산 (맨해튼 거리 기반)
+  /// @param center  시전자 위치
+  /// @param range   스펠 사거리
+  void EnableSpellTargetingMode(Math::ivec2 center, const std::string& geometry, int range);
+
+  /// @brief 4방향 직선 타일 목록 반환 (Line 기하학 시각화용)
+std::vector<Math::ivec2> GetLineTiles(Math::ivec2 center, int reach) const;
+  
+  /// @brief 스펠 타겟팅 모드 해제 (시각화 데이터 초기화)
+  void DisableSpellTargetingMode();
+
   /// @brief 마우스 호버 위치 설정 (경로 계산)
   /// @param hovered_tile 마우스가 위치한 타일
   void SetHoveredTile(Math::ivec2 hovered_tile);
@@ -69,6 +80,7 @@ class GridSystem : public CS230::Component
   /// @brief 특정 타일이 이동 가능한지 확인
   bool IsReachable(Math::ivec2 tile) const;
 
+  
   private:
   static const int MAP_WIDTH  = 8;
   static const int MAP_HEIGHT = 8;
@@ -94,7 +106,7 @@ class GridSystem : public CS230::Component
 	}
   };
 
-  Math::ivec2 exit_position_ = {-1, -1};  // 출구 위치 (-1, -1은 없음)
+  Math::ivec2 exit_position_ = { -1, -1 }; // 출구 위치 (-1, -1은 없음)
 
   // ========================================
   // 신규 추가: 시각화 데이터
@@ -105,6 +117,12 @@ class GridSystem : public CS230::Component
   std::vector<Math::ivec2> hovered_path_;					   // 마우스 호버 시 경로
   Math::ivec2			   hovered_tile_ = { -1, -1 };		   // 현재 마우스 호버 타일
   double				   pulse_timer_	 = 0.0;
+
+
+  // ─ 스펠 타겟팅 시각화 ─
+  bool					spell_targeting_mode_active_ = false;
+  std::set<Math::ivec2> spell_targetable_tiles_;
+
 
   public:
   static const int TILE_SIZE = MAP_WIDTH * MAP_HEIGHT;
@@ -154,12 +172,12 @@ inline bool operator<(const Math::ivec2& a, const Math::ivec2& b)
   return a.y < b.y;
 }
 
-//inline bool operator==(const Math::ivec2& a, const Math::ivec2& b)
+// inline bool operator==(const Math::ivec2& a, const Math::ivec2& b)
 //{
-//  return a.x == b.x && a.y == b.y;
-//}
+//   return a.x == b.x && a.y == b.y;
+// }
 
-//inline bool operator!=(const Math::ivec2& a, const Math::ivec2& b)
+// inline bool operator!=(const Math::ivec2& a, const Math::ivec2& b)
 //{
-//  return !(a == b);
-//}
+//   return !(a == b);
+// }

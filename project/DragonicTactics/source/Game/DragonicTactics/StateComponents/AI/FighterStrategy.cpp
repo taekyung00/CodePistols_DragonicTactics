@@ -207,6 +207,11 @@ bool FighterStrategy::IsInDanger(Character* actor) const
   return (actor->GetHPPercentage() <= 0.3f);
 }
 
+bool FighterStrategy::CanKillDragonThisTurn([[maybe_unused]] Character* actor, [[maybe_unused]] Character* dragon, [[maybe_unused]] GridSystem* grid) const
+{
+  return false;
+}
+
 bool FighterStrategy::ShouldUseSpellAttack(Character* actor, [[maybe_unused]] Character* target) const
 {
   // Fighter 전략: 클레릭이 있을 때는 버프/디버프 확인 후 주문 사용

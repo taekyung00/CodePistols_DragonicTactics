@@ -5,6 +5,7 @@
 **작성일**: 2026-03-08
 
 **관련 파일**:
+
 - [GamePlayUIManager.h/cpp](../../../DragonicTactics/source/Game/DragonicTactics/States/GamePlayUIManager.h)
 - [PlayerInputHandler.h/cpp](../../../DragonicTactics/source/Game/DragonicTactics/States/PlayerInputHandler.h)
 - [IRenderer2D.h](../../../DragonicTactics/source/CS200/IRenderer2D.h)
@@ -18,6 +19,7 @@
 `ButtonManager`는 게임 월드 좌표 어디에든 버튼을 배치할 수 있는 커스텀 UI 시스템을 제공합니다.
 
 ### 요구사항
+
 - 원하는 위치에 버튼 생성/제거
 - 호버(Hover), 클릭(Pressed), 비활성화(Disabled) 상태 처리
 - 마우스 입력 감지
@@ -285,14 +287,22 @@ class GamePlayUIManager
 public:
     // ... 기존 선언
 
-    void InitButtons();          // 버튼 초기 배치
-    ButtonManager& GetButtons(); // PlayerInputHandler에서 접근용
+    void InitButtons();          // 버튼 초기 배치 — GamePlay::Load()에서 호출
+    ButtonManager& GetButtons(); // GamePlay::Update()에서 PlayerInputHandler에 넘겨줄 때 사용
 
 private:
     ButtonManager button_manager_;
     // ... 기존 멤버
 };
 ```
+
+> **⚠️ `InitButtons()`는 반드시 `GamePlay::Load()`에서 호출해야 합니다.**
+> `GamePlayUIManager` 생성 직후 아래와 같이 호출합니다:
+> 
+> ```cpp
+> // GamePlay::Load() 내부
+> m_ui_manager.InitButtons(); // 버튼 등록 — 이 줄 없으면 ButtonManager가 비어 있음
+> ```
 
 **파일**: `GamePlayUIManager.cpp`
 
@@ -372,15 +382,31 @@ void GamePlayUIManager::Draw(Math::TransformationMatrix camera_matrix)
 
 ### Task 4: PlayerInputHandler에서 ButtonManager 연동
 
-**파일**: `PlayerInputHandler.cpp`의 `Update()`
+`PlayerInputHandler`는 `GamePlayUIManager`를 소유하지 않습니다.
+대신 `GamePlay::Update()`가 `m_ui_manager.GetButtons()`를 꺼내 **파라미터로 전달**합니다.
+
+```cpp
+// GamePlay::Update() 내부 (호출부)
+m_player_input_handler.Update(dt, current_character, grid, combat_system,
+                               m_ui_manager.GetButtons());
+```
+
+**파일**: `PlayerInputHandler.h` — Update 시그니처 변경
+
+```cpp
+// ButtonManager& 를 파라미터로 받음 (포인터 멤버 저장 없음)
+void Update(double dt, Character* current_character,
+            GridSystem* grid, CombatSystem* combat_system,
+            ButtonManager& btns);
+```
+
+**파일**: `PlayerInputHandler.cpp`의 `Update()` 구현
 
 ```cpp
 void PlayerInputHandler::Update(double dt, Character* current_character,
-                                  GridSystem* grid, CombatSystem* combat_system)
+                                  GridSystem* grid, CombatSystem* combat_system,
+                                  ButtonManager& btns)
 {
-    // ButtonManager 참조 (GamePlayUIManager에서)
-    ButtonManager& btns = m_ui_manager->GetButtons();
-
     // Move 버튼 클릭
     if (btns.IsPressed("btn_move"))
     {
@@ -487,6 +513,7 @@ for (int i = 0; i < static_cast<int>(available.size()); ++i)
 ## Rigorous Testing
 
 ### 테스트 1: 버튼 클릭 감지
+
 ```cpp
 ButtonManager btns;
 btns.AddButton({ "test_btn", {100.0, 100.0}, {80.0, 30.0}, "Test" });
@@ -501,6 +528,7 @@ ASSERT(!btns.IsPressed("test_btn"), "Button outside click must not register");
 ```
 
 ### 테스트 2: 비활성화 상태
+
 ```cpp
 btns.SetDisabled("test_btn", true);
 btns.Update({130.0, 85.0}, true);
@@ -508,6 +536,7 @@ ASSERT(!btns.IsPressed("test_btn"), "Disabled button must not respond to clicks"
 ```
 
 ### 테스트 3: 가시성 토글
+
 ```cpp
 btns.SetVisible("test_btn", false);
 btns.Update({130.0, 85.0}, true);
@@ -515,12 +544,14 @@ ASSERT(!btns.IsPressed("test_btn"), "Hidden button must not respond to clicks");
 ```
 
 ### 테스트 4: 레이블 변경
+
 ```cpp
 btns.SetLabel("btn_move", "Cancel Move");
 // Draw()에서 "Cancel Move"가 표시되어야 함 (시각적 확인)
 ```
 
 ### 게임 내 수동 테스트
+
 1. 게임 실행 후 하단 버튼 영역 확인
 2. Move 버튼 클릭 → 이동 가능 타일 하이라이트
 3. Action 버튼 클릭 → Attack/Spell 서브 버튼 표시

@@ -18,7 +18,7 @@ if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/stb_implementation.cpp)
     #include \"stb_image.h\"
     #define STB_PERLIN_IMPLEMENTATION
     #include \"stb_perlin.h\"
-    //#include \"stb_vorbis.c\"
+    #include \"stb_vorbis.c\"
     ")
 
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/stb_implementation.cpp ${STB_IMPLEMENTATION_CODE})
@@ -27,4 +27,3 @@ endif()
 
 add_library(the_stb STATIC ${CMAKE_CURRENT_BINARY_DIR}/stb_implementation.cpp)
 target_include_directories(the_stb SYSTEM PUBLIC ${stb_github_SOURCE_DIR})
-

@@ -16,6 +16,7 @@
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
 #include "./Game/DragonicTactics/StateComponents/GridSystem.h"
+#include "Game/DragonicTactics/StateComponents/StatusEffectHandler.h"
 #include "CombatSystem.h"
 
 // #include "../SpellSlots.h"
@@ -125,9 +126,22 @@ bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender)
 	return false;
   }
 
+  auto* handler = Engine::GetGameStateManager().GetGSComponent<StatusEffectHandler>();
+
+
+    
+
   // Calculate and apply damage
   int damage = CalculateDamage(attacker, defender, attacker->GetStatsComponent()->GetAttackDice(), attacker->GetStatsComponent()->GetBaseAttack());
+
+  // 상태 효과 피해 보정 (Blessing, Fear, Curse, Stealth)
+    if (handler)
+    {
+        damage = handler->ModifyDamageDealt(attacker, damage);
+        damage = handler->ModifyDamageTaken(defender, damage);
+    }
   ApplyDamage(attacker, defender, damage);
+  attacker->SetHasAttackedThisTurn(true);
 
   // Consume AP
   attacker->GetActionPointsComponent()->Consume(attackCost);

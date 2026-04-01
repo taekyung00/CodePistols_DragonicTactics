@@ -25,6 +25,7 @@ class StatsComponent : public CS230::Component
 
   void RefreshSpeed();
   void ReduceSpeed(int i = 1);
+  void ModifyBaseSpeed(int delta);
   int  GetSpeed() const;
 
   int				 GetBaseAttack() const;

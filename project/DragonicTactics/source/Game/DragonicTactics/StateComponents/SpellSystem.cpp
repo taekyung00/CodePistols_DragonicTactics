@@ -8,291 +8,715 @@
 
 // File: CS230/Game/System/SpellSystem.cpp
 #include "../Objects/Character.h"
+#include "../StateComponents/CombatSystem.h"
+#include "../StateComponents/DiceManager.h"
 #include "../StateComponents/EventBus.h"
+#include "../StateComponents/GridSystem.h"
 #include "../Types/Events.h"
 #include "./Engine/Engine.h"
 #include "./Engine/GameStateManager.h"
 #include "./Engine/Logger.h"
+#include "Engine/Path.h"
+#include "Game/DragonicTactics/Objects/Components/ActionPoints.h"
+#include "Game/DragonicTactics/Objects/Components/SpellSlots.h"
+#include "Game/DragonicTactics/StateComponents/StatusEffectHandler.h"
 #include "SpellSystem.h"
 
-// class Character;
-
-// ///////////////////////////./////////////////////////////////////////////////////////////////////////////////////////////////////
-// // Step 1.1: Define spell result structure
-// // Reason: Spells need to communicate back what happened (damage dealt, tiles affected, etc.)
-// // This enables proper event publishing and UI feedback
-// struct SpellResult {
-//     bool success;                          // Did the spell cast successfully?
-//     std::vector<Character*> affectedTargets; // Who was hit?
-//     std::vector<Math::vec2> affectedTiles;   // Which tiles were affected?
-//     int damageDealt;                         // Total damage (for damage spells)
-//     std::string failureReason;               // Why it failed (out of range, no slots, etc.)
-// };
-
-// // Step 1.2: Define spell targeting types
-// // Reason: Different spells target differently (single enemy, area, self, etc.)
-// // This allows UI to show appropriate targeting cursors
-// enum class SpellTargetType {
-//     Single,      // Target one character (e.g., Magic Missile)
-//     Area,        // Target area centered on a tile (e.g., Fireball)
-//     Line,        // Target tiles in a line (e.g., Lightning Bolt)
-//     Self,        // Target caster only (e.g., Shield spell)
-//     AllEnemies   // Target all enemies (rare, powerful spells)
-// };
-
-// // Step 1.3: Base spell interface
-// // Reason: All spells share common properties (name, cost, range) and behavior (validation, casting)
-// // Using pure virtual functions ensures every spell implements required methods
-// class SpellBase {
-// public:
-//     virtual ~SpellBase() = default;
-
-//     // Core spell information
-//     virtual std::string GetName() const = 0;
-//     virtual int GetLevel() const = 0;
-//     virtual int GetRange() const = 0;
-//     virtual SpellTargetType GetTargetType() const = 0;
-//     virtual std::string GetDescription() const = 0;
-
-//     // Spell validation (before casting)
-//     // Reason: Prevent invalid casts (out of range, invalid target, etc.)
-//     virtual bool CanCast(Character* caster, Math::vec2 targetTile) const = 0;
-
-//     // Spell execution
-//     // Reason: This is where the spell's unique effect happens
-//     virtual SpellResult Cast(Character* caster, Math::vec2 targetTile, int upcastLevel = 0) = 0;
-
-//     // Area of effect calculation
-//     // Reason: Some spells affect multiple tiles (Fireball, LavaPool)
-//     // Returns all tiles affected by the spell
-//     virtual std::vector<Math::vec2> GetAffectedTiles(Math::vec2 targetTile) const = 0;
-
-// protected:
-//     // Helper: Check if target is in range
-//     // Reason: Common logic shared by all spells
-//     bool IsInRange(Math::vec2 casterPos, Math::vec2 targetPos, int range) const {
-//         int dx = abs((int)targetPos.x - (int)casterPos.x);
-//         int dy = abs((int)targetPos.y - (int)casterPos.y);
-//         return (dx + dy) <= range; // Manhattan distance
-//     }
-// };
-// ////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-// Step 1.9: Singleton implementation
-
-
-SpellSystem::SpellSystem()
+std::vector<std::string> SpellSystem::SplitByDelimiter(const std::string& str, char delim) const
 {
-  // Engine::GetLogger().LogEvent("SpellSystem initialized");
-}
-
-SpellSystem::~SpellSystem()
-{
-  spells.clear();
-}
-
-// Step 2.1: Register a spell
-// Reason: Add spell to the system's registry
-void SpellSystem::RegisterSpell(const std::string& spellName, MockSpellBase* spell)
-{
-  if (!spell)
+  std::vector<std::string> result;
+  std::stringstream		   ss(str);
+  std::string			   token;
+  while (std::getline(ss, token, delim))
   {
-	Engine::GetLogger().LogError("SpellSystem: Attempted to register null spell");
+	size_t start = token.find_first_not_of(" \t\r\n");
+	size_t end	 = token.find_last_not_of(" \t\r\n");
+	if (start != std::string::npos)
+	  result.push_back(token.substr(start, end - start + 1));
+  }
+  return result;
+}
+
+std::vector<std::string> SpellSystem::ReadCSVRecord(std::ifstream& file) const
+{
+  std::vector<std::string> columns;
+  std::string			   cell;
+  bool					   in_quotes = false;
+  char					   c;
+
+  while (file.get(c))
+  {
+	if (c == '"')
+	{
+	  if (in_quotes && file.peek() == '"') // escaped quote ""
+	  {
+		cell += '"';
+		file.get(c); // 두 번째 " 소비
+	  }
+	  else
+	  {
+		in_quotes = !in_quotes;
+	  }
+	}
+	else if (c == ',' && !in_quotes)
+	{
+	  columns.push_back(cell);
+	  cell.clear();
+	}
+	else if (c == '\n' && !in_quotes)
+	{
+	  columns.push_back(cell);
+	  return columns; // 레코드 완료
+	}
+	else if (c == '\r')
+	{
+	  // skip
+	}
+	else
+	{
+	  cell += c;
+	}
+  }
+
+  if (!cell.empty() || !columns.empty())
+	columns.push_back(cell); // 마지막 컬럼
+
+  return columns;
+}
+
+void SpellSystem::LoadFromCSV(const std::string& csv_path)
+{
+  const std::filesystem::path full_path = assets::locate_asset(csv_path);
+  std::ifstream				  file(full_path);
+  if (!file.is_open())
+  {
+	Engine::GetLogger().LogError("SpellSystem: Failed to open " + csv_path);
 	return;
   }
 
-  // Check if spell already registered
-  if (spells.find(spellName) != spells.end())
+  ReadCSVRecord(file); // 헤더 스킵
+
+  while (file.good())
   {
-	Engine::GetLogger().LogError("SpellSystem: Spell '" + spellName + "' already registered");
-	return;
+	auto columns = ReadCSVRecord(file);
+	if (columns.size() < 8 || columns[0].empty())
+	  continue;
+
+	SpellData data	 = ParseCSVRow(columns);
+	spells_[data.id] = data;
   }
-
-  // Step 2.1a: Store spell in registry
-  // Reason: unique_ptr ensures proper cleanup
-  spells[spellName] = std::unique_ptr<MockSpellBase>(spell);
-
-  Engine::GetLogger().LogEvent("SpellSystem: Registered spell '" + spellName + "'");
+  Engine::GetLogger().LogEvent("SpellSystem: Loaded " + std::to_string(spells_.size()) + " spells");
 }
 
-// Step 2.2: Retrieve a spell by name
-// Reason: Allow other systems to look up spells
-MockSpellBase* SpellSystem::GetSpell(const std::string& spellName)
+SpellTargeting SpellSystem::ParseTargeting(const std::string& targeting_str) const
 {
-  auto it = spells.find(spellName);
-  if (it == spells.end())
-  {
-	Engine::GetLogger().LogError("SpellSystem: Spell '" + spellName + "' not found");
-	return nullptr;
-  }
+  // "Enemy:Single:4"  →  filter=Enemy, geometry=Single, range=4
+  // "Any:OddEven:-1"  →  filter=Any,   geometry=OddEven, range=-1
+  auto parts = SplitByDelimiter(targeting_str, ':');
 
-  return it->second.get();
+  SpellTargeting t;
+  t.filter	 = (parts.size() > 0) ? parts[0] : "Any";
+  t.geometry = (parts.size() > 1) ? parts[1] : "Single";
+  if (parts.size() > 2 && !parts[2].empty())
+	t.range = std::stoi(parts[2]);
+  else
+	t.range = -1; // 파싱 실패 → 무한으로 처리
+  return t;
 }
 
-// Step 3.1: Validate spell slots
-// Reason: Caster must have available spell slots of the required level
-bool SpellSystem::ValidateSpellSlots(Character* caster, int requiredLevel) const
+SpellData SpellSystem::ParseCSVRow(const std::vector<std::string>& col) const
+{
+  SpellData data;
+  data.id			  = col[0];
+  data.spell_name	  = col[1];
+  data.category		  = col[2];
+  data.usable_classes = SplitByDelimiter(col[3], ','); // "Dragon, Fighter" → vector
+  data.spell_level	  = col[4].empty() ? 0 : std::stoi(col[4]);
+  data.targeting	  = ParseTargeting(col[5]);
+  data.upcastable	  = (col[6] == "TRUE");
+  data.effect_raw	  = col[7];
+
+  ParseEffectField(col[7], data);
+  return data;
+}
+
+// Effect 4줄 템플릿 파싱:
+//   Line 1: Deals {damage} damage.
+//   Line 2: Applies "{STATUS}" status for {N} turns.
+//   Line 3: Move to {location}.
+//   Line 4: Summons {entity} at {location}.
+void SpellSystem::ParseEffectField(const std::string& effect_str, SpellData& data) const
+{
+  std::istringstream ss(effect_str);
+  std::string		 line;
+
+  // Line 1: "Deals X damage." — 전체 formula 문자열 추출 후 ParseDamageFormula에 위임
+  if (std::getline(ss, line))
+  {
+	const std::string prefix = "Deals ";
+	const std::string suffix = " damage.";
+	auto			  p		 = line.find(prefix);
+	auto			  s		 = line.rfind(suffix); // rfind: suffix가 문장 끝에 있음
+	if (p != std::string::npos && s != std::string::npos)
+	{
+	  std::string full_formula = line.substr(p + prefix.size(), s - (p + prefix.size()));
+	  ParseDamageFormula(full_formula, data);
+	}
+	else
+	{
+	  data.damage_formula = "0";
+	  data.upcast_dice	  = "";
+	}
+  }
+
+  // Line 2: Applies "STATUS" status for N turns.
+  if (std::getline(ss, line))
+  {
+	// 따옴표 사이의 STATUS 이름 추출
+	auto q1 = line.find('"');
+	auto q2 = line.find('"', q1 + 1);
+	if (q1 != std::string::npos && q2 != std::string::npos)
+	  data.effect_status = line.substr(q1 + 1, q2 - q1 - 1);
+	else
+	  data.effect_status = "Basic";
+
+	// "for N turns" 에서 N 추출
+	auto ft = line.find("for ");
+	auto tt = line.find(" turns", ft);
+	if (ft != std::string::npos && tt != std::string::npos)
+	{
+	  std::string n_str	   = line.substr(ft + 4, tt - (ft + 4));
+	  data.effect_duration = n_str.empty() ? 0 : std::stoi(n_str);
+	}
+	else
+	  data.effect_duration = 0;
+  }
+
+  // Line 3: "Move to {template}."
+  if (std::getline(ss, line))
+  {
+	const std::string prefix = "Move to ";
+	auto			  p		 = line.find(prefix);
+	if (p != std::string::npos)
+	{
+	  std::string loc = line.substr(p + prefix.size());
+	  if (!loc.empty() && loc.back() == '.')
+		loc.pop_back();
+	  data.move = ParseMoveField(loc); // ← 구조체로 저장
+	}
+	else
+	{
+	  data.move = { "self", "stay", 0 };
+	}
+  }
+
+  // Line 4: "Summons {entity} at {location}."
+  if (std::getline(ss, line))
+  {
+	const std::string prefix = "Summons ";
+	auto			  p		 = line.find(prefix);
+	auto			  at	 = line.find(" at ");
+	if (p != std::string::npos && at != std::string::npos)
+	  data.summon_type = line.substr(p + prefix.size(), at - (p + prefix.size()));
+	else
+	  data.summon_type = "NULL";
+  }
+  // Line 5+: "Special: ..." (선택적, 복수 줄 가능)
+  while (std::getline(ss, line))
+  {
+	const std::string special_prefix = "Special:";
+	if (line.rfind(special_prefix, 0) == 0)
+	{
+	  std::string content = line.substr(special_prefix.size());
+	  // 앞 공백 제거
+	  auto		  start	  = content.find_first_not_of(" \t");
+	  if (start != std::string::npos)
+		content = content.substr(start);
+
+	  // 복수 Special 줄은 "; "로 이어붙임
+	  if (data.special_effect.empty())
+		data.special_effect = content;
+	  else
+		data.special_effect += "; " + content;
+	}
+  }
+}
+
+void SpellSystem::ApplySpecialEffect(Character* caster, const SpellData& spell, int upcast_level)
+{
+  if (spell.special_effect.empty())
+	return;
+
+  // ── "Recover a Spell Slot of (formula) level." ──
+  if (spell.special_effect.find("Recover a Spell Slot") != std::string::npos)
+  {
+	// 공식: Spell Level - Required Spell Level + 1
+	int used_level	  = (upcast_level > 0) ? upcast_level : spell.spell_level;
+	int restore_level = used_level - spell.spell_level + 1;
+	restore_level	  = std::max(1, restore_level); // 최소 1레벨
+
+	SpellSlots* slots = caster->GetSpellSlots();
+	if (slots)
+	{
+	  slots->RestoreOne(restore_level);
+	  Engine::GetLogger().LogEvent(caster->TypeName() + " recovered 1 level-" + std::to_string(restore_level) + " slot via Mana Conversion");
+	}
+  }
+  // 향후 다른 Special 패턴은 여기 추가
+}
+
+int SpellSystem::CalculateSpellDamage(const SpellData& spell, int upcast_level)
+{
+    // ── 조기 반환: 피해 없음 ──
+    if (spell.damage_formula == "0" || spell.damage_formula.empty())
+    {
+        // [Mana Conversion 패턴] damage_formula=="0" 이지만 upcast_dice가 있으면
+        // "0 + (level_diff+1)d10" 의미 → 여기서 굴리고 반환
+        if (!spell.upcast_dice.empty())
+        {
+            auto* dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
+            if (!dice) return 0;
+
+            int level_diff = std::max(0, upcast_level - spell.spell_level) + 1; // +1: 기본도 1회
+
+            auto d_pos = spell.upcast_dice.find('d');
+            if (d_pos != std::string::npos)
+            {
+                int         per_level  = (d_pos > 0) ? std::stoi(spell.upcast_dice.substr(0, d_pos)) : 1;
+                std::string face       = spell.upcast_dice.substr(d_pos);          // "d10"
+                std::string rolled_str = std::to_string(level_diff * per_level) + face; // "1d10", "3d10"
+                return dice->RollDiceFromString(rolled_str);
+            }
+        }
+        return 0; // upcast_dice도 없으면 진짜 0
+    }
+
+    // ── flat_per_level:N (Magic Missile) ──
+    if (spell.damage_formula.rfind("flat_per_level:", 0) == 0)
+    {
+        int multiplier = std::stoi(spell.damage_formula.substr(15));
+        int level_diff = std::max(0, upcast_level - spell.spell_level) + 1;
+        return multiplier * level_diff;
+    }
+
+    auto* dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
+    if (!dice) return 0;
+
+    int  level_diff = std::max(0, upcast_level - spell.spell_level);
+    bool negative   = (!spell.damage_formula.empty() && spell.damage_formula[0] == '-');
+
+    std::string base_str = spell.damage_formula;
+    if (negative)
+        base_str = base_str.substr(2, base_str.size() - 3); // "-(X)" → "X"
+
+    int total = dice->RollDiceFromString(base_str);
+
+    // 업캐스트 보너스 다이스
+    if (level_diff > 0 && spell.upcastable && !spell.upcast_dice.empty())
+    {
+        auto d_pos = spell.upcast_dice.find('d');
+        if (d_pos != std::string::npos)
+        {
+            int         per_level  = (d_pos > 0) ? std::stoi(spell.upcast_dice.substr(0, d_pos)) : 1;
+            std::string face       = spell.upcast_dice.substr(d_pos);
+            std::string rolled_str = std::to_string(level_diff * per_level) + face;
+            total += dice->RollDiceFromString(rolled_str);
+        }
+    }
+
+    return negative ? -total : total;
+}
+
+void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Math::ivec2 target_tile, int upcast_level)
+{
+  auto* grid   = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+  auto* combat = Engine::GetGameStateManager().GetGSComponent<CombatSystem>();
+  if (!grid || !combat)
+	return;
+
+  // ─────────────────────────────────────────────────
+  // 피해 대상 목록 결정 (Geometry 기반)
+  // ─────────────────────────────────────────────────
+  std::vector<Character*> targets;
+  const SpellTargeting&	  t = spell.targeting;
+
+  if (t.geometry == "Self")
+  {
+	targets.push_back(caster);
+  }
+  else if (t.geometry == "Single" || t.geometry == "Point")
+  {
+	// 단일 타일 선택 — 기존 동작
+	Character* hit = grid->GetCharacterAt(target_tile);
+	if (hit)
+	  targets.push_back(hit);
+  }
+  else if (t.geometry == "Around")
+  {
+	// 시전자 중심 원형 AOE
+	int radius = (t.range < 0) ? 99 : t.range;
+	for (auto* c : grid->GetAllCharacters())
+	{
+	  if (!c || !c->IsAlive())
+		continue;
+	  if (t.filter == "Self" && c != caster)
+		continue;
+	  if (t.filter == "Enemy" && c == caster)
+		continue; // 간단 필터 (팀 구분은 추후)
+	  int dist = grid->ManhattanDistance(caster->GetGridPosition()->Get(), c->GetGridPosition()->Get());
+	  if (dist <= radius)
+		targets.push_back(c);
+	}
+  }
+  else if (t.geometry == "Line")
+  {
+	// 4방향 직선 (십자 모양)
+	const Math::ivec2 dirs[4] = {
+	  {	1,  0 },
+		{ -1,  0 },
+	   {	 0,	1 },
+		 {  0, -1 }
+	};
+	int reach = (t.range < 0) ? 99 : t.range;
+	for (const auto& dir : dirs)
+	{
+	  for (int step = 1; step <= reach; ++step)
+	  {
+		Math::ivec2 tile = caster->GetGridPosition()->Get() + Math::ivec2{ dir.x * step, dir.y * step };
+		if (!grid->IsValidTile(tile))
+		  break;
+		// 벽 통과 불가
+		if (grid->GetTileType(tile) == GridSystem::TileType::Wall)
+		  break;
+		Character* hit = grid->GetCharacterAt(tile);
+		if (hit && hit->IsAlive())
+		  targets.push_back(hit);
+	  }
+	}
+  }
+  else if (t.geometry == "OddEven")
+  {
+	// 바둑판 패턴 — 홀수 or 짝수 타일의 모든 캐릭터
+	// (플레이어가 홀/짝 선택하는 기능은 추후 구현, 현재는 전체 대상)
+	for (auto* c : grid->GetAllCharacters())
+	{
+	  if (!c || !c->IsAlive() || c == caster)
+		continue;
+	  targets.push_back(c);
+	}
+  }
+
+  // ─────────────────────────────────────────────────
+  // 피해 적용
+  // ─────────────────────────────────────────────────
+  if (spell.damage_formula != "0" && !spell.damage_formula.empty())
+{
+    auto* dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
+
+    for (auto* tgt : targets)
+    {
+        int damage = CalculateSpellDamage(spell, upcast_level);
+
+        // Weakpoint Strike: 대상이 디버프 상태이면 2d20으로 교체
+        if (!spell.special_effect.empty()
+            && spell.special_effect.find("If target is debuffed") != std::string::npos)
+        {
+            bool is_debuffed = tgt->Has("Curse") || tgt->Has("Fear") || tgt->Has("Exhaustion");
+            if (is_debuffed && dice)
+                damage = dice->RollDiceFromString("2d20");
+        }
+
+        if (damage > 0)       combat->ApplyDamage(caster, tgt, damage);
+        else if (damage < 0)  tgt->SetHP(std::min(tgt->GetHP() + (-damage), tgt->GetMaxHP()));
+    }
+}
+
+  // ─────────────────────────────────────────────────
+  // 상태 효과 적용 (기존 로직 유지, targets 루프로 통합)
+  // ─────────────────────────────────────────────────
+  if (spell.effect_status != "Basic" && spell.effect_duration > 0)
+  {
+	auto* handler = Engine::GetGameStateManager().GetGSComponent<StatusEffectHandler>();
+	// Around/Line/OddEven은 이미 targets에 대상 목록이 있음
+	// Single/Self 도 동일 루프 사용
+	for (auto* tgt : targets)
+	{
+	  tgt->AddEffect(spell.effect_status, spell.effect_duration);
+	  if (handler)
+		handler->OnApplied(tgt, spell.effect_status);
+	}
+	// Around 타겟 없고 filter==Self 인 경우 (ex. Purify) 이미 Self geometry로 처리됨
+  }
+
+  // ─────────────────────────────────────────────────
+  // 지형 / 특수 이동 (기존 유지)
+  // ─────────────────────────────────────────────────
+  if (spell.summon_type != "NULL" && !spell.summon_type.empty())
+	Engine::GetLogger().LogEvent("SpellSystem: Summon " + spell.summon_type + " at ...");
+
+  ApplyMoveEffect(caster, targets, spell, target_tile);
+
+  // Special 효과 처리
+  ApplySpecialEffect(caster, spell, upcast_level);
+}
+
+bool SpellSystem::CastSpell(Character* caster, const std::string& spell_id, Math::ivec2 target_tile, int upcast_level)
 {
   if (!caster)
 	return false;
 
-  // Check if caster has any slots of the required level or higher
-  for (int level = requiredLevel; level <= 9; ++level)
+  auto it = spells_.find(spell_id);
+  if (it == spells_.end())
   {
-	if (caster->GetSpellSlotCount(level) > 0)
+	Engine::GetLogger().LogError("SpellSystem: Unknown spell id " + spell_id);
+	return false;
+  }
+
+  const SpellData& spell = it->second;
+
+  if (!CanCast(caster, spell_id, target_tile))
+	return false;
+
+  int consume_level = (upcast_level > 0) ? upcast_level : spell.spell_level;
+  if (consume_level > 0)
+	caster->ConsumeSpell(consume_level);
+
+  // AP 소모 (신규) — CanCast에서 이미 >= 1 보장됨
+  caster->GetActionPointsComponent()->Consume(1);
+
+  ApplySpellEffect(caster, spell, target_tile, upcast_level);
+
+  Engine::GetLogger().LogEvent(caster->TypeName() + " cast " + spell.spell_name + " [" + spell_id + "]");
+  return true;
+}
+
+bool SpellSystem::HasSpell(const std::string& spell_id) const
+{
+  return spells_.count(spell_id) > 0;
+}
+
+std::vector<std::string> SpellSystem::GetAvailableSpells(Character* caster) const
+{
+  std::vector<std::string> available_spells;
+  for (const auto& pair : spells_)
+  {
+	// 타겟 미확정이므로 시전자 위치를 사용 → 거리=0, 사거리 체크 항상 통과
+	if (CanCast(caster, pair.first, caster->GetGridPosition()->Get()))
 	{
-	  return true;
+	  available_spells.push_back(pair.first);
 	}
   }
-
-  return false;
+  return available_spells;
 }
 
-// Step 3.2: Validate target
-// Reason: Use spell's own validation logic
-bool SpellSystem::ValidateTarget(MockSpellBase* spell, Character* caster, Math::vec2 targetTile) const
+bool SpellSystem::CanCast(Character* caster, const std::string& spell_id, Math::ivec2 target_tile, int upcast_level) const
 {
-  if (!spell || !caster)
+  if (!caster)
 	return false;
 
-  return spell->CanCast(caster, targetTile);
-}
+  auto it = spells_.find(spell_id);
+  if (it == spells_.end())
+	return false;
 
-// Step 3.3: Main validation method
-// Reason: Check all prerequisites before allowing cast
-bool SpellSystem::CanCastSpell(Character* caster, const std::string& spellName, Math::vec2 targetTile, int upcastLevel) const
-{
-  // Check 1: Spell exists
-  auto it = spells.find(spellName);
-  if (it == spells.end())
+  const SpellData& spell = it->second;
+
+  // 클래스 사용 가능 여부
+  if (std::find(spell.usable_classes.begin(), spell.usable_classes.end(), caster->TypeName()) == spell.usable_classes.end())
+	return false;
+
+  // 주문 슬롯 여부
+  if (upcast_level > 0)
   {
-	return false;
+	// 특정 레벨로 시전: 해당 레벨 >= spell_level 이고 슬롯 존재 확인
+	if (upcast_level < spell.spell_level)
+	  return false;
+	if (!caster->HasSpellSlot(upcast_level))
+	  return false;
+  }
+  else if (spell.spell_level > 0)
+  {
+	// GetAvailableSpells 호출 (레벨 미지정): spell_level 이상 슬롯 하나라도 있으면 OK
+	bool has_any = false;
+	for (int lv = spell.spell_level; lv <= 5; ++lv)
+	  if (caster->HasSpellSlot(lv))
+	  {
+		has_any = true;
+		break;
+	  }
+	if (!has_any)
+	  return false;
   }
 
-  MockSpellBase* spell = it->second.get();
+  const SpellTargeting& t = spell.targeting;
 
-  // Check 2: Determine required spell slot level
-  int requiredLevel = (upcastLevel > 0) ? upcastLevel : spell->GetLevel();
-
-  // Check 3: Validate spell slots
-  if (!ValidateSpellSlots(caster, requiredLevel))
+  // Self / OddEven 은 사거리 무관 (항상 허용)
+  bool range_ok = (t.geometry == "Self" || t.geometry == "OddEven" || t.range < 0);
+  if (!range_ok)
   {
-	return false;
+	auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+	if (!grid)
+	  return false;
+	int dist = grid->ManhattanDistance(caster->GetGridPosition()->Get(), target_tile);
+	if (dist > t.range)
+	  return false;
   }
 
-  // Check 4: Validate target
-  if (!ValidateTarget(spell, caster, targetTile))
-  {
+  // 사거리 체크 이후, return true 바로 앞에 추가
+  if (caster->GetActionPoints() < 1)
 	return false;
-  }
 
   return true;
 }
 
-// Step 4.1: Cast spell
-// Reason: Main entry point for spell casting
-MockSpellResult SpellSystem::CastSpell(Character* caster, const std::string& spellName, Math::vec2 targetTile, int upcastLevel)
+const SpellData* SpellSystem::GetSpellData(const std::string& spell_id) const
 {
-  MockSpellResult result;
-  result.success = false;
+  auto it = spells_.find(spell_id);
+  return (it != spells_.end()) ? &(it->second) : nullptr;
+}
 
-  // Step 4.1a: Validate spell exists
-  auto it = spells.find(spellName);
-  if (it == spells.end())
+void SpellSystem::ParseDamageFormula(const std::string& formula_str, SpellData& data) const
+{
+  // 힐링: "-(...)" — 음수 래퍼 처리
+  bool		  negative = (formula_str.size() >= 2 && formula_str[0] == '-' && formula_str[1] == '(');
+  std::string f		   = negative ? formula_str.substr(2, formula_str.size() - 3) // "-(X)" → "X"
+								  : formula_str;
+
+  // " + " 로 베이스와 업캐스트 분리
+  auto plus_pos = f.find(" + ");
+  if (plus_pos == std::string::npos)
   {
-	result.failureReason = "Spell '" + spellName + "' not found";
-	Engine::GetLogger().LogError("SpellSystem: " + result.failureReason);
-	return result;
+	// 업캐스트 없음: 전체가 베이스
+	data.damage_formula = negative ? "-(" + f + ")" : f;
+	data.upcast_dice	= "";
+	return;
   }
 
-  MockSpellBase* spell = it->second.get();
+  std::string base_part	  = f.substr(0, plus_pos);	// "2d8", "(...)d10" 등
+  std::string upcast_part = f.substr(plus_pos + 3); // "(...)d6" 또는 "(...) * 2d6"
 
-  // Step 4.1b: Validate can cast
-  if (!CanCastSpell(caster, spellName, targetTile, upcastLevel))
+  data.damage_formula = negative ? "-(" + base_part + ")" : base_part;
+
+  // 업캐스트 주사위 추출
+  // 패턴 A: "(...) * NdX" → "NdX"
+  auto star_pos = upcast_part.find("* ");
+  if (star_pos != std::string::npos)
   {
-	result.failureReason = "Cannot cast " + spellName;
-	Engine::GetLogger().LogError("SpellSystem: " + result.failureReason);
-	return result;
+	data.upcast_dice = upcast_part.substr(star_pos + 2); // "2d6", "1d20"
+	return;
+  }
+  // 패턴 B: "(...)dX" → "1dX"
+  auto d_pos = upcast_part.rfind('d');
+  if (d_pos != std::string::npos)
+  {
+	data.upcast_dice = "1" + upcast_part.substr(d_pos); // "1d6", "1d8"
+	return;
   }
 
-  // Step 4.1c: Log spell cast attempt
-  Engine::GetLogger().LogEvent(
-	"SpellSystem: " + caster->TypeName() + " casting " + spellName + " at (" + std::to_string(static_cast<int>(targetTile.x)) + "," + std::to_string(static_cast<int>(targetTile.y)) + ")" +
-	(upcastLevel > 0 ? " (upcast to level " + std::to_string(upcastLevel) + ")" : ""));
-  caster->ConsumeSpell(spell->GetLevel());
-  // Step 4.1d: Execute the spell
-  // Reason: Delegate to the spell's own Cast() method
-  result = spell->Cast(caster, targetTile /*, upcastLevel*/);
+  data.upcast_dice = "";
+}
 
-  // Step 4.1e: Publish system-level event
-  // Reason: Other systems may need to react to spell casts
-  if (result.success)
+SpellMove SpellSystem::ParseMoveField(const std::string& move_str) const
+{
+  // "current location" → {self, stay, 0}
+  if (move_str == "current location" || move_str.empty())
+	return { "self", "stay", 0 };
+
+  // "target:knockback:2" → {target, knockback, 2}
+  // "self:teleport:selected" → {self, teleport, -1}
+  auto		parts = SplitByDelimiter(move_str, ':');
+  SpellMove m;
+  m.mover	  = (parts.size() > 0) ? parts[0] : "self";
+  m.move_type = (parts.size() > 1) ? parts[1] : "stay";
+
+  if (parts.size() > 2)
   {
-	if (eventBus)
-	{
-	  eventBus->Publish(SpellCastEventForSpell{ caster, spellName, targetTile, result.affected_targets, result.total_damage });
-	}
+	if (parts[2] == "selected")
+	  m.distance = -1; // target_tile 사용
 	else
 	{
-	  // Fallback to GameStateManager if no EventBus was set
-	  auto* bus = Engine::GetGameStateManager().GetGSComponent<EventBus>();
-	  if (bus)
+	  try
 	  {
-		bus->Publish(SpellCastEventForSpell{ caster, spellName, targetTile, result.affected_targets, result.total_damage });
+		m.distance = std::stoi(parts[2]);
+	  }
+	  catch (...)
+	  {
+		m.distance = 0;
+	  }
+	}
+  }
+  else
+  {
+	m.distance = 0;
+  }
+  return m;
+}
+
+void SpellSystem::ApplyMoveEffect(Character* caster, const std::vector<Character*>& targets, const SpellData& spell, Math::ivec2 target_tile)
+{
+  if (spell.move.move_type == "stay")
+	return;
+
+  auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+  if (!grid)
+	return;
+
+  // ── knockback: 피격 대상을 시전자 기준 밀쳐냄 ──
+  if (spell.move.move_type == "knockback")
+  {
+	int			dist	   = spell.move.distance;
+	Math::ivec2 caster_pos = caster->GetGridPosition()->Get();
+
+	for (auto* tgt : targets)
+	{
+	  if (!tgt || tgt == caster)
+		continue;
+	  Math::ivec2 tgt_pos = tgt->GetGridPosition()->Get();
+
+	  // 밀쳐내는 방향: 시전자 → 대상 방향
+	  int dx = tgt_pos.x - caster_pos.x;
+	  int dy = tgt_pos.y - caster_pos.y;
+
+	  // 지배적인 축 기준 단위 벡터 (대각선 불가)
+	  Math::ivec2 dir{ 0, 0 };
+	  if (std::abs(dx) >= std::abs(dy))
+		dir.x = (dx >= 0) ? 1 : -1;
+	  else
+		dir.y = (dy >= 0) ? 1 : -1;
+
+	  // 가능한 만큼 이동 (벽/맵 끝에서 멈춤)
+	  Math::ivec2 new_pos = tgt_pos;
+	  for (int step = 0; step < dist; ++step)
+	  {
+		Math::ivec2 next{ new_pos.x + dir.x, new_pos.y + dir.y };
+		if (!grid->IsValidTile(next))
+		  break;
+		if (!grid->IsWalkable(next))
+		  break;
+		if (grid->IsOccupied(next))
+		  break;
+		new_pos = next;
+	  }
+
+	  if (new_pos.x != tgt_pos.x || new_pos.y != tgt_pos.y)
+	  {
+		grid->MoveCharacter(tgt_pos, new_pos);
+		tgt->GetGridPosition()->Set(new_pos);
 	  }
 	}
   }
 
-  return result;
-}
-
-// Step 5.1: Get available spells for a caster
-// Reason: UI needs to show which spells the character can cast
-std::vector<std::string> SpellSystem::GetAvailableSpells(Character* caster) const
-{
-  std::vector<std::string> available;
-
-  if (!caster)
-	return available;
-
-  // Check each registered spell
-  for (const auto& pair : spells)
+  // ── teleport (self:teleport:selected): 시전자를 target_tile로 이동 ──
+  else if (spell.move.move_type == "teleport" && spell.move.mover == "self")
   {
-	const std::string& spellName = pair.first;
-	MockSpellBase*	   spell	 = pair.second.get();
+	Math::ivec2 caster_pos = caster->GetGridPosition()->Get();
+	Math::ivec2 dest	   = (spell.move.distance == -1) ? target_tile : target_tile;
+	// Empty:Point 타겟팅이 이미 빈 타일만 선택하게 보장함
 
-	// Check if caster has spell slots for this spell level
-	if (ValidateSpellSlots(caster, spell->GetLevel()))
+	if (grid->IsValidTile(dest) && !grid->IsOccupied(dest))
 	{
-	  available.push_back(spellName);
+	  grid->MoveCharacter(caster_pos, dest);
+	  caster->GetGridPosition()->Set(dest);
+	  Engine::GetLogger().LogEvent(caster->TypeName() + " teleported to (" + std::to_string(dest.x) + ", " + std::to_string(dest.y) + ")");
 	}
   }
-
-  return available;
-}
-
-// Step 5.2: Get spell slot count
-// Reason: UI displays remaining spell slots
-int SpellSystem::GetSpellSlotCount(Character* caster, int level) const
-{
-  if (!caster || level < 1 || level > 9)
-  {
-	return 0;
-  }
-  return caster->GetSpellSlotCount(level);
-}
-
-// Step 5.3: Preview spell area
-// Reason: Show player which tiles will be affected before casting
-std::vector<Math::vec2> SpellSystem::PreviewSpellArea(const std::string& spellName, Math::vec2 targetTile) const
-{
-  auto it = spells.find(spellName);
-  if (it == spells.end())
-  {
-	return {};
-  }
-
-  MockSpellBase* spell = it->second.get();
-  return spell->GetAffectedTiles(targetTile);
 }

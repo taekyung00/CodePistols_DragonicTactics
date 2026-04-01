@@ -18,12 +18,28 @@ class FighterStrategy : public IAIStrategy
   Character* FindDragon();
   Character* FindCleric(); // TODO: Cleric 구현 후 활성화
 
-  // 전략별 판단 헬퍼 (Decision Helpers)
-  // Character의 팩트 쿼리를 사용하여 Fighter만의 기준으로 판단
-  bool IsInDanger(Character* actor) const; // Fighter: HP 30% 이하
+  // --- 판단 헬퍼 ---
+  bool IsInDanger(Character* actor) const; // HP 40% 이하
+  bool CanKillDragonThisTurn(Character* actor, Character* dragon, GridSystem* grid) const;
+  bool HasBuff(Character* actor, const std::string& buffName) const; // TODO: Week 6+ StatusEffect 연동
+  bool HasSpellSlot(Character* actor, int level) const;
+  bool IsFearActive(Character* dragon) const; // TODO: Week 6+ StatusEffect 연동
+  bool IsInFearRange(Character* actor, Character* dragon, GridSystem* grid) const;
+
+  // --- 이동 ---
+  Math::ivec2 FindNextMovePos(Character* actor, Character* target, GridSystem* grid);
+  bool		  CanReachThisTurn(Character* actor, Character* target, GridSystem* grid) const;
+
+  // --- 서브 의사결정 ---
+  AIDecision MakeKillLoopDecision(Character* actor, Character* dragon, GridSystem* grid);
+  AIDecision MakeFarMoveDecision(Character* actor, Character* dragon, GridSystem* grid);
+  AIDecision MakeSurvivalDecision(Character* actor, Character* dragon, GridSystem* grid);
+  AIDecision MakeNormalCombatDecision(Character* actor, Character* dragon, GridSystem* grid);
+
+  //old
   bool ShouldUseSpellAttack(Character* actor, Character* target) const;
 
-  Math::ivec2 FindNextMovePos(Character* actor, Character* target, GridSystem* grid);
+
 
   // 공격 전략
   AIDecision DecideAttackAction(Character* actor, Character* target, int distance);

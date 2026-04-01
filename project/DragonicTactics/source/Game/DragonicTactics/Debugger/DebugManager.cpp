@@ -9,6 +9,7 @@
 #include "./Engine/Engine.h"
 #include "./Engine/Input.h"
 #include "./Engine/Logger.h"
+#include "./Engine/SoundManager.h"
 #include "DebugConsole.h"
 #include "DebugManager.h"
 #include "DebugVisualizer.h"
@@ -179,6 +180,54 @@ void DebugManager::DrawDebugControlPanel()
 	ImGui::Spacing();
 	ImGui::Separator();
 	ImGui::Spacing();
+
+	// === Sound ===
+	ImGui::Text("Sound");
+	ImGui::Spacing();
+
+	SoundManager& sm = Engine::GetSoundManager();
+
+	// BGM Vol
+	float bgm_vol = sm.GetBGMVolume();
+	if (ImGui::SliderFloat("BGM Volume", &bgm_vol, 0.0f, 1.0f))
+	  sm.SetBGMVolume(bgm_vol);
+
+	// BGM Play control
+	if (sm.IsBGMPlaying())
+	{
+	  if (ImGui::Button("Pause BGM"))
+		sm.PauseBGM();
+	  ImGui::SameLine();
+	  if (ImGui::Button("Stop BGM"))
+		sm.StopBGM();
+	}
+	else if (sm.IsBGMPaused())
+	{
+	  if (ImGui::Button("Resume BGM"))
+		sm.ResumeBGM();
+	  ImGui::SameLine();
+	  if (ImGui::Button("Stop BGM"))
+		sm.StopBGM();
+	}
+	else
+	{
+	  ImGui::TextDisabled("No BGM playing");
+	}
+
+	ImGui::Spacing();
+
+	// SFX VOl
+	float sfx_vol = sm.GetSFXVolume();
+	if (ImGui::SliderFloat("SFX Volume", &sfx_vol, 0.0f, 1.0f))
+	  sm.SetSFXVolume(sfx_vol);
+
+	if (ImGui::Button("Stop All SFX"))
+	  sm.StopAllSFX();
+
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
+	//===========================================
 
 	// === Info ===
 	ImGui::TextWrapped("Tab: Toggle This Panel\nESC: Close Panel");
