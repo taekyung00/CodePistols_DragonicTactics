@@ -63,7 +63,7 @@ void GamePlay::Load()
   m_input_handler = std::make_unique<PlayerInputHandler>();
   m_ui_manager	  = std::make_unique<GamePlayUIManager>();
   m_orchestrator  = std::make_unique<BattleOrchestrator>();
-  m_ui_manager->InitButtons();
+  m_ui_manager->InitButtons(m_input_handler.get());
 
   AddGSComponent(new EventBus());
   AddGSComponent(new DiceManager());
@@ -521,7 +521,7 @@ void GamePlay::DrawImGui()
                           + " (Lv." + std::to_string(spell->spell_level) + ")"
                           + "##" + spell_id;
         if (ImGui::Button(label.c_str()))
-            m_input_handler->SelectSpell(spell_id, current, spell->spell_level);
+            m_input_handler->SelectSpell(spell_id, current, spell->spell_level, m_ui_manager->GetButtons());
     }
     else
     {
@@ -538,7 +538,7 @@ void GamePlay::DrawImGui()
             std::string lv_label = "Lv" + std::to_string(lv)
                                  + "##" + spell_id + std::to_string(lv);
             if (ImGui::Button(lv_label.c_str()))
-                m_input_handler->SelectSpell(spell_id, current, lv);
+                m_input_handler->SelectSpell(spell_id, current, lv, m_ui_manager->GetButtons());
 
             if (!has_slot) ImGui::EndDisabled();
             ImGui::SameLine();

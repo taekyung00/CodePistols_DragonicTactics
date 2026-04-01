@@ -17,6 +17,7 @@ Created:    November 24, 2025
 #include "ButtonManager.h"
 
 class Character;
+class PlayerInputHandler; // 전방 선언
 
 class GamePlayUIManager
 {
@@ -33,7 +34,7 @@ class GamePlayUIManager
 
   void DrawCharacterStatsPanel(Math::TransformationMatrix camera_matrix);
 
-  void InitButtons();          // 버튼 초기 배치
+  void InitButtons(PlayerInputHandler* inputHandler);          // 버튼 초기 배치
   ButtonManager& GetButtons(); // PlayerInputHandler에서 접근용
 
   private:

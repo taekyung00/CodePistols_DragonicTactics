@@ -46,6 +46,37 @@ PlayerInputHandler::PlayerInputHandler() : m_state(ActionState::None)
 {
 }
 
+// PlayerInputHandler.cpp — 파일 내 static 헬퍼
+static void HideAllSpellButtons(ButtonManager& btns)
+{
+    btns.SetVisible("btn_spell_cancel", false);
+
+    btns.SetVisible("S_ATK_020", false);
+    btns.SetVisible("S_ENH_050", false);
+    btns.SetVisible("S_DEB_020", false);
+
+    for (int lv = 1; lv <= 5; ++lv)
+        btns.SetVisible("S_ATK_010_lv" + std::to_string(lv), false);
+
+    for (int lv = 0; lv <= 5; ++lv)
+        btns.SetVisible("S_ENH_040_lv" + std::to_string(lv), false);
+
+    for (int lv = 3; lv <= 5; ++lv)
+        btns.SetVisible("S_ATK_030_lv" + std::to_string(lv), false);
+
+    for (int lv = 3; lv <= 5; ++lv)
+        btns.SetVisible("S_ATK_040_lv" + std::to_string(lv), false);
+
+    for (int lv = 2; lv <= 5; ++lv)
+        btns.SetVisible("S_GEO_010_lv" + std::to_string(lv), false);
+
+    for (int lv = 1; lv <= 5; ++lv)
+        btns.SetVisible("S_GEO_020_lv" + std::to_string(lv), false);
+
+    for (int lv = 0; lv <= 5; ++lv)
+        btns.SetVisible("S_GEO_030_lv" + std::to_string(lv), false);
+}
+
 void PlayerInputHandler::Update(double dt, Character* current_character, GridSystem* grid, CombatSystem* combat_system, ButtonManager& btns)
 {
  
@@ -91,12 +122,55 @@ void PlayerInputHandler::Update(double dt, Character* current_character, GridSys
         btns.SetVisible("btn_spell", false);
     }
 
-    // Spell 서브 버튼
+      // ── Spell 서브 버튼 ───────────────────────────────────────────
     if (btns.IsPressed("btn_spell"))
     {
-        SetState(ActionState::TargetingForSpell);
+        SetState(ActionState::SelectingSpell);
         btns.SetVisible("btn_attack", false);
-        btns.SetVisible("btn_spell", false);
+        btns.SetVisible("btn_spell",  false);
+
+        // 스펠 목록 & Cancel 표시
+        btns.SetVisible("btn_spell_cancel", true);
+
+        // 비업캐스트
+        btns.SetVisible("S_ATK_020", true);  // Tail Swipe
+        btns.SetVisible("S_ENH_050", true);  // Purify
+        btns.SetVisible("S_DEB_020", true);  // Fearful Cry
+
+        // 업캐스트: Fire Bolt Lv1~5
+        for (int lv = 1; lv <= 5; ++lv)
+            btns.SetVisible("S_ATK_010_lv" + std::to_string(lv), true);
+
+        // 업캐스트: Mana Conversion Lv0~5
+        for (int lv = 0; lv <= 5; ++lv)
+            btns.SetVisible("S_ENH_040_lv" + std::to_string(lv), true);
+
+        // 업캐스트: Dragon's Fury Lv3~5
+        for (int lv = 3; lv <= 5; ++lv)
+            btns.SetVisible("S_ATK_030_lv" + std::to_string(lv), true);
+
+        // 업캐스트: Meteor Lv3~5
+        for (int lv = 3; lv <= 5; ++lv)
+            btns.SetVisible("S_ATK_040_lv" + std::to_string(lv), true);
+
+        // 업캐스트: Magma Blast Lv2~5
+        for (int lv = 2; lv <= 5; ++lv)
+            btns.SetVisible("S_GEO_010_lv" + std::to_string(lv), true);
+
+        // 업캐스트: Wall Creation Lv1~5
+        for (int lv = 1; lv <= 5; ++lv)
+            btns.SetVisible("S_GEO_020_lv" + std::to_string(lv), true);
+
+        // 업캐스트: Teleport Lv0~5
+        for (int lv = 0; lv <= 5; ++lv)
+            btns.SetVisible("S_GEO_030_lv" + std::to_string(lv), true);
+    }
+
+    // ── Spell Cancel 버튼 ─────────────────────────────────────────
+    if (btns.IsPressed("btn_spell_cancel"))
+    {
+        CancelCurrentAction();
+        HideAllSpellButtons(btns);  // 아래 헬퍼 함수 참고
     }
 
     // End Turn 버튼
@@ -297,11 +371,13 @@ void PlayerInputHandler::CancelCurrentAction()
   m_state = ActionState::None;
 }
 
-void PlayerInputHandler::SelectSpell(const std::string& spell_id, Character* caster, int upcast_level)
+void PlayerInputHandler::SelectSpell(const std::string& spell_id, Character* caster, int upcast_level, ButtonManager& btns)
 {
     m_selected_spell_id = spell_id;
 	m_selected_upcast_level = upcast_level;
     m_state = ActionState::TargetingForSpell;
+
+    HideAllSpellButtons(btns);  // ★ 스펠 선택 완료 → 목록 닫기
 
     auto* spell_sys = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
     auto* grid      = Engine::GetGameStateManager().GetGSComponent<GridSystem>();

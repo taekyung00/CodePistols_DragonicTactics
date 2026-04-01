@@ -49,7 +49,7 @@ class PlayerInputHandler
 	  m_state = new_state;
   }
 
-  void SelectSpell(const std::string& spell_id, Character* caster, int upcast_level);
+  void SelectSpell(const std::string& spell_id, Character* caster, int upcast_level, ButtonManager& btns);
 
   private:
   ActionState m_state = ActionState::None;
