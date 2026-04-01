@@ -231,13 +231,22 @@ void GamePlayUIManager::DrawCharacterStatsPanel([[maybe_unused]] Math::Transform
 
 void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
 {
+    // 기본 레이아웃 상수
     constexpr double BTN_W   = 170.0;
     constexpr double BTN_H   = 50.0;
-    constexpr double BTN_Y   = 750.0;
+    constexpr double BTN_Y   = 750.0; // 시작점
     constexpr double GAP     = 20.0;
     constexpr double START_X = 30.0;
 
-    // ── 헬퍼 함수 1: 버튼 생성 및 등록을 깔끔하게 처리 ──
+    // --- 스펠 전용 압축 레이아웃 상수 ---
+    constexpr double S_H      = 40.0; // 스펠 버튼 높이 축소 (50 -> 40)
+    constexpr double S_GAP    = 5.0;  // 스펠 간격 축소 (20 -> 5)
+    constexpr double S_STEP   = S_H + S_GAP; // 한 행당 차지하는 높이 (45)
+    
+    // 스펠 리스트 시작 Y 좌표 (Cancel 버튼 아래부터 시작)
+    // Row 3(Cancel) 위치인 750 - (70 * 3) = 540 에서 조금 더 띄워서 시작
+    const double SPELL_START_Y = 540.0 - 45.0; 
+
     auto add_btn = [&](const std::string& id, Math::vec2 pos, Math::vec2 size, const std::string& label, bool visible, std::function<void()> onClick = nullptr) {
         Button b;
         b.id = id;
@@ -245,99 +254,78 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
         b.size = size;
         b.label = label;
         b.visible = visible;
-        b.on_click = onClick; // 콜백 묶기
+        b.on_click = onClick; 
         button_manager_.AddButton(b);
     };
 
-    // ── 헬퍼 함수 2: 스펠 버튼 전용 클릭 이벤트(콜백) 생성기 ──
     auto create_spell_callback = [this, inputHandler](const std::string& spell_id, int level) {
         return [this, inputHandler, spell_id, level]() {
-            // 버튼이 클릭되는 순간 현재 턴인 캐릭터를 가져옵니다.
             auto* turnMgr = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
             if (!turnMgr) return;
-            
             Character* current_char = turnMgr->GetCurrentCharacter();
             if (current_char) {
-                Engine::GetLogger().LogEvent("Spell Button Clicked: " + spell_id + " Lv." + std::to_string(level));
-                // PlayerInputHandler의 SelectSpell 실행 -> 타일이 빨갛게 변함!
                 inputHandler->SelectSpell(spell_id, current_char, level, this->GetButtons());
             }
         };
     };
 
-    // ── 메인 액션 버튼 3종 ────────────────────────────────────────
+    // ── [메인/액션 버튼] 기존 간격(70step) 유지 ───────────────────────────
     add_btn("btn_move",     { START_X, BTN_Y },                    { BTN_W, BTN_H }, "Move",     true);
     add_btn("btn_action",   { START_X + BTN_W + GAP, BTN_Y },      { BTN_W, BTN_H }, "Action",   true);
     add_btn("btn_end_turn", { START_X + (BTN_W+GAP)*2, BTN_Y },    { BTN_W, BTN_H }, "End Turn", true);
 
-    // ── Action 서브 버튼 ──────────────────────────────────────────
-    add_btn("btn_attack", { START_X + BTN_W + GAP, BTN_Y - BTN_H - GAP },          { BTN_W, BTN_H }, "Attack", false);
-    add_btn("btn_spell",  { START_X + BTN_W + GAP, BTN_Y - (BTN_H+GAP)*2 },        { BTN_W, BTN_H }, "Spell",  false);
-
-    // ── Spell List Cancel ─────────────────────────────────────────
+    add_btn("btn_attack", { START_X + BTN_W + GAP, BTN_Y - (BTN_H+GAP) },     { BTN_W, BTN_H }, "Attack", false);
+    add_btn("btn_spell",  { START_X + BTN_W + GAP, BTN_Y - (BTN_H+GAP)*2 },   { BTN_W, BTN_H }, "Spell",  false);
     add_btn("btn_spell_cancel", { START_X + BTN_W + GAP, BTN_Y - (BTN_H+GAP)*3 }, { BTN_W, BTN_H }, "Cancel", false);
 
-    // ── 스펠 버튼 레이아웃 상수 ───────────────────────────────────
-    constexpr double SX          = START_X + BTN_W + GAP; 
-    constexpr double SW          = BTN_W;                 
-    constexpr double ULW         = 130.0;                 
-    constexpr double UBW         = 42.0;                  
-    constexpr double UGAP        = 4.0;                   
+    // ── [스펠 리스트] 압축 간격(45step) 적용 ──────────────────────────────
+    constexpr double SX   = START_X + BTN_W + GAP; 
+    constexpr double ULW  = 130.0; 
+    constexpr double UBW  = 42.0;  
+    constexpr double UGAP = 4.0;
 
-    // ── 비업캐스트 스펠 (단일 버튼) ──────────────────────────────
-    add_btn("S_ATK_020", { SX, BTN_Y - (BTN_H+GAP)*4 }, { SW, BTN_H }, "Tail Swipe (Lv.2)", false, create_spell_callback("S_ATK_020", 2));
-    add_btn("S_ENH_050", { SX, BTN_Y - (BTN_H+GAP)*5 }, { SW, BTN_H }, "Purify (Lv.1)",     false, create_spell_callback("S_ENH_050", 1));
-    add_btn("S_DEB_020", { SX, BTN_Y - (BTN_H+GAP)*6 }, { SW, BTN_H }, "Fearful Cry (Lv.1)",false, create_spell_callback("S_DEB_020", 1));
+    // 단일 스펠 (Row 0~2 of list)
+    add_btn("S_ATK_020", { SX, SPELL_START_Y }, { BTN_W, S_H }, "Tail Swipe (Lv.2)", false, create_spell_callback("S_ATK_020", 2));
+    add_btn("S_ENH_050", { SX, SPELL_START_Y - S_STEP }, { BTN_W, S_H }, "Purify (Lv.1)", false, create_spell_callback("S_ENH_050", 1));
+    add_btn("S_DEB_020", { SX, SPELL_START_Y - S_STEP * 2 }, { BTN_W, S_H }, "Fearful Cry (Lv.1)", false, create_spell_callback("S_DEB_020", 1));
 
-    // ── 업캐스트 가능 스펠 (레벨별 버튼) ─────────────────────────
-    for (int lv = 1; lv <= 5; ++lv) {
-        add_btn("S_ATK_010_lv" + std::to_string(lv),
-                { SX + ULW + (UBW+UGAP)*(lv-1), BTN_Y - (BTN_H+GAP)*7 },
-                { UBW, BTN_H }, "Lv" + std::to_string(lv), false, 
-                create_spell_callback("S_ATK_010", lv)); // <- 핵심 로직 연결!
-    }
+    // 업캐스트 스펠 (Row 3~9 of list)
+    auto get_spell_y = [&](int idx) { return SPELL_START_Y - S_STEP * (idx + 3); };
 
-    for (int lv = 0; lv <= 5; ++lv) {
-        add_btn("S_ENH_040_lv" + std::to_string(lv),
-                { SX + ULW + (UBW+UGAP)*lv, BTN_Y - (BTN_H+GAP)*8 },
-                { UBW, BTN_H }, "Lv" + std::to_string(lv), false,
-                create_spell_callback("S_ENH_040", lv));
-    }
+    // Fire Bolt
+    add_btn("lbl_S_ATK_010", { SX, get_spell_y(0) }, { ULW, S_H }, "Fire Bolt", false);
+    for (int lv = 1; lv <= 5; ++lv)
+        add_btn("S_ATK_010_lv" + std::to_string(lv), { SX + ULW + (UBW+UGAP)*(lv-1), get_spell_y(0) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_ATK_010", lv));
 
-    for (int lv = 3; lv <= 5; ++lv) {
-        add_btn("S_ATK_030_lv" + std::to_string(lv),
-                { SX + ULW + (UBW+UGAP)*(lv-3), BTN_Y - (BTN_H+GAP)*9 },
-                { UBW, BTN_H }, "Lv" + std::to_string(lv), false,
-                create_spell_callback("S_ATK_030", lv));
-    }
+    // Mana Conversion
+    add_btn("lbl_S_ENH_040", { SX, get_spell_y(1) }, { ULW, S_H }, "Mana Conversion", false);
+    for (int lv = 0; lv <= 5; ++lv)
+        add_btn("S_ENH_040_lv" + std::to_string(lv), { SX + ULW + (UBW+UGAP)*lv, get_spell_y(1) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_ENH_040", lv));
 
-    for (int lv = 3; lv <= 5; ++lv) {
-        add_btn("S_ATK_040_lv" + std::to_string(lv),
-                { SX + ULW + (UBW+UGAP)*(lv-3), BTN_Y - (BTN_H+GAP)*10 },
-                { UBW, BTN_H }, "Lv" + std::to_string(lv), false,
-                create_spell_callback("S_ATK_040", lv));
-    }
+    // Dragon's Fury
+    add_btn("lbl_S_ATK_030", { SX, get_spell_y(2) }, { ULW, S_H }, "Dragon's Fury", false);
+    for (int lv = 3; lv <= 5; ++lv)
+        add_btn("S_ATK_030_lv" + std::to_string(lv), { SX + ULW + (UBW+UGAP)*(lv-3), get_spell_y(2) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_ATK_030", lv));
 
-    for (int lv = 2; lv <= 5; ++lv) {
-        add_btn("S_GEO_010_lv" + std::to_string(lv),
-                { SX + ULW + (UBW+UGAP)*(lv-2), BTN_Y - (BTN_H+GAP)*11 },
-                { UBW, BTN_H }, "Lv" + std::to_string(lv), false,
-                create_spell_callback("S_GEO_010", lv));
-    }
+    // Meteor
+    add_btn("lbl_S_ATK_040", { SX, get_spell_y(3) }, { ULW, S_H }, "Meteor", false);
+    for (int lv = 3; lv <= 5; ++lv)
+        add_btn("S_ATK_040_lv" + std::to_string(lv), { SX + ULW + (UBW+UGAP)*(lv-3), get_spell_y(3) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_ATK_040", lv));
 
-    for (int lv = 1; lv <= 5; ++lv) {
-        add_btn("S_GEO_020_lv" + std::to_string(lv),
-                { SX + ULW + (UBW+UGAP)*(lv-1), BTN_Y - (BTN_H+GAP)*12 },
-                { UBW, BTN_H }, "Lv" + std::to_string(lv), false,
-                create_spell_callback("S_GEO_020", lv));
-    }
+    // Magma Blast
+    add_btn("lbl_S_GEO_010", { SX, get_spell_y(4) }, { ULW, S_H }, "Magma Blast", false);
+    for (int lv = 2; lv <= 5; ++lv)
+        add_btn("S_GEO_010_lv" + std::to_string(lv), { SX + ULW + (UBW+UGAP)*(lv-2), get_spell_y(4) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_GEO_010", lv));
 
-    for (int lv = 0; lv <= 5; ++lv) {
-        add_btn("S_GEO_030_lv" + std::to_string(lv),
-                { SX + ULW + (UBW+UGAP)*lv, BTN_Y - (BTN_H+GAP)*13 },
-                { UBW, BTN_H }, "Lv" + std::to_string(lv), false,
-                create_spell_callback("S_GEO_030", lv));
-    }
+    // Wall Creation
+    add_btn("lbl_S_GEO_020", { SX, get_spell_y(5) }, { ULW, S_H }, "Wall Creation", false);
+    for (int lv = 1; lv <= 5; ++lv)
+        add_btn("S_GEO_020_lv" + std::to_string(lv), { SX + ULW + (UBW+UGAP)*(lv-1), get_spell_y(5) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_GEO_020", lv));
+
+    // Teleport
+    add_btn("lbl_S_GEO_030", { SX, get_spell_y(6) }, { ULW, S_H }, "Teleport", false);
+    for (int lv = 0; lv <= 5; ++lv)
+        add_btn("S_GEO_030_lv" + std::to_string(lv), { SX + ULW + (UBW+UGAP)*lv, get_spell_y(6) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_GEO_030", lv));
 }
 
 ButtonManager& GamePlayUIManager::GetButtons(){

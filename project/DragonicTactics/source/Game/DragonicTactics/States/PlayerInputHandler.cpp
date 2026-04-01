@@ -55,24 +55,31 @@ static void HideAllSpellButtons(ButtonManager& btns)
     btns.SetVisible("S_ENH_050", false);
     btns.SetVisible("S_DEB_020", false);
 
+    btns.SetVisible("lbl_S_ATK_010", false);
     for (int lv = 1; lv <= 5; ++lv)
         btns.SetVisible("S_ATK_010_lv" + std::to_string(lv), false);
 
+    btns.SetVisible("lbl_S_ENH_040", false);
     for (int lv = 0; lv <= 5; ++lv)
         btns.SetVisible("S_ENH_040_lv" + std::to_string(lv), false);
 
+    btns.SetVisible("lbl_S_ATK_030", false);
     for (int lv = 3; lv <= 5; ++lv)
         btns.SetVisible("S_ATK_030_lv" + std::to_string(lv), false);
 
+    btns.SetVisible("lbl_S_ATK_040", false);
     for (int lv = 3; lv <= 5; ++lv)
         btns.SetVisible("S_ATK_040_lv" + std::to_string(lv), false);
 
+    btns.SetVisible("lbl_S_GEO_010", false);
     for (int lv = 2; lv <= 5; ++lv)
         btns.SetVisible("S_GEO_010_lv" + std::to_string(lv), false);
 
+    btns.SetVisible("lbl_S_GEO_020", false);
     for (int lv = 1; lv <= 5; ++lv)
         btns.SetVisible("S_GEO_020_lv" + std::to_string(lv), false);
 
+    btns.SetVisible("lbl_S_GEO_030", false);
     for (int lv = 0; lv <= 5; ++lv)
         btns.SetVisible("S_GEO_030_lv" + std::to_string(lv), false);
 }
@@ -138,30 +145,37 @@ void PlayerInputHandler::Update(double dt, Character* current_character, GridSys
         btns.SetVisible("S_DEB_020", true);  // Fearful Cry
 
         // 업캐스트: Fire Bolt Lv1~5
+        btns.SetVisible("lbl_S_ATK_010", true);
         for (int lv = 1; lv <= 5; ++lv)
             btns.SetVisible("S_ATK_010_lv" + std::to_string(lv), true);
 
         // 업캐스트: Mana Conversion Lv0~5
+        btns.SetVisible("lbl_S_ENH_040", true);
         for (int lv = 0; lv <= 5; ++lv)
             btns.SetVisible("S_ENH_040_lv" + std::to_string(lv), true);
 
         // 업캐스트: Dragon's Fury Lv3~5
+        btns.SetVisible("lbl_S_ATK_030", true);
         for (int lv = 3; lv <= 5; ++lv)
             btns.SetVisible("S_ATK_030_lv" + std::to_string(lv), true);
 
         // 업캐스트: Meteor Lv3~5
+        btns.SetVisible("lbl_S_ATK_040", true);
         for (int lv = 3; lv <= 5; ++lv)
             btns.SetVisible("S_ATK_040_lv" + std::to_string(lv), true);
 
         // 업캐스트: Magma Blast Lv2~5
+        btns.SetVisible("lbl_S_GEO_010", true);
         for (int lv = 2; lv <= 5; ++lv)
             btns.SetVisible("S_GEO_010_lv" + std::to_string(lv), true);
 
         // 업캐스트: Wall Creation Lv1~5
+        btns.SetVisible("lbl_S_GEO_020", true);
         for (int lv = 1; lv <= 5; ++lv)
             btns.SetVisible("S_GEO_020_lv" + std::to_string(lv), true);
 
         // 업캐스트: Teleport Lv0~5
+        btns.SetVisible("lbl_S_GEO_030", true);
         for (int lv = 0; lv <= 5; ++lv)
             btns.SetVisible("S_GEO_030_lv" + std::to_string(lv), true);
     }

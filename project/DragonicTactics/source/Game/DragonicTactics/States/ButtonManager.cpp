@@ -67,7 +67,11 @@ void ButtonManager::Update(Math::vec2 mouse_pos, bool mouse_just_clicked)
 
         if (IsPointInButton(btn, mouse_pos))
         {
-            btn.hovered = true;
+            if (btn.on_click != nullptr) 
+            {
+                btn.hovered = true;
+            }
+            
             if (mouse_just_clicked)
             {
                 btn.pressed = true;
