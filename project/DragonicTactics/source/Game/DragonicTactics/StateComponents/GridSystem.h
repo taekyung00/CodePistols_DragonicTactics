@@ -153,7 +153,7 @@ std::vector<Math::ivec2> GetLineTiles(Math::ivec2 center, int reach) const;
   Character* GetCharacterAt(Math::ivec2 pos) const;
 
   // week2 : pathfinding methods
-  std::vector<Math::ivec2> FindPath(Math::ivec2 start, Math::ivec2 goal);
+  std::vector<Math::ivec2> FindPath(Math::ivec2 start, Math::ivec2 goal, int lava_penalty = 0);
   // int						GetPathLength(Math::ivec2 start, Math::ivec2 goal);
   // std::vector<Math::ivec2> GetReachableTiles(Math::ivec2 start, int maxDistance);
 

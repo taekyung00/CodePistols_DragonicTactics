@@ -31,7 +31,8 @@ class PlayerInputHandler
     SelectingSpell,
 	TargetingForAttack,
 	TargetingForSpell,
-	WallPlacementMulti
+	WallPlacementMulti,
+	LavaPlacementMulti
   };
 
   PlayerInputHandler();

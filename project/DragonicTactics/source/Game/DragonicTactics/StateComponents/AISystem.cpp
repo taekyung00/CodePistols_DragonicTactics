@@ -82,7 +82,7 @@ void AISystem::ExecuteDecision(Character* actor, const AIDecision& decision)
 	                                    && !grid->IsOccupied(decision.destination);
 	    if (dest_ok)
 	    {
-	      std::vector<Math::ivec2> path      = grid->FindPath(actor->GetGridPosition()->Get(), decision.destination);
+	      std::vector<Math::ivec2> path      = grid->FindPath(actor->GetGridPosition()->Get(), decision.destination, decision.lava_penalty);
 	      MovementComponent*       move_comp = actor->GetGOComponent<MovementComponent>();
 	      if (move_comp)
 	      {

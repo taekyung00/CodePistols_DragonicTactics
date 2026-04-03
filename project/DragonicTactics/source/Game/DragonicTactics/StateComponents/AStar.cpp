@@ -41,7 +41,7 @@ std::vector<Math::ivec2> GridSystem::GetNeighbors(Math::ivec2 position) const
   return neighbors;
 }
 
-std::vector<Math::ivec2> GridSystem::FindPath(Math::ivec2 start, Math::ivec2 goal)
+std::vector<Math::ivec2> GridSystem::FindPath(Math::ivec2 start, Math::ivec2 goal, int lava_penalty)
 {
   // edge cases
   if (!IsValidTile(start) || !IsValidTile(goal))
@@ -119,17 +119,30 @@ std::vector<Math::ivec2> GridSystem::FindPath(Math::ivec2 start, Math::ivec2 goa
 	  if (inClosedSet)
 		continue;
 
-	  int newGCost = current->gCost + 1;
+	  int tile_cost = 1 + (lava_penalty > 0 && GetTileType(neighborPos) == TileType::Lava ? lava_penalty : 0);
+	  int newGCost  = current->gCost + tile_cost;
 
 	  // check if neighbor is in open set
 	  Node* neighborNode = nullptr;
 	  auto	nodeKey		 = std::make_pair(static_cast<int>(neighborPos.x), static_cast<int>(neighborPos.y));
-	  if (allNodes.find(nodeKey) == allNodes.end()) // not in open and close set
+	  auto  nodeIt       = allNodes.find(nodeKey);
+	  if (nodeIt == allNodes.end()) // not yet visited
 	  {
 		// create new node
 		neighborNode = new Node(neighborPos, newGCost, ManhattanDistance(neighborPos, goal), current);
 		openSet.push_back(neighborNode);
 		allNodes[nodeKey] = neighborNode;
+	  }
+	  else
+	  {
+		// already in open set — update if a cheaper path was found
+		neighborNode       = nodeIt->second;
+		bool inOpen        = std::find(openSet.begin(), openSet.end(), neighborNode) != openSet.end();
+		if (inOpen && newGCost < neighborNode->gCost)
+		{
+		  neighborNode->gCost  = newGCost;
+		  neighborNode->parent = current;
+		}
 	  }
 	}
   }

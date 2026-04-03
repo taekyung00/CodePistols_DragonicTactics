@@ -82,6 +82,8 @@ class SpellSystem : public CS230::Component
   int  GetLavaDamageAt(Math::ivec2 tile) const;
   bool CastWalls(Character* caster, const std::string& spell_id,
                  const std::vector<Math::ivec2>& tiles, int upcast_level);
+  bool CastLavaZones(Character* caster, const std::string& spell_id,
+                     const std::vector<Math::ivec2>& tiles, int upcast_level);
 
   private:
   std::map<std::string, SpellData> spells_;
