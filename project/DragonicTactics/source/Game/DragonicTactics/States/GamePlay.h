@@ -14,6 +14,7 @@ Created:    November 5, 2025
 class PlayerInputHandler;
 class GamePlayUIManager;
 class BattleOrchestrator;
+class ButtonManager;
 class Fighter;
 class Dragon;
 struct CharacterDamagedEvent;

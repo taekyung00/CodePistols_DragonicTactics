@@ -86,8 +86,9 @@ void DebugManager::Draw(const GridSystem* grid)
   }
 }
 
-void DebugManager::DrawImGui(const GridSystem* grid)
+void DebugManager::DrawImGui([[maybe_unused]]const GridSystem* grid)
 {
+#if defined(DEVELOPER_VERSION)
   if (!initialized_)
   {
 	return;
@@ -110,6 +111,7 @@ void DebugManager::DrawImGui(const GridSystem* grid)
   {
 	console_->DrawImGui();
   }
+#endif // DEVELOPER_VERSION
 }
 
 void DebugManager::DrawDebugControlPanel()

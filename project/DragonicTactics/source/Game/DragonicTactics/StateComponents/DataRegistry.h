@@ -27,6 +27,7 @@
 #endif
 
 #include "./Game/DragonicTactics/Types/CharacterTypes.h"
+#include "./Game/DragonicTactics/StateComponents/SpellSystem.h"
 #include <ctime>
 #include <map>
 #include <string>

@@ -127,8 +127,9 @@ void DebugVisualizer::DrawGridOverlay(const GridSystem* grid)
 
 // DrawDebugInfo removed - all debug info now in ImGui panel only
 
-void DebugVisualizer::DrawImGuiDebugPanel(const GridSystem* grid)
+void DebugVisualizer::DrawImGuiDebugPanel([[maybe_unused]]const GridSystem* grid)
 {
+#if defined(DEVELOPER_VERSION)	
   if (!show_debug_panel_)
   {
 	return;
@@ -173,6 +174,7 @@ void DebugVisualizer::DrawImGuiDebugPanel(const GridSystem* grid)
 	}
   }
   ImGui::End();
+#endif
 }
 
 // DrawCharacterStatusBars removed - HP bars should be part of game UI, not debug

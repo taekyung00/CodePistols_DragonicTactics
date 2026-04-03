@@ -55,6 +55,9 @@ void Splash::Draw()
 
 void Splash::DrawImGui()
 {
+#if defined(DEVELOPER_VERSION)
+    // ... ImGui 코드
+#endif
 }
 
 gsl::czstring Splash::GetName() const

@@ -50,16 +50,14 @@ std::vector<Math::ivec2> GridSystem::FindPath(Math::ivec2 start, Math::ivec2 goa
 	return {};
   }
 
-  if (!IsWalkable(goal))
   {
-	Engine::GetLogger().LogError("GridSystem : Goal is not walkable");
-	return {};
-  }
-
-  if (IsOccupied(goal))
-  {
-	Engine::GetLogger().LogError("GridSystem : Goal is occupied");
-	return {};
+    TileType goal_type   = GetTileType(goal);
+    bool     goal_passable = (goal_type == TileType::Empty || goal_type == TileType::Lava);
+    if (!goal_passable || IsOccupied(goal))
+    {
+      Engine::GetLogger().LogError("GridSystem : Goal is not walkable");
+      return {};
+    }
   }
 
   if (start == goal)
@@ -99,9 +97,14 @@ std::vector<Math::ivec2> GridSystem::FindPath(Math::ivec2 start, Math::ivec2 goa
 	std::vector<Math::ivec2> neighbors = GetNeighbors(current->position);
 	for (const Math::ivec2& neighborPos : neighbors)
 	{
-	  // skip if not walkable or in closed set
-	  if (!IsWalkable(neighborPos))
-		continue;
+	  // skip if not passable (Wall/Invalid) or in closed set
+	  {
+	    TileType n_type    = GetTileType(neighborPos);
+	    bool     n_passable = (n_type == TileType::Empty || n_type == TileType::Lava)
+	                          && !IsOccupied(neighborPos);
+	    if (!n_passable)
+	      continue;
+	  }
 
 	  bool inClosedSet = false;
 	  for (Node* closed : closedSet)

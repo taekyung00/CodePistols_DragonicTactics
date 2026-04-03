@@ -3,9 +3,12 @@
 x64/
 *.log
 DragonicTactics/source/Engine/taekyung.ho_milestone2_loc.csv
-*.csv
-*.csv
+
 *.bat
 *.txt
+DragonicTactics/build/
 !dragonic_tactics.docx
 
+project/DragonicTactics/source/CS200/taekyung.ho_milestone4_loc.csv
+project/DragonicTactics/source/Engine/taekyung.ho_milestone4_loc.csv
+project/DragonicTactics/source/Game/DragonicTactics/Test/taekyung.ho_milestone4_loc.csv

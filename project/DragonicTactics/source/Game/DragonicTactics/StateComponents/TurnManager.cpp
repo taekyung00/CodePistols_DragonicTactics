@@ -12,6 +12,10 @@
 #include "./Engine/GameStateManager.h"
 #include "./Engine/Logger.h"
 #include "TurnManager.h"
+#include "Game/DragonicTactics/StateComponents/StatusEffectHandler.h"
+#include "Game/DragonicTactics/StateComponents/SpellSystem.h"
+#include "Game/DragonicTactics/StateComponents/CombatSystem.h"
+#include "Game/DragonicTactics/Objects/Components/GridPosition.h"
 
 TurnManager::TurnManager() : currentTurnIndex{}, turnNumber{}, roundNumber{}, combatActive{}, initiativeMode{ InitiativeMode::RollOnce }
 {
@@ -75,7 +79,7 @@ void TurnManager::StartCombat()
 
 void TurnManager::StartNextTurn()
 {
-  Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - BEGIN");
+  // Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - BEGIN");
   if (!combatActive)
   {
 	Engine::GetLogger().LogError("TurnManager: Combat not active");
@@ -108,25 +112,56 @@ void TurnManager::StartNextTurn()
   }
 
   // Refresh character's action points
- // currentChar->RefreshActionPoints();
- // StatsComponent* stats = currentChar->GetStatsComponent();
- // if (stats)
- // {
-	//stats->RefreshSpeed();
- // }
- 
-  Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - Calling OnTurnStart");
+  // currentChar->RefreshActionPoints();
+  // StatsComponent* stats = currentChar->GetStatsComponent();
+  // if (stats)
+  // {
+  // stats->RefreshSpeed();
+  // }
+
+  // ── 신규: TickDown — 상태 효과 지속시간 감소 + 만료 제거 ──
+  auto* se = currentChar->GetGOComponent<StatusEffectComponent>();
+  if (se)
+	se->TickDown(currentChar, eventBus);
+
+  // Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - Calling OnTurnStart");
   currentChar->OnTurnStart();
+
+  // ── 신규: Exhaustion/Haste 효과 적용 (복원 후) ──
+  //    Exhaustion → 복원된 AP를 0으로 덮어씀
+  //    Haste     → 복원된 AP에 +1 추가
+  auto* handler = Engine::GetGameStateManager().GetGSComponent<StatusEffectHandler>();
+  if (handler)
+	handler->OnTurnStart(currentChar);
+
+  // 용암 턴 시작 피해 — 현재 캐릭터가 용암 위에 있으면 피해
+  {
+    auto* spell_system = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
+    auto* combat       = Engine::GetGameStateManager().GetGSComponent<CombatSystem>();
+    if (spell_system && combat && currentChar->IsAlive())
+    {
+      GridPosition* gp = currentChar->GetGOComponent<GridPosition>();
+      if (gp)
+      {
+        int dmg = spell_system->GetLavaDamageAt(gp->Get());
+        if (dmg > 0)
+        {
+          Engine::GetLogger().LogEvent(currentChar->TypeName() + " takes " + std::to_string(dmg) + " lava damage at turn start");
+          combat->ApplyDamage(nullptr, currentChar, dmg);
+        }
+      }
+    }
+  }
 
   // Publish turn start event
   PublishTurnStartEvent();
 
-  Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - END");
+  // Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - END");
 }
 
 void TurnManager::EndCurrentTurn()
 {
-  Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - BEGIN");
+  // Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - BEGIN");
   if (!combatActive)
   {
 	Engine::GetLogger().LogError("TurnManager: Combat not active");
@@ -136,7 +171,7 @@ void TurnManager::EndCurrentTurn()
   Character* currentChar = turnOrder[static_cast<std::size_t>(currentTurnIndex)];
 
   // Call OnTurnEnd
-  Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - Calling OnTurnEnd");
+  // Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - Calling OnTurnEnd");
   currentChar->OnTurnEnd();
 
   // Publish turn end event
@@ -151,6 +186,11 @@ void TurnManager::EndCurrentTurn()
   {
 	roundNumber++;
 	Engine::GetLogger().LogEvent("TurnManager: Round " + std::to_string(roundNumber) + " started");
+
+	// 지형 효과 만료 처리
+	auto* spell_system = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
+	if (spell_system)
+	  spell_system->TickTerrainEffects(roundNumber);
 
 	// ===== Sangyun: Re-roll initiative if variant mode enabled (NEW) =====
 	if (initiativeMode == InitiativeMode::RollEachRound)
@@ -187,7 +227,7 @@ void TurnManager::EndCurrentTurn()
   // Start next turn
   StartNextTurn();
 
-  Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - END");
+  // Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - END");
 }
 
 void TurnManager::EndCombat()
@@ -401,18 +441,18 @@ void TurnManager::SortInitiativeOrder()
 {
   // Sort by total initiative (descending)
   std::sort(
-	initiativeOrder.begin(), initiativeOrder.end(),
-	[](const InitiativeEntry& a, const InitiativeEntry& b)
-	{
-	  // Primary sort: Total initiative (higher goes first)
-	  if (a.speed != b.speed)
+	  initiativeOrder.begin(), initiativeOrder.end(),
+	  [](const InitiativeEntry& a, const InitiativeEntry& b)
 	  {
-		return a.speed > b.speed;
-	  }
+		// Primary sort: Total initiative (higher goes first)
+		if (a.speed != b.speed)
+		{
+		  return a.speed > b.speed;
+		}
 
-	  // Tie-breaker 2: Pointer address (deterministic for same pointers)
-	  return a.character > b.character;
-	});
+		// Tie-breaker 2: Pointer address (deterministic for same pointers)
+		return a.character > b.character;
+	  });
 }
 
 // int TurnManager::GetInitiativeValue(Character* character) const

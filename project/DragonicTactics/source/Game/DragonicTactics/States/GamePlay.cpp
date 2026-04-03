@@ -12,9 +12,8 @@ Created:    November 5, 2025
 #include "CS200/IRenderer2D.h"
 #include "CS200/NDC.h"
 #include "Engine/Timer.h"
-#include "Engine/SoundManager.h"
-#include "OpenGL/Environment.h"
 #include "GamePlay.h"
+#include "OpenGL/Environment.h"
 
 #include "Game/MainMenu.h"
 
@@ -30,9 +29,13 @@ Created:    November 5, 2025
 #include "Game/DragonicTactics/StateComponents/DiceManager.h"
 #include "Game/DragonicTactics/StateComponents/EventBus.h"
 #include "Game/DragonicTactics/StateComponents/GridSystem.h"
-#include "Game/DragonicTactics/StateComponents/SpellSystem.h"
-#include "Game/DragonicTactics/StateComponents/TurnManager.h"
 #include "Game/DragonicTactics/StateComponents/MapDataRegistry.h"
+#include "Game/DragonicTactics/StateComponents/SpellSystem.h"
+#include "Game/DragonicTactics/StateComponents/StatusEffectHandler.h"
+#include "Game/DragonicTactics/StateComponents/TurnManager.h"
+#include "Game/DragonicTactics/Objects/Components/SpellSlots.h"
+#include "Engine/Camera.h"
+#include "Engine/SoundManager.h"
 
 #include "../Debugger/DebugManager.h"
 
@@ -41,8 +44,8 @@ Created:    November 5, 2025
 #include "PlayerInputHandler.h"
 
 GamePlay::MapSource GamePlay::s_next_map_source = GamePlay::MapSource::First;
-int GamePlay::s_next_map_index = 0;
-bool GamePlay::s_should_restart = false;
+int					GamePlay::s_next_map_index	= 0;
+bool				GamePlay::s_should_restart	= false;
 
 GamePlay::GamePlay() // : fighter(nullptr), dragon(nullptr)
 {
@@ -52,8 +55,7 @@ GamePlay::~GamePlay() = default; // Must be defined here where unique_ptr member
 
 void GamePlay::Load()
 {
-
-	if (!OpenGL::IsWebGL)
+  if (!OpenGL::IsWebGL)
   {
 	Engine::GetWindow().ForceResize(default_window_size.x, default_window_size.y);
 	Engine::GetWindow().SetWindowPosition(SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
@@ -61,6 +63,7 @@ void GamePlay::Load()
   m_input_handler = std::make_unique<PlayerInputHandler>();
   m_ui_manager	  = std::make_unique<GamePlayUIManager>();
   m_orchestrator  = std::make_unique<BattleOrchestrator>();
+  m_ui_manager->InitButtons(m_input_handler.get());
 
   AddGSComponent(new EventBus());
   AddGSComponent(new DiceManager());
@@ -74,6 +77,10 @@ void GamePlay::Load()
   AddGSComponent(new DataRegistry());
   AddGSComponent(new util::Timer());
   AddGSComponent(new MapDataRegistry());
+  AddGSComponent(new SpellSystem());
+  AddGSComponent(new StatusEffectHandler());
+//   AddGSComponent(new CS230::Camera());
+
 
   GetGSComponent<EventBus>()->Clear();
   GetGSComponent<DiceManager>()->SetSeed(100);
@@ -81,9 +88,10 @@ void GamePlay::Load()
   GetGSComponent<CombatSystem>()->SetDiceManager(GetGSComponent<DiceManager>());
   GetGSComponent<DataRegistry>()->LoadFromFile("Assets/Data/characters.json");
   GetGSComponent<DataRegistry>()->LoadAllCharacterData("Assets/Data/characters.json");
+  GetGSComponent<SpellSystem>()->LoadFromCSV("Assets/Data/spell_table.csv");
   // GetGSComponent<SpellSystem>()->SetEventBus(GetGSComponent<EventBus>());
 
-  current_map_source_ = s_next_map_source;
+  current_map_source_	   = s_next_map_source;
   selected_json_map_index_ = s_next_map_index;
 
   auto* map_registry = GetGSComponent<MapDataRegistry>();
@@ -93,22 +101,22 @@ void GamePlay::Load()
   Engine::GetLogger().LogEvent("Available maps: " + std::to_string(available_json_maps_.size()));
   if (current_map_source_ == MapSource::First)
   {
-    Engine::GetLogger().LogEvent("Loading First map");
-    LoadFirstMap();
+	Engine::GetLogger().LogEvent("Loading First map");
+	LoadFirstMap();
   }
   else
   {
-    if (!available_json_maps_.empty() && selected_json_map_index_ < static_cast<int>(available_json_maps_.size()))
-    {
-      std::string selected_map_id = available_json_maps_[static_cast<std::size_t>(selected_json_map_index_)];
-      Engine::GetLogger().LogEvent("Loading JSON map: " + selected_map_id);
-      LoadJSONMap(selected_map_id);
-    }
-    else
-    {
-      Engine::GetLogger().LogError("Invalid JSON map selection, falling back to hardcoded");
-      LoadFirstMap();
-    }
+	if (!available_json_maps_.empty() && selected_json_map_index_ < static_cast<int>(available_json_maps_.size()))
+	{
+	  std::string selected_map_id = available_json_maps_[static_cast<std::size_t>(selected_json_map_index_)];
+	  Engine::GetLogger().LogEvent("Loading JSON map: " + selected_map_id);
+	  LoadJSONMap(selected_map_id);
+	}
+	else
+	{
+	  Engine::GetLogger().LogError("Invalid JSON map selection, falling back to hardcoded");
+	  LoadFirstMap();
+	}
   }
 
 
@@ -117,37 +125,34 @@ void GamePlay::Load()
   turnMgr->InitializeTurnOrder(std::vector<Character*>{ player, enemy });
   turnMgr->StartCombat();
 
-  Engine::GetSoundManager().PlayBGM(SoundManager::BGM_BATTLE);
-
   // 신규 추가: UI Manager에 캐릭터 등록
   m_ui_manager->SetCharacters({ player, enemy });
   Engine::GetLogger().LogEvent("GamePlay::Load - Characters registered to UI Manager");
 
   GetGSComponent<EventBus>()->Subscribe<CharacterDamagedEvent>(
-    [this](const CharacterDamagedEvent& event) { 
-      this->DisplayDamageAmount(event);
-      this->DisplayDamageLog(event);
-      Engine::GetSoundManager().PlaySFX(SoundManager::SFX_HIT);
-    });
-
-  GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>(
-	  [this]([[maybe_unused]] const CharacterDeathEvent& event)
+	  [this](const CharacterDamagedEvent& event)
 	  {
-		  this->CheckGameEnd(event);
+		this->DisplayDamageAmount(event);
+		this->DisplayDamageLog(event);
 	  });
+
+  GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>([this]([[maybe_unused]] const CharacterDeathEvent& event) { this->CheckGameEnd(event); });
 
   GetGSComponent<EventBus>()->Subscribe<CharacterEscapedEvent>(
 	  [this]([[maybe_unused]] const CharacterEscapedEvent& event)
 	  {
-		this->game_end = true;
-        std::string msg = "Game Over: ";
-        msg += event.character->TypeName();
-        msg += " has escaped.";
+		this->game_end	= true;
+		std::string msg = "Game Over: ";
+		msg += event.character->TypeName();
+		msg += " has escaped.";
 		Engine::GetLogger().LogDebug(msg);
 	  });
+
+  Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/SFX_test.wav");
+
+  Engine::GetSoundManager().LoadBGM("Assets/Audio/BGM/BGM_test.ogg");
+  Engine::GetSoundManager().PlayBGM("Assets/Audio/BGM/BGM_test.ogg");
 }
-
-
 
 void GamePlay::DisplayDamageAmount(const CharacterDamagedEvent& event)
 {
@@ -175,41 +180,43 @@ void GamePlay::DisplayDamageAmount(const CharacterDamagedEvent& event)
   m_ui_manager->ShowDamageText(event.damageAmount, text_position, size);
 }
 
-void GamePlay::DisplayDamageLog(const CharacterDamagedEvent& event){
-    std::string str = event.target->TypeName() + " took " + std::to_string(event.damageAmount) + " damage from " + event.attacker->TypeName() + "(HP: " + std::to_string(event.remainingHP) + ")";
-    auto size = GetGSComponent<GridSystem>()->TILE_SIZE;
-    auto position = Math::vec2{9.0 * size, 1.0 * size};
-    m_ui_manager->ShowDamageLog(str, position, Math::vec2{0.5, 0.5});
+void GamePlay::DisplayDamageLog(const CharacterDamagedEvent& event)
+{
+  std::string attacker_name = (event.attacker != nullptr) ? event.attacker->TypeName() : "Environment";
+  std::string str	   = event.target->TypeName() + " took " + std::to_string(event.damageAmount) + " damage from " + attacker_name + "(HP: " + std::to_string(event.remainingHP) + ")";
+  auto		  size	   = GetGSComponent<GridSystem>()->TILE_SIZE;
+  auto		  position = Math::vec2{ 9.0 * size, 1.0 * size };
+  m_ui_manager->ShowDamageLog(str, position, Math::vec2{ 0.5, 0.5 });
 }
 
 //  ======== TODO : we have to make it for loop to check all enemy is retired ========
-void GamePlay::CheckGameEnd(const CharacterDeathEvent& event){
-    if (event.character == player){
-        m_ui_manager->ShowGameEnd("Invader Win");
-        game_end = true;
-        return;
-    }
+void GamePlay::CheckGameEnd(const CharacterDeathEvent& event)
+{
+  if (event.character == player)
+  {
+	m_ui_manager->ShowGameEnd("Invader Win");
+	game_end = true;
+	return;
+  }
 
-    if(event.character == enemy) {
-        m_ui_manager->ShowGameEnd("Player Win");
-        game_end = true;
-    }
+  if (event.character == enemy)
+  {
+	m_ui_manager->ShowGameEnd("Player Win");
+	game_end = true;
+  }
 }
-
-
 
 void GamePlay::Update(double dt)
 {
-
-    if (s_should_restart)
+  if (s_should_restart)
   {
-    s_should_restart = false;
-    Engine::GetLogger().LogEvent("=== RESTARTING GAMEPLAY ===");
-    Engine::GetGameStateManager().PopState();
-    Engine::GetGameStateManager().PushState<GamePlay>();
-    return;
+	s_should_restart = false;
+	Engine::GetLogger().LogEvent("=== RESTARTING GAMEPLAY ===");
+	Engine::GetGameStateManager().PopState();
+	Engine::GetGameStateManager().PushState<GamePlay>();
+	return;
   }
-  
+
   TurnManager*				turnMgr		 = GetGSComponent<TurnManager>();
   GridSystem*				grid		 = GetGSComponent<GridSystem>();
   CombatSystem*				combatSystem = GetGSComponent<CombatSystem>();
@@ -217,18 +224,19 @@ void GamePlay::Update(double dt)
   CS230::GameObjectManager* goMgr		 = GetGSComponent<CS230::GameObjectManager>();
   DebugManager*				debugMgr	 = GetGSComponent<DebugManager>();
 
-    if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Escape))
-    {
-        if (turnMgr) turnMgr->EndCombat();
-        Engine::GetGameStateManager().PopState();
-        Engine::GetGameStateManager().PushState<MainMenu>();
-        return;
-    }
+  if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Escape))
+  {
+	if (turnMgr)
+	  turnMgr->EndCombat();
+	Engine::GetGameStateManager().PopState();
+	Engine::GetGameStateManager().PushState<MainMenu>();
+	return;
+  }
 
-    if (game_end)
-    {
-        return;
-    }
+  if (game_end)
+  {
+	return;
+  }
 
   Character* current = nullptr;
   if (turnMgr && turnMgr->IsCombatActive())
@@ -241,14 +249,13 @@ void GamePlay::Update(double dt)
 
   if (current != nullptr)
   {
-	m_input_handler->Update(dt, current, grid, combatSystem);
+	m_input_handler->Update(dt, current, grid, combatSystem, m_ui_manager->GetButtons());
 	m_orchestrator->Update(dt, turnMgr, aiSystem);
 	m_ui_manager->Update(dt);
   }
 
   goMgr->UpdateAll(dt);
   UpdateGSComponents(dt);
-
 }
 
 void GamePlay::Unload()
@@ -267,8 +274,6 @@ void GamePlay::Unload()
 
   enemy	 = nullptr;
   player = nullptr;
-
-  Engine::GetSoundManager().StopBGM();
 }
 
 void GamePlay::Draw()
@@ -288,18 +293,21 @@ void GamePlay::Draw()
   CS230::GameObjectManager* goMgr = GetGSComponent<CS230::GameObjectManager>();
   if (goMgr)
   {
-	goMgr->DrawAll(camera_matrix);
+	goMgr->DrawAll(Math::TransformationMatrix{}); 
   }
 
   m_ui_manager->Draw(camera_matrix);
 
   GetGSComponent<DebugManager>()->Draw(grid_system);
 
+  //m_button_manager->SetLabel("btn_move", "Cancel Move");
+
   renderer_2d->EndScene();
 }
 
 void GamePlay::DrawImGui()
 {
+#if defined(DEVELOPER_VERSION)
   GridSystem* grid_system = GetGSComponent<GridSystem>();
   GetGSComponent<DebugManager>()->DrawImGui(grid_system);
 
@@ -310,7 +318,7 @@ void GamePlay::DrawImGui()
 
   if (current_map_source_ == MapSource::Json && selected_json_map_index_ < static_cast<int>(available_json_maps_.size()))
   {
-    ImGui::Text("Map ID: %s", available_json_maps_[static_cast<std::size_t>(selected_json_map_index_)].c_str());
+	ImGui::Text("Map ID: %s", available_json_maps_[static_cast<std::size_t>(selected_json_map_index_)].c_str());
   }
 
   ImGui::Separator();
@@ -318,18 +326,18 @@ void GamePlay::DrawImGui()
   bool is_first_selected = (s_next_map_source == MapSource::First);
   if (is_first_selected)
   {
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.6f, 0.2f, 1.0f));
+	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.6f, 0.2f, 1.0f));
   }
 
   if (ImGui::Button("First Map"))
   {
-    s_next_map_source = MapSource::First;
-    Engine::GetLogger().LogEvent("Selected: First map (click Restart to apply)");
+	s_next_map_source = MapSource::First;
+	Engine::GetLogger().LogEvent("Selected: First map (click Restart to apply)");
   }
 
   if (is_first_selected)
   {
-    ImGui::PopStyleColor();
+	ImGui::PopStyleColor();
   }
 
   ImGui::Separator();
@@ -338,33 +346,33 @@ void GamePlay::DrawImGui()
 
   for (int i = 0; i < static_cast<int>(available_json_maps_.size()); ++i)
   {
-    const std::string& map_id = available_json_maps_[static_cast<std::size_t>(i)];
+	const std::string& map_id = available_json_maps_[static_cast<std::size_t>(i)];
 
-    bool is_selected = (s_next_map_source == MapSource::Json && s_next_map_index == i);
-    if (is_selected)
-    {
-      ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.6f, 0.2f, 1.0f));
-    }
+	bool is_selected = (s_next_map_source == MapSource::Json && s_next_map_index == i);
+	if (is_selected)
+	{
+	  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.6f, 0.2f, 1.0f));
+	}
 
-    if (ImGui::Button(map_id.c_str()))
-    {
-      s_next_map_source = MapSource::Json;
-      s_next_map_index = i;
-      Engine::GetLogger().LogEvent("Selected JSON map: " + map_id + " (click Restart to apply)");
-    }
+	if (ImGui::Button(map_id.c_str()))
+	{
+	  s_next_map_source = MapSource::Json;
+	  s_next_map_index	= i;
+	  Engine::GetLogger().LogEvent("Selected JSON map: " + map_id + " (click Restart to apply)");
+	}
 
-    if (is_selected)
-    {
-      ImGui::PopStyleColor();
-    }
+	if (is_selected)
+	{
+	  ImGui::PopStyleColor();
+	}
   }
 
   ImGui::Separator();
 
   if (ImGui::Button("Restart with Selected Map"))
   {
-    Engine::GetLogger().LogEvent("Restart requested - will execute on next frame");
-    s_should_restart = true;
+	Engine::GetLogger().LogEvent("Restart requested - will execute on next frame");
+	s_should_restart = true;
   }
 
   ImGui::End();
@@ -430,14 +438,14 @@ void GamePlay::DrawImGui()
 	ImGui::EndDisabled();
 
   // Action Button
-  const char* action_text		 = (currentState == ActionState::SelectingAction) ? "Cancel Action" : "Action";
-  bool		  is_action_disabled = (currentState != ActionState::None && currentState != ActionState::SelectingAction);
+  const char* action_text		 = (currentState == ActionState::SelectingAction || currentState == ActionState::SelectingSpell) ? "Cancel Action" : "Action";
+  bool		  is_action_disabled = (currentState != ActionState::None && currentState != ActionState::SelectingAction && currentState != ActionState::SelectingSpell);
 
   if (is_action_disabled)
 	ImGui::BeginDisabled();
   if (ImGui::Button(action_text))
   {
-	if (currentState == ActionState::SelectingAction)
+	if (currentState == ActionState::SelectingAction || currentState == ActionState::SelectingSpell)
 	{
 	  m_input_handler->CancelCurrentAction();
 	  Engine::GetLogger().LogEvent("UI: 'Cancel Action' button clicked.");
@@ -481,11 +489,74 @@ void GamePlay::DrawImGui()
 	if (ImGui::Button("Spell"))
 	{
 	  Engine::GetLogger().LogEvent("UI: 'Spell' selected. Now targeting.");
-	  m_input_handler->SetState(ActionState::TargetingForSpell);
+	  m_input_handler->SetState(ActionState::SelectingSpell);
 	}
 
 	ImGui::End();
   }
+  if (currentState == ActionState::SelectingSpell)
+  {
+	ImGui::Begin("Spell List");
+
+	SpellSystem* spell_sys = GetGSComponent<SpellSystem>();
+	Character*	 current   = turnMgr ? turnMgr->GetCurrentCharacter() : nullptr;
+
+	if (spell_sys && current)
+	{
+	  auto available = spell_sys->GetAvailableSpells(current);
+
+	  if (available.empty())
+	  {
+		ImGui::Text("No spells available.");
+	  }
+
+	  for (const auto& spell_id : available)
+{
+    const SpellData* spell = spell_sys->GetSpellData(spell_id);
+    if (!spell) continue;
+
+    if (!spell->upcastable)
+    {
+        // ── 비업캐스트: 기존 단일 버튼 ──
+        std::string label = spell->spell_name
+                          + " (Lv." + std::to_string(spell->spell_level) + ")"
+                          + "##" + spell_id;
+        if (ImGui::Button(label.c_str()))
+            m_input_handler->SelectSpell(spell_id, current, spell->spell_level, m_ui_manager->GetButtons());
+    }
+    else
+    {
+        // ── 업캐스트 가능: 이름 표시 + 레벨 버튼 ──
+        ImGui::Text("%s (Lv.%d Up)", spell->spell_name.c_str(), spell->spell_level);
+        ImGui::SameLine();
+
+        SpellSlots* slots = current->GetSpellSlots();
+        for (int lv = spell->spell_level; lv <= 5; ++lv)
+        {
+            bool has_slot = slots && slots->HasSlot(lv);
+            if (!has_slot) ImGui::BeginDisabled();
+
+            std::string lv_label = "Lv" + std::to_string(lv)
+                                 + "##" + spell_id + std::to_string(lv);
+            if (ImGui::Button(lv_label.c_str()))
+                m_input_handler->SelectSpell(spell_id, current, lv, m_ui_manager->GetButtons());
+
+            if (!has_slot) ImGui::EndDisabled();
+            ImGui::SameLine();
+        }
+        ImGui::NewLine();
+    }
+}
+	}
+
+	if (ImGui::Button("Cancel"))
+	{
+	  m_input_handler->CancelCurrentAction();
+	}
+
+	ImGui::End();
+  }
+#endif // DEVELOPER_VERSION
 }
 
 gsl::czstring GamePlay::GetName() const
@@ -551,18 +622,18 @@ void GamePlay::LoadJSONMap(const std::string& map_id)
 {
   Engine::GetLogger().LogEvent("LoadJSONMap - BEGIN: " + map_id);
 
-  CS230::GameObjectManager* go_manager = GetGSComponent<CS230::GameObjectManager>();
-  GridSystem* grid_system = GetGSComponent<GridSystem>();
-  CharacterFactory* character_factory = GetGSComponent<CharacterFactory>();
-  MapDataRegistry* map_registry = GetGSComponent<MapDataRegistry>();
+  CS230::GameObjectManager* go_manager		  = GetGSComponent<CS230::GameObjectManager>();
+  GridSystem*				grid_system		  = GetGSComponent<GridSystem>();
+  CharacterFactory*			character_factory = GetGSComponent<CharacterFactory>();
+  MapDataRegistry*			map_registry	  = GetGSComponent<MapDataRegistry>();
 
   MapData map_data = map_registry->GetMapData(map_id);
 
   if (map_data.id.empty())
   {
-    Engine::GetLogger().LogError("Failed to load map: " + map_id + ", falling back to hardcoded");
-    LoadFirstMap();
-    return;
+	Engine::GetLogger().LogError("Failed to load map: " + map_id + ", falling back to hardcoded");
+	LoadFirstMap();
+	return;
   }
 
   grid_system->LoadMap(map_data);
@@ -570,34 +641,34 @@ void GamePlay::LoadJSONMap(const std::string& map_id)
   auto dragon_spawn_it = map_data.spawn_points.find("dragon");
   if (dragon_spawn_it != map_data.spawn_points.end())
   {
-    Math::ivec2 dragon_spawn = dragon_spawn_it->second;
-    auto player_ptr = character_factory->Create(CharacterTypes::Dragon, dragon_spawn);
-    player = player_ptr.get();
-    player->SetGridSystem(grid_system);
-    go_manager->Add(std::move(player_ptr));
-    grid_system->AddCharacter(player, dragon_spawn);
-    Engine::GetLogger().LogEvent("Dragon spawned at: " + std::to_string(dragon_spawn.x) + ", " + std::to_string(dragon_spawn.y));
+	Math::ivec2 dragon_spawn = dragon_spawn_it->second;
+	auto		player_ptr	 = character_factory->Create(CharacterTypes::Dragon, dragon_spawn);
+	player					 = player_ptr.get();
+	player->SetGridSystem(grid_system);
+	go_manager->Add(std::move(player_ptr));
+	grid_system->AddCharacter(player, dragon_spawn);
+	Engine::GetLogger().LogEvent("Dragon spawned at: " + std::to_string(dragon_spawn.x) + ", " + std::to_string(dragon_spawn.y));
   }
   else
   {
-    Engine::GetLogger().LogError("No dragon spawn point in map: " + map_id);
+	Engine::GetLogger().LogError("No dragon spawn point in map: " + map_id);
   }
 
   // Fighter
   auto fighter_spawn_it = map_data.spawn_points.find("fighter");
   if (fighter_spawn_it != map_data.spawn_points.end())
   {
-    Math::ivec2 fighter_spawn = fighter_spawn_it->second;
-    auto enemy_ptr = character_factory->Create(CharacterTypes::Fighter, fighter_spawn);
-    enemy = enemy_ptr.get();
-    enemy->SetGridSystem(grid_system);
-    go_manager->Add(std::move(enemy_ptr));
-    grid_system->AddCharacter(enemy, fighter_spawn);
-    Engine::GetLogger().LogEvent("Fighter spawned at: " + std::to_string(fighter_spawn.x) + ", " + std::to_string(fighter_spawn.y));
+	Math::ivec2 fighter_spawn = fighter_spawn_it->second;
+	auto		enemy_ptr	  = character_factory->Create(CharacterTypes::Fighter, fighter_spawn);
+	enemy					  = enemy_ptr.get();
+	enemy->SetGridSystem(grid_system);
+	go_manager->Add(std::move(enemy_ptr));
+	grid_system->AddCharacter(enemy, fighter_spawn);
+	Engine::GetLogger().LogEvent("Fighter spawned at: " + std::to_string(fighter_spawn.x) + ", " + std::to_string(fighter_spawn.y));
   }
   else
   {
-    Engine::GetLogger().LogError("No fighter spawn point in map: " + map_id);
+	Engine::GetLogger().LogError("No fighter spawn point in map: " + map_id);
   }
 
   Engine::GetLogger().LogEvent("LoadJSONMap - END: " + map_data.name);

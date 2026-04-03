@@ -22,7 +22,6 @@
 #include "Game/DragonicTactics/Test/TestEventBus.h"
 #include "Game/DragonicTactics/Test/TestMemory.h"
 #include "Game/DragonicTactics/Test/TestNew.h"
-#include "Game/DragonicTactics/Test/TestSpellSystem.h"
 #include "Game/DragonicTactics/Test/TestTurnInit.h"
 #include "Game/DragonicTactics/Test/TestTurnManager.h"
 #include "Game/MainMenu.h"
@@ -89,7 +88,6 @@ void ConsoleTest::Update([[maybe_unused]] double dt)
   {
 	AddGSComponent(new GridSystem());
 
-	RunSpellSystemTests();
 
 	RemoveGSComponent<GridSystem>();
 
@@ -222,6 +220,7 @@ void ConsoleTest::Draw()
 
 void ConsoleTest::DrawImGui()
 {
+#if defined(DEVELOPER_VERSION)
   ImGui::Begin("Tests");
   if (ImGui::Button("TestAStar"))
   {
@@ -268,6 +267,7 @@ void ConsoleTest::DrawImGui()
   }
 
   ImGui::End();
+#endif
 }
 
 void ConsoleTest::Unload()

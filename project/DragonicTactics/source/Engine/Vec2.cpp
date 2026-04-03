@@ -438,4 +438,150 @@ namespace Math
 	is >> v.x >> v.y >> v.z;
 	return is;
   }
+
+   /*===========================fvec2=================================================*/
+     fvec2& fvec2::operator+=(const fvec2& rhs) noexcept
+    {
+        x += rhs.x;
+        y += rhs.y;
+        return *this;
+    }
+
+     fvec2& fvec2::operator-=(const fvec2& rhs) noexcept
+    {
+        x -= rhs.x;
+        y -= rhs.y;
+        return *this;
+    }
+
+     fvec2& fvec2::operator*=(int scalar) noexcept
+    {
+        x *= static_cast<float>(scalar);
+        y *= static_cast<float>(scalar);
+        return *this;
+    }
+
+     fvec2& fvec2::operator/=(int scalar) noexcept
+    {
+        x /= static_cast<float>(scalar);
+        y /= static_cast<float>(scalar);
+        return *this;
+    }
+
+     fvec2 fvec2::operator+() const noexcept
+    {
+        fvec2 new_vec{ this->x, this->y };
+        return new_vec;
+    }
+
+     fvec2 fvec2::operator-() const noexcept
+    {
+        fvec2 new_vec{ -this->x, -this->y };
+        return new_vec;
+    }
+
+     float fvec2::Length() const noexcept
+    {
+        return std::sqrt(x*x + y*y);
+    }
+
+    fvec2 fvec2::Normalize()
+    {
+        fvec2 normalized = {x/Length(),y/Length()};
+        return normalized;
+    }
+
+     fvec2 operator+(const fvec2& lhs, const fvec2& rhs) noexcept
+    {
+        fvec2 new_vec{ lhs.x + rhs.x, lhs.y + rhs.y };
+        return new_vec;
+    }
+
+     fvec2 operator-(const fvec2& lhs, const fvec2& rhs) noexcept
+    {
+        fvec2 new_vec{ lhs.x - rhs.x, lhs.y - rhs.y };
+        return new_vec;
+    }
+
+     fvec2 operator*(const fvec2& v, int scalar) noexcept
+    {
+        fvec2 new_vec{ v.x * static_cast<float>(scalar), v.y * static_cast<float>(scalar) };
+        return new_vec;
+    }
+
+     fvec2 operator*(int scalar, const fvec2& v) noexcept
+    {
+        fvec2 new_vec{ v.x * static_cast<float>(scalar), v.y * static_cast<float>(scalar) };
+        return new_vec;
+    }
+
+     fvec2 operator*(const fvec2& v, float scalar) noexcept
+    {
+        fvec2 new_vec{ v.x * scalar, v.y * scalar };
+        return new_vec;
+    }
+
+     fvec2 operator*(float scalar, const fvec2& v) noexcept
+    {
+        fvec2 new_vec{ v.x * scalar, v.y * scalar };
+        return new_vec;
+    }
+
+     fvec2 operator/(const fvec2& v, int scalar) noexcept
+    {
+        fvec2 new_vec{ v.x / static_cast<float>(scalar), v.y / static_cast<float>(scalar) };
+        return new_vec;
+    }
+
+     bool operator==(const fvec2& lhs, const fvec2& rhs) noexcept
+    {
+        return (lhs.x == rhs.x) && (lhs.y == rhs.y);
+    }
+
+     bool operator!=(const fvec2& lhs, const fvec2& rhs) noexcept
+    {
+        return !(lhs == rhs);
+    }
+
+    std::ostream& operator<<(std::ostream& os, const fvec2& v)
+    {
+        os << v.x << ", " << v.y << "\n";
+        return os;
+    }
+
+    std::istream& operator>>(std::istream& is, fvec2& v)
+    {
+        is >> v.x >> v.y;
+        return is;
+    }
+
+	vec2 to_vec2(const fvec2& rhs)
+	{
+        return {static_cast<double>(rhs.x), static_cast<double>(rhs.y)};
+    }
+
+	vec2 to_vec2(const ivec2& rhs)
+	{
+		return {static_cast<double>(rhs.x), static_cast<double>(rhs.y)};
+	}
+
+	fvec2 to_fvec2(const vec2& rhs)
+	{
+        return {static_cast<float>(rhs.x), static_cast<float>(rhs.y)};
+    }
+
+	fvec2 to_fvec2(const ivec2& rhs)
+	{
+		return {static_cast<float>(rhs.x), static_cast<float>(rhs.y)};
+	}
+
+	ivec2 to_ivec2(const fvec2& rhs)
+	{
+		return {static_cast<int>(rhs.x), static_cast<int>(rhs.y)};
+	}
+
+	ivec2 to_ivec2(const vec2& rhs)
+	{
+		return {static_cast<int>(rhs.x), static_cast<int>(rhs.y)};
+	}
 }

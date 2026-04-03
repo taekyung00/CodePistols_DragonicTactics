@@ -221,4 +221,67 @@ namespace Math
   // Stream operators
   std::ostream& operator<<(std::ostream& os, const vec3& v);
   std::istream& operator>>(std::istream& is, vec3& v);
+  struct fvec2
+    {
+        float x{ 0 };
+        float y{ 0 };
+
+        // Constructors
+        fvec2() noexcept = default;
+        constexpr fvec2(float _x, float _y) noexcept : x(_x), y(_y) { };
+        //  vec2(const vec2& v) noexcept = default;
+        // vec2(const vec2& rhs) = default;
+        //  vec2(int xy) noexcept;
+
+        // Conversion
+        fvec2(const ivec2& v) noexcept : x(static_cast<float>(v.x)), y(static_cast<float>(v.y)) { };
+
+        // Arithmetic operators
+        fvec2& operator+=(const fvec2& rhs) noexcept;
+        fvec2& operator-=(const fvec2& rhs) noexcept;
+        fvec2& operator*=(int scalar) noexcept;
+        fvec2& operator/=(int scalar) noexcept;
+
+        // Unary operators
+        fvec2 operator+() const noexcept;
+        fvec2 operator-() const noexcept;
+
+        // length
+        float Length() const noexcept;
+
+        bool operator<(const fvec2& other) const
+        {
+            return (x < other.x) || (x == other.x && y < other.y);
+        }
+
+        // normalize
+        fvec2 Normalize();
+    };
+
+    // Non-member operators
+    fvec2 operator+(const fvec2& lhs, const fvec2& rhs) noexcept;
+    fvec2 operator-(const fvec2& lhs, const fvec2& rhs) noexcept;
+    fvec2 operator*(const fvec2& v, int scalar) noexcept;
+    fvec2 operator*(int scalar, const fvec2& v) noexcept;
+    fvec2 operator*(const fvec2& v, float scalar) noexcept;
+    fvec2 operator*(float scalar, const fvec2& v) noexcept;
+    fvec2 operator/(const fvec2& v, int scalar) noexcept;
+
+    // Comparison operators
+    bool operator==(const fvec2& lhs, const fvec2& rhs) noexcept;
+    bool operator!=(const fvec2& lhs, const fvec2& rhs) noexcept;
+
+    // Stream operators
+    std::ostream& operator<<(std::ostream& os, const fvec2& v);
+    std::istream& operator>>(std::istream& is, fvec2& v);
+
+    vec2 to_vec2(const fvec2& rhs);
+    vec2 to_vec2(const ivec2& rhs);
+    
+    fvec2 to_fvec2(const vec2& rhs);
+    fvec2 to_fvec2(const ivec2& rhs);
+
+    ivec2 to_ivec2(const fvec2& rhs);
+    ivec2 to_ivec2(const vec2& rhs);
 }
+

@@ -17,7 +17,6 @@ Created:    May 6, 2025
 #include "Engine/Input.h"
 #include "Engine/Matrix.h"
 #include "Engine/TextManager.h"
-#include "Engine/SoundManager.h"
 #include "Engine/Window.h"
 #include "Game/DragonicTactics/States/GamePlay.h"
 #include "MainMenu.h"
@@ -48,6 +47,9 @@ MainMenu::MainMenu() : current_option(Option::DragonicTactics)
 
 void MainMenu::DrawImGui()
 {
+#if defined(DEVELOPER_VERSION)
+    // ... ImGui 코드
+#endif
 }
 
 void MainMenu::SelecetOption()
@@ -78,7 +80,6 @@ void MainMenu::SelecetOption()
 
 void MainMenu::Load()
 {
-  Engine::GetSoundManager().PlayBGM(SoundManager::BGM_MAIN_MENU);
   CS200::RenderingAPI::SetClearColor(0x000000FF);
   if (!OpenGL::IsWebGL)
   {

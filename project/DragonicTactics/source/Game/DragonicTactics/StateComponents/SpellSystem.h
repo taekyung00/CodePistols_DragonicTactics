@@ -18,52 +18,89 @@
 class Character;
 class EventBus;
 
-// Step 1.1: SpellSystem singleton class
-// Reason: Centralized spell management accessible from anywhere
+struct TerrainEffect
+{
+  std::vector<Math::ivec2> affected_tiles;
+  int                      damage_per_turn; // 0이면 벽 (피해 없음)
+  int                      created_round;   // 생성된 라운드 번호
+  int                      duration_rounds; // 지속 라운드 수
+};
+
+struct SpellMove
+{
+  std::string mover;	 // "self", "target"
+  std::string move_type; // "stay", "knockback", "teleport"
+  int		  distance;	 // 거리. "selected" 이면 -1 (target_tile 사용)
+};
+
+struct SpellTargeting
+{
+  std::string filter;	// "Enemy", "Ally", "Self", "Any", "Empty"
+  std::string geometry; // "Single", "Around", "Line", "OddEven", "Point"
+  int		  range;	// 타일 수. -1 = 무한
+};
+
+struct SpellData
+{
+  // ── CSV 컬럼 (col[0]~col[8]) ──
+  std::string	 id;		  // col[0]  "S_ATK_050"
+  std::string	 spell_name;  // col[1]  "Smite"
+  std::string	 category;	  // col[2]  "Attack", "Buff", "Terrain Change" (빈 값 허용)
+  int			 spell_level; // col[4]  요구 슬롯 레벨 (0 = 슬롯 불필요)
+  SpellTargeting targeting;
+  bool			 upcastable; //   TRUE / FALSE
+
+  std::vector<std::string> usable_classes; // col[3]  ["Dragon", "Fighter"] — ", " 구분
+
+  // ── Effect 템플릿 파싱 결과 (col[8] → ParseEffectField) ──
+  std::string damage_formula;  // "3d8", "0", "-(1d10)", "8 * (Spell Level + 1 - ...)"
+  std::string effect_status;   // status_effect.csv의 NAME. "Basic" = 상태 없음
+  int		  effect_duration; // 상태 지속 턴 ("Basic"이면 0)
+  SpellMove	  move;			   // ← move_type 문자열 대신 파싱된 구조체
+							   //   std::string move_type;	   // "current location", "furthest position from the Dragon..."
+  std::string summon_type;	   // "NULL", "Lava Zone", "Wall"
+
+  std::string effect_raw;	  // 파싱 전 원본 Effect 문자열 (디버그/툴팁용)
+  std::string special_effect; // "Special:" 줄 내용. 없으면 빈 문자열
+  std::string upcast_dice;	  // 레벨 차이당 굴리는 주사위. "1d6", "2d6" 등. 없으면 빈 문자열
+};
+
 class SpellSystem : public CS230::Component
 {
   public:
-  SpellSystem();
-  ~SpellSystem();
+  void LoadFromCSV(const std::string& csv_path);
 
-  // Set EventBus for testing or runtime use
-  void SetEventBus(EventBus* bus)
-  {
-	eventBus = bus;
-  }
-
-  // Step 1.2: Spell registration
-  // Reason: Spells must be registered before they can be used
-  void			 RegisterSpell(const std::string& spellName, MockSpellBase* spell);
-  MockSpellBase* GetSpell(const std::string& spellName);
-
-  // Step 1.3: Spell casting interface
-  // Reason: Main entry point for casting spells
-  MockSpellResult CastSpell(Character* caster, const std::string& spellName, Math::vec2 targetTile, int upcastLevel = 0);
-
-  // Step 1.4: Spell validation
-  // Reason: Check if spell can be cast before committing resources
-  bool CanCastSpell(Character* caster, const std::string& spellName, Math::vec2 targetTile, int upcastLevel = 0) const;
-
-  // Step 1.5: Spell slot management helpers
-  // Reason: Query available spells for UI
+  bool					   HasSpell(const std::string& spell_id) const;
   std::vector<std::string> GetAvailableSpells(Character* caster) const;
-  int					   GetSpellSlotCount(Character* caster, int level) const;
+  bool					   CanCast(Character* caster, const std::string& spell_id, Math::ivec2 target_tile, int upcast_level = 0) const;
+  bool					   CastSpell(Character* caster, const std::string& spell_id, Math::ivec2 target_tile, int upcast_level = 0);
 
-  // Step 1.6: Spell preview (for UI)
-  // Reason: Show which tiles will be affected before casting
-  std::vector<Math::vec2> PreviewSpellArea(const std::string& spellName, Math::vec2 targetTile) const;
+  const SpellData* GetSpellData(const std::string& spell_id) const;
+
+  // 지형 효과 관리
+  void TickTerrainEffects(int current_round);
+  int  GetLavaDamageAt(Math::ivec2 tile) const;
+  bool CastWalls(Character* caster, const std::string& spell_id,
+                 const std::vector<Math::ivec2>& tiles, int upcast_level);
+
+  private:
+  std::map<std::string, SpellData> spells_;
+  std::vector<TerrainEffect>       m_terrain_effects;
+
+  std::vector<std::string> ReadCSVRecord(std::ifstream& file) const;
+  SpellData				   ParseCSVRow(const std::vector<std::string>& columns) const;
+  void					   ParseEffectField(const std::string& effect_str, SpellData& data) const;
+  std::vector<std::string> SplitByDelimiter(const std::string& str, char delim) const;
 
   private:
 
+  SpellTargeting ParseTargeting(const std::string& targeting_str) const; // ← 신규
 
-  // Step 1.7: Spell registry
-  // Reason: Store all registered spells
-  std::map<std::string, std::unique_ptr<MockSpellBase>> spells;
 
-  // Step 1.8: Validation helpers
-  bool ValidateSpellSlots(Character* caster, int requiredLevel) const;
-  bool ValidateTarget(MockSpellBase* spell, Character* caster, Math::vec2 targetTile) const;
-
-  EventBus* eventBus = nullptr;
+  void		ApplySpellEffect(Character* caster, const SpellData& spell, Math::ivec2 target_tile, int upcast_level);
+  int		CalculateSpellDamage(const SpellData& spell, int upcast_level);
+  void		ApplySpecialEffect(Character* caster, const SpellData& spell, int upcast_level);
+  void		ParseDamageFormula(const std::string& formula_str, SpellData& data) const;
+  SpellMove ParseMoveField(const std::string& move_str) const;
+  void		ApplyMoveEffect(Character* caster, const std::vector<Character*>& targets, const SpellData& spell, Math::ivec2 target_tile);
 };

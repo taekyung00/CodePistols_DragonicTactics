@@ -68,6 +68,13 @@ void StatsComponent::ReduceSpeed(int i)
   }
 }
 
+void StatsComponent::ModifyBaseSpeed(int delta)
+{
+  stats.speed += delta;
+  if (stats.speed < 0)
+	stats.speed = 0;
+}
+
 int StatsComponent::GetBaseAttack() const
 {
   return stats.base_attack;
