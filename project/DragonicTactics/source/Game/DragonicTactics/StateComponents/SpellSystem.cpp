@@ -183,7 +183,7 @@ void SpellSystem::ParseEffectField(const std::string& effect_str, SpellData& dat
 
 	// "for N turns" 에서 N 추출
 	auto ft = line.find("for ");
-	auto tt = line.find(" turns", ft);
+	auto tt = line.find(" turn", ft);
 	if (ft != std::string::npos && tt != std::string::npos)
 	{
 	  std::string n_str	   = line.substr(ft + 4, tt - (ft + 4));
@@ -834,7 +834,7 @@ void SpellSystem::ApplyMoveEffect(Character* caster, const std::vector<Character
 	  if (new_pos.x != tgt_pos.x || new_pos.y != tgt_pos.y)
 	  {
 		grid->MoveCharacter(tgt_pos, new_pos);
-		tgt->GetGridPosition()->Set(new_pos);
+    tgt->SetGridPosition(new_pos);
 	  }
 	}
   }
@@ -849,7 +849,7 @@ void SpellSystem::ApplyMoveEffect(Character* caster, const std::vector<Character
 	if (grid->IsValidTile(dest) && !grid->IsOccupied(dest))
 	{
 	  grid->MoveCharacter(caster_pos, dest);
-	  caster->GetGridPosition()->Set(dest);
+	  caster->SetGridPosition(dest);
 	  Engine::GetLogger().LogEvent(caster->TypeName() + " teleported to (" + std::to_string(dest.x) + ", " + std::to_string(dest.y) + ")");
 	}
   }

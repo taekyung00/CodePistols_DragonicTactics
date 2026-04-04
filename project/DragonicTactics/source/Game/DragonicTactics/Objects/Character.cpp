@@ -288,6 +288,10 @@ const std::vector<ActiveEffect>& Character::GetActiveEffects()
 void Character::SetGridPosition(Math::ivec2 new_coordinates)
 {
   GetGOComponent<GridPosition>()->Set(new_coordinates);
+  SetPosition({
+        static_cast<double>(new_coordinates.x * GridSystem::TILE_SIZE),
+        static_cast<double>(new_coordinates.y * GridSystem::TILE_SIZE)
+    });
 }
 
 void Character::SetHP(int HP)

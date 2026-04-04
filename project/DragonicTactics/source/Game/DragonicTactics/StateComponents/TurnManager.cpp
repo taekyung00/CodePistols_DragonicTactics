@@ -11,11 +11,11 @@
 #include "./Engine/Engine.h"
 #include "./Engine/GameStateManager.h"
 #include "./Engine/Logger.h"
-#include "TurnManager.h"
-#include "Game/DragonicTactics/StateComponents/StatusEffectHandler.h"
-#include "Game/DragonicTactics/StateComponents/SpellSystem.h"
-#include "Game/DragonicTactics/StateComponents/CombatSystem.h"
 #include "Game/DragonicTactics/Objects/Components/GridPosition.h"
+#include "Game/DragonicTactics/StateComponents/CombatSystem.h"
+#include "Game/DragonicTactics/StateComponents/SpellSystem.h"
+#include "Game/DragonicTactics/StateComponents/StatusEffectHandler.h"
+#include "TurnManager.h"
 
 TurnManager::TurnManager() : currentTurnIndex{}, turnNumber{}, roundNumber{}, combatActive{}, initiativeMode{ InitiativeMode::RollOnce }
 {
@@ -119,38 +119,40 @@ void TurnManager::StartNextTurn()
   // stats->RefreshSpeed();
   // }
 
-  // ── 신규: TickDown — 상태 효과 지속시간 감소 + 만료 제거 ──
-  auto* se = currentChar->GetGOComponent<StatusEffectComponent>();
-  if (se)
-	se->TickDown(currentChar, eventBus);
+  /*======================================================================================*/
+  // 수정 후 순서
 
-  // Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - Calling OnTurnStart");
+  // 1. AP/Speed 리프레시
   currentChar->OnTurnStart();
 
-  // ── 신규: Exhaustion/Haste 효과 적용 (복원 후) ──
-  //    Exhaustion → 복원된 AP를 0으로 덮어씀
-  //    Haste     → 복원된 AP에 +1 추가
+  // 2. 효과 적용 (Exhaustion이 아직 존재함, duration=1)
   auto* handler = Engine::GetGameStateManager().GetGSComponent<StatusEffectHandler>();
   if (handler)
 	handler->OnTurnStart(currentChar);
 
+  // 3. 그 다음 duration 감소 (1 → 0 → 제거)
+  auto* se = currentChar->GetGOComponent<StatusEffectComponent>();
+  if (se)
+	se->TickDown(currentChar, eventBus);
+  /*======================================================================================*/
+
   // 용암 턴 시작 피해 — 현재 캐릭터가 용암 위에 있으면 피해
   {
-    auto* spell_system = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
-    auto* combat       = Engine::GetGameStateManager().GetGSComponent<CombatSystem>();
-    if (spell_system && combat && currentChar->IsAlive())
-    {
-      GridPosition* gp = currentChar->GetGOComponent<GridPosition>();
-      if (gp)
-      {
-        int dmg = spell_system->GetLavaDamageAt(gp->Get());
-        if (dmg > 0)
-        {
-          Engine::GetLogger().LogEvent(currentChar->TypeName() + " takes " + std::to_string(dmg) + " lava damage at turn start");
-          combat->ApplyDamage(nullptr, currentChar, dmg);
-        }
-      }
-    }
+	auto* spell_system = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
+	auto* combat	   = Engine::GetGameStateManager().GetGSComponent<CombatSystem>();
+	if (spell_system && combat && currentChar->IsAlive())
+	{
+	  GridPosition* gp = currentChar->GetGOComponent<GridPosition>();
+	  if (gp)
+	  {
+		int dmg = spell_system->GetLavaDamageAt(gp->Get());
+		if (dmg > 0)
+		{
+		  Engine::GetLogger().LogEvent(currentChar->TypeName() + " takes " + std::to_string(dmg) + " lava damage at turn start");
+		  combat->ApplyDamage(nullptr, currentChar, dmg);
+		}
+	  }
+	}
   }
 
   // Publish turn start event

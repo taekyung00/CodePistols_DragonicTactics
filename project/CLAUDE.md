@@ -62,6 +62,9 @@ TurnManager, DebugManager, CharacterFactory, DataRegistry, Timer,
 MapDataRegistry, SpellSystem, StatusEffectHandler
 ```
 
+- `DiceManager` — `Roll("2d6")`, `Roll("1d20+5")` 형식으로 주사위 굴림
+- `CombatSystem` — 공격/방어 주사위 굴림 + 최종 데미지 계산 (StatusEffectHandler 훅 연동)
+
 **GameObject 컴포넌트**: `GridPosition`, `ActionPoints`, `StatsComponent`, `SpellSlots`, `MovementComponent`, `StatusEffectComponent`
 
 ### GS 컴포넌트 접근 패턴
@@ -90,6 +93,8 @@ GetGSComponent<EventBus>()->Subscribe<CharacterDamagedEvent>(
 Engine::GetGameStateManager().GetGSComponent<EventBus>()->Publish(
     CharacterDamagedEvent{target, damage});
 ```
+
+`Events.h`에 전투·피해·이동·스펠·상태·턴·UI 카테고리로 27개+ 이벤트 정의됨.
 
 ### AI Strategy 패턴
 
@@ -143,6 +148,8 @@ GamePlay (GameState)
 None → SelectingMove → Moving
      → SelectingAction → TargetingForAttack
                        → SelectingSpell → TargetingForSpell
+                                        → WallPlacementMulti
+                                        → LavaPlacementMulti
 ```
 
 Dragon(플레이어) 턴에서만 동작. AI(Fighter) 턴은 `BattleOrchestrator`가 처리.
