@@ -43,6 +43,9 @@ Created:    November 5, 2025
 #include "GamePlayUIManager.h"
 #include "PlayerInputHandler.h"
 
+#include "Game/Particles.h"
+#include "./Engine/Particle.h"
+
 GamePlay::MapSource GamePlay::s_next_map_source = GamePlay::MapSource::First;
 int					GamePlay::s_next_map_index	= 0;
 bool				GamePlay::s_should_restart	= false;
@@ -80,6 +83,7 @@ void GamePlay::Load()
   AddGSComponent(new SpellSystem());
   AddGSComponent(new StatusEffectHandler());
 //   AddGSComponent(new CS230::Camera());
+  AddGSComponent(new CS230::ParticleManager<Particles::Hit>());
 
 
   GetGSComponent<EventBus>()->Clear();
