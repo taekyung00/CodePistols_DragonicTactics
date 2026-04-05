@@ -22,6 +22,10 @@
 #include "Game/DragonicTactics/StateComponents/StatusEffectHandler.h"
 #include "SpellSystem.h"
 #include "Game/DragonicTactics/StateComponents/TurnManager.h"
+#include "../../../Engine/Particle.h"
+#include "../Types/CharacterTypes.h"
+#include "../Types/GameObjectTypes.h"
+#include "../../../Engine/GameObjectManager.h"
 
 std::vector<std::string> SpellSystem::SplitByDelimiter(const std::string& str, char delim) const
 {
@@ -513,6 +517,17 @@ bool SpellSystem::CastSpell(Character* caster, const std::string& spell_id, Math
 
   // AP 소모 (신규) — CanCast에서 이미 >= 1 보장됨
   caster->GetActionPointsComponent()->Consume(1);
+
+  // 1. 시전자가 드래곤인지 검사
+    if (caster != nullptr && caster->GetCharacterType() == CharacterTypes::Dragon) 
+    {
+        // "hit particle" 생성 (드래곤의 위치에서 출력)
+        // 엔진의 파티클 시스템 구현에 맞춰 아래 함수 호출부를 수정해 주세요.
+        Engine::GetGameStateManager().GetGameObjectManager().Add(new Particle("hit particle", target->GetPosition()));
+        
+        // 만약 EventBus를 통해 파티클을 생성하는 구조라면 아래와 같이 이벤트를 발생시킵니다.
+        // EventBus::Publish(new ParticleEvent("hit particle", caster->GetPosition()));
+    }
 
   ApplySpellEffect(caster, spell, target_tile, upcast_level);
 
