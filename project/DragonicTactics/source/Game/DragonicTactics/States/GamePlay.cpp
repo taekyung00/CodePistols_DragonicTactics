@@ -22,7 +22,10 @@ Created:    November 5, 2025
 #include "Game/DragonicTactics/Objects/Dragon.h"
 #include "Game/DragonicTactics/Objects/Fighter.h"
 
+#include "Engine/Camera.h"
+#include "Engine/SoundManager.h"
 #include "Game/DragonicTactics/Factories/CharacterFactory.h"
+#include "Game/DragonicTactics/Objects/Components/SpellSlots.h"
 #include "Game/DragonicTactics/StateComponents/AISystem.h"
 #include "Game/DragonicTactics/StateComponents/CombatSystem.h"
 #include "Game/DragonicTactics/StateComponents/DataRegistry.h"
@@ -33,9 +36,6 @@ Created:    November 5, 2025
 #include "Game/DragonicTactics/StateComponents/SpellSystem.h"
 #include "Game/DragonicTactics/StateComponents/StatusEffectHandler.h"
 #include "Game/DragonicTactics/StateComponents/TurnManager.h"
-#include "Game/DragonicTactics/Objects/Components/SpellSlots.h"
-#include "Engine/Camera.h"
-#include "Engine/SoundManager.h"
 
 #include "../Debugger/DebugManager.h"
 
@@ -187,9 +187,9 @@ void GamePlay::DisplayDamageAmount(const CharacterDamagedEvent& event)
 void GamePlay::DisplayDamageLog(const CharacterDamagedEvent& event)
 {
   std::string attacker_name = (event.attacker != nullptr) ? event.attacker->TypeName() : "Environment";
-  std::string str	   = event.target->TypeName() + " took " + std::to_string(event.damageAmount) + " damage from " + attacker_name + "(HP: " + std::to_string(event.remainingHP) + ")";
-  auto		  size	   = GetGSComponent<GridSystem>()->TILE_SIZE;
-  auto		  position = Math::vec2{ 9.0 * size, 1.0 * size };
+  std::string str			= event.target->TypeName() + " took " + std::to_string(event.damageAmount) + " damage from " + attacker_name + "(HP: " + std::to_string(event.remainingHP) + ")";
+  auto		  size			= GetGSComponent<GridSystem>()->TILE_SIZE;
+  auto		  position		= Math::vec2{ 9.0 * size, 1.0 * size };
   m_ui_manager->ShowDamageLog(str, position, Math::vec2{ 0.5, 0.5 });
 }
 
@@ -297,14 +297,14 @@ void GamePlay::Draw()
   CS230::GameObjectManager* goMgr = GetGSComponent<CS230::GameObjectManager>();
   if (goMgr)
   {
-	goMgr->DrawAll(Math::TransformationMatrix{}); 
+	goMgr->DrawAll(Math::TransformationMatrix{});
   }
 
   m_ui_manager->Draw(camera_matrix);
 
   GetGSComponent<DebugManager>()->Draw(grid_system);
 
-  //m_button_manager->SetLabel("btn_move", "Cancel Move");
+  // m_button_manager->SetLabel("btn_move", "Cancel Move");
 
   renderer_2d->EndScene();
 }
@@ -515,42 +515,42 @@ void GamePlay::DrawImGui()
 	  }
 
 	  for (const auto& spell_id : available)
-{
-    const SpellData* spell = spell_sys->GetSpellData(spell_id);
-    if (!spell) continue;
+	  {
+		const SpellData* spell = spell_sys->GetSpellData(spell_id);
+		if (!spell)
+		  continue;
 
-    if (!spell->upcastable)
-    {
-        // ── 비업캐스트: 기존 단일 버튼 ──
-        std::string label = spell->spell_name
-                          + " (Lv." + std::to_string(spell->spell_level) + ")"
-                          + "##" + spell_id;
-        if (ImGui::Button(label.c_str()))
-            m_input_handler->SelectSpell(spell_id, current, spell->spell_level, m_ui_manager->GetButtons());
-    }
-    else
-    {
-        // ── 업캐스트 가능: 이름 표시 + 레벨 버튼 ──
-        ImGui::Text("%s (Lv.%d Up)", spell->spell_name.c_str(), spell->spell_level);
-        ImGui::SameLine();
+		if (!spell->upcastable)
+		{
+		  // ── 비업캐스트: 기존 단일 버튼 ──
+		  std::string label = spell->spell_name + " (Lv." + std::to_string(spell->spell_level) + ")" + "##" + spell_id;
+		  if (ImGui::Button(label.c_str()))
+			m_input_handler->SelectSpell(spell_id, current, spell->spell_level, m_ui_manager->GetButtons());
+		}
+		else
+		{
+		  // ── 업캐스트 가능: 이름 표시 + 레벨 버튼 ──
+		  ImGui::Text("%s (Lv.%d Up)", spell->spell_name.c_str(), spell->spell_level);
+		  ImGui::SameLine();
 
-        SpellSlots* slots = current->GetSpellSlots();
-        for (int lv = spell->spell_level; lv <= 5; ++lv)
-        {
-            bool has_slot = slots && slots->HasSlot(lv);
-            if (!has_slot) ImGui::BeginDisabled();
+		  SpellSlots* slots = current->GetSpellSlots();
+		  for (int lv = spell->spell_level; lv <= 5; ++lv)
+		  {
+			bool has_slot = slots && slots->HasSlot(lv);
+			if (!has_slot)
+			  ImGui::BeginDisabled();
 
-            std::string lv_label = "Lv" + std::to_string(lv)
-                                 + "##" + spell_id + std::to_string(lv);
-            if (ImGui::Button(lv_label.c_str()))
-                m_input_handler->SelectSpell(spell_id, current, lv, m_ui_manager->GetButtons());
+			std::string lv_label = "Lv" + std::to_string(lv) + "##" + spell_id + std::to_string(lv);
+			if (ImGui::Button(lv_label.c_str()))
+			  m_input_handler->SelectSpell(spell_id, current, lv, m_ui_manager->GetButtons());
 
-            if (!has_slot) ImGui::EndDisabled();
-            ImGui::SameLine();
-        }
-        ImGui::NewLine();
-    }
-}
+			if (!has_slot)
+			  ImGui::EndDisabled();
+			ImGui::SameLine();
+		  }
+		  ImGui::NewLine();
+		}
+	  }
 	}
 
 	if (ImGui::Button("Cancel"))

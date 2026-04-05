@@ -12,6 +12,7 @@
 #include "./Game/DragonicTactics/StateComponents/MapDataRegistry.h"
 #include "./Game/DragonicTactics/Test/Week1TestMocks.h"
 #include <map>
+#include <memory>
 
 struct MapData;
 
@@ -130,6 +131,11 @@ std::vector<Math::ivec2> GetLineTiles(Math::ivec2 center, int reach) const;
 
   // ─ 벽 배치 미리보기 시각화 ─
   std::vector<Math::ivec2> wall_preview_tiles_;
+
+  //tile texture
+  std::shared_ptr<CS230::Texture> stone_tile_bright;
+  std::shared_ptr<CS230::Texture> stone_tile_dark;
+
 
 
   public:
