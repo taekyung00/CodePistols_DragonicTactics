@@ -171,7 +171,20 @@ void GridSystem::Draw() const
   }
 
   // ========================================
-  // 3. 스펠 타겟팅 가능 타일 시각화 (빨간색)
+  // 3. 벽 배치 미리보기 타일 시각화 (보라색)
+  // ========================================
+  for (const auto& tile : wall_preview_tiles_)
+  {
+    int screen_x = tile.x * TILE_SIZE + TILE_SIZE;
+    int screen_y = tile.y * TILE_SIZE + TILE_SIZE;
+    renderer_2d->DrawRectangle(
+        Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE),
+        CS200::pack_color({ 160 / 255.0f, 32 / 255.0f, 240 / 255.0f, 180 / 255.0f }),
+        0U, 0.0, 0.15f);
+  }
+
+  // ========================================
+  // 4. 스펠 타겟팅 가능 타일 시각화 (빨간색)
   // ========================================
   if (spell_targeting_mode_active_)
   {
@@ -247,6 +260,16 @@ void GridSystem::DisableSpellTargetingMode()
 {
   spell_targeting_mode_active_ = false;
   spell_targetable_tiles_.clear();
+}
+
+void GridSystem::SetWallPreviewTiles(const std::vector<Math::ivec2>& tiles)
+{
+  wall_preview_tiles_ = tiles;
+}
+
+void GridSystem::ClearWallPreviewTiles()
+{
+  wall_preview_tiles_.clear();
 }
 
 bool GridSystem::IsWalkable(Math::ivec2 pos) const
@@ -363,8 +386,11 @@ std::vector<Math::ivec2> GridSystem::GetReachableTiles(Math::ivec2 start, int ma
 	std::vector<Math::ivec2> neighbors = GetNeighbors(current_pos);
 	for (const auto& neighbor : neighbors)
 	{
-	  // 방문하지 않았고, 걸을 수 있는 타일만 추가
-	  if (visited.find(neighbor) == visited.end() && GetTileType(neighbor) == TileType::Empty && !IsOccupied(neighbor))
+	  // 방문하지 않았고, 통과 가능한 타일만 추가 (Empty + Lava 허용, Wall 차단)
+	  TileType neighbor_type    = GetTileType(neighbor);
+	  bool     neighbor_passable = (neighbor_type == TileType::Empty || neighbor_type == TileType::Lava)
+	                               && !IsOccupied(neighbor);
+	  if (visited.find(neighbor) == visited.end() && neighbor_passable)
 	  {
 		visited.insert(neighbor);
 		queue.push({ neighbor, distance + 1 });

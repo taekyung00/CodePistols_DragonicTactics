@@ -68,6 +68,38 @@ void GamePlayUIManager::Update(double dt)
 	Math::vec2 mouse_pos = Engine::GetInput().GetMousePos();
 	bool mouse_clicked   = Engine::GetInput().MouseJustPressed(0); 
 
+  // 1. 현재 턴인 캐릭터와 스펠 슬롯 컴포넌트 가져오기
+    auto* turnMgr = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
+    if (turnMgr)
+    {
+        Character* current = turnMgr->GetCurrentCharacter();
+        if (current)
+        {
+            SpellSlots* slots = current->GetSpellSlots();
+            if (slots)
+            {
+                // 2. 모든 버튼을 순회하며 스펠 버튼인지 확인
+                for (auto& btn : button_manager_.GetButtons())
+                {
+                    // 업캐스트 버튼 체크 (예: S_ATK_010_lv3)
+                    size_t lvPos = btn.id.find("_lv");
+                    if (lvPos != std::string::npos)
+                    {
+                        // ID 끝에서 레벨 숫자 추출
+                        int lv = std::stoi(btn.id.substr(lvPos + 3));
+                        
+                        // 해당 레벨의 슬롯이 없으면 버튼 비활성화 (어두워짐)
+                        btn.disabled = !slots->HasSlot(lv);
+                    }
+                    
+                    // 단일 레벨 스펠 예외 처리 (하드코딩된 ID들)
+                    if (btn.id == "S_ATK_020") btn.disabled = !slots->HasSlot(2); // Tail Swipe
+                    if (btn.id == "S_ENH_050") btn.disabled = !slots->HasSlot(1); // Purify
+                    if (btn.id == "S_DEB_020") btn.disabled = !slots->HasSlot(1); // Fearful Cry
+                }
+            }
+        }
+    }
 	button_manager_.Update(mouse_pos, mouse_clicked);
 
   for (auto& text : m_damage_texts)
@@ -270,9 +302,10 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
     };
 
     // ── [메인/액션 버튼] 기존 간격(70step) 유지 ───────────────────────────
-    add_btn("btn_move",     { START_X, BTN_Y },                    { BTN_W, BTN_H }, "Move",     true);
-    add_btn("btn_action",   { START_X + BTN_W + GAP, BTN_Y },      { BTN_W, BTN_H }, "Action",   true);
-    add_btn("btn_end_turn", { START_X + (BTN_W+GAP)*2, BTN_Y },    { BTN_W, BTN_H }, "End Turn", true);
+    add_btn("btn_move",        { START_X, BTN_Y },                    { BTN_W, BTN_H }, "Move",         true);
+    add_btn("btn_action",      { START_X + BTN_W + GAP, BTN_Y },      { BTN_W, BTN_H }, "Action",       true);
+    add_btn("btn_end_turn",    { START_X + (BTN_W+GAP)*2, BTN_Y },    { BTN_W, BTN_H }, "End Turn",     true);
+    add_btn("btn_wall_confirm",{ START_X + (BTN_W+GAP)*3, BTN_Y },    { BTN_W, BTN_H }, "Confirm Walls",false);
 
     add_btn("btn_attack", { START_X + BTN_W + GAP, BTN_Y - (BTN_H+GAP) },     { BTN_W, BTN_H }, "Attack", false);
     add_btn("btn_spell",  { START_X + BTN_W + GAP, BTN_Y - (BTN_H+GAP)*2 },   { BTN_W, BTN_H }, "Spell",  false);

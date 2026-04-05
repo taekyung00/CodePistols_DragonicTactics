@@ -58,6 +58,8 @@ public:
     /// @brief 모든 버튼 제거
     void ClearAll();
 
+    std::vector<Button>& GetButtons() { return buttons_; }
+    const std::vector<Button>& GetButtons() const { return buttons_; }
     // ============================================================
     // 버튼 상태 제어
     // ============================================================

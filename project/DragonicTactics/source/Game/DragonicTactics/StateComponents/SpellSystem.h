@@ -18,6 +18,14 @@
 class Character;
 class EventBus;
 
+struct TerrainEffect
+{
+  std::vector<Math::ivec2> affected_tiles;
+  int                      damage_per_turn; // 0이면 벽 (피해 없음)
+  int                      created_round;   // 생성된 라운드 번호
+  int                      duration_rounds; // 지속 라운드 수
+};
+
 struct SpellMove
 {
   std::string mover;	 // "self", "target"
@@ -69,8 +77,17 @@ class SpellSystem : public CS230::Component
 
   const SpellData* GetSpellData(const std::string& spell_id) const;
 
+  // 지형 효과 관리
+  void TickTerrainEffects(int current_round);
+  int  GetLavaDamageAt(Math::ivec2 tile) const;
+  bool CastWalls(Character* caster, const std::string& spell_id,
+                 const std::vector<Math::ivec2>& tiles, int upcast_level);
+  bool CastLavaZones(Character* caster, const std::string& spell_id,
+                     const std::vector<Math::ivec2>& tiles, int upcast_level);
+
   private:
   std::map<std::string, SpellData> spells_;
+  std::vector<TerrainEffect>       m_terrain_effects;
 
   std::vector<std::string> ReadCSVRecord(std::ifstream& file) const;
   SpellData				   ParseCSVRow(const std::vector<std::string>& columns) const;

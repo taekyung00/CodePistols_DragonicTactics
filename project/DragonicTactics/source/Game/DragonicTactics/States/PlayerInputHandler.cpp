@@ -50,6 +50,7 @@ PlayerInputHandler::PlayerInputHandler() : m_state(ActionState::None)
 static void HideAllSpellButtons(ButtonManager& btns)
 {
     btns.SetVisible("btn_spell_cancel", false);
+    btns.SetVisible("btn_wall_confirm", false);
 
     btns.SetVisible("S_ATK_020", false);
     btns.SetVisible("S_ENH_050", false);
@@ -211,6 +212,61 @@ void PlayerInputHandler::Update(double dt, Character* current_character, GridSys
 
   Dragon* dragon = static_cast<Dragon*>(current_character);
 
+  // ── Wall Creation 확인 버튼 ──────────────────────────────────────
+  if (btns.IsPressed("btn_wall_confirm") && m_state == ActionState::WallPlacementMulti)
+  {
+    auto* spell_sys = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
+    if (spell_sys && !m_wall_placement_tiles.empty())
+      spell_sys->CastWalls(dragon, m_selected_spell_id,
+                           m_wall_placement_tiles, m_selected_upcast_level);
+    m_wall_placement_tiles.clear();
+    m_state = ActionState::None;
+    btns.SetVisible("btn_wall_confirm", false);
+    grid->DisableSpellTargetingMode();
+    grid->ClearWallPreviewTiles();
+  }
+
+  // ── Magma Blast 확인 버튼 ──────────────────────────────────────
+  if (btns.IsPressed("btn_wall_confirm") && m_state == ActionState::LavaPlacementMulti)
+  {
+    auto* spell_sys = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
+    if (spell_sys && !m_wall_placement_tiles.empty())
+      spell_sys->CastLavaZones(dragon, m_selected_spell_id,
+                               m_wall_placement_tiles, m_selected_upcast_level);
+    m_wall_placement_tiles.clear();
+    m_state = ActionState::None;
+    btns.SetVisible("btn_wall_confirm", false);
+    grid->DisableSpellTargetingMode();
+    grid->ClearWallPreviewTiles();
+  }
+
+  // ── WallPlacementMulti / LavaPlacementMulti 우클릭: 선택 타일이면 해제, 아니면 전체 취소 ──
+  if (m_state == ActionState::WallPlacementMulti || m_state == ActionState::LavaPlacementMulti)
+  {
+    auto& input_ref = Engine::GetInput();
+    if (input_ref.MouseJustPressed(2))
+    {
+      Math::ivec2 rclick_pos = ConvertScreenToGrid(input_ref.GetMousePos());
+      auto it = std::find(m_wall_placement_tiles.begin(), m_wall_placement_tiles.end(), rclick_pos);
+      if (it != m_wall_placement_tiles.end())
+      {
+        // 해당 타일만 선택 해제
+        m_wall_placement_tiles.erase(it);
+        grid->SetWallPreviewTiles(m_wall_placement_tiles);
+      }
+      else
+      {
+        // 전체 취소
+        m_wall_placement_tiles.clear();
+        m_state = ActionState::None;
+        btns.SetVisible("btn_wall_confirm", false);
+        grid->DisableSpellTargetingMode();
+        grid->ClearWallPreviewTiles();
+      }
+      return;
+    }
+  }
+
   if (m_state == ActionState::Moving)
   {
 	auto move_comp = dragon->GetGOComponent<MovementComponent>();
@@ -342,6 +398,48 @@ void PlayerInputHandler::HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, 
 	  }
 	  break;
 
+	case ActionState::WallPlacementMulti:
+	{
+	  if (grid->IsValidTile(grid_pos)
+	      && grid->GetTileType(grid_pos) == GridSystem::TileType::Empty
+	      && !grid->IsOccupied(grid_pos))
+	  {
+	    bool already_selected = std::find(m_wall_placement_tiles.begin(),
+	                                      m_wall_placement_tiles.end(),
+	                                      grid_pos) != m_wall_placement_tiles.end();
+	    if (!already_selected && static_cast<int>(m_wall_placement_tiles.size()) < m_wall_placement_count)
+	    {
+	      m_wall_placement_tiles.push_back(grid_pos);
+	      grid->SetWallPreviewTiles(m_wall_placement_tiles);
+	      Engine::GetLogger().LogEvent("Wall tile selected: ("
+	        + std::to_string(grid_pos.x) + "," + std::to_string(grid_pos.y) + ") "
+	        + std::to_string(m_wall_placement_tiles.size()) + "/" + std::to_string(m_wall_placement_count));
+	    }
+	  }
+	  break;
+	}
+
+	case ActionState::LavaPlacementMulti:
+	{
+	  if (grid->IsValidTile(grid_pos)
+	      && grid->GetTileType(grid_pos) == GridSystem::TileType::Empty
+	      && !grid->IsOccupied(grid_pos))
+	  {
+	    bool already_selected = std::find(m_wall_placement_tiles.begin(),
+	                                      m_wall_placement_tiles.end(),
+	                                      grid_pos) != m_wall_placement_tiles.end();
+	    if (!already_selected && static_cast<int>(m_wall_placement_tiles.size()) < m_wall_placement_count)
+	    {
+	      m_wall_placement_tiles.push_back(grid_pos);
+	      grid->SetWallPreviewTiles(m_wall_placement_tiles);
+	      Engine::GetLogger().LogEvent("Lava tile selected: ("
+	        + std::to_string(grid_pos.x) + "," + std::to_string(grid_pos.y) + ") "
+	        + std::to_string(m_wall_placement_tiles.size()) + "/" + std::to_string(m_wall_placement_count));
+	    }
+	  }
+	  break;
+	}
+
 	case ActionState::None: break;
   }
   Engine::GetLogger().LogDebug("Mouse: " + std::to_string(mouse_pos.x) + ", " + std::to_string(mouse_pos.y));
@@ -387,22 +485,81 @@ void PlayerInputHandler::CancelCurrentAction()
 
 void PlayerInputHandler::SelectSpell(const std::string& spell_id, Character* caster, int upcast_level, ButtonManager& btns)
 {
-    m_selected_spell_id = spell_id;
-	m_selected_upcast_level = upcast_level;
-    m_state = ActionState::TargetingForSpell;
+    m_selected_spell_id     = spell_id;
+    m_selected_upcast_level = upcast_level;
 
     HideAllSpellButtons(btns);  // ★ 스펠 선택 완료 → 목록 닫기
 
     auto* spell_sys = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
     auto* grid      = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
-    if (spell_sys && grid && caster)
+
+    if (spell_id == "S_GEO_010")
     {
-        const SpellData* spell = spell_sys->GetSpellData(spell_id);
-        if (spell)
-            grid->EnableSpellTargetingMode(
-                caster->GetGridPosition()->Get(),
-                spell->targeting.geometry,   // ← geometry 전달
-                spell->targeting.range
-            );
+        // Magma Blast — 멀티클릭 용암 배치 모드
+        m_wall_placement_tiles.clear();
+        if (spell_sys)
+        {
+            const SpellData* spell = spell_sys->GetSpellData(spell_id);
+            m_wall_placement_count = spell ? (upcast_level - spell->spell_level + 1) : 1;
+        }
+        else
+        {
+            m_wall_placement_count = 1;
+        }
+        m_state = ActionState::LavaPlacementMulti;
+        btns.SetVisible("btn_wall_confirm", true);
+
+        if (spell_sys && grid && caster)
+        {
+            const SpellData* spell = spell_sys->GetSpellData(spell_id);
+            if (spell)
+                grid->EnableSpellTargetingMode(
+                    caster->GetGridPosition()->Get(),
+                    spell->targeting.geometry,
+                    spell->targeting.range
+                );
+        }
+    }
+    else if (spell_id == "S_GEO_020")
+    {
+        // Wall Creation — 멀티클릭 배치 모드
+        m_wall_placement_tiles.clear();
+        if (spell_sys)
+        {
+            const SpellData* spell = spell_sys->GetSpellData(spell_id);
+            m_wall_placement_count = spell ? (upcast_level - spell->spell_level + 1) : 1;
+        }
+        else
+        {
+            m_wall_placement_count = 1;
+        }
+        m_state = ActionState::WallPlacementMulti;
+        btns.SetVisible("btn_wall_confirm", true);
+
+        if (spell_sys && grid && caster)
+        {
+            const SpellData* spell = spell_sys->GetSpellData(spell_id);
+            if (spell)
+                grid->EnableSpellTargetingMode(
+                    caster->GetGridPosition()->Get(),
+                    spell->targeting.geometry,
+                    spell->targeting.range
+                );
+        }
+    }
+    else
+    {
+        m_state = ActionState::TargetingForSpell;
+
+        if (spell_sys && grid && caster)
+        {
+            const SpellData* spell = spell_sys->GetSpellData(spell_id);
+            if (spell)
+                grid->EnableSpellTargetingMode(
+                    caster->GetGridPosition()->Get(),
+                    spell->targeting.geometry,
+                    spell->targeting.range
+                );
+        }
     }
 }

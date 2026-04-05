@@ -64,6 +64,11 @@ std::vector<Math::ivec2> GetLineTiles(Math::ivec2 center, int reach) const;
   /// @brief 스펠 타겟팅 모드 해제 (시각화 데이터 초기화)
   void DisableSpellTargetingMode();
 
+  /// @brief 벽 배치 미리보기 타일 갱신
+  void SetWallPreviewTiles(const std::vector<Math::ivec2>& tiles);
+  /// @brief 벽 배치 미리보기 초기화
+  void ClearWallPreviewTiles();
+
   /// @brief 마우스 호버 위치 설정 (경로 계산)
   /// @param hovered_tile 마우스가 위치한 타일
   void SetHoveredTile(Math::ivec2 hovered_tile);
@@ -123,6 +128,9 @@ std::vector<Math::ivec2> GetLineTiles(Math::ivec2 center, int reach) const;
   bool					spell_targeting_mode_active_ = false;
   std::set<Math::ivec2> spell_targetable_tiles_;
 
+  // ─ 벽 배치 미리보기 시각화 ─
+  std::vector<Math::ivec2> wall_preview_tiles_;
+
 
   public:
   static const int TILE_SIZE = MAP_WIDTH * MAP_HEIGHT;
@@ -145,7 +153,7 @@ std::vector<Math::ivec2> GetLineTiles(Math::ivec2 center, int reach) const;
   Character* GetCharacterAt(Math::ivec2 pos) const;
 
   // week2 : pathfinding methods
-  std::vector<Math::ivec2> FindPath(Math::ivec2 start, Math::ivec2 goal);
+  std::vector<Math::ivec2> FindPath(Math::ivec2 start, Math::ivec2 goal, int lava_penalty = 0);
   // int						GetPathLength(Math::ivec2 start, Math::ivec2 goal);
   // std::vector<Math::ivec2> GetReachableTiles(Math::ivec2 start, int maxDistance);
 

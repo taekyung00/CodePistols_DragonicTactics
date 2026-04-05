@@ -21,6 +21,7 @@
 #include "Game/DragonicTactics/Objects/Components/SpellSlots.h"
 #include "Game/DragonicTactics/StateComponents/StatusEffectHandler.h"
 #include "SpellSystem.h"
+#include "Game/DragonicTactics/StateComponents/TurnManager.h"
 
 std::vector<std::string> SpellSystem::SplitByDelimiter(const std::string& str, char delim) const
 {
@@ -182,7 +183,7 @@ void SpellSystem::ParseEffectField(const std::string& effect_str, SpellData& dat
 
 	// "for N turns" 에서 N 추출
 	auto ft = line.find("for ");
-	auto tt = line.find(" turns", ft);
+	auto tt = line.find(" turn", ft);
 	if (ft != std::string::npos && tt != std::string::npos)
 	{
 	  std::string n_str	   = line.substr(ft + 4, tt - (ft + 4));
@@ -451,8 +452,37 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
   // ─────────────────────────────────────────────────
   // 지형 / 특수 이동 (기존 유지)
   // ─────────────────────────────────────────────────
-  if (spell.summon_type != "NULL" && !spell.summon_type.empty())
-	Engine::GetLogger().LogEvent("SpellSystem: Summon " + spell.summon_type + " at ...");
+  if (spell.summon_type == "Wall")
+  {
+    //auto* grid         = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    auto* tm           = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
+    int   current_round = tm ? tm->GetRoundNumber() : 0;
+    if (grid && grid->IsValidTile(target_tile)
+             && grid->GetTileType(target_tile) == GridSystem::TileType::Empty
+             && !grid->IsOccupied(target_tile))
+    {
+      grid->SetTileType(target_tile, GridSystem::TileType::Wall);
+      m_terrain_effects.push_back({ {target_tile}, 0, current_round, spell.effect_duration });
+      Engine::GetLogger().LogEvent("SpellSystem: Wall created at ("
+        + std::to_string(target_tile.x) + "," + std::to_string(target_tile.y) + ")");
+    }
+  }
+  else if (spell.summon_type == "Lava Zone")
+  {
+    //auto* grid         = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    auto* tm           = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
+    if (!grid || !grid->IsValidTile(target_tile)) return;
+
+    int current_round = tm ? tm->GetRoundNumber() : 0;
+    int damage        = CalculateSpellDamage(spell, upcast_level);
+    int duration      = spell.effect_duration;
+
+    grid->SetTileType(target_tile, GridSystem::TileType::Lava);
+    m_terrain_effects.push_back({ {target_tile}, damage, current_round, duration });
+    Engine::GetLogger().LogEvent("SpellSystem: Lava Zone created at ("
+      + std::to_string(target_tile.x) + "," + std::to_string(target_tile.y)
+      + ") dmg=" + std::to_string(damage) + " duration=" + std::to_string(duration));
+  }
 
   ApplyMoveEffect(caster, targets, spell, target_tile);
 
@@ -651,6 +681,110 @@ SpellMove SpellSystem::ParseMoveField(const std::string& move_str) const
   return m;
 }
 
+void SpellSystem::TickTerrainEffects(int current_round)
+{
+  auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+  if (!grid) return;
+
+  m_terrain_effects.erase(
+    std::remove_if(m_terrain_effects.begin(), m_terrain_effects.end(),
+      [&](const TerrainEffect& e) {
+        if (current_round >= e.created_round + e.duration_rounds)
+        {
+          for (const auto& tile : e.affected_tiles)
+            grid->SetTileType(tile, GridSystem::TileType::Empty);
+          return true;
+        }
+        return false;
+      }),
+    m_terrain_effects.end());
+}
+
+int SpellSystem::GetLavaDamageAt(Math::ivec2 tile) const
+{
+  for (const auto& effect : m_terrain_effects)
+  {
+    if (effect.damage_per_turn <= 0) continue;
+    for (const auto& t : effect.affected_tiles)
+      if (t.x == tile.x && t.y == tile.y)
+        return effect.damage_per_turn;
+  }
+  return 0;
+}
+
+bool SpellSystem::CastWalls(Character* caster, const std::string& spell_id,
+                             const std::vector<Math::ivec2>& tiles, int upcast_level)
+{
+  if (!caster || tiles.empty()) return false;
+
+  auto it = spells_.find(spell_id);
+  if (it == spells_.end()) return false;
+  const SpellData& spell = it->second;
+
+  auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+  auto* tm   = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
+  if (!grid || !tm) return false;
+
+  int consume_level = (upcast_level > 0) ? upcast_level : spell.spell_level;
+  if (consume_level > 0)
+    caster->ConsumeSpell(consume_level);
+  caster->GetActionPointsComponent()->Consume(1);
+
+  int current_round = tm->GetRoundNumber();
+
+  for (const auto& tile : tiles)
+  {
+    if (grid->IsValidTile(tile)
+           && grid->GetTileType(tile) == GridSystem::TileType::Empty
+           && !grid->IsOccupied(tile))
+    {
+      grid->SetTileType(tile, GridSystem::TileType::Wall);
+      m_terrain_effects.push_back({ {tile}, 0, current_round, spell.effect_duration });
+    }
+  }
+
+  Engine::GetLogger().LogEvent(caster->TypeName() + " cast Wall Creation: "
+    + std::to_string(tiles.size()) + " wall(s)");
+  return true;
+}
+
+bool SpellSystem::CastLavaZones(Character* caster, const std::string& spell_id,
+                                const std::vector<Math::ivec2>& tiles, int upcast_level)
+{
+  if (!caster || tiles.empty()) return false;
+
+  auto it = spells_.find(spell_id);
+  if (it == spells_.end()) return false;
+  const SpellData& spell = it->second;
+
+  auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+  auto* tm   = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
+  if (!grid || !tm) return false;
+
+  int consume_level = (upcast_level > 0) ? upcast_level : spell.spell_level;
+  if (consume_level > 0)
+    caster->ConsumeSpell(consume_level);
+  caster->GetActionPointsComponent()->Consume(1);
+
+  int current_round = tm->GetRoundNumber();
+  int damage        = CalculateSpellDamage(spell, upcast_level);
+
+  for (const auto& tile : tiles)
+  {
+    if (grid->IsValidTile(tile)
+        && grid->GetTileType(tile) == GridSystem::TileType::Empty
+        && !grid->IsOccupied(tile))
+    {
+      grid->SetTileType(tile, GridSystem::TileType::Lava);
+      m_terrain_effects.push_back({ {tile}, damage, current_round, spell.effect_duration });
+    }
+  }
+
+  Engine::GetLogger().LogEvent(caster->TypeName() + " cast Magma Blast: "
+    + std::to_string(tiles.size()) + " lava zone(s)");
+  return true;
+}
+
 void SpellSystem::ApplyMoveEffect(Character* caster, const std::vector<Character*>& targets, const SpellData& spell, Math::ivec2 target_tile)
 {
   if (spell.move.move_type == "stay")
@@ -700,7 +834,7 @@ void SpellSystem::ApplyMoveEffect(Character* caster, const std::vector<Character
 	  if (new_pos.x != tgt_pos.x || new_pos.y != tgt_pos.y)
 	  {
 		grid->MoveCharacter(tgt_pos, new_pos);
-		tgt->GetGridPosition()->Set(new_pos);
+    tgt->SetGridPosition(new_pos);
 	  }
 	}
   }
@@ -715,8 +849,9 @@ void SpellSystem::ApplyMoveEffect(Character* caster, const std::vector<Character
 	if (grid->IsValidTile(dest) && !grid->IsOccupied(dest))
 	{
 	  grid->MoveCharacter(caster_pos, dest);
-	  caster->GetGridPosition()->Set(dest);
+	  caster->SetGridPosition(dest);
 	  Engine::GetLogger().LogEvent(caster->TypeName() + " teleported to (" + std::to_string(dest.x) + ", " + std::to_string(dest.y) + ")");
 	}
   }
 }
+

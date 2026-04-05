@@ -12,7 +12,12 @@ Created:    Nov 16, 2025
 
 #include "Engine/GameObject.h"								 // GetGOComponent, SetPosition
 #include "Engine/Logger.h"									 // Engine::GetLogger
+#include "./Engine/Engine.h"
+#include "./Engine/GameStateManager.h"
 #include "Game/DragonicTactics/StateComponents/GridSystem.h" // TILE_SIZE, IsWalkable, MoveCharacter
+#include "Game/DragonicTactics/StateComponents/SpellSystem.h"
+#include "Game/DragonicTactics/StateComponents/CombatSystem.h"
+#include "Game/DragonicTactics/Objects/Character.h"
 #include "GridPosition.h"									 // Get, Set
 #include "MovementComponent.h"
 #include "StatsComponent.h" // GetSpeed, ReduceSpeed, IsAlive
@@ -103,7 +108,11 @@ void MovementComponent::Update(double dt)
 
 	Math::ivec2 current_pos = m_gridPosition->Get();
 
-	if (m_gridSystem->IsWalkable(next_pos))
+	GridSystem::TileType tile_type  = m_gridSystem->GetTileType(next_pos);
+	bool                 can_enter  = (tile_type == GridSystem::TileType::Empty || tile_type == GridSystem::TileType::Lava)
+	                                  && !m_gridSystem->IsOccupied(next_pos);
+
+	if (can_enter)
 	{
 	  m_gridSystem->MoveCharacter(current_pos, next_pos);
 
@@ -114,6 +123,22 @@ void MovementComponent::Update(double dt)
 	  m_stats->ReduceSpeed();
 
 	  Engine::GetLogger().LogEvent(m_owner->TypeName() + " moved. Speed remaining: " + std::to_string(m_stats->GetSpeed()));
+
+	  // 용암 이동 피해
+	  if (tile_type == GridSystem::TileType::Lava)
+	  {
+	    auto* spell_sys = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
+	    auto* combat    = Engine::GetGameStateManager().GetGSComponent<CombatSystem>();
+	    if (spell_sys && combat)
+	    {
+	      int dmg = spell_sys->GetLavaDamageAt(next_pos);
+	      if (dmg > 0)
+	      {
+	        Engine::GetLogger().LogEvent(m_owner->TypeName() + " takes " + std::to_string(dmg) + " lava damage while moving");
+	        combat->ApplyDamage(nullptr, static_cast<Character*>(m_owner), dmg);
+	      }
+	    }
+	  }
 	}
 	else
 	{

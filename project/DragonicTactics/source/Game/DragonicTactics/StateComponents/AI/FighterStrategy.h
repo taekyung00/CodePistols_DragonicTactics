@@ -30,6 +30,11 @@ class FighterStrategy : public IAIStrategy
   Math::ivec2 FindNextMovePos(Character* actor, Character* target, GridSystem* grid);
   bool		  CanReachThisTurn(Character* actor, Character* target, GridSystem* grid) const;
 
+  // --- 용암 회피 ---
+  static constexpr int LAVA_TILE_PENALTY = 3;
+  int				   CountLavaTiles(const std::vector<Math::ivec2>& path, GridSystem* grid) const;
+  int				   ComputePathCost(const std::vector<Math::ivec2>& path, GridSystem* grid) const;
+
   // --- 서브 의사결정 ---
   AIDecision MakeKillLoopDecision(Character* actor, Character* dragon, GridSystem* grid);
   AIDecision MakeFarMoveDecision(Character* actor, Character* dragon, GridSystem* grid);

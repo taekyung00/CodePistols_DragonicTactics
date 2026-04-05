@@ -151,7 +151,7 @@ AIDecision FighterStrategy::MakeDecision(Character* actor)
 
 	if (movePos != actor->GetGridPosition()->Get())
 	{
-	  return { AIDecisionType::Move, nullptr, movePos, "", "Moving towards " + target_type };
+	  return { AIDecisionType::Move, nullptr, movePos, "", "Moving towards " + target_type, LAVA_TILE_PENALTY };
 	}
   }
 
@@ -254,13 +254,17 @@ Math::ivec2 FighterStrategy::FindNextMovePos(Character* actor, Character* target
 	}
 
 	// 해당 위치까지 경로 계산
-	std::vector<Math::ivec2> currentPath = grid->FindPath(myPos, attackPos);
+	std::vector<Math::ivec2> currentPath = grid->FindPath(myPos, attackPos, LAVA_TILE_PENALTY);
 
-	// 경로가 있고 더 짧다면 갱신
-	if (!currentPath.empty() && static_cast<int>(currentPath.size()) < bestPathCost)
+	// 경로가 있고 실효 비용이 더 낮다면 갱신 (용암 타일은 LAVA_TILE_PENALTY만큼 추가 비용)
+	if (!currentPath.empty())
 	{
-	  bestPathCost = static_cast<int>(currentPath.size());
-	  bestPath	   = currentPath;
+	  int effectiveCost = ComputePathCost(currentPath, grid);
+	  if (effectiveCost < bestPathCost)
+	  {
+		bestPathCost = effectiveCost;
+		bestPath	 = currentPath;
+	  }
 	}
   }
 
@@ -278,6 +282,22 @@ Math::ivec2 FighterStrategy::FindNextMovePos(Character* actor, Character* target
   }
 
   return myPos; // 갈 곳 없으면 제자리 반환
+}
+
+int FighterStrategy::CountLavaTiles(const std::vector<Math::ivec2>& path, GridSystem* grid) const
+{
+  int count = 0;
+  for (const auto& tile : path)
+  {
+	if (grid->GetTileType(tile) == GridSystem::TileType::Lava)
+	  ++count;
+  }
+  return count;
+}
+
+int FighterStrategy::ComputePathCost(const std::vector<Math::ivec2>& path, GridSystem* grid) const
+{
+  return static_cast<int>(path.size()) + CountLavaTiles(path, grid) * LAVA_TILE_PENALTY;
 }
 
 AIDecision FighterStrategy::DecideAttackAction([[maybe_unused]] Character* actor, Character* target, [[maybe_unused]] int distance)
