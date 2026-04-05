@@ -450,7 +450,7 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
                       // 피격 대상의 위치(tgt->GetPosition())에 파티클 생성
                       // 위치 그대로 생성하면 좌측 하단으로 파티클이 쏠림
                       //particleManager->Emit(5, { tgt->GetPosition().x + 30, tgt->GetPosition().y + 30 }, { 0, 0 }, { 0, 100 }, 3.14159265f / 2.0f);
-                      particleManager->Emit(5, tgt->GetPosition(), { 0, 0 }, { 0, 100 }, 3.14159265f / 2.0f);
+                      particleManager->Emit(10, tgt->GetPosition(), { 0, 0 }, { 0, 100 }, 3.14159265f);
                   }
               //}
           }
@@ -548,18 +548,30 @@ bool SpellSystem::CastSpell(Character* caster, const std::string& spell_id, Math
   // 시전자 무관 스펠 종류에 따라서 나타나는 파티클 분류 필요
   if (caster != nullptr && caster->GetCharacterType() == CharacterTypes::Dragon) 
   {
-    std::cout << " the ";
       auto* particleManager = Engine::GetGameStateManager().GetGSComponent<CS230::ParticleManager<Particles::Hit>>();
       if (particleManager)
       {
-          // PI가 선언되지 않은 문제를 피하기 위해 원주율(3.14159265f) 상수를 직접 대입합니다.
-          particleManager->Emit(5, caster->GetPosition(), { 0, 0 }, { 0, 100 }, 3.14159265f / 2.0f);
-          std::cout << "hack";
+          particleManager->Emit(10, caster->GetPosition(), { 0, 0 }, { 0, 100 }, 3.14159265f / 2.0f);
       }
   }
 
-  // 괄호가 일찍 닫히지 않고 정상적으로 함수가 이어지도록 수정됨
-  ApplySpellEffect(caster, spell, target_tile, upcast_level);
+  // 2. 람다(Lambda) 함수를 이용해 딜레이 후 실행할 작업 정의
+  auto* gom = Engine::GetGameStateManager().GetGSComponent<CS230::GameObjectManager>();
+  if (gom)
+  {
+      double delayTime = 0.5; // 0.5초 딜레이
+      
+      // this 포인터를 캡처하여 private 함수인 ApplySpellEffect에 접근합니다.
+      auto callback = [this, caster, spell, target_tile, upcast_level]() {
+          // 0.5초 뒤 시전자가 아직 살아있을 때만 데미지와 피격 파티클 적용
+          if (caster != nullptr && caster->IsAlive()) {
+              this->ApplySpellEffect(caster, spell, target_tile, upcast_level);
+          }
+      };
+
+      // 타이머 객체 등록 (지정된 시간 뒤에 위 callback이 실행됨)
+      gom->Add(std::unique_ptr<CS230::GameObject>(new SpellDelayObject(delayTime, callback)));
+  }
 
   Engine::GetLogger().LogEvent(caster->TypeName() + " cast " + spell.spell_name + " [" + spell_id + "]");
   return true;
