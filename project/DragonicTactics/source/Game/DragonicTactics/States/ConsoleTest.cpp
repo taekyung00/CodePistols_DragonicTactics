@@ -220,6 +220,7 @@ void ConsoleTest::Draw()
 
 void ConsoleTest::DrawImGui()
 {
+#if defined(DEVELOPER_VERSION)
   ImGui::Begin("Tests");
   if (ImGui::Button("TestAStar"))
   {
@@ -266,6 +267,7 @@ void ConsoleTest::DrawImGui()
   }
 
   ImGui::End();
+#endif
 }
 
 void ConsoleTest::Unload()

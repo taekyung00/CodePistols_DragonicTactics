@@ -21,6 +21,12 @@
 #include "Game/DragonicTactics/Objects/Components/SpellSlots.h"
 #include "Game/DragonicTactics/StateComponents/StatusEffectHandler.h"
 #include "SpellSystem.h"
+#include "Game/DragonicTactics/StateComponents/TurnManager.h"
+#include "../../../Engine/Particle.h"
+#include "../Types/CharacterTypes.h"
+#include "../Types/GameObjectTypes.h"
+#include "../../../Engine/GameObjectManager.h"
+#include "Game/Particles.h"
 
 std::vector<std::string> SpellSystem::SplitByDelimiter(const std::string& str, char delim) const
 {
@@ -182,7 +188,7 @@ void SpellSystem::ParseEffectField(const std::string& effect_str, SpellData& dat
 
 	// "for N turns" 에서 N 추출
 	auto ft = line.find("for ");
-	auto tt = line.find(" turns", ft);
+	auto tt = line.find(" turn", ft);
 	if (ft != std::string::npos && tt != std::string::npos)
 	{
 	  std::string n_str	   = line.substr(ft + 4, tt - (ft + 4));
@@ -192,7 +198,7 @@ void SpellSystem::ParseEffectField(const std::string& effect_str, SpellData& dat
 	  data.effect_duration = 0;
   }
 
-  // Line 3: "Move to {location}."
+  // Line 3: "Move to {template}."
   if (std::getline(ss, line))
   {
 	const std::string prefix = "Move to ";
@@ -202,7 +208,11 @@ void SpellSystem::ParseEffectField(const std::string& effect_str, SpellData& dat
 	  std::string loc = line.substr(p + prefix.size());
 	  if (!loc.empty() && loc.back() == '.')
 		loc.pop_back();
-	  data.move_type = loc; // "current location", "furthest position..."
+	  data.move = ParseMoveField(loc); // ← 구조체로 저장
+	}
+	else
+	{
+	  data.move = { "self", "stay", 0 };
 	}
   }
 
@@ -263,38 +273,64 @@ void SpellSystem::ApplySpecialEffect(Character* caster, const SpellData& spell, 
 
 int SpellSystem::CalculateSpellDamage(const SpellData& spell, int upcast_level)
 {
-  if (spell.damage_formula == "0" || spell.damage_formula.empty())
-	return 0;
+    // ── 조기 반환: 피해 없음 ──
+    if (spell.damage_formula == "0" || spell.damage_formula.empty())
+    {
+        // [Mana Conversion 패턴] damage_formula=="0" 이지만 upcast_dice가 있으면
+        // "0 + (level_diff+1)d10" 의미 → 여기서 굴리고 반환
+        if (!spell.upcast_dice.empty())
+        {
+            auto* dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
+            if (!dice) return 0;
 
-  auto* dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
-  if (!dice)
-	return 0;
+            int level_diff = std::max(0, upcast_level - spell.spell_level) + 1; // +1: 기본도 1회
 
-  int  level_diff = std::max(0, upcast_level - spell.spell_level);
-  bool negative	  = (!spell.damage_formula.empty() && spell.damage_formula[0] == '-');
+            auto d_pos = spell.upcast_dice.find('d');
+            if (d_pos != std::string::npos)
+            {
+                int         per_level  = (d_pos > 0) ? std::stoi(spell.upcast_dice.substr(0, d_pos)) : 1;
+                std::string face       = spell.upcast_dice.substr(d_pos);          // "d10"
+                std::string rolled_str = std::to_string(level_diff * per_level) + face; // "1d10", "3d10"
+                return dice->RollDiceFromString(rolled_str);
+            }
+        }
+        return 0; // upcast_dice도 없으면 진짜 0
+    }
 
-  // 베이스 다이스 굴림 (힐링이면 음수 래퍼 제거 후 굴림)
-  std::string base_str = spell.damage_formula;
-  if (negative)
-	base_str = base_str.substr(2, base_str.size() - 3); // "-(X)" → "X"
+    // ── flat_per_level:N (Magic Missile) ──
+    if (spell.damage_formula.rfind("flat_per_level:", 0) == 0)
+    {
+        int multiplier = std::stoi(spell.damage_formula.substr(15));
+        int level_diff = std::max(0, upcast_level - spell.spell_level) + 1;
+        return multiplier * level_diff;
+    }
 
-  int total = dice->RollDiceFromString(base_str);
+    auto* dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
+    if (!dice) return 0;
 
-  // 업캐스트 보너스 다이스
-  // upcast_dice = "1d6" → level_diff=2 → "2d6" 로 굴림 (2개를 독립 굴림)
-  if (level_diff > 0 && spell.upcastable && !spell.upcast_dice.empty())
-  {
-	auto d_pos = spell.upcast_dice.find('d');
-	if (d_pos != std::string::npos)
-	{
-	  int         per_level  = (d_pos > 0) ? std::stoi(spell.upcast_dice.substr(0, d_pos)) : 1;
-	  std::string face       = spell.upcast_dice.substr(d_pos); // "d6"
-	  std::string rolled_str = std::to_string(level_diff * per_level) + face; // "2d6"
-	  total += dice->RollDiceFromString(rolled_str);
-	}
-  }
+    int  level_diff = std::max(0, upcast_level - spell.spell_level);
+    bool negative   = (!spell.damage_formula.empty() && spell.damage_formula[0] == '-');
 
-  return negative ? -total : total;
+    std::string base_str = spell.damage_formula;
+    if (negative)
+        base_str = base_str.substr(2, base_str.size() - 3); // "-(X)" → "X"
+
+    int total = dice->RollDiceFromString(base_str);
+
+    // 업캐스트 보너스 다이스
+    if (level_diff > 0 && spell.upcastable && !spell.upcast_dice.empty())
+    {
+        auto d_pos = spell.upcast_dice.find('d');
+        if (d_pos != std::string::npos)
+        {
+            int         per_level  = (d_pos > 0) ? std::stoi(spell.upcast_dice.substr(0, d_pos)) : 1;
+            std::string face       = spell.upcast_dice.substr(d_pos);
+            std::string rolled_str = std::to_string(level_diff * per_level) + face;
+            total += dice->RollDiceFromString(rolled_str);
+        }
+    }
+
+    return negative ? -total : total;
 }
 
 void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Math::ivec2 target_tile, int upcast_level)
@@ -381,14 +417,48 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
   // ─────────────────────────────────────────────────
   if (spell.damage_formula != "0" && !spell.damage_formula.empty())
   {
-	int damage = CalculateSpellDamage(spell, upcast_level);
-	for (auto* tgt : targets)
-	{
-	  if (damage > 0)
-		combat->ApplyDamage(caster, tgt, damage);
-	  else if (damage < 0)
-		tgt->SetHP(std::min(tgt->GetHP() + (-damage), tgt->GetMaxHP()));
-	}
+      auto* dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
+      
+      // [추가] 파티클 매니저 가져오기
+      // 다른 파티클 사용 시 CS230::ParticleManager<Particles::Hit> 에서 Hit을 다른 파티클로 수정
+      // EX) CS230::ParticleManager<Particles::Spell>
+      auto* particleManager = Engine::GetGameStateManager().GetGSComponent<CS230::ParticleManager<Particles::Hit>>();
+
+      for (auto* tgt : targets)
+      {
+          int damage = CalculateSpellDamage(spell, upcast_level);
+
+          // Weakpoint Strike: 대상이 디버프 상태이면 2d20으로 교체
+          if (!spell.special_effect.empty()
+              && spell.special_effect.find("If target is debuffed") != std::string::npos)
+          {
+              bool is_debuffed = tgt->Has("Curse") || tgt->Has("Fear") || tgt->Has("Exhaustion");
+              if (is_debuffed && dice)
+                  damage = dice->RollDiceFromString("2d20");
+          }
+
+          if (damage > 0) 
+          {
+              // 기존 데미지 적용 코드
+              combat->ApplyDamage(caster, tgt, damage);
+              
+              // [추가] 피격당한 타겟이 드래곤이 아닐 경우 파티클 발생
+              //if (tgt != nullptr && tgt->GetCharacterType() != CharacterTypes::Dragon)
+              //{
+                  if (particleManager)
+                  {
+                      // 피격 대상의 위치(tgt->GetPosition())에 파티클 생성
+                      // 위치 그대로 생성하면 좌측 하단으로 파티클이 쏠림
+                      //particleManager->Emit(5, { tgt->GetPosition().x + 30, tgt->GetPosition().y + 30 }, { 0, 0 }, { 0, 100 }, 3.14159265f / 2.0f);
+                      particleManager->Emit(10, tgt->GetPosition(), { 0, 0 }, { 0, 100 }, 3.14159265f);
+                  }
+              //}
+          }
+          else if (damage < 0) 
+          {
+              tgt->SetHP(std::min(tgt->GetHP() + (-damage), tgt->GetMaxHP()));
+          }
+      }
   }
 
   // ─────────────────────────────────────────────────
@@ -411,11 +481,39 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
   // ─────────────────────────────────────────────────
   // 지형 / 특수 이동 (기존 유지)
   // ─────────────────────────────────────────────────
-  if (spell.summon_type != "NULL" && !spell.summon_type.empty())
-	Engine::GetLogger().LogEvent("SpellSystem: Summon " + spell.summon_type + " at ...");
+  if (spell.summon_type == "Wall")
+  {
+    //auto* grid         = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    auto* tm           = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
+    int   current_round = tm ? tm->GetRoundNumber() : 0;
+    if (grid && grid->IsValidTile(target_tile)
+             && grid->GetTileType(target_tile) == GridSystem::TileType::Empty
+             && !grid->IsOccupied(target_tile))
+    {
+      grid->SetTileType(target_tile, GridSystem::TileType::Wall);
+      m_terrain_effects.push_back({ {target_tile}, 0, current_round, spell.effect_duration });
+      Engine::GetLogger().LogEvent("SpellSystem: Wall created at ("
+        + std::to_string(target_tile.x) + "," + std::to_string(target_tile.y) + ")");
+    }
+  }
+  else if (spell.summon_type == "Lava Zone")
+  {
+    //auto* grid         = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    auto* tm           = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
+    if (!grid || !grid->IsValidTile(target_tile)) return;
 
-  if (spell.move_type != "current location" && !spell.move_type.empty())
-	Engine::GetLogger().LogEvent("SpellSystem: Special move — " + spell.move_type);
+    int current_round = tm ? tm->GetRoundNumber() : 0;
+    int damage        = CalculateSpellDamage(spell, upcast_level);
+    int duration      = spell.effect_duration;
+
+    grid->SetTileType(target_tile, GridSystem::TileType::Lava);
+    m_terrain_effects.push_back({ {target_tile}, damage, current_round, duration });
+    Engine::GetLogger().LogEvent("SpellSystem: Lava Zone created at ("
+      + std::to_string(target_tile.x) + "," + std::to_string(target_tile.y)
+      + ") dmg=" + std::to_string(damage) + " duration=" + std::to_string(duration));
+  }
+
+  ApplyMoveEffect(caster, targets, spell, target_tile);
 
   // Special 효과 처리
   ApplySpecialEffect(caster, spell, upcast_level);
@@ -424,28 +522,56 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
 bool SpellSystem::CastSpell(Character* caster, const std::string& spell_id, Math::ivec2 target_tile, int upcast_level)
 {
   if (!caster)
-	return false;
+    return false;
 
   auto it = spells_.find(spell_id);
   if (it == spells_.end())
   {
-	Engine::GetLogger().LogError("SpellSystem: Unknown spell id " + spell_id);
-	return false;
+    Engine::GetLogger().LogError("SpellSystem: Unknown spell id " + spell_id);
+    return false;
   }
 
   const SpellData& spell = it->second;
 
   if (!CanCast(caster, spell_id, target_tile))
-	return false;
+    return false;
 
   int consume_level = (upcast_level > 0) ? upcast_level : spell.spell_level;
   if (consume_level > 0)
-	caster->ConsumeSpell(consume_level);
+    caster->ConsumeSpell(consume_level);
 
-  // AP 소모 (신규) — CanCast에서 이미 >= 1 보장됨
+  // AP 소모 — CanCast에서 이미 >= 1 보장됨
   caster->GetActionPointsComponent()->Consume(1);
+  std::cout << "what";
 
-  ApplySpellEffect(caster, spell, target_tile, upcast_level);
+  // 1. 시전자가 드래곤인지 검사하여 파티클 생성
+  // 시전자 무관 스펠 종류에 따라서 나타나는 파티클 분류 필요
+  if (caster != nullptr && caster->GetCharacterType() == CharacterTypes::Dragon) 
+  {
+      auto* particleManager = Engine::GetGameStateManager().GetGSComponent<CS230::ParticleManager<Particles::Hit>>();
+      if (particleManager)
+      {
+          particleManager->Emit(10, caster->GetPosition(), { 0, 0 }, { 0, 100 }, 3.14159265f / 2.0f);
+      }
+  }
+
+  // 2. 람다(Lambda) 함수를 이용해 딜레이 후 실행할 작업 정의
+  auto* gom = Engine::GetGameStateManager().GetGSComponent<CS230::GameObjectManager>();
+  if (gom)
+  {
+      double delayTime = 0.5; // 0.5초 딜레이
+      
+      // this 포인터를 캡처하여 private 함수인 ApplySpellEffect에 접근합니다.
+      auto callback = [this, caster, spell, target_tile, upcast_level]() {
+          // 0.5초 뒤 시전자가 아직 살아있을 때만 데미지와 피격 파티클 적용
+          if (caster != nullptr && caster->IsAlive()) {
+              this->ApplySpellEffect(caster, spell, target_tile, upcast_level);
+          }
+      };
+
+      // 타이머 객체 등록 (지정된 시간 뒤에 위 callback이 실행됨)
+      gom->Add(std::unique_ptr<CS230::GameObject>(new SpellDelayObject(delayTime, callback)));
+  }
 
   Engine::GetLogger().LogEvent(caster->TypeName() + " cast " + spell.spell_name + " [" + spell_id + "]");
   return true;
@@ -575,3 +701,214 @@ void SpellSystem::ParseDamageFormula(const std::string& formula_str, SpellData& 
 
   data.upcast_dice = "";
 }
+
+SpellMove SpellSystem::ParseMoveField(const std::string& move_str) const
+{
+  // "current location" → {self, stay, 0}
+  if (move_str == "current location" || move_str.empty())
+	return { "self", "stay", 0 };
+
+  // "target:knockback:2" → {target, knockback, 2}
+  // "self:teleport:selected" → {self, teleport, -1}
+  auto		parts = SplitByDelimiter(move_str, ':');
+  SpellMove m;
+  m.mover	  = (parts.size() > 0) ? parts[0] : "self";
+  m.move_type = (parts.size() > 1) ? parts[1] : "stay";
+
+  if (parts.size() > 2)
+  {
+	if (parts[2] == "selected")
+	  m.distance = -1; // target_tile 사용
+	else
+	{
+	  try
+	  {
+		m.distance = std::stoi(parts[2]);
+	  }
+	  catch (...)
+	  {
+		m.distance = 0;
+	  }
+	}
+  }
+  else
+  {
+	m.distance = 0;
+  }
+  return m;
+}
+
+void SpellSystem::TickTerrainEffects(int current_round)
+{
+  auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+  if (!grid) return;
+
+  m_terrain_effects.erase(
+    std::remove_if(m_terrain_effects.begin(), m_terrain_effects.end(),
+      [&](const TerrainEffect& e) {
+        if (current_round >= e.created_round + e.duration_rounds)
+        {
+          for (const auto& tile : e.affected_tiles)
+            grid->SetTileType(tile, GridSystem::TileType::Empty);
+          return true;
+        }
+        return false;
+      }),
+    m_terrain_effects.end());
+}
+
+int SpellSystem::GetLavaDamageAt(Math::ivec2 tile) const
+{
+  for (const auto& effect : m_terrain_effects)
+  {
+    if (effect.damage_per_turn <= 0) continue;
+    for (const auto& t : effect.affected_tiles)
+      if (t.x == tile.x && t.y == tile.y)
+        return effect.damage_per_turn;
+  }
+  return 0;
+}
+
+bool SpellSystem::CastWalls(Character* caster, const std::string& spell_id,
+                             const std::vector<Math::ivec2>& tiles, int upcast_level)
+{
+  if (!caster || tiles.empty()) return false;
+
+  auto it = spells_.find(spell_id);
+  if (it == spells_.end()) return false;
+  const SpellData& spell = it->second;
+
+  auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+  auto* tm   = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
+  if (!grid || !tm) return false;
+
+  int consume_level = (upcast_level > 0) ? upcast_level : spell.spell_level;
+  if (consume_level > 0)
+    caster->ConsumeSpell(consume_level);
+  caster->GetActionPointsComponent()->Consume(1);
+
+  int current_round = tm->GetRoundNumber();
+
+  for (const auto& tile : tiles)
+  {
+    if (grid->IsValidTile(tile)
+           && grid->GetTileType(tile) == GridSystem::TileType::Empty
+           && !grid->IsOccupied(tile))
+    {
+      grid->SetTileType(tile, GridSystem::TileType::Wall);
+      m_terrain_effects.push_back({ {tile}, 0, current_round, spell.effect_duration });
+    }
+  }
+
+  Engine::GetLogger().LogEvent(caster->TypeName() + " cast Wall Creation: "
+    + std::to_string(tiles.size()) + " wall(s)");
+  return true;
+}
+
+bool SpellSystem::CastLavaZones(Character* caster, const std::string& spell_id,
+                                const std::vector<Math::ivec2>& tiles, int upcast_level)
+{
+  if (!caster || tiles.empty()) return false;
+
+  auto it = spells_.find(spell_id);
+  if (it == spells_.end()) return false;
+  const SpellData& spell = it->second;
+
+  auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+  auto* tm   = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
+  if (!grid || !tm) return false;
+
+  int consume_level = (upcast_level > 0) ? upcast_level : spell.spell_level;
+  if (consume_level > 0)
+    caster->ConsumeSpell(consume_level);
+  caster->GetActionPointsComponent()->Consume(1);
+
+  int current_round = tm->GetRoundNumber();
+  int damage        = CalculateSpellDamage(spell, upcast_level);
+
+  for (const auto& tile : tiles)
+  {
+    if (grid->IsValidTile(tile)
+        && grid->GetTileType(tile) == GridSystem::TileType::Empty
+        && !grid->IsOccupied(tile))
+    {
+      grid->SetTileType(tile, GridSystem::TileType::Lava);
+      m_terrain_effects.push_back({ {tile}, damage, current_round, spell.effect_duration });
+    }
+  }
+
+  Engine::GetLogger().LogEvent(caster->TypeName() + " cast Magma Blast: "
+    + std::to_string(tiles.size()) + " lava zone(s)");
+  return true;
+}
+
+void SpellSystem::ApplyMoveEffect(Character* caster, const std::vector<Character*>& targets, const SpellData& spell, Math::ivec2 target_tile)
+{
+  if (spell.move.move_type == "stay")
+	return;
+
+  auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+  if (!grid)
+	return;
+
+  // ── knockback: 피격 대상을 시전자 기준 밀쳐냄 ──
+  if (spell.move.move_type == "knockback")
+  {
+	int			dist	   = spell.move.distance;
+	Math::ivec2 caster_pos = caster->GetGridPosition()->Get();
+
+	for (auto* tgt : targets)
+	{
+	  if (!tgt || tgt == caster)
+		continue;
+	  Math::ivec2 tgt_pos = tgt->GetGridPosition()->Get();
+
+	  // 밀쳐내는 방향: 시전자 → 대상 방향
+	  int dx = tgt_pos.x - caster_pos.x;
+	  int dy = tgt_pos.y - caster_pos.y;
+
+	  // 지배적인 축 기준 단위 벡터 (대각선 불가)
+	  Math::ivec2 dir{ 0, 0 };
+	  if (std::abs(dx) >= std::abs(dy))
+		dir.x = (dx >= 0) ? 1 : -1;
+	  else
+		dir.y = (dy >= 0) ? 1 : -1;
+
+	  // 가능한 만큼 이동 (벽/맵 끝에서 멈춤)
+	  Math::ivec2 new_pos = tgt_pos;
+	  for (int step = 0; step < dist; ++step)
+	  {
+		Math::ivec2 next{ new_pos.x + dir.x, new_pos.y + dir.y };
+		if (!grid->IsValidTile(next))
+		  break;
+		if (!grid->IsWalkable(next))
+		  break;
+		if (grid->IsOccupied(next))
+		  break;
+		new_pos = next;
+	  }
+
+	  if (new_pos.x != tgt_pos.x || new_pos.y != tgt_pos.y)
+	  {
+		grid->MoveCharacter(tgt_pos, new_pos);
+    tgt->SetGridPosition(new_pos);
+	  }
+	}
+  }
+
+  // ── teleport (self:teleport:selected): 시전자를 target_tile로 이동 ──
+  else if (spell.move.move_type == "teleport" && spell.move.mover == "self")
+  {
+	Math::ivec2 caster_pos = caster->GetGridPosition()->Get();
+	Math::ivec2 dest	   = (spell.move.distance == -1) ? target_tile : target_tile;
+	// Empty:Point 타겟팅이 이미 빈 타일만 선택하게 보장함
+
+	if (grid->IsValidTile(dest) && !grid->IsOccupied(dest))
+	{
+	  grid->MoveCharacter(caster_pos, dest);
+	  caster->SetGridPosition(dest);
+	  Engine::GetLogger().LogEvent(caster->TypeName() + " teleported to (" + std::to_string(dest.x) + ", " + std::to_string(dest.y) + ")");
+	}
+  }
+}
+

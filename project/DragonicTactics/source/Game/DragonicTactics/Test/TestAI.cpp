@@ -8,11 +8,14 @@
 
 #include "TestAI.h"
 
+#include "TestAssert.h"
+
 #include "./Engine/GameStateManager.h"
 #include "Game/DragonicTactics/Objects/Dragon.h"
 #include "Game/DragonicTactics/Objects/Fighter.h"
 #include "Game/DragonicTactics/StateComponents/AISystem.h"
 #include "Game/DragonicTactics/StateComponents/GridSystem.h"
+#include "Game/DragonicTactics/States/ButtonManager.h"
 
 bool TestAITargetsClosestEnemy()
 {
@@ -201,5 +204,28 @@ void RunFighterAITests()
   std::cout << (TestAIAttacksWhenInRange() ? "O" : "X") << " AI attacks when in range\n";
   std::cout << (TestAIUsesShieldBashWhenAdjacent() ? "O" : "X") << " AI uses Shield Bash appropriately\n";
   std::cout << (TestAIEndsTurnWhenNoActions() ? "O" : "X") << " AI ends turn when no actions\n";
+  ButtonManager btns;
+btns.AddButton({ "test_btn", {100.0, 100.0}, {80.0, 30.0}, "Test" });
+
+// 버튼 내부 좌표로 클릭
+btns.Update({130.0, 85.0}, true);  // 클릭, "Button inside click must register as pressed"
+ASSERT_TRUE(btns.IsPressed("test_btn"));
+
+// 버튼 외부 좌표로 클릭 , "Button outside click must not register"
+btns.Update({50.0, 50.0}, true);
+ASSERT_TRUE(!btns.IsPressed("test_btn"));
+
+//, "Disabled button must not respond to clicks"
+btns.SetDisabled("test_btn", true);
+btns.Update({130.0, 85.0}, true);
+ASSERT_TRUE(!btns.IsPressed("test_btn"));
+
+//, "Hidden button must not respond to clicks"
+btns.SetVisible("test_btn", false);
+btns.Update({130.0, 85.0}, true);
+ASSERT_TRUE(!btns.IsPressed("test_btn"));
+
+btns.SetLabel("btn_move", "Cancel Move");
+// Draw()에서 "Cancel Move"가 표시되어야 함 (시각적 확인)
   std::cout << "==========================\n";
 }

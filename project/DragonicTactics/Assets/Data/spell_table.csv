@@ -4,9 +4,9 @@ Applies ""Lifesteal"" status for 0 turns.
 Move to current location.
 Summons NULL at current location."
 S_ENH_010,Bloodlust,,Fighter,2,Self:Single:0,FALSE,"Deals 0 damage.
-Apply ""Lifesteal"" status for 1 turn
-Move to current position
-Summon *NULL* at current position"
+Applies ""Lifesteal"" status for 1 turns.
+Move to current location.
+Summons NULL at current location."
 S_BUF_010,Divine Shield,,Cleric,1,Ally:Single:4,FALSE,"Deals 0 damage.
 Applies ""Blessing"" status for 3 turns.
 Move to current location.
@@ -19,22 +19,23 @@ S_DEB_010,Curse of Suffering,,Cleric,1,Enemy:Single:5,FALSE,"Deals 0 damage.
 Applies ""Curse"" status for 3 turns.
 Move to current location.
 Summons NULL at current location."
-S_ENH_030,Healing Touch,,Cleric,1,Ally:Single:5,TRUE,"Deals -(1d10 + (Spell Level - Required Spell Level)d10) damage to HP.
+S_ENH_030,Healing Touch,,Cleric,1,Ally:Single:5,TRUE,"Deals -(1d10 + (Spell Level - Required Spell Level)d10) damage.
 Applies ""Blessing"" status for 3 turns.
 Move to current location.
 Summons NULL at current location."
-S_ATK_060,Magic Missile,,Wizard,2,Enemy:Single:-1,TRUE,"Deals 8 * (Spell Level + 1 - Required Spell Level) damage.
+S_ATK_060,Magic Missile,,Wizard,2,Enemy:Single:-1,TRUE,"Deals flat_per_level:8 damage.
 Applies ""Basic"" status for 0 turns.
 Move to current location.
 Summons NULL at current location."
 S_GEO_030,Teleport,,Wizard,0,Empty:Point:1,TRUE,"Deals 0 damage.
 Applies ""Basic"" status for 0 turns.
-Move to the furthest position from the Dragon within (Spell Level - Required Spell Level) spaces.
+Move to self:teleport:selected.
 Summons NULL at current location."
-S_ATK_070,Weakpoint Strike,,Rogue,2,Enemy:Single:1,FALSE,"Deals 1d10 damage; if the target is debuffed, deals 2d20 damage instead.
+S_ATK_070,Weakpoint Strike,,Rogue,2,Enemy:Single:1,FALSE,"Deals 1d10 damage.
 Applies ""Basic"" status for 0 turns.
 Move to current location.
-Summons NULL at current location."
+Summons NULL at current location.
+Special: If target is debuffed, damage becomes 2d20 instead."
 S_BUF_020,Gale Step,,Rogue,1,Self:Single:0,FALSE,"Deals 0 damage.
 Applies ""Haste"" status for 2 turns.
 Move to current location.
@@ -51,14 +52,14 @@ S_ATK_010,Fire Bolt,Attack,"Dragon, Wizard",1,Enemy:Single:4,TRUE,"Deals 2d8 + (
 Applies ""Basic"" status for 0 turns.
 Move to current location.
 Summons NULL at current location."
-S_ENH_040,Mana Conversion,Buff,"Dragon, Wizard",0,Self:Single:0,TRUE,"Deals (Spell Level - Required Spell Level + 1)d10 damage.
+S_ENH_040,Mana Conversion,Buff,"Dragon, Wizard",0,Self:Single:0,TRUE,"Deals 0 + (Spell Level - Required Spell Level + 1)d10 damage.
 Applies ""Basic"" status for 0 turns.
 Move to current location.
 Summons NULL at current location.
 Special: Recover a Spell Slot of (Spell Level - Required Spell Level + 1) level."
 S_ATK_020,Tail Swipe,Attack,Dragon,2,Enemy:Around:2,FALSE,"Deals 1d8 damage.
 Applies ""Basic"" status for 0 turns.
-Move to a position 2 spaces away from the Dragon.
+Move to target:knockback:2.
 Summons NULL at current location."
 S_ATK_030,Dragon's Fury,Attack,Dragon,3,Enemy:Line:4,TRUE,"Deals 4d6 + (Spell Level - Required Spell Level) * 2d6 damage.
 Applies ""Basic"" status for 0 turns.
@@ -72,11 +73,11 @@ S_ENH_050,Purify,Buff,Dragon,1,Any:Around:4,FALSE,"Deals 0 damage.
 Applies ""Purify"" status for 1 turn.
 Move to current location.
 Summons NULL at current location."
-S_GEO_010,Magma Blast,Terrain Change,Dragon,2,Empty:Point:6,TRUE,"Deals 0 damage.
-Applies ""Basic"" status for 0 turns.
+S_GEO_010,Magma Blast,Terrain Change,Dragon,2,Empty:Point:6,TRUE,"Deals 3d6 + (Spell Level - Required Spell Level)d4 damage.
+Applies ""Basic"" status for 3 turns.
 Move to current location.
 Summons Lava Zone at selected location."
 S_GEO_020,Wall Creation,Terrain Change,Dragon,1,Empty:Point:5,TRUE,"Deals 0 damage.
-Applies ""Basic"" status for 0 turns.
+Applies ""Basic"" status for 2 turns.
 Move to current location.
 Summons Wall at selected location."

@@ -2765,3 +2765,585 @@ for (const auto& spell_id : available)
 - **Tail Swipe** (Lv.2 required, not upcastable):
   - `Tail Swipe (Lv.2)` 단일 버튼만 표시
 - **슬롯 소모 확인**: 시전 후 스탯 패널의 해당 레벨 슬롯 수 감소 확인
+
+---
+
+## Move 템플릿 시스템
+
+### 문제
+
+`spell_table.csv`의 Effect 3번째 줄 (`Move to {location}.`) 에서 파싱되는 `move_type` 필드가
+자유 텍스트여서 코드가 기계적으로 처리할 수 없다.
+
+현재 상태:
+
+| 스펠         | CSV 원문                                                               | 파싱 결과 `move_type`                                             | 처리                 |
+| ---------- | -------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------ |
+| Tail Swipe | `Move to a position 2 spaces away from the Dragon.`                  | `"a position 2 spaces away from the Dragon"`                  | ❌ 로그만 출력, 실제 이동 없음 |
+| Teleport   | `Move to the furthest position from the Dragon within (...) spaces.` | `"the furthest position from the Dragon within (...) spaces"` | ❌ 로그만 출력, 실제 이동 없음 |
+| 그 외        | `Move to current location.`                                          | `"current location"`                                          | ✅ no-op 정상 처리      |
+
+`ApplySpellEffect` 끝 부분:
+
+```cpp
+if (spell.move_type != "current location" && !spell.move_type.empty())
+    Engine::GetLogger().LogEvent("SpellSystem: Special move — " + spell.move_type);
+// 실제 이동 코드 없음
+```
+
+---
+
+### 해결: Move 템플릿
+
+Effect 3번째 줄의 위치 기술을 구조화된 템플릿으로 통일한다.
+
+포맷: `{Mover}:{MoveType}:{Parameter}`
+
+| 항목        | 허용 값                                                                 |
+| --------- | -------------------------------------------------------------------- |
+| Mover     | `self` (시전자 이동) \| `target` (피격 대상 이동)                               |
+| MoveType  | `stay` (이동 없음) \| `knockback` (시전자 기준 밀쳐냄) \| `teleport` (지정 타일로 이동) |
+| Parameter | 정수 (거리) \| `selected` (Targeting이 지정한 타일)                            |
+
+**파싱 규칙**: `ParseEffectField`의 Line 3은 이미 `"Move to "` 와 `"."` 사이 문자열을 그대로 `move_type`에 저장한다. → CSV에서 템플릿 값으로 바꾸기만 하면 기존 파서가 그대로 동작한다.
+
+---
+
+### spell_table.csv 수정
+
+두 스펠의 Effect 3번째 줄만 교체한다:
+
+#### S_ATK_020 Tail Swipe
+
+```
+// 변경 전
+Move to a position 2 spaces away from the Dragon.
+
+// 변경 후
+Move to target:knockback:2.
+```
+
+→ `move_type = "target:knockback:2"`
+
+#### S_GEO_030 Teleport
+
+```
+// 변경 전
+Move to the furthest position from the Dragon within (Spell Level - Required Spell Level) spaces.
+
+// 변경 후
+Move to self:teleport:selected.
+```
+
+→ `move_type = "self:teleport:selected"`
+
+> Teleport의 실제 이동 목적지는 플레이어가 선택한 타일(`target_tile`)이다.
+> `Targeting = Empty:Point:1` (업캐스트 시 Range 증가) 이므로, 이동 가능 범위는 Targeting의 Range가 담당한다.
+
+---
+
+### 수정 1: SpellSystem.h — SpellMove 구조체 및 ParseMoveField 선언
+
+`SpellData` 위에 추가:
+
+```cpp
+struct SpellMove
+{
+    std::string mover;     // "self", "target"
+    std::string move_type; // "stay", "knockback", "teleport"
+    int         distance;  // 거리. "selected" 이면 -1 (target_tile 사용)
+};
+```
+
+`SpellData`에 필드 추가 (기존 `std::string move_type` 교체):
+
+```cpp
+struct SpellData
+{
+    // ... 기존 필드 ...
+    SpellMove move;      // ← move_type 문자열 대신 파싱된 구조체
+    // std::string move_type; 는 제거하거나 effect_raw 참조
+};
+```
+
+`SpellSystem` private에 헬퍼 선언 추가:
+
+```cpp
+private:
+    SpellMove ParseMoveField(const std::string& move_str) const;
+    void      ApplyMoveEffect(Character* caster,
+                              const std::vector<Character*>& targets,
+                              const SpellData& spell,
+                              Math::ivec2 target_tile);
+```
+
+---
+
+### 수정 2: SpellSystem.cpp — ParseMoveField 구현
+
+```cpp
+SpellMove SpellSystem::ParseMoveField(const std::string& move_str) const
+{
+    // "current location" → {self, stay, 0}
+    if (move_str == "current location" || move_str.empty())
+        return { "self", "stay", 0 };
+
+    // "target:knockback:2" → {target, knockback, 2}
+    // "self:teleport:selected" → {self, teleport, -1}
+    auto parts = SplitByDelimiter(move_str, ':');
+    SpellMove m;
+    m.mover     = (parts.size() > 0) ? parts[0] : "self";
+    m.move_type = (parts.size() > 1) ? parts[1] : "stay";
+
+    if (parts.size() > 2)
+    {
+        if (parts[2] == "selected")
+            m.distance = -1; // target_tile 사용
+        else
+        {
+            try { m.distance = std::stoi(parts[2]); }
+            catch (...) { m.distance = 0; }
+        }
+    }
+    else
+    {
+        m.distance = 0;
+    }
+    return m;
+}
+```
+
+---
+
+### 수정 3: SpellSystem.cpp — ParseEffectField Line 3 수정
+
+Line 3 파싱 블록 끝에서 `data.move_type = loc;` 대신 구조체로 파싱:
+
+```cpp
+// Line 3: "Move to {template}."
+if (std::getline(ss, line))
+{
+    const std::string prefix = "Move to ";
+    auto p = line.find(prefix);
+    if (p != std::string::npos)
+    {
+        std::string loc = line.substr(p + prefix.size());
+        if (!loc.empty() && loc.back() == '.') loc.pop_back();
+        data.move = ParseMoveField(loc);   // ← 구조체로 저장
+    }
+    else
+    {
+        data.move = { "self", "stay", 0 };
+    }
+}
+```
+
+---
+
+### 수정 4: SpellSystem.cpp — ApplyMoveEffect 구현
+
+```cpp
+void SpellSystem::ApplyMoveEffect(Character* caster,
+                                   const std::vector<Character*>& targets,
+                                   const SpellData& spell,
+                                   Math::ivec2 target_tile)
+{
+    if (spell.move.move_type == "stay") return;
+
+    auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    if (!grid) return;
+
+    // ── knockback: 피격 대상을 시전자 기준 밀쳐냄 ──
+    if (spell.move.move_type == "knockback")
+    {
+        int dist = spell.move.distance;
+        Math::ivec2 caster_pos = caster->GetGridPosition()->Get();
+
+        for (auto* tgt : targets)
+        {
+            if (!tgt || tgt == caster) continue;
+            Math::ivec2 tgt_pos = tgt->GetGridPosition()->Get();
+
+            // 밀쳐내는 방향: 시전자 → 대상 방향
+            int dx = tgt_pos.x - caster_pos.x;
+            int dy = tgt_pos.y - caster_pos.y;
+
+            // 지배적인 축 기준 단위 벡터 (대각선 불가)
+            Math::ivec2 dir{ 0, 0 };
+            if (std::abs(dx) >= std::abs(dy))
+                dir.x = (dx >= 0) ? 1 : -1;
+            else
+                dir.y = (dy >= 0) ? 1 : -1;
+
+            // 가능한 만큼 이동 (벽/맵 끝에서 멈춤)
+            Math::ivec2 new_pos = tgt_pos;
+            for (int step = 0; step < dist; ++step)
+            {
+                Math::ivec2 next{ new_pos.x + dir.x, new_pos.y + dir.y };
+                if (!grid->IsValidTile(next)) break;
+                if (!grid->IsWalkable(next))  break;
+                if (grid->IsOccupied(next))   break;
+                new_pos = next;
+            }
+
+            if (new_pos.x != tgt_pos.x || new_pos.y != tgt_pos.y)
+            {
+                grid->MoveCharacter(tgt_pos, new_pos);
+                tgt->GetGridPosition()->Set(new_pos);
+            }
+        }
+    }
+
+    // ── teleport (self:teleport:selected): 시전자를 target_tile로 이동 ──
+    else if (spell.move.move_type == "teleport" && spell.move.mover == "self")
+    {
+        Math::ivec2 caster_pos = caster->GetGridPosition()->Get();
+        Math::ivec2 dest = (spell.move.distance == -1) ? target_tile : target_tile;
+        // Empty:Point 타겟팅이 이미 빈 타일만 선택하게 보장함
+
+        if (grid->IsValidTile(dest) && !grid->IsOccupied(dest))
+        {
+            grid->MoveCharacter(caster_pos, dest);
+            caster->GetGridPosition()->Set(dest);
+            Engine::GetLogger().LogEvent(
+                caster->TypeName() + " teleported to ("
+                + std::to_string(dest.x) + ", " + std::to_string(dest.y) + ")");
+        }
+    }
+}
+```
+
+---
+
+### 수정 5: SpellSystem.cpp — ApplySpellEffect에서 ApplyMoveEffect 호출
+
+기존 로그 출력 블록을 교체:
+
+```cpp
+// 변경 전
+if (spell.move_type != "current location" && !spell.move_type.empty())
+    Engine::GetLogger().LogEvent("SpellSystem: Special move — " + spell.move_type);
+
+// 변경 후
+ApplyMoveEffect(caster, targets, spell, target_tile);
+```
+
+---
+
+### GridPosition::Set 확인
+
+`ApplyMoveEffect`에서 `tgt->GetGridPosition()->Set(new_pos)` 를 호출한다.
+`GridPosition`에는 이미 `Set(Math::ivec2 new_coordinates)` 가 선언·구현되어 있다
+(내부 필드명: `coordinates`, [GridPosition.cpp](../../../DragonicTactics/source/Game/DragonicTactics/Objects/Components/GridPosition.cpp):15).
+**별도 추가 불필요.**
+
+> `grid->MoveCharacter`는 `character_grid` 배열을 갱신하고,
+> `GetGridPosition()->Set`은 캐릭터 오브젝트 측 좌표를 동기화한다.
+> 둘 다 호출해야 일관성이 유지된다.
+
+---
+
+### 구현 순서
+
+```
+1. SpellSystem.h     — SpellMove 구조체 추가
+                       SpellData.move_type (std::string) → SpellData.move (SpellMove) 교체
+                       ParseMoveField, ApplyMoveEffect 선언 추가
+2. SpellSystem.cpp   — ParseMoveField 구현
+3. SpellSystem.cpp   — ParseEffectField Line 3: ParseMoveField 호출로 교체
+4. SpellSystem.cpp   — ApplyMoveEffect 구현
+5. SpellSystem.cpp   — ApplySpellEffect: 로그 라인 → ApplyMoveEffect 호출로 교체
+6. spell_table.csv   — Tail Swipe Effect 3번째 줄: "target:knockback:2"
+                       Teleport Effect 3번째 줄: "self:teleport:selected"
+7. GridPosition.h    — Set(Math::ivec2) 없으면 추가
+```
+
+---
+
+### 검증
+
+- **Tail Swipe** (`Enemy:Around:2`):
+  - Dragon 주변 2칸 적에 1d8 피해
+  - 피해 후 각 적이 Dragon으로부터 먼 방향으로 최대 2칸 밀려남
+  - 벽/맵 끝에 막히면 가능한 만큼만 이동
+- **Teleport** (`Empty:Point:1`, upcastable):
+  - 빈 타일 1칸 이내 클릭 → Dragon이 해당 타일로 순간이동
+  - 업캐스트 Lv2 → 2칸 이내 빈 타일 클릭 가능
+- **Fire Bolt** (이동 없음): `move.move_type == "stay"` → `ApplyMoveEffect` 즉시 반환
+- **Fearful Cry** (Around:3, 이동 없음): 동일하게 stay → 이동 없음
+
+---
+
+## Effect 템플릿 미준수 항목 수정
+
+`spell_table.csv`의 Effect 필드 중 파서가 처리할 수 없는 5개 항목을 정리한다.
+
+### 문제 목록
+
+| 스펠                         | 문제                     | 증상                          |
+| -------------------------- | ---------------------- | --------------------------- |
+| S_ENH_010 Bloodlust        | 4줄 전부 비표준              | duration=0, move/summon 오파싱 |
+| S_ENH_030 Healing Touch    | `damage to HP.` 접미사    | damage_formula="0" → 힐링 미작동 |
+| S_ATK_060 Magic Missile    | `8 * N` 산술 수식          | RollDiceFromString 실패       |
+| S_ATK_070 Weakpoint Strike | `; if debuffed` 조건부 피해 | formula 파싱 불가               |
+| S_ENH_040 Mana Conversion  | base 없는 순수 업캐스트 수식     | RollDiceFromString 실패       |
+
+---
+
+### 수정 1: S_ENH_010 Bloodlust — 4줄 표준화
+
+```
+// 변경 전 Effect
+Deals 0 damage.
+Apply "Lifesteal" status for 1 turn
+Move to current position
+Summon *NULL* at current position
+
+// 변경 후 Effect
+Deals 0 damage.
+Applies "Lifesteal" status for 1 turns.
+Move to current location.
+Summons NULL at current location.
+```
+
+> `Apply` → `Applies`, `1 turn` → `1 turns`, `current position` → `current location`, `*NULL*` → `NULL`, 마침표 추가.
+
+---
+
+### 수정 2: S_ENH_030 Healing Touch — 접미사 수정
+
+```
+// 변경 전 Line 1
+Deals -(1d10 + (Spell Level - Required Spell Level)d10) damage to HP.
+
+// 변경 후 Line 1
+Deals -(1d10 + (Spell Level - Required Spell Level)d10) damage.
+```
+
+> `" damage to HP."` → `" damage."`. `ParseEffectField`의 `rfind(" damage.")` 가 이제 매칭된다.
+
+---
+
+### 수정 3: S_ATK_060 Magic Missile — 산술 수식 처리
+
+**문제**: `8 * (Spell Level + 1 - Required Spell Level)` — 주사위 없이 레벨에 따라 8의 배수.
+기본 레벨(spell_level=2): 8×1=8. 업캐스트 Lv3: 8×2=16.
+
+`RollDiceFromString`은 주사위 표기법(`NdX`)만 처리하므로 이 공식을 처리할 수 없다.
+
+**해결**: CSV formula를 `flat_per_level:8` 형태로 교체하고 `CalculateSpellDamage`에서 분기 처리.
+
+```
+// 변경 전 Line 1
+Deals 8 * (Spell Level + 1 - Required Spell Level) damage.
+
+// 변경 후 Line 1
+Deals flat_per_level:8 damage.
+```
+
+→ `ParseDamageFormula` 후 `damage_formula = "flat_per_level:8"`, `upcast_dice = ""`
+
+**SpellSystem.cpp — CalculateSpellDamage에 flat_per_level 분기 추가**:
+
+```cpp
+int SpellSystem::CalculateSpellDamage(const SpellData& spell, int upcast_level)
+{
+    if (spell.damage_formula == "0" || spell.damage_formula.empty())
+        return 0;
+
+    // flat_per_level:N — 레벨 차이만큼 N 곱셈 (주사위 없음)
+    // Magic Missile: base=spell_level, 업캐스트 시 +1 level마다 +8
+    if (spell.damage_formula.rfind("flat_per_level:", 0) == 0)
+    {
+        int multiplier = std::stoi(spell.damage_formula.substr(15)); // "flat_per_level:" 이후
+        int level_diff = std::max(0, upcast_level - spell.spell_level) + 1; // +1: base에도 1번 적용
+        return multiplier * level_diff;
+    }
+
+    // ... 기존 로직 ...
+}
+```
+
+> Magic Missile: spell_level=2, upcast_level=0 → level_diff = max(0,0-2)+1 = 1 → 8×1 = 8
+> upcast_level=3 → level_diff = max(0,3-2)+1 = 2 → 8×2 = 16 ✓
+
+---
+
+### 수정 4: S_ATK_070 Weakpoint Strike — 조건부 피해
+
+**문제**: `Deals 1d10 damage; if the target is debuffed, deals 2d20 damage instead.`
+세미콜론 이후 조건부 텍스트로 인해 `rfind(" damage.")` 실패 → `damage_formula = "0"`.
+
+**CSV 수정**: Line 1을 두 줄로 분리한다. 기본 피해는 표준 템플릿으로, 조건은 Special 줄로 이관.
+
+```
+// 변경 전 (Line 1 하나)
+Deals 1d10 damage; if the target is debuffed, deals 2d20 damage instead.
+
+// 변경 후 (Line 1 + Line 5 Special 추가)
+Deals 1d10 damage.
+...
+Special: If target is debuffed, damage becomes 2d20 instead.
+```
+
+→ `damage_formula = "1d10"`, `special_effect = "If target is debuffed, damage becomes 2d20 instead."`
+
+**SpellSystem.cpp — ApplySpellEffect 피해 블록 내부에서 처리**:
+
+`ApplySpellEffect` 안의 피해 계산·적용 블록을 아래와 같이 교체한다.
+`ApplySpecialEffect`는 사용하지 않는다 (피해 계산 전에 오버라이드해야 하므로).
+
+```cpp
+// ApplySpellEffect — 피해 블록
+if (spell.damage_formula != "0" && !spell.damage_formula.empty())
+{
+    auto* dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
+
+    for (auto* tgt : targets)
+    {
+        int damage = CalculateSpellDamage(spell, upcast_level);
+
+        // Weakpoint Strike: 대상이 디버프 상태이면 2d20으로 교체
+        if (!spell.special_effect.empty()
+            && spell.special_effect.find("If target is debuffed") != std::string::npos)
+        {
+            bool is_debuffed = tgt->Has("Curse") || tgt->Has("Fear") || tgt->Has("Exhaustion");
+            if (is_debuffed && dice)
+                damage = dice->RollDiceFromString("2d20");
+        }
+
+        if (damage > 0)       combat->ApplyDamage(caster, tgt, damage);
+        else if (damage < 0)  tgt->SetHP(std::min(tgt->GetHP() + (-damage), tgt->GetMaxHP()));
+    }
+}
+```
+
+---
+
+### 수정 5: S_ENH_040 Mana Conversion — 순수 업캐스트 수식
+
+**문제**: `(Spell Level - Required Spell Level + 1)d10` — base 주사위 없이 레벨로만 결정.
+spell_level=0, 기본 시전(upcast_level=0): `(0-0+1)d10 = 1d10`.
+업캐스트 Lv2: `(2-0+1)d10 = 3d10`.
+
+`ParseDamageFormula`는 " + " 없으면 전체를 base로 저장 → `RollDiceFromString("(...)d10")` 실패.
+
+**해결**: base를 `0`으로 두고 upcast_dice로 표현 가능하도록 CSV 수식을 재기술.
+
+```
+// 변경 전 Line 1
+Deals (Spell Level - Required Spell Level + 1)d10 damage.
+
+// 변경 후 Line 1
+Deals 0 + (Spell Level - Required Spell Level + 1)d10 damage.
+```
+
+→ `ParseDamageFormula` 분리: `damage_formula = "0"`, `upcast_dice = "1d10"`
+→ `CalculateSpellDamage`: `level_diff = max(0, upcast_level - 0) + 1` → `(level_diff)d10`
+
+> ⚠️ **+1 오프셋 문제**: 기존 `CalculateSpellDamage`는 `level_diff = upcast_level - spell_level` 이므로 base(upcast_level=0)에서 level_diff=0 → 0d10 = 0이 된다.
+> Mana Conversion은 base에서도 반드시 1d10을 굴려야 한다. 이 공식의 +1은 `level_diff + 1`이다.
+
+**SpellSystem.cpp — CalculateSpellDamage 전체 (위치 명시)**:
+
+현재 함수 구조에 Mana Conversion 분기를 추가하면 다음과 같다.
+`flat_per_level` 분기 바로 뒤, `dice` 포인터 획득 전에 삽입한다.
+
+```cpp
+int SpellSystem::CalculateSpellDamage(const SpellData& spell, int upcast_level)
+{
+    // ── 조기 반환: 피해 없음 ──
+    if (spell.damage_formula == "0" || spell.damage_formula.empty())
+    {
+        // [Mana Conversion 패턴] damage_formula=="0" 이지만 upcast_dice가 있으면
+        // "0 + (level_diff+1)d10" 의미 → 여기서 굴리고 반환
+        if (!spell.upcast_dice.empty())
+        {
+            auto* dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
+            if (!dice) return 0;
+
+            int level_diff = std::max(0, upcast_level - spell.spell_level) + 1; // +1: 기본도 1회
+
+            auto d_pos = spell.upcast_dice.find('d');
+            if (d_pos != std::string::npos)
+            {
+                int         per_level  = (d_pos > 0) ? std::stoi(spell.upcast_dice.substr(0, d_pos)) : 1;
+                std::string face       = spell.upcast_dice.substr(d_pos);          // "d10"
+                std::string rolled_str = std::to_string(level_diff * per_level) + face; // "1d10", "3d10"
+                return dice->RollDiceFromString(rolled_str);
+            }
+        }
+        return 0; // upcast_dice도 없으면 진짜 0
+    }
+
+    // ── flat_per_level:N (Magic Missile) ──
+    if (spell.damage_formula.rfind("flat_per_level:", 0) == 0)
+    {
+        int multiplier = std::stoi(spell.damage_formula.substr(15));
+        int level_diff = std::max(0, upcast_level - spell.spell_level) + 1;
+        return multiplier * level_diff;
+    }
+
+    auto* dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
+    if (!dice) return 0;
+
+    int  level_diff = std::max(0, upcast_level - spell.spell_level);
+    bool negative   = (!spell.damage_formula.empty() && spell.damage_formula[0] == '-');
+
+    std::string base_str = spell.damage_formula;
+    if (negative)
+        base_str = base_str.substr(2, base_str.size() - 3); // "-(X)" → "X"
+
+    int total = dice->RollDiceFromString(base_str);
+
+    // 업캐스트 보너스 다이스
+    if (level_diff > 0 && spell.upcastable && !spell.upcast_dice.empty())
+    {
+        auto d_pos = spell.upcast_dice.find('d');
+        if (d_pos != std::string::npos)
+        {
+            int         per_level  = (d_pos > 0) ? std::stoi(spell.upcast_dice.substr(0, d_pos)) : 1;
+            std::string face       = spell.upcast_dice.substr(d_pos);
+            std::string rolled_str = std::to_string(level_diff * per_level) + face;
+            total += dice->RollDiceFromString(rolled_str);
+        }
+    }
+
+    return negative ? -total : total;
+}
+```
+
+> **삽입 위치 요약**: 맨 위 `if (damage_formula == "0")` 블록 안에 넣는다.
+> 기존 코드는 `return 0`으로 즉시 반환했지만, 이제 `upcast_dice`가 있으면 먼저 굴리고 반환한다.
+> `upcast_dice`가 없는 `"0"` 스펠(Tail Swipe, Fearful Cry 등)은 기존과 동일하게 `return 0`.
+
+---
+
+### CSV 수정 요약
+
+| 스펠                         | 수정 필드                      | 변경 내용                            |
+| -------------------------- | -------------------------- | -------------------------------- |
+| S_ENH_010 Bloodlust        | Effect 전체                  | 4줄 표준 템플릿으로 통일                   |
+| S_ENH_030 Healing Touch    | Effect Line 1              | `damage to HP.` → `damage.`      |
+| S_ATK_060 Magic Missile    | Effect Line 1              | `8 * (...)` → `flat_per_level:8` |
+| S_ATK_070 Weakpoint Strike | Effect Line 1 + Special 추가 | 조건 분리                            |
+| S_ENH_040 Mana Conversion  | Effect Line 1              | `(...)d10` → `0 + (...)d10`      |
+
+---
+
+### 구현 순서
+
+```
+1. spell_table.csv — 위 5개 스펠 Effect 수정
+2. SpellSystem.cpp — CalculateSpellDamage: flat_per_level 분기 추가
+3. SpellSystem.cpp — CalculateSpellDamage: damage_formula="0" + upcast_dice 분기 추가
+4. SpellSystem.cpp — ApplySpellEffect: Weakpoint Strike 조건부 피해 분기 추가
+```
+
+### 검증
+
+- **Bloodlust**: 시전 후 캐릭터에 Lifesteal 1턴 적용 확인 (FX 패널)
+- **Healing Touch**: 시전 후 HP 회복 확인 (음수 damage → 힐)
+- **Magic Missile**: Lv2 시전 → 8 피해, Lv3 업캐스트 → 16 피해
+- **Weakpoint Strike**: 디버프 없는 적 → 1d10, Cursed 적 → 2d20
+- **Mana Conversion**: 기본 시전 → 1d10 데미지 + 레벨1 슬롯 1개 회복

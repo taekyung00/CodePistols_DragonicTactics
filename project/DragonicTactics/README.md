@@ -1,6 +1,7 @@
 # Dragonic Tactics
 
 ## Summary
+
 - Name of game: dragonic tactics
 
 - Version: 0.1.3524
@@ -8,10 +9,11 @@
 - Developers: joonyoung ki, seungju song, sangyun lee, taekyung ho, ginam park
 
 - Team: code pistols
-  
+
 - Small description of game : This game reinterprets the battles of traditional DND campaigns, allowing players to become dragons and fight against a party of adventurers. Each character in the game has a turn. You play as a character called a dragon, and you have to chase away the adventurers who invade your house. Click the buttons to decide your actions, move and attack. You can do everything with a click of the mouse.
 
 ## Before Starting / Installation Instructions
+
 - Setup your [Development Environment](docs/DevEnvironment.md)
 
 ## How to Build and Run
@@ -131,6 +133,163 @@ cmake -S . -B build/linux-debug \
 This saves time and reduces configuration errors, especially when working across different platforms and build types.
 
 ## Play
+
+
+
+New Things
+
+- We are working on Spells, Now only some of the dragon's spell is working.
+
+- Please Let us know other spell's are not working
+
+#### Spell Table
+
+- **ID: S_DEB_020**
+  
+  - **Name**: Fearful Cry
+  
+  - **Category**: (N/A)
+  
+  - **Classes**: Dragon, Fighter
+  
+  - **Required Slot Level**: 1
+  
+  - **Targeting**: Enemy:Around:3
+  
+  - **Upcasting**: False
+  
+  - **Effect**: Deals 0 damage. Applies "Fear" status for 3 turns. Move to current location. Summons NULL at current location.
+
+**ID: S_ATK_010**
+
+- **Name**: Fire Bolt
+
+- **Category**: Attack
+
+- **Classes**: Dragon, Wizard
+
+- **Required Slot Level**: 1
+
+- **Targeting**: Enemy:Single:4
+
+- **Upcasting**: True
+
+- **Effect**: Deals 2d8 + (\text{Spell Level} - \text{Required Spell Level})d6 damage. Applies "Basic" status for 0 turns. Move to current location. Summons NULL at current location.
+
+**ID: S_ENH_040**
+
+- **Name**: Mana Conversion
+
+- **Category**: Buff
+
+- **Classes**: Dragon, Wizard
+
+- **Required Slot Level**: 0
+
+- **Targeting**: Self:Single:0
+
+- **Upcasting**: True
+
+- **Effect**: Deals 0 + (\text{Spell Level} - \text{Required Spell Level} + 1)d10 damage. Applies "Basic" status for 0 turns. Move to current location. Summons NULL at current location. Special: Recover a Spell Slot of (\text{Spell Level} - \text{Required Spell Level} + 1) level.
+
+**ID: S_ATK_020**
+
+- **Name**: Tail Swipe
+
+- **Category**: Attack
+
+- **Classes**: Dragon
+
+- **Required Slot Level**: 2
+
+- **Targeting**: Enemy:Around:2
+
+- **Upcasting**: False
+
+- **Effect**: Deals 1d8 damage. Applies "Basic" status for 0 turns. Move to target:knockback:2. Summons NULL at current location.
+
+**ID: S_ATK_030**
+
+- **Name**: Dragon's Fury
+
+- **Category**: Attack
+
+- **Classes**: Dragon
+
+- **Required Slot Level**: 3
+
+- **Targeting**: Enemy:Line:4
+
+- **Upcasting**: True
+
+- **Effect**: Deals 4d6 + (\text{Spell Level} - \text{Required Spell Level}) \times 2d6 damage. Applies "Basic" status for 0 turns. Move to current location. Summons NULL at current location.
+
+**ID: S_ATK_040**
+
+- **Name**: Meteor
+
+- **Category**: Attack
+
+- **Classes**: Dragon
+
+- **Required Slot Level**: 3
+
+- **Targeting**: Any:OddEven:-1
+
+- **Upcasting**: True
+
+- **Effect**: Deals 3d20 + (\text{Spell Level} - \text{Required Spell Level}) \times 1d20 damage. Applies "Exhaustion" status for 1 turn. Move to current location. Summons NULL at current location.
+
+**ID: S_ENH_050**
+
+- **Name**: Purify
+
+- **Category**: Buff
+
+- **Classes**: Dragon
+
+- **Required Slot Level**: 1
+
+- **Targeting**: Any:Around:4
+
+- **Upcasting**: False
+
+- **Effect**: Deals 0 damage. Applies "Purify" status for 1 turn. Move to current location. Summons NULL at current location.
+
+**ID: S_GEO_010**
+
+- **Name**: ~~Magma Blast~~ << not working
+
+- **Category**: Terrain Change
+
+- **Classes**: Dragon
+
+- **Required Slot Level**: 2
+
+- **Targeting**: Empty:Point:6
+
+- **Upcasting**: True
+
+- **Effect**: Deals 0 damage. Applies "Basic" status for 0 turns. Move to current location. Summons Lava Zone at selected location.
+
+**ID: S_GEO_020**
+
+- **Name**: ~~Wall Creation~~ << not working
+
+- **Category**: Terrain Change
+
+- **Classes**: Dragon
+
+- **Required Slot Level**: 1
+
+- **Targeting**: Empty:Point:5
+
+- **Upcasting**: True
+
+- **Effect**: Deals 0 damage. Applies "Basic" status for 0 turns. Move to current location. Summons Wall at selected location.
+
+
+
 - After building the project, run the executable file located in the build directory.
 - For example, if you built the windows-debug preset, run ./build/windows-debug/dragonic_tactics.exe
 - At the main menu, click "Dragonic Tactics" to start the game.
@@ -142,7 +301,10 @@ This saves time and reduces configuration errors, especially when working across
 - End Turn : click the "End Turn" button to end your turn. Even if you have remaining speed or AP, you can end your turn.
 - If one of characters' HP reaches 0, game ends.
 
+### 
+
 ## Feedback
+
 - if you have any feedbacks, contact to here:
   - Email: taek020422@gamil.com
   - Discord: taekyung.ho

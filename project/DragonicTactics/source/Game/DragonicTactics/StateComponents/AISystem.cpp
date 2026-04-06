@@ -75,15 +75,21 @@ void AISystem::ExecuteDecision(Character* actor, const AIDecision& decision)
   switch (decision.type)
   {
 	case AIDecisionType::Move:
-	  if (grid && grid->IsWalkable(decision.destination))
+	  if (grid)
 	  {
-		std::vector<Math::ivec2> path	   = grid->FindPath(actor->GetGridPosition()->Get(), decision.destination);
-		MovementComponent*		 move_comp = actor->GetGOComponent<MovementComponent>();
-		if (move_comp)
-		{
-		  move_comp->SetPath(std::move(path));
-		  actionExecuted = true;
-		}
+	    GridSystem::TileType dt       = grid->GetTileType(decision.destination);
+	    bool                 dest_ok  = (dt == GridSystem::TileType::Empty || dt == GridSystem::TileType::Lava)
+	                                    && !grid->IsOccupied(decision.destination);
+	    if (dest_ok)
+	    {
+	      std::vector<Math::ivec2> path      = grid->FindPath(actor->GetGridPosition()->Get(), decision.destination, decision.lava_penalty);
+	      MovementComponent*       move_comp = actor->GetGOComponent<MovementComponent>();
+	      if (move_comp)
+	      {
+	        move_comp->SetPath(std::move(path));
+	        actionExecuted = true;
+	      }
+	    }
 	  }
 	  break;
 
