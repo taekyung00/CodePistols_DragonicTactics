@@ -24,7 +24,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **폐기됨**: `Abilities/` 디렉토리 전체 (AbilityBase, MeleeAttack, ShieldBash) — `Objects/Actions/ActionAttack`만 사용
 - **구현 완료**: SpellSystem (CSV 파싱 + 시전 + UI), StatusEffectHandler (9가지 효과 + OnApplied/OnRemoved), TurnManager, GridSystem, SoundManager (BGM/SFX)
-- **진행 중**: ClericStrategy, WizardStrategy, RogueStrategy 구현 (`FighterStrategy`가 참조 구현)
+- **구현 완료**: FighterStrategy (`fighter.mmd` 플로우차트 완전 반영 — 킬루프/생존/일반교전/원거리 분기)
+- **진행 중**: ClericStrategy, WizardStrategy, RogueStrategy (`FighterStrategy`가 참조 구현)
 
 ---
 
@@ -114,6 +115,31 @@ Engine::GetGameStateManager().GetGSComponent<EventBus>()->Publish(
 
 `AIDecision` 구조체: `type`(Move/Attack/UseAbility/EndTurn/None), `target`, `destination`, `abilityName`, `reasoning`
 
+**FighterStrategy 의사결정 구조** (`StateComponents/AI/FighterStrategy.cpp`):
+
+```
+MakeDecision
+  ├── CanReachThisTurn && CanKillDragonThisTurn → MakeKillLoopDecision
+  └── Phase_Decision
+        ├── distance > 1 → MakeFarMoveDecision    (이동 or Fear Cry)
+        ├── HP ≤ 40%     → MakeSurvivalDecision    (Bloodlust → Fear Cry → 공격)
+        └── HP > 40%     → MakeNormalCombatDecision (Blessing/Frenzy/Smite/Fear Cry)
+```
+
+**Fighter 전용 스펠 ID** (`Assets/Data/spell_table.csv` 기준):
+
+| 스펠 | ID | 레벨 | 타겟팅 |
+|---|---|---|---|
+| Smite | `S_ATK_050` | 1 | Enemy:Single:1 (인접 필수) |
+| Bloodlust | `S_ENH_010` | 2 | Self:Single:0 |
+| Frenzy | `S_ENH_020` | **0** (슬롯 불필요) | Self:Single:0 |
+| Fearful Cry | `S_DEB_020` | 1 | Enemy:Around:3 |
+
+**⚠️ UseAbility AIDecision 작성 시 주의**:
+- `AISystem::ExecuteDecision`은 `decision.target->GetGridPosition()->Get()`을 target_tile로 `CastSpell`에 전달 (`destination` 필드 무시됨)
+- `Around` geometry 스펠(Fearful Cry): caster 중심 AoE → `CanCast` 범위 체크가 `caster→target_tile` 거리로 계산 → **`target = actor(자신)`** 으로 설정해야 거리=0으로 항상 통과
+- `Single` geometry 스펠(Smite): range=1 → CanCast 실패 시 AP 미소모 → 다음 프레임에 동일 결정 반복 → **무한루프** — Strategy에서 `distance <= 1`을 직접 보장해야 함
+
 ### ⚠️ ActionPoints vs MovementRange (혼동 주의)
 
 ```cpp
@@ -153,6 +179,15 @@ None → SelectingMove → Moving
 ```
 
 Dragon(플레이어) 턴에서만 동작. AI(Fighter) 턴은 `BattleOrchestrator`가 처리.
+
+**⚠️ SpellDelayObject 타이밍 주의** (`States/BattleOrchestrator.cpp`):
+
+`SpellSystem::CastSpell`은 효과를 **0.5초 딜레이** 후 적용(`SpellDelayObject`). AI 재호출 간격이 이보다 짧으면 상태 반영 전에 MakeDecision이 재호출되어 같은 스펠을 중복 시전한다.
+
+```cpp
+// AI 재호출 간격은 반드시 SpellDelayObject 딜레이(0.5s)보다 길게 유지
+while (timer->GetElapsedSeconds() < 0.6) {}  // 현재 0.6s
+```
 
 ---
 

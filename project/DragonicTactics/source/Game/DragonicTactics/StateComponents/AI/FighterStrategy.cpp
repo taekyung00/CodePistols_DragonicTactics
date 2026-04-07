@@ -1,7 +1,7 @@
 /**
  * @file FighterStrategy.cpp
  * @author Sangyun Lee
- * @brief 파이터 AI 구현: 드래곤에게 접근하여 공격
+ * @brief 파이터 AI 구현: fighter.mmd 플로우차트 기반 의사결정
  * @date 2025-12-04
  */
 #include "pch.h"
@@ -18,270 +18,448 @@
 #include "FighterStrategy.h"
 #include "Game/DragonicTactics/Types/CharacterTypes.h"
 
+// ============================================================
+// MakeDecision — 플로우차트 최상위 흐름
+// BattleOrchestrator가 EndTurn 반환 시까지 매 프레임 반복 호출.
+// 루프 상태는 Character의 현재 AP/MP/HP로 자연스럽게 유지됨.
+// ============================================================
+
 AIDecision FighterStrategy::MakeDecision(Character* actor)
 {
   GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
 
   // ============================================================
-  // 1단계: 타겟 설정 (플로우차트: SettingTarget)
+  // TODO [미구현]: 보물 탈출 / 클레릭 추적 분기
+  // 보물 시스템(grid->HasExit, grid->GetExitPosition) 및
+  // Cleric 캐릭터 구현 후 아래 주석을 활성화할 것.
+  // ============================================================
+  //
+  // if (actor->HasTreasure()) {
+  //   if (!grid->HasExit()) {
+  //     Engine::GetLogger().LogError("Fighter has treasure but no exit found!");
+  //     return { AIDecisionType::EndTurn, nullptr, {}, "", "No exit available" };
+  //   }
+  //   Math::ivec2 exitPos = grid->GetExitPosition();
+  //   if (actor->GetGridPosition()->Get() == exitPos) {
+  //     Engine::GetGameStateManager().GetGSComponent<EventBus>()->Publish(CharacterEscapedEvent{ actor });
+  //     return { AIDecisionType::EndTurn, nullptr, {}, "", "Escaped with treasure!" };
+  //   }
+  //   return { AIDecisionType::Move, nullptr, exitPos, "", "Escaping with treasure", LAVA_TILE_PENALTY };
+  // }
+  //
+  // if (IsInDanger(actor)) {
+  //   Character* cleric = FindCleric();
+  //   if (cleric != nullptr) {
+  //     int clericDist = grid->ManhattanDistance(actor->GetGridPosition()->Get(),
+  //                                              cleric->GetGridPosition()->Get());
+  //     if (clericDist <= 1) {
+  //       return { AIDecisionType::EndTurn, nullptr, {}, "", "Waiting for heal from Cleric" };
+  //     }
+  //     if (actor->GetMovementRange() > 0) {
+  //       Math::ivec2 movePos = FindNextMovePos(actor, cleric, grid);
+  //       if (movePos != actor->GetGridPosition()->Get()) {
+  //         return { AIDecisionType::Move, nullptr, movePos, "", "Moving toward Cleric", LAVA_TILE_PENALTY };
+  //       }
+  //     }
+  //     return { AIDecisionType::EndTurn, nullptr, {}, "", "Can't reach Cleric" };
+  //   }
+  // }
+  //
   // ============================================================
 
-  Character*  target	  = nullptr;
-  std::string target_type = "";
-
-  // [조건 1] 보물을 가지고 있는가?
-  if (actor->HasTreasure()) // ← Character의 팩트 쿼리
+  // 드래곤 탐색
+  Character* dragon = FindDragon();
+  if (dragon == nullptr)
   {
-	// → Yes → 목표 = 출구
-	target_type = "Exit";
-
-	// GridSystem에서 출구 위치 가져오기 (하드코딩 제거!)
-	if (!grid->HasExit())
-	{
-	  Engine::GetLogger().LogError("Fighter has treasure but no exit found!");
-	  return { AIDecisionType::EndTurn, nullptr, {}, "", "No exit available" };
-	}
-
-	Math::ivec2 exitPos = grid->GetExitPosition();
-
-	// 출구에 도달했는가?
-	if (actor->GetGridPosition()->Get() == exitPos)
-	{
-	  // 게임 패배 (적 탈출 성공)
-	  return { AIDecisionType::EndTurn, nullptr, {}, "", "Escaped with treasure!" };
-	}
-
-	// 출구로 이동
-	return { AIDecisionType::Move, nullptr, exitPos, "", "Escaping with treasure" };
+    return { AIDecisionType::EndTurn, nullptr, {}, "", "No dragon found" };
   }
 
-  // [조건 2] 내 체력이 30% 이하인가?
-  if (IsInDanger(actor)) // ← Character의 GetHPPercentage() 사용
+  int distance = grid->ManhattanDistance(actor->GetGridPosition()->Get(),
+                                          dragon->GetGridPosition()->Get());
+
+  // ── 0. 킬캐치 진입 검증 ──────────────────────────────────────
+  // 이번 턴 내 도달 가능 AND 드래곤 확정 처치 가능 → Kill_Loop
+  if (CanReachThisTurn(actor, dragon, grid) && CanKillDragonThisTurn(actor, dragon, grid))
   {
-	// → Yes → 클레릭이 살아 있는가?
-	Character* cleric = FindCleric();
-	if (cleric != nullptr)
-	{
-	  // → Yes → 목표 = 클레릭
-	  target	  = cleric;
-	  target_type = "Cleric";
-	}
-	else
-	{
-	  // → No → 목표 = 드래곤
-	  target	  = FindDragon();
-	  target_type = "Dragon";
-	}
-  }
-  else
-  {
-	// → No → 목표 = 드래곤
-	target		= FindDragon();
-	target_type = "Dragon";
+    return MakeKillLoopDecision(actor, dragon, grid);
   }
 
-  // 타겟이 없으면 턴 종료
-  if (target == nullptr)
+  // ── Phase_Decision ────────────────────────────────────────────
+  if (actor->GetActionPoints() <= 0)
   {
-	return { AIDecisionType::EndTurn, nullptr, {}, "", "No valid target found" };
+    return { AIDecisionType::EndTurn, nullptr, {}, "", "Phase: no AP remaining" };
   }
 
-  // ============================================================
-  // 2단계: 행동 시작 (플로우차트: MoveStart)
-  // ============================================================
-
-  // 거리 계산
-  int distance = grid->ManhattanDistance(actor->GetGridPosition()->Get(), target->GetGridPosition()->Get());
-
-  int  attackRange = actor->GetAttackRange();
-  bool onTarget	   = false;
-
-  // 목표에 도달했나? (출구: 타일 위, 그 외: 사거리 내)
-  if (target_type == "Exit")
+  if (distance > 1)
   {
-	onTarget = (distance == 0); // 출구는 정확히 같은 타일
-  }
-  else
-  {
-	onTarget = (distance <= attackRange); // 사거리 내
+    // 인접 아님 → 이동 or 원거리 공포
+    return MakeFarMoveDecision(actor, dragon, grid);
   }
 
-  // ============================================================
-  // 3단계: 목표 도달 시 행동 분기
-  // ============================================================
-
-  if (onTarget)
+  // 인접 (distance <= 1) → HP 판단
+  if (actor->GetHPPercentage() <= 0.4f)
   {
-	// [분기] 현재 목표가 무엇인가?
-	if (target_type == "Exit")
-	{
-	  // → 출구 → 게임 패배 (적 탈출 성공)
-	  Engine::GetGameStateManager().GetGSComponent<EventBus>()->Publish(CharacterEscapedEvent{ actor });
-	  return { AIDecisionType::EndTurn, nullptr, {}, "", "Reached exit!" };
-	}
-	else if (target_type == "Cleric")
-	{
-	  // → 클레릭 → 치료 대기 (턴 종료)
-	  return { AIDecisionType::EndTurn, nullptr, {}, "", "Waiting for heal from Cleric" };
-	}
-	else if (target_type == "Dragon")
-	{
-	  // → 드래곤 → 공격 가능한가? (행동력 AND 공격 범위)
-	  if (actor->GetActionPoints() > 0)
-	  {
-		return DecideAttackAction(actor, target, distance);
-	  }
-	  else
-	  {
-		//턴 종료
-		return { AIDecisionType::EndTurn, nullptr, {}, "", "No AttackPoint left" };
-	  }
-	}
+    return MakeSurvivalDecision(actor, dragon, grid);
   }
-
-  // ============================================================
-  // 4단계: 목표 미도달 시 이동
-  // ============================================================
-
-  // 이동력이 1 이상인가? (Speed 체크!)
-  if (actor->GetMovementRange() > 0) //Speed (이동력) 체크
-  {
-	// → Yes → 목표로 1칸 이동
-	Math::ivec2 movePos = FindNextMovePos(actor, target, grid);
-
-	if (movePos != actor->GetGridPosition()->Get())
-	{
-	  return { AIDecisionType::Move, nullptr, movePos, "", "Moving towards " + target_type, LAVA_TILE_PENALTY };
-	}
-  }
-
-  // → No → 턴 종료
-  return { AIDecisionType::EndTurn, nullptr, {}, "", "No movement left" };
+  return MakeNormalCombatDecision(actor, dragon, grid);
 }
 
 // ============================================================
-// 헬퍼 함수들
+// Kill_Loop: 최고 화력 집중 루프
+// 킬 가능 판단이 됐을 때 인접 → 공격 / 미인접 → 이동
+// ============================================================
+
+AIDecision FighterStrategy::MakeKillLoopDecision(Character* actor, Character* dragon, GridSystem* grid)
+{
+  int distance = grid->ManhattanDistance(actor->GetGridPosition()->Get(),
+                                          dragon->GetGridPosition()->Get());
+
+  if (distance > 1)
+  {
+    // 아직 인접하지 않음 → 이동 시도
+    if (actor->GetMovementRange() > 0)
+    {
+      Math::ivec2 movePos = FindNextMovePos(actor, dragon, grid);
+      if (movePos != actor->GetGridPosition()->Get())
+      {
+        return { AIDecisionType::Move, nullptr, movePos, "", "Kill: moving to reach dragon", LAVA_TILE_PENALTY };
+      }
+    }
+    // 이동 불가 & 비인접 → Phase_Decision으로 낙하 (비인접이므로 FarMove가 적절)
+    if (actor->GetActionPoints() <= 0)
+    {
+      return { AIDecisionType::EndTurn, nullptr, {}, "", "Kill: no AP, can't move" };
+    }
+    return MakeFarMoveDecision(actor, dragon, grid);
+  }
+
+  // 인접 상태
+  if (actor->GetActionPoints() <= 0)
+  {
+    return { AIDecisionType::EndTurn, nullptr, {}, "", "Kill loop: no AP" };
+  }
+
+  // 오버킬 방지: 드래곤 HP에 맞는 최저 슬롯 탐색
+  int bestSlot = FindBestSmiteSlot(actor, dragon);
+  if (bestSlot > 0)
+  {
+    std::string reason = "[STUB] Kill: Smite lv" + std::to_string(bestSlot) + " (overkill guard)";
+    Engine::GetLogger().LogEvent(reason);
+    return { AIDecisionType::UseAbility, dragon, {}, "S_ATK_050", reason };
+  }
+
+  return { AIDecisionType::Attack, dragon, {}, "", "Kill: Basic attack" };
+}
+
+// ============================================================
+// MakeFarMoveDecision: 인접 안 됨 → 이동 or 원거리 공포
+// ============================================================
+
+AIDecision FighterStrategy::MakeFarMoveDecision(Character* actor, Character* dragon, GridSystem* grid)
+{
+  // MP > 0 이면 이동
+  if (actor->GetMovementRange() > 0)
+  {
+    Math::ivec2 movePos = FindNextMovePos(actor, dragon, grid);
+    if (movePos != actor->GetGridPosition()->Get())
+    {
+      return { AIDecisionType::Move, nullptr, movePos, "", "Far: moving toward dragon", LAVA_TILE_PENALTY };
+    }
+  }
+
+  // 이동 불가 → 드래곤 공포 없음 & 1레벨 슬롯 & 사거리 내 → 공포의 외침
+  if (!IsFearActive(dragon) && HasSpellSlot(actor, 1) && IsInFearRange(actor, dragon, grid))
+  {
+    std::string reason = "[STUB] Far: Fear Cry on Dragon (can't move, range cast)";
+    Engine::GetLogger().LogEvent(reason);
+    return { AIDecisionType::UseAbility, actor, {}, "S_DEB_020", reason };
+  }
+
+  return { AIDecisionType::EndTurn, nullptr, {}, "", "Far: no move, no fear cast available" };
+}
+
+// ============================================================
+// MakeSurvivalDecision: HP ≤ 40% 생존 시퀀스
+// ============================================================
+
+AIDecision FighterStrategy::MakeSurvivalDecision(Character* actor, Character* dragon, GridSystem* grid)
+{
+  int distance = grid->ManhattanDistance(actor->GetGridPosition()->Get(),
+                                          dragon->GetGridPosition()->Get());
+
+  if (!HasBuff(actor, "Bloodlust"))
+  {
+    // 피의 갈망 없음
+    if (HasSpellSlot(actor, 2))
+    {
+      std::string reason = "[STUB] Survival: Casting Bloodlust (self-buff, lifesteal on next attacks)";
+      Engine::GetLogger().LogEvent(reason);
+      return { AIDecisionType::UseAbility, actor, {}, "S_ENH_010", reason };
+    }
+    // 2레벨 슬롯 없음 → CheckFearNear (사거리 체크 추가)
+    if (!IsFearActive(dragon) && HasSpellSlot(actor, 1) && IsInFearRange(actor, dragon, grid))
+    {
+      std::string reason = "[STUB] Survival: Fear Cry at Dragon (no bloodlust, near)";
+      Engine::GetLogger().LogEvent(reason);
+      return { AIDecisionType::UseAbility, actor, {}, "S_DEB_020", reason };
+    }
+    return { AIDecisionType::Attack, dragon, {}, "", "Survival: basic attack (no slots)" };
+  }
+  else
+  {
+    // 피의 갈망 활성 → 강타로 피흡 극대화 (인접 보장 필요: range=1)
+    int bestSlot = FindBestSmiteSlot(actor, dragon);
+    if (bestSlot > 0 && distance <= 1)
+    {
+      std::string reason = "[STUB] Survival+Bloodlust: Smite lv" + std::to_string(bestSlot) + " (lifesteal maximize)";
+      Engine::GetLogger().LogEvent(reason);
+      return { AIDecisionType::UseAbility, dragon, {}, "S_ATK_050", reason };
+    }
+    return { AIDecisionType::Attack, dragon, {}, "", "Survival+Bloodlust: basic attack (lifesteal active)" };
+  }
+}
+
+// ============================================================
+// MakeNormalCombatDecision: HP > 40%, 인접 — 일반 교전 로직
+// ============================================================
+
+AIDecision FighterStrategy::MakeNormalCombatDecision(Character* actor, Character* dragon, GridSystem* grid)
+{
+  int        distance = grid->ManhattanDistance(actor->GetGridPosition()->Get(),
+                                                  dragon->GetGridPosition()->Get());
+  Character* cleric   = FindCleric();
+
+  // 공통: 강타 or 일반 공격 (Smite range=1: 인접 보장 필요)
+  auto SmiteOrNormal = [&]() -> AIDecision
+  {
+    int slot = FindHighestSmiteSlot(actor);
+    if (slot > 0 && distance <= 1)
+    {
+      std::string reason = "[STUB] Normal: Smite lv" + std::to_string(slot) + " (highest available slot)";
+      Engine::GetLogger().LogEvent(reason);
+      return { AIDecisionType::UseAbility, dragon, {}, "S_ATK_050", reason };
+    }
+    return { AIDecisionType::Attack, dragon, {}, "", "Normal: basic attack (no slots)" };
+  };
+
+  // 공통: 인접 공포 or 일반 공격
+  auto FearNearOrAttack = [&]() -> AIDecision
+  {
+    if (!IsFearActive(dragon) && HasSpellSlot(actor, 1) && IsInFearRange(actor, dragon, grid))
+    {
+      std::string reason = "[STUB] Normal: Fear Cry (near, dragon not feared)";
+      Engine::GetLogger().LogEvent(reason);
+      return { AIDecisionType::UseAbility, actor, {}, "S_DEB_020", reason };
+    }
+    return { AIDecisionType::Attack, dragon, {}, "", "Normal: basic attack" };
+  };
+
+  if (HasBuff(actor, "Blessing"))
+  {
+    // 축복 적용 중
+    if (!HasBuff(actor, "Frenzy") && actor->GetActionPoints() >= 2)
+    {
+      std::string reason = "[STUB] Normal+Blessing: Casting Frenzy (AP bonus buff)";
+      Engine::GetLogger().LogEvent(reason);
+      return { AIDecisionType::UseAbility, actor, {}, "S_ENH_020", reason };
+    }
+    // 광란 이미 있거나 AP 부족 → 강타 or 일반
+    return SmiteOrNormal();
+  }
+  else
+  {
+    // 축복 없음
+    if (cleric != nullptr)
+    {
+      // 클레릭 생존 → CheckFearNear
+      return FearNearOrAttack();
+    }
+    else
+    {
+      // 클레릭 없음 → 독립 광란 판단
+      if (!HasBuff(actor, "Frenzy") && actor->GetActionPoints() >= 2)  // Frenzy는 레벨 0: 슬롯 불필요
+      {
+        std::string reason = "[STUB] Normal(no cleric): Casting Frenzy independently";
+        Engine::GetLogger().LogEvent(reason);
+        return { AIDecisionType::UseAbility, actor, {}, "S_ENH_020", reason };
+      }
+      if (HasBuff(actor, "Frenzy"))
+      {
+        return SmiteOrNormal();
+      }
+      return FearNearOrAttack();
+    }
+  }
+}
+
+// ============================================================
+// 탐색 헬퍼
 // ============================================================
 
 Character* FighterStrategy::FindDragon()
 {
-  GridSystem* grid	   = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
-  auto		  allChars = grid->GetAllCharacters();
+  GridSystem* grid     = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+  auto        allChars = grid->GetAllCharacters();
 
   for (auto* c : allChars)
   {
-	// 살아있는 드래곤만 찾음
-	if (c && c->IsAlive() && c->GetCharacterType() == CharacterTypes::Dragon)
-	{
-	  return c;
-	}
+    if (c && c->IsAlive() && c->GetCharacterType() == CharacterTypes::Dragon)
+    {
+      return c;
+    }
   }
   return nullptr;
 }
 
 Character* FighterStrategy::FindCleric()
 {
-  // TODO: Cleric 구현 후 활성화
-  // GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
-  // auto allChars = grid->GetAllCharacters();
-  //
-  // for (auto* c : allChars)
-  // {
-  //     if (c && c->IsAlive() && c->GetCharacterType() == CharacterTypes::Cleric)
-  //     {
-  //         return c;
-  //     }
-  // }
-  return nullptr; // 현재는 null 반환
+  GridSystem* grid     = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+  auto        allChars = grid->GetAllCharacters();
+
+  for (auto* c : allChars)
+  {
+    if (c && c->IsAlive() && c->GetCharacterType() == CharacterTypes::Cleric)
+    {
+      return c;
+    }
+  }
+  return nullptr; // TODO: Cleric 캐릭터 구현 전까지 항상 nullptr 반환
 }
 
 // ============================================================
-// 전략별 판단 헬퍼 (Decision Helpers)
-// Character의 팩트 쿼리를 사용하여 Fighter만의 기준으로 판단
+// 판단 헬퍼
 // ============================================================
 
 bool FighterStrategy::IsInDanger(Character* actor) const
 {
-  // Fighter 전략: HP 30% 이하를 위험으로 판단
-  // (Cleric은 50% 이하, Rogue는 40% 이하 등 전략마다 다름)
-  return (actor->GetHPPercentage() <= 0.3f);
+  return actor->GetHPPercentage() <= 0.4f;
 }
 
-bool FighterStrategy::CanKillDragonThisTurn([[maybe_unused]] Character* actor, [[maybe_unused]] Character* dragon, [[maybe_unused]] GridSystem* grid) const
+bool FighterStrategy::HasBuff(Character* actor, const std::string& buffName) const
 {
+  return actor->Has(buffName);
+}
+
+bool FighterStrategy::HasSpellSlot(Character* actor, int level) const
+{
+  return actor->HasSpellSlot(level);
+}
+
+bool FighterStrategy::IsFearActive(Character* dragon) const
+{
+  return dragon->Has("Fear");
+}
+
+bool FighterStrategy::IsInFearRange(Character* actor, Character* dragon, GridSystem* grid) const
+{
+  int dist = grid->ManhattanDistance(actor->GetGridPosition()->Get(),
+                                      dragon->GetGridPosition()->Get());
+  return dist <= FEAR_RANGE;
+}
+
+bool FighterStrategy::CanReachThisTurn(Character* actor, Character* target, GridSystem* grid) const
+{
+  int dist = grid->ManhattanDistance(actor->GetGridPosition()->Get(),
+                                      target->GetGridPosition()->Get());
+  if (dist <= 1)
+    return true; // 이미 인접
+
+  Math::ivec2              myPos     = actor->GetGridPosition()->Get();
+  Math::ivec2              targetPos = target->GetGridPosition()->Get();
+  static const Math::ivec2 offsets[4] = { { 0, 1 }, { 0, -1 }, { -1, 0 }, { 1, 0 } };
+
+  for (const auto& offset : offsets)
+  {
+    Math::ivec2 attackPos = targetPos + offset;
+    if (!grid->IsValidTile(attackPos) || !grid->IsWalkable(attackPos))
+      continue;
+    std::vector<Math::ivec2> path = grid->FindPath(myPos, attackPos, LAVA_TILE_PENALTY);
+    if (!path.empty() && static_cast<int>(path.size()) <= actor->GetMovementRange())
+    {
+      return true;
+    }
+  }
   return false;
 }
 
-bool FighterStrategy::ShouldUseSpellAttack(Character* actor, [[maybe_unused]] Character* target) const
+bool FighterStrategy::CanKillDragonThisTurn(Character* actor, Character* dragon, [[maybe_unused]] GridSystem* grid) const
 {
-  // Fighter 전략: 클레릭이 있을 때는 버프/디버프 확인 후 주문 사용
-  // 조건: 내가 버프 받고, 드래곤이 디버프 받고, 주문 슬롯이 있을 때
-
-  // TODO: Week 6+ StatusEffect 시스템 구현 후 활성화
-  // bool iBuffed = actor->HasBuff("Blessed");
-  // bool targetDebuffed = target->HasDebuff("Weakened");
-  // bool hasSlots = actor->HasAnySpellSlot();
-  // return iBuffed && targetDebuffed && hasSlots;
-
-  // 현재는 주문 슬롯만 체크
-  return actor->HasAnySpellSlot();
+  // 간이 추정: 남은 AP × 평균 데미지 ≥ 드래곤 현재 HP
+  int estimatedDamage = actor->GetActionPoints() * AVG_DAMAGE_ESTIMATE;
+  return dragon->GetHP() <= estimatedDamage;
 }
+
+// ============================================================
+// 슬롯 탐색 헬퍼
+// ============================================================
+
+int FighterStrategy::FindBestSmiteSlot(Character* actor, Character* dragon) const
+{
+  // 오버킬 방지: 드래곤 HP를 처치할 수 있는 최저 슬롯 레벨 반환
+  for (int level = 1; level <= 9; ++level)
+  {
+    if (actor->HasSpellSlot(level) && dragon->GetHP() <= SMITE_BASE_DAMAGE * level)
+    {
+      return level;
+    }
+  }
+  return 0; // 적합한 슬롯 없음 (일반 공격 사용)
+}
+
+int FighterStrategy::FindHighestSmiteSlot(Character* actor) const
+{
+  for (int level = 9; level >= 1; --level)
+  {
+    if (actor->HasSpellSlot(level))
+    {
+      return level;
+    }
+  }
+  return 0;
+}
+
+// ============================================================
+// 이동 경로 탐색 (기존 로직 유지)
+// ============================================================
 
 Math::ivec2 FighterStrategy::FindNextMovePos(Character* actor, Character* target, GridSystem* grid)
 {
   Math::ivec2 targetPos = target->GetGridPosition()->Get();
-  Math::ivec2 myPos		= actor->GetGridPosition()->Get();
+  Math::ivec2 myPos     = actor->GetGridPosition()->Get();
 
   std::vector<Math::ivec2> bestPath;
-  int					   bestPathCost = 999999;
+  int                      bestPathCost = 999999;
 
-  // 드래곤의 상하좌우 4방향 중 갈 수 있는 가장 가까운 곳 탐색
-  static const Math::ivec2 offsets[4] = {
-	{  0,	 1 },
-	  {	0, -1 },
-	 { -1,  0 },
-	{  1,	 0 }
-  };
-
+  static const Math::ivec2 offsets[4] = { { 0, 1 }, { 0, -1 }, { -1, 0 }, { 1, 0 } };
   for (const auto& offset : offsets)
   {
-	Math::ivec2 attackPos = targetPos + offset;
+    Math::ivec2 attackPos = targetPos + offset;
+    if (!grid->IsValidTile(attackPos) || !grid->IsWalkable(attackPos))
+      continue;
 
-	// 맵 밖이거나 막힌 곳이면 패스
-	if (!grid->IsValidTile(attackPos) || !grid->IsWalkable(attackPos))
-	{
-	  continue;
-	}
-
-	// 해당 위치까지 경로 계산
-	std::vector<Math::ivec2> currentPath = grid->FindPath(myPos, attackPos, LAVA_TILE_PENALTY);
-
-	// 경로가 있고 실효 비용이 더 낮다면 갱신 (용암 타일은 LAVA_TILE_PENALTY만큼 추가 비용)
-	if (!currentPath.empty())
-	{
-	  int effectiveCost = ComputePathCost(currentPath, grid);
-	  if (effectiveCost < bestPathCost)
-	  {
-		bestPathCost = effectiveCost;
-		bestPath	 = currentPath;
-	  }
-	}
+    std::vector<Math::ivec2> currentPath = grid->FindPath(myPos, attackPos, LAVA_TILE_PENALTY);
+    if (!currentPath.empty())
+    {
+      int effectiveCost = ComputePathCost(currentPath, grid);
+      if (effectiveCost < bestPathCost)
+      {
+        bestPathCost = effectiveCost;
+        bestPath     = currentPath;
+      }
+    }
   }
 
-  // 경로가 존재한다면
   if (!bestPath.empty())
   {
-	// 내 이동력(Speed) 한계 내에서 가장 멀리 갈 수 있는 칸 선택
-	int maxReach  = std::min(static_cast<int>(bestPath.size()), actor->GetMovementRange());
-	int destIndex = maxReach - 1;
-
-	if (destIndex >= 0)
-	{
-	  return bestPath[static_cast<std::size_t>(destIndex)];
-	}
+    int maxReach  = std::min(static_cast<int>(bestPath.size()), actor->GetMovementRange());
+    int destIndex = maxReach - 1;
+    if (destIndex >= 0)
+    {
+      return bestPath[static_cast<std::size_t>(destIndex)];
+    }
   }
 
-  return myPos; // 갈 곳 없으면 제자리 반환
+  return myPos; // 갈 곳 없으면 제자리
 }
 
 int FighterStrategy::CountLavaTiles(const std::vector<Math::ivec2>& path, GridSystem* grid) const
@@ -289,8 +467,8 @@ int FighterStrategy::CountLavaTiles(const std::vector<Math::ivec2>& path, GridSy
   int count = 0;
   for (const auto& tile : path)
   {
-	if (grid->GetTileType(tile) == GridSystem::TileType::Lava)
-	  ++count;
+    if (grid->GetTileType(tile) == GridSystem::TileType::Lava)
+      ++count;
   }
   return count;
 }
@@ -298,13 +476,4 @@ int FighterStrategy::CountLavaTiles(const std::vector<Math::ivec2>& path, GridSy
 int FighterStrategy::ComputePathCost(const std::vector<Math::ivec2>& path, GridSystem* grid) const
 {
   return static_cast<int>(path.size()) + CountLavaTiles(path, grid) * LAVA_TILE_PENALTY;
-}
-
-AIDecision FighterStrategy::DecideAttackAction([[maybe_unused]] Character* actor, Character* target, [[maybe_unused]] int distance)
-{
-  // Week 6+ Ability 시스템 구현 전까지는 기본 공격만 사용
-  // TODO: Ability 시스템 구현 후 ShouldUseSpellAttack 로직 활성화
-
-  // 현재는 항상 기본 공격
-  return { AIDecisionType::Attack, target, {}, "", "Basic attack" };
 }

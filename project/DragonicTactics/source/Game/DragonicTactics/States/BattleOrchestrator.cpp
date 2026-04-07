@@ -89,7 +89,7 @@ void BattleOrchestrator::HandleAITurn(Character* ai_character, TurnManager* turn
 
   auto timer = Engine::GetGameStateManager().GetGSComponent<util::Timer>();
   timer->ResetTimeStamp();
-  while (timer->GetElapsedSeconds() < 0.4)
+  while (timer->GetElapsedSeconds() < 0.6)
   {
   }
 
