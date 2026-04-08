@@ -1,6 +1,10 @@
 ID,Name,Category,Classes,Required Slot Level,Targeting,Upcasting Effect,Effect
 S_ATK_050,Smite,,Fighter,1,Enemy:Single:1,TRUE,"Deals 3d8 + (Spell Level - Required Spell Level)d8 damage.
+<<<<<<< HEAD
 Applies ""Lifesteal"" status for 0 turns.
+=======
+Applies ""Basic"" status for 0 turns.
+>>>>>>> ginam
 Move to current location.
 Summons NULL at current location."
 S_ENH_010,Bloodlust,,Fighter,2,Self:Single:0,FALSE,"Deals 0 damage.
@@ -11,7 +15,11 @@ S_BUF_010,Divine Shield,,Cleric,1,Ally:Single:4,FALSE,"Deals 0 damage.
 Applies ""Blessing"" status for 3 turns.
 Move to current location.
 Summons NULL at current location."
+<<<<<<< HEAD
 S_ENH_020,Frenzy,,Fighter,0,Self:Single:0,FALSE,"Deals 0 damage.
+=======
+S_ENH_020,Frenzy,,Fighter,2,Self:Single:0,FALSE,"Deals 0 damage.
+>>>>>>> ginam
 Applies ""Frenzy"" status for 1 turn.
 Move to current location.
 Summons NULL at current location."
@@ -69,6 +77,7 @@ S_ATK_040,Meteor,Attack,Dragon,3,Any:OddEven:-1,TRUE,"Deals 3d20 + (Spell Level 
 Applies ""Exhaustion"" status for 1 turn.
 Move to current location.
 Summons NULL at current location."
+<<<<<<< HEAD
 S_ENH_050,Purify,Buff,Dragon,1,Any:Around:4,FALSE,"Deals 0 damage.
 Applies ""Purify"" status for 1 turn.
 Move to current location.
@@ -79,5 +88,17 @@ Move to current location.
 Summons Lava Zone at selected location."
 S_GEO_020,Wall Creation,Terrain Change,Dragon,1,Empty:Point:5,TRUE,"Deals 0 damage.
 Applies ""Basic"" status for 0 turns.
+=======
+S_ENH_050,Purify,Buff,Dragon,1,Self:Single:0,FALSE,"Deals 0 damage.
+Applies ""Purify"" status for 1 turn.
+Move to current location.
+Summons NULL at current location."
+S_GEO_010,Magma Blast,Terrain Change,Dragon,2,Empty:Point:6,TRUE,"Deals 3d6 + (Spell Level - Required Spell Level)d4 damage.
+Applies ""Basic"" status for 3 turns.
+Move to current location.
+Summons Lava Zone at selected location."
+S_GEO_020,Wall Creation,Terrain Change,Dragon,1,Empty:Point:5,TRUE,"Deals 0 damage.
+Applies ""Basic"" status for 2 turns.
+>>>>>>> ginam
 Move to current location.
 Summons Wall at selected location."

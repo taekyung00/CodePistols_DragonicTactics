@@ -10,6 +10,7 @@ Created:    November 24, 2025
 #pragma once
 #include "Engine/Vec2.h"
 #include <memory>
+#include <vector>
 #include "./Engine/Component.h"
 
 class Character;
@@ -27,9 +28,15 @@ class PlayerInputHandler
 	SelectingMove,
 	Moving,
 	SelectingAction,
+<<<<<<< HEAD
   SelectingSpell,
+=======
+    SelectingSpell,
+>>>>>>> ginam
 	TargetingForAttack,
-	TargetingForSpell
+	TargetingForSpell,
+	WallPlacementMulti,
+	LavaPlacementMulti
   };
 
   PlayerInputHandler();
@@ -52,9 +59,17 @@ class PlayerInputHandler
   void SelectSpell(const std::string& spell_id, Character* caster, int upcast_level, ButtonManager& btns);
 
   private:
+<<<<<<< HEAD
   ActionState m_state = ActionState::None;
   std::string m_selected_spell_id;
   int         m_selected_upcast_level = 0;
+=======
+  ActionState              m_state = ActionState::None;
+  std::string              m_selected_spell_id;
+  int                      m_selected_upcast_level = 0;
+  std::vector<Math::ivec2> m_wall_placement_tiles;
+  int                      m_wall_placement_count = 0;
+>>>>>>> ginam
 
   //helper function
   Math::ivec2 ConvertScreenToGrid(Math::vec2 world_pos);

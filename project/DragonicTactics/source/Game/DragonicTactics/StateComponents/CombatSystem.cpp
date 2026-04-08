@@ -143,6 +143,11 @@ bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender)
   ApplyDamage(attacker, defender, damage);
   attacker->SetHasAttackedThisTurn(true);
 
+  if (handler)
+	handler->OnAfterAttack(attacker, defender, damage);
+
+  attacker->SetHasAttackedThisTurn(true);
+
   // Consume AP
   attacker->GetActionPointsComponent()->Consume(attackCost);
 

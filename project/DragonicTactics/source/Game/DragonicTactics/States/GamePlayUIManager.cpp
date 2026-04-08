@@ -114,6 +114,17 @@ void GamePlayUIManager::Update(double dt)
   m_damage_texts.erase(std::remove_if(m_damage_texts.begin(), m_damage_texts.end(), [](const DamageText& text) { return text.lifetime <= 0; }), m_damage_texts.end());
 
   m_damage_log.erase(std::remove_if(m_damage_log.begin(), m_damage_log.end(), [](const DamageText& text) { return text.lifetime <= 0; }), m_damage_log.end());
+<<<<<<< HEAD
+=======
+
+  for (auto& log : m_spell_logs)
+	  log.lifetime -= dt;
+
+  m_spell_logs.erase(
+	  std::remove_if(m_spell_logs.begin(), m_spell_logs.end(),
+		  [](const SpellLog& l) { return l.lifetime <= 0.0; }),
+	  m_spell_logs.end());
+>>>>>>> ginam
 }
 
 void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_matrix)
@@ -137,6 +148,40 @@ void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_
 	auto size = Engine::GetWindow().GetSize();
 	textMng.DrawText(*game_end_text, Math::ivec2{ 0, size.y / 2 }, Fonts::Outlined, Math::vec2{ GAME_END_TEXT_SIZE, GAME_END_TEXT_SIZE }, CS200::WHITE);
   }
+<<<<<<< HEAD
+=======
+
+// // 특정 스펠 사용 가능 시 스펠 버튼 추가
+// SpellSystem* ss = GetGSComponent<SpellSystem>();
+// auto available = ss->GetAvailableSpells(current_character);
+
+// // 기존 스펠 버튼 제거
+// for (const auto& spell : cached_spell_buttons_)
+//     button_manager_.RemoveButton("spell_" + spell.id);
+
+// // 새 스펠 버튼 생성
+// for (int i = 0; i < static_cast<int>(available.size()); ++i)
+// {
+//     button_manager_.AddButton({
+//         "spell_" + available[i].id,
+//         { 500.0 + i * 130.0, 700.0 },
+//         { 120.0, 35.0 },
+//         available[i].spell_name,
+//         false,  // 초기 visible
+//         current_character->GetSpellSlotCount(available[i].spell_level) == 0  // 슬롯 없으면 disabled
+//     });
+// }
+  // 오른쪽 하단 SpellLog (화면 기준 고정 위치)
+  const float LOG_X      = 800.0f;
+  const float LOG_BASE_Y = 50.0f;
+  const float LOG_LINE_H = 28.0f;
+
+  for (int li = 0; li < static_cast<int>(m_spell_logs.size()); ++li)
+  {
+	  Math::vec2 pos = { LOG_X, LOG_BASE_Y + LOG_LINE_H * li };
+	  textMng.DrawText(m_spell_logs[li].text, pos, Fonts::Outlined, { 0.5f, 0.5f }, CS200::GOLD);
+  }
+>>>>>>> ginam
 
 // // 특정 스펠 사용 가능 시 스펠 버튼 추가
 // SpellSystem* ss = GetGSComponent<SpellSystem>();
@@ -302,9 +347,16 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
     };
 
     // ── [메인/액션 버튼] 기존 간격(70step) 유지 ───────────────────────────
+<<<<<<< HEAD
     add_btn("btn_move",     { START_X, BTN_Y },                    { BTN_W, BTN_H }, "Move",     true);
     add_btn("btn_action",   { START_X + BTN_W + GAP, BTN_Y },      { BTN_W, BTN_H }, "Action",   true);
     add_btn("btn_end_turn", { START_X + (BTN_W+GAP)*2, BTN_Y },    { BTN_W, BTN_H }, "End Turn", true);
+=======
+    add_btn("btn_move",        { START_X, BTN_Y },                    { BTN_W, BTN_H }, "Move",         true);
+    add_btn("btn_action",      { START_X + BTN_W + GAP, BTN_Y },      { BTN_W, BTN_H }, "Action",       true);
+    add_btn("btn_end_turn",    { START_X + (BTN_W+GAP)*2, BTN_Y },    { BTN_W, BTN_H }, "End Turn",     true);
+    add_btn("btn_wall_confirm",{ START_X + (BTN_W+GAP)*3, BTN_Y },    { BTN_W, BTN_H }, "Confirm Walls",false);
+>>>>>>> ginam
 
     add_btn("btn_attack", { START_X + BTN_W + GAP, BTN_Y - (BTN_H+GAP) },     { BTN_W, BTN_H }, "Attack", false);
     add_btn("btn_spell",  { START_X + BTN_W + GAP, BTN_Y - (BTN_H+GAP)*2 },   { BTN_W, BTN_H }, "Spell",  false);
@@ -360,6 +412,18 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
         add_btn("S_GEO_030_lv" + std::to_string(lv), { SX + ULW + (UBW+UGAP)*lv, get_spell_y(6) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_GEO_030", lv));
 }
 
+<<<<<<< HEAD
+=======
+void GamePlayUIManager::AddSpellLog(const std::string& caster_name, const std::string& spell_name, int level)
+{
+  std::string text = "[" + caster_name + "] " + spell_name + " Lv." + std::to_string(level);
+  m_spell_logs.push_back({ text, SPELL_LOG_LIFETIME });
+
+  if (static_cast<int>(m_spell_logs.size()) > SPELL_LOG_MAX_COUNT)
+	  m_spell_logs.erase(m_spell_logs.begin());
+}
+
+>>>>>>> ginam
 ButtonManager& GamePlayUIManager::GetButtons(){
   return button_manager_;
 }

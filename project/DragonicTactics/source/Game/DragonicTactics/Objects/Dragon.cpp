@@ -37,7 +37,11 @@ Dragon::Dragon(Math::ivec2 start_coordinates)
   *GetStatsComponent() = StatsComponent(dragon_stats);
 
   m_action_list.push_back(new ActionAttack());
+<<<<<<< HEAD
   AddGOComponent(new CS230::Sprite("Assets/images/dragon.spt",this));
+=======
+  AddGOComponent(new CS230::Sprite("Assets/sprites/dragon.spt",this));
+>>>>>>> ginam
 }
 
 void Dragon::OnTurnStart()

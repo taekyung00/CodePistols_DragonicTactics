@@ -11,6 +11,10 @@
 #include "./Engine/Engine.h"
 #include "./Engine/GameStateManager.h"
 #include "./Engine/Logger.h"
+#include "Game/DragonicTactics/Objects/Components/GridPosition.h"
+#include "Game/DragonicTactics/StateComponents/CombatSystem.h"
+#include "Game/DragonicTactics/StateComponents/SpellSystem.h"
+#include "Game/DragonicTactics/StateComponents/StatusEffectHandler.h"
 #include "TurnManager.h"
 #include "Game/DragonicTactics/StateComponents/StatusEffectHandler.h"
 
@@ -116,6 +120,7 @@ void TurnManager::StartNextTurn()
   // stats->RefreshSpeed();
   // }
 
+<<<<<<< HEAD
   // ── 신규: TickDown — 상태 효과 지속시간 감소 + 만료 제거 ──
   auto* se = currentChar->GetGOComponent<StatusEffectComponent>();
   if (se)
@@ -127,10 +132,47 @@ void TurnManager::StartNextTurn()
   // ── 신규: Exhaustion/Haste 효과 적용 (복원 후) ──
   //    Exhaustion → 복원된 AP를 0으로 덮어씀
   //    Haste     → 복원된 AP에 +1 추가
+=======
+  /*======================================================================================*/
+  // 수정 후 순서
+
+  // 1. AP/Speed 리프레시
+  currentChar->OnTurnStart();
+
+  // 2. 효과 적용 (Exhaustion이 아직 존재함, duration=1)
+>>>>>>> ginam
   auto* handler = Engine::GetGameStateManager().GetGSComponent<StatusEffectHandler>();
   if (handler)
 	handler->OnTurnStart(currentChar);
 
+<<<<<<< HEAD
+=======
+  // 3. 그 다음 duration 감소 (1 → 0 → 제거)
+  auto* se = currentChar->GetGOComponent<StatusEffectComponent>();
+  if (se)
+	se->TickDown(currentChar, eventBus);
+  /*======================================================================================*/
+
+  // 용암 턴 시작 피해 — 현재 캐릭터가 용암 위에 있으면 피해
+  {
+	auto* spell_system = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
+	auto* combat	   = Engine::GetGameStateManager().GetGSComponent<CombatSystem>();
+	if (spell_system && combat && currentChar->IsAlive())
+	{
+	  GridPosition* gp = currentChar->GetGOComponent<GridPosition>();
+	  if (gp)
+	  {
+		int dmg = spell_system->GetLavaDamageAt(gp->Get());
+		if (dmg > 0)
+		{
+		  Engine::GetLogger().LogEvent(currentChar->TypeName() + " takes " + std::to_string(dmg) + " lava damage at turn start");
+		  combat->ApplyDamage(nullptr, currentChar, dmg);
+		}
+	  }
+	}
+  }
+
+>>>>>>> ginam
   // Publish turn start event
   PublishTurnStartEvent();
 
@@ -164,6 +206,11 @@ void TurnManager::EndCurrentTurn()
   {
 	roundNumber++;
 	Engine::GetLogger().LogEvent("TurnManager: Round " + std::to_string(roundNumber) + " started");
+
+	// 지형 효과 만료 처리
+	auto* spell_system = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
+	if (spell_system)
+	  spell_system->TickTerrainEffects(roundNumber);
 
 	// ===== Sangyun: Re-roll initiative if variant mode enabled (NEW) =====
 	if (initiativeMode == InitiativeMode::RollEachRound)
