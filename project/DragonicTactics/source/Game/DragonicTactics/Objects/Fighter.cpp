@@ -34,7 +34,7 @@ Fighter::Fighter(Math::ivec2 start_coordinates)
 
   *GetStatsComponent() = StatsComponent(fighter_stats);
   m_action_list.push_back(new ActionAttack());
-  AddGOComponent(new CS230::Sprite("Assets/images/fighter.spt",this));
+  AddGOComponent(new CS230::Sprite("Assets/sprites/fighter.spt",this));
 }
 
 void Fighter::OnTurnStart()

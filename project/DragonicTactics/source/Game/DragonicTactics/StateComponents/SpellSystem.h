@@ -14,6 +14,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <functional>
 
 class Character;
 class EventBus;
@@ -82,6 +83,8 @@ class SpellSystem : public CS230::Component
   int  GetLavaDamageAt(Math::ivec2 tile) const;
   bool CastWalls(Character* caster, const std::string& spell_id,
                  const std::vector<Math::ivec2>& tiles, int upcast_level);
+  bool CastLavaZones(Character* caster, const std::string& spell_id,
+                     const std::vector<Math::ivec2>& tiles, int upcast_level);
 
   private:
   std::map<std::string, SpellData> spells_;
@@ -104,3 +107,40 @@ class SpellSystem : public CS230::Component
   SpellMove ParseMoveField(const std::string& move_str) const;
   void		ApplyMoveEffect(Character* caster, const std::vector<Character*>& targets, const SpellData& spell, Math::ivec2 target_tile);
 };
+
+namespace {
+    // 특정 스펠에 종속되지 않는 범용 딜레이 실행 객체
+    class SpellDelayObject : public CS230::GameObject
+    {
+    private:
+        double m_delay;
+        std::function<void()> m_callback; // 실행할 코드를 담아둘 콜백 함수
+
+    public:
+        SpellDelayObject(double delay, std::function<void()> callback)
+            : CS230::GameObject({0, 0}), m_delay(delay), m_callback(callback)
+        {}
+
+        // CS230::GameObject의 순수 가상 함수 2개 모두 구현
+        std::string TypeName() override { return "SpellDelayObject"; }
+        
+        // GameObjectTypes 열거형 중 아무 값(기본값 0)이나 반환하여 에러 방지
+        GameObjectTypes Type() override { return static_cast<GameObjectTypes>(0); } 
+
+        void Update(double dt) override
+        {
+            CS230::GameObject::Update(dt);
+            m_delay -= dt;
+            
+            // 딜레이가 0 이하로 떨어지면 콜백 함수 실행!
+            if (m_delay <= 0.0)
+            {
+                if (m_callback) 
+                {
+                    m_callback();
+                }
+                Destroy(); 
+            }
+        }
+    };
+}

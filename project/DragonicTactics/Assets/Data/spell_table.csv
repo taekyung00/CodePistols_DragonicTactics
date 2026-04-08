@@ -1,6 +1,6 @@
 ID,Name,Category,Classes,Required Slot Level,Targeting,Upcasting Effect,Effect
 S_ATK_050,Smite,,Fighter,1,Enemy:Single:1,TRUE,"Deals 3d8 + (Spell Level - Required Spell Level)d8 damage.
-Applies ""Lifesteal"" status for 0 turns.
+Applies ""Basic"" status for 0 turns.
 Move to current location.
 Summons NULL at current location."
 S_ENH_010,Bloodlust,,Fighter,2,Self:Single:0,FALSE,"Deals 0 damage.
@@ -11,7 +11,7 @@ S_BUF_010,Divine Shield,,Cleric,1,Ally:Single:4,FALSE,"Deals 0 damage.
 Applies ""Blessing"" status for 3 turns.
 Move to current location.
 Summons NULL at current location."
-S_ENH_020,Frenzy,,Fighter,0,Self:Single:0,FALSE,"Deals 0 damage.
+S_ENH_020,Frenzy,,Fighter,2,Self:Single:0,FALSE,"Deals 0 damage.
 Applies ""Frenzy"" status for 1 turn.
 Move to current location.
 Summons NULL at current location."
@@ -69,7 +69,7 @@ S_ATK_040,Meteor,Attack,Dragon,3,Any:OddEven:-1,TRUE,"Deals 3d20 + (Spell Level 
 Applies ""Exhaustion"" status for 1 turn.
 Move to current location.
 Summons NULL at current location."
-S_ENH_050,Purify,Buff,Dragon,1,Any:Around:4,FALSE,"Deals 0 damage.
+S_ENH_050,Purify,Buff,Dragon,1,Self:Single:0,FALSE,"Deals 0 damage.
 Applies ""Purify"" status for 1 turn.
 Move to current location.
 Summons NULL at current location."

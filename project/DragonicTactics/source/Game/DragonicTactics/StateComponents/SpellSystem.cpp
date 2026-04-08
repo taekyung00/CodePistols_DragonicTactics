@@ -22,6 +22,11 @@
 #include "Game/DragonicTactics/StateComponents/StatusEffectHandler.h"
 #include "SpellSystem.h"
 #include "Game/DragonicTactics/StateComponents/TurnManager.h"
+#include "../../../Engine/Particle.h"
+#include "../Types/CharacterTypes.h"
+#include "../Types/GameObjectTypes.h"
+#include "../../../Engine/GameObjectManager.h"
+#include "Game/Particles.h"
 
 std::vector<std::string> SpellSystem::SplitByDelimiter(const std::string& str, char delim) const
 {
@@ -183,7 +188,7 @@ void SpellSystem::ParseEffectField(const std::string& effect_str, SpellData& dat
 
 	// "for N turns" 에서 N 추출
 	auto ft = line.find("for ");
-	auto tt = line.find(" turns", ft);
+	auto tt = line.find(" turn", ft);
 	if (ft != std::string::npos && tt != std::string::npos)
 	{
 	  std::string n_str	   = line.substr(ft + 4, tt - (ft + 4));
@@ -411,26 +416,50 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
   // 피해 적용
   // ─────────────────────────────────────────────────
   if (spell.damage_formula != "0" && !spell.damage_formula.empty())
-{
-    auto* dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
+  {
+      auto* dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
+      
+      // [추가] 파티클 매니저 가져오기
+      // 다른 파티클 사용 시 CS230::ParticleManager<Particles::Hit> 에서 Hit을 다른 파티클로 수정
+      // EX) CS230::ParticleManager<Particles::Spell>
+      auto* particleManager = Engine::GetGameStateManager().GetGSComponent<CS230::ParticleManager<Particles::Hit>>();
 
-    for (auto* tgt : targets)
-    {
-        int damage = CalculateSpellDamage(spell, upcast_level);
+      for (auto* tgt : targets)
+      {
+          int damage = CalculateSpellDamage(spell, upcast_level);
 
-        // Weakpoint Strike: 대상이 디버프 상태이면 2d20으로 교체
-        if (!spell.special_effect.empty()
-            && spell.special_effect.find("If target is debuffed") != std::string::npos)
-        {
-            bool is_debuffed = tgt->Has("Curse") || tgt->Has("Fear") || tgt->Has("Exhaustion");
-            if (is_debuffed && dice)
-                damage = dice->RollDiceFromString("2d20");
-        }
+          // Weakpoint Strike: 대상이 디버프 상태이면 2d20으로 교체
+          if (!spell.special_effect.empty()
+              && spell.special_effect.find("If target is debuffed") != std::string::npos)
+          {
+              bool is_debuffed = tgt->Has("Curse") || tgt->Has("Fear") || tgt->Has("Exhaustion");
+              if (is_debuffed && dice)
+                  damage = dice->RollDiceFromString("2d20");
+          }
 
-        if (damage > 0)       combat->ApplyDamage(caster, tgt, damage);
-        else if (damage < 0)  tgt->SetHP(std::min(tgt->GetHP() + (-damage), tgt->GetMaxHP()));
-    }
-}
+          if (damage > 0) 
+          {
+              // 기존 데미지 적용 코드
+              combat->ApplyDamage(caster, tgt, damage);
+              
+              // [추가] 피격당한 타겟이 드래곤이 아닐 경우 파티클 발생
+              //if (tgt != nullptr && tgt->GetCharacterType() != CharacterTypes::Dragon)
+              //{
+                  if (particleManager)
+                  {
+                      // 피격 대상의 위치(tgt->GetPosition())에 파티클 생성
+                      // 위치 그대로 생성하면 좌측 하단으로 파티클이 쏠림
+                      //particleManager->Emit(5, { tgt->GetPosition().x + 30, tgt->GetPosition().y + 30 }, { 0, 0 }, { 0, 100 }, 3.14159265f / 2.0f);
+                      particleManager->Emit(10, tgt->GetPosition(), { 0, 0 }, { 0, 100 }, 3.14159265f);
+                  }
+              //}
+          }
+          else if (damage < 0) 
+          {
+              tgt->SetHP(std::min(tgt->GetHP() + (-damage), tgt->GetMaxHP()));
+          }
+      }
+  }
 
   // ─────────────────────────────────────────────────
   // 상태 효과 적용 (기존 로직 유지, targets 루프로 통합)
@@ -493,30 +522,72 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
 bool SpellSystem::CastSpell(Character* caster, const std::string& spell_id, Math::ivec2 target_tile, int upcast_level)
 {
   if (!caster)
-	return false;
+    return false;
 
   auto it = spells_.find(spell_id);
   if (it == spells_.end())
   {
-	Engine::GetLogger().LogError("SpellSystem: Unknown spell id " + spell_id);
-	return false;
+    Engine::GetLogger().LogError("SpellSystem: Unknown spell id " + spell_id);
+    return false;
   }
 
   const SpellData& spell = it->second;
 
   if (!CanCast(caster, spell_id, target_tile))
-	return false;
+    return false;
 
   int consume_level = (upcast_level > 0) ? upcast_level : spell.spell_level;
   if (consume_level > 0)
-	caster->ConsumeSpell(consume_level);
+    caster->ConsumeSpell(consume_level);
 
-  // AP 소모 (신규) — CanCast에서 이미 >= 1 보장됨
+  // AP 소모 — CanCast에서 이미 >= 1 보장됨
   caster->GetActionPointsComponent()->Consume(1);
+  std::cout << "what";
 
-  ApplySpellEffect(caster, spell, target_tile, upcast_level);
+  // 1. 시전자가 드래곤인지 검사하여 파티클 생성
+  // 시전자 무관 스펠 종류에 따라서 나타나는 파티클 분류 필요
+  if (caster != nullptr && caster->GetCharacterType() == CharacterTypes::Dragon) 
+  {
+      auto* particleManager = Engine::GetGameStateManager().GetGSComponent<CS230::ParticleManager<Particles::Hit>>();
+      if (particleManager)
+      {
+          particleManager->Emit(10, caster->GetPosition(), { 0, 0 }, { 0, 100 }, 3.14159265f / 2.0f);
+      }
+  }
+
+  // 2. 람다(Lambda) 함수를 이용해 딜레이 후 실행할 작업 정의
+  auto* gom = Engine::GetGameStateManager().GetGSComponent<CS230::GameObjectManager>();
+  if (gom)
+  {
+      double delayTime = 0.5; // 0.5초 딜레이
+      
+      // this 포인터를 캡처하여 private 함수인 ApplySpellEffect에 접근합니다.
+      auto callback = [this, caster, spell, target_tile, upcast_level]() {
+          // 0.5초 뒤 시전자가 아직 살아있을 때만 데미지와 피격 파티클 적용
+          if (caster != nullptr && caster->IsAlive()) {
+              this->ApplySpellEffect(caster, spell, target_tile, upcast_level);
+          }
+      };
+
+      // 타이머 객체 등록 (지정된 시간 뒤에 위 callback이 실행됨)
+      gom->Add(std::unique_ptr<CS230::GameObject>(new SpellDelayObject(delayTime, callback)));
+  }
 
   Engine::GetLogger().LogEvent(caster->TypeName() + " cast " + spell.spell_name + " [" + spell_id + "]");
+
+  // SpellCastEvent 발행 — UI 스펠 로그 표시용
+  auto& gs = Engine::GetGameStateManager();
+  if (auto* eventBus = gs.GetGSComponent<EventBus>())
+  {
+      eventBus->Publish(SpellCastEvent{
+          caster,
+          spell.spell_name,
+          upcast_level,
+          target_tile,
+          consume_level
+      });
+  }
+
   return true;
 }
 
@@ -748,6 +819,43 @@ bool SpellSystem::CastWalls(Character* caster, const std::string& spell_id,
   return true;
 }
 
+bool SpellSystem::CastLavaZones(Character* caster, const std::string& spell_id,
+                                const std::vector<Math::ivec2>& tiles, int upcast_level)
+{
+  if (!caster || tiles.empty()) return false;
+
+  auto it = spells_.find(spell_id);
+  if (it == spells_.end()) return false;
+  const SpellData& spell = it->second;
+
+  auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+  auto* tm   = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
+  if (!grid || !tm) return false;
+
+  int consume_level = (upcast_level > 0) ? upcast_level : spell.spell_level;
+  if (consume_level > 0)
+    caster->ConsumeSpell(consume_level);
+  caster->GetActionPointsComponent()->Consume(1);
+
+  int current_round = tm->GetRoundNumber();
+  int damage        = CalculateSpellDamage(spell, upcast_level);
+
+  for (const auto& tile : tiles)
+  {
+    if (grid->IsValidTile(tile)
+        && grid->GetTileType(tile) == GridSystem::TileType::Empty
+        && !grid->IsOccupied(tile))
+    {
+      grid->SetTileType(tile, GridSystem::TileType::Lava);
+      m_terrain_effects.push_back({ {tile}, damage, current_round, spell.effect_duration });
+    }
+  }
+
+  Engine::GetLogger().LogEvent(caster->TypeName() + " cast Magma Blast: "
+    + std::to_string(tiles.size()) + " lava zone(s)");
+  return true;
+}
+
 void SpellSystem::ApplyMoveEffect(Character* caster, const std::vector<Character*>& targets, const SpellData& spell, Math::ivec2 target_tile)
 {
   if (spell.move.move_type == "stay")
@@ -797,7 +905,7 @@ void SpellSystem::ApplyMoveEffect(Character* caster, const std::vector<Character
 	  if (new_pos.x != tgt_pos.x || new_pos.y != tgt_pos.y)
 	  {
 		grid->MoveCharacter(tgt_pos, new_pos);
-		tgt->GetGridPosition()->Set(new_pos);
+    tgt->SetGridPosition(new_pos);
 	  }
 	}
   }
@@ -812,7 +920,7 @@ void SpellSystem::ApplyMoveEffect(Character* caster, const std::vector<Character
 	if (grid->IsValidTile(dest) && !grid->IsOccupied(dest))
 	{
 	  grid->MoveCharacter(caster_pos, dest);
-	  caster->GetGridPosition()->Set(dest);
+	  caster->SetGridPosition(dest);
 	  Engine::GetLogger().LogEvent(caster->TypeName() + " teleported to (" + std::to_string(dest.x) + ", " + std::to_string(dest.y) + ")");
 	}
   }

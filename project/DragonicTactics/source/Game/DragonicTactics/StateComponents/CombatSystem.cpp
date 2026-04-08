@@ -141,6 +141,10 @@ bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender)
         damage = handler->ModifyDamageTaken(defender, damage);
     }
   ApplyDamage(attacker, defender, damage);
+
+  if (handler)
+	handler->OnAfterAttack(attacker, defender, damage);
+
   attacker->SetHasAttackedThisTurn(true);
 
   // Consume AP

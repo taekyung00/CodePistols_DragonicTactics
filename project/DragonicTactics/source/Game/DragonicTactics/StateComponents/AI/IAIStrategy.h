@@ -26,11 +26,12 @@ enum class AIDecisionType
 // 2. 의사결정 데이터 (명령서)
 struct AIDecision
 {
-  AIDecisionType type		 = AIDecisionType::None;
-  Character*	 target		 = nullptr;	 // 대상
-  Math::ivec2	 destination = { 0, 0 }; // 목적지
-  std::string	 abilityName = "";		 // 스킬명
-  std::string	 reasoning	 = "";		 // 디버그용 메모
+  AIDecisionType type		  = AIDecisionType::None;
+  Character*	 target		  = nullptr;	// 대상
+  Math::ivec2	 destination  = { 0, 0 };	// 목적지
+  std::string	 abilityName  = "";			// 스킬명
+  std::string	 reasoning	  = "";			// 디버그용 메모
+  int			 lava_penalty = 0;			// 이동 시 용암 타일 회피 가중치 (0 = 무시)
 };
 
 // 3. 전략 인터페이스
