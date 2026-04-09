@@ -13,6 +13,7 @@ Created:    April 25, 2025
 #include "ComponentManager.h"
 #include "ShowCollision.h"
 #include "Sprite.h"
+#include "DrawDepth.h"
 
 namespace Math
 {
@@ -53,7 +54,7 @@ namespace CS230
         virtual void ResolveCollision([[maybe_unused]] GameObject* other_object) { };
 
         virtual void Update(double dt);
-		virtual void Draw(Math::TransformationMatrix camera_matrix, unsigned int color = 0xFFFFFFFF, float depth = 0.5f);
+		virtual void Draw(Math::TransformationMatrix camera_matrix, unsigned int color = 0xFFFFFFFF, float depth = DrawDepth::CHARACTER);
 
         const Math::TransformationMatrix& GetMatrix();
         const Math::vec2&                 GetPosition() const;
@@ -83,15 +84,15 @@ namespace CS230
 
 		static constexpr int DRAWPRIORITY = 50;
 		static constexpr int UPDATEPRIORITY = 10;
+        void SetScale(Math::vec2 new_scale);
+        void SetRotation(double new_rotation);
 
     protected:
 
         void UpdatePosition(Math::vec2 delta);
 
 
-        void SetScale(Math::vec2 new_scale);
         void UpdateScale(Math::vec2 delta);
-        void SetRotation(double new_rotation);
         void UpdateRotation(double delta);
 
         class State

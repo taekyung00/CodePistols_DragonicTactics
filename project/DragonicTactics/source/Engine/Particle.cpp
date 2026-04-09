@@ -36,10 +36,10 @@ namespace CS230 {
 		}
 	}
 
-	void Particle::Draw(Math::TransformationMatrix camera_matrix, [[maybe_unused]]unsigned int color, float depth)
+	void Particle::Draw(Math::TransformationMatrix camera_matrix, [[maybe_unused]]unsigned int color, [[maybe_unused]]float depth)
 	{
 		if (Alive()) {
-			GameObject::Draw(camera_matrix, real_color, depth);
+			GameObject::Draw(camera_matrix, real_color, DrawDepth::PARTICLE);
 		}
 	}
 }

@@ -19,7 +19,7 @@ namespace Math
   struct vec2;
   struct vec3;
 
-  struct [[nodiscard]] ivec2
+  struct ivec2
   {
 	int x{ 0 };
 	int y{ 0 };

@@ -14,6 +14,7 @@ Updated:    Oct 09, 2025
 #include "Engine/GameObjectManager.h"
 #include "Engine/Input.h"
 #include "Engine/Matrix.h"
+#include "Engine/DrawDepth.h"
 #include "Game/DragonicTactics/Objects/Actions/Action.h"
 #include "Game/DragonicTactics/Objects/Components/StatusEffectComponent.h"
 #include "Game/DragonicTactics/Types/CharacterTypes.h"
@@ -40,7 +41,7 @@ class Character : public CS230::GameObject
   virtual ~Character() = default;
 
   void Update(double dt) override;
-  void Draw(Math::TransformationMatrix camera_matrix, unsigned int color = 0xFFFFFFFF, float depth = 0.5f) override;
+  void Draw(Math::TransformationMatrix camera_matrix, unsigned int color = 0xFFFFFFFF, float depth = DrawDepth::CHARACTER) override;
 
   GameObjectTypes Type() override
   {

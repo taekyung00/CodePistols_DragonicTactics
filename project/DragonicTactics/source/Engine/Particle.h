@@ -12,6 +12,7 @@ Created:    June 6, 2025
 #include "GameObject.h"
 #include "GameObjectManager.h"
 #include "GameStateManager.h"
+#include "DrawDepth.h"
 
 namespace CS230
 {
@@ -21,7 +22,8 @@ namespace CS230
 		Particle(const std::filesystem::path& sprite_file);
 		void Start(Math::vec2 _position, Math::vec2 _velocity, double max_life, CS200::RGBA _color = CS200::WHITE);
 		void Update(double dt) override;
-		void Draw(Math::TransformationMatrix camera_matrix, unsigned int color = 0xFFFFFFFF, float depth = 0.5f) override;
+        //NOTE : draw from gameobjectmanager -> draw all, we have lower hierarchy than objects, so we have to use DrawDepth::PARTICLE in draw function right away
+		void Draw(Math::TransformationMatrix camera_matrix, unsigned int color = 0xFFFFFFFF, float depth = DrawDepth::PARTICLE) override;
 
 		int DrawPriority() const override
 		{

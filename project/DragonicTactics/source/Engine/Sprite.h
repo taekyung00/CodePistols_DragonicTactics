@@ -16,6 +16,7 @@ Created:    March 19, 2025
 #include "Matrix.h"
 #include "Texture.h"
 #include "Vec2.h"
+#include "DrawDepth.h"
 #include <string>
 
 namespace CS230
@@ -35,7 +36,7 @@ namespace CS230
 		Sprite&		operator=(Sprite&& temporary) noexcept;
 		void		Update(double dt) override;
 		void		Load(const std::filesystem::path& sprite_file, GameObject* _given_object);
-		void		Draw(Math::TransformationMatrix display_matrix, unsigned int color = 0xFFFFFFFF, float depth = 0.5f);
+		void		Draw(Math::TransformationMatrix display_matrix, unsigned int color = 0xFFFFFFFF, float depth = DrawDepth::CHARACTER);
 		Math::ivec2 GetHotSpot(size_t index);
 		Math::ivec2 GetFrameSize();
 

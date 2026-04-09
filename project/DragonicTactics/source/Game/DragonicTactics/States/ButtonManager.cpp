@@ -4,6 +4,7 @@
 #include "Engine/Engine.h"
 #include "Engine/TextureManager.h"
 #include "Engine/TextManager.h"
+#include "Engine/DrawDepth.h"
 
 void ButtonManager::AddButton(const Button& button)
 {
@@ -105,12 +106,12 @@ void ButtonManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_matr
             Math::TranslationMatrix(Math::vec2{ center.x, center.y }) * // MAth 오타 수정 및 생성자 호출 간소화
             Math::ScaleMatrix(Math::vec2{ btn.size.x, btn.size.y });
         
-            renderer->DrawRectangle(btn_transform, bg_color, 0x888888ff, 1.5);
+            renderer->DrawRectangle(btn_transform, bg_color, 0x888888ff, 1.5, DrawDepth::UI);
 
         // 텍스트 렌더링 (버튼 중앙)
         Math::vec2 text_pos = { btn.position.x + 8.0, btn.position.y - btn.size.y * 0.7 };
         CS200::RGBA tc = btn.disabled ? 0x888888ff : btn.text_color;
-        text_mgr.DrawText(btn.label, text_pos, Fonts::Outlined, {0.4, 0.4}, tc);
+        text_mgr.DrawText(btn.label, text_pos, Fonts::Outlined, {0.4, 0.4}, tc, DrawDepth::UI-0.001f); // UI보다 살짝 더 앞으로
     }
 }
 
