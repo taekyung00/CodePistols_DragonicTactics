@@ -35,7 +35,7 @@ GridSystem::GridSystem()
 {
 	Reset();
 	stone_tile_bright = Engine::GetTextureManager().Load("Assets/images/stone_tile_bright.png");
-	stone_tile_dark	 = Engine::GetTextureManager().Load("Assets/images/stone_tile_dark.png");
+	stone_tile_dark	  = Engine::GetTextureManager().Load("Assets/images/stone_tile_dark.png");
 }
 
 void GridSystem::Reset()
@@ -113,10 +113,11 @@ void GridSystem::Draw() const
 					renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), 0x4080FFFF, 0U);
 					break;
 				case TileType::Empty:
-        if((x + y) % 2 == 0)//체커보드 패턴
-          stone_tile_dark->Draw(Math::TranslationMatrix(Math::ivec2{ screen_x - TILE_SIZE, screen_y - TILE_SIZE }) * Math::ScaleMatrix(tile_scale));
-        else 
-          stone_tile_bright->Draw(Math::TranslationMatrix(Math::ivec2{ screen_x - TILE_SIZE, screen_y - TILE_SIZE }) * Math::ScaleMatrix(tile_scale)); break;
+					if ((x + y) % 2 == 0) // 체커보드 패턴
+						stone_tile_dark->Draw(Math::TranslationMatrix(Math::ivec2{ screen_x - TILE_SIZE, screen_y - TILE_SIZE }) * Math::ScaleMatrix(tile_scale));
+					else
+						stone_tile_bright->Draw(Math::TranslationMatrix(Math::ivec2{ screen_x - TILE_SIZE, screen_y - TILE_SIZE }) * Math::ScaleMatrix(tile_scale));
+					break;
 				default: break;
 			}
 			/*====================================================character drawing=================================*/
@@ -222,6 +223,7 @@ void GridSystem::EnableSpellTargetingMode(Math::ivec2 center, const std::string&
 	else if (geometry == "Line")
 	{
 		for (const auto& tile : GetLineTiles(center, (range < 0 ? MAP_HEIGHT : range)))
+		if (GetTileType(tile) != TileType::Wall)
 			spell_targetable_tiles_.insert(tile);
 	}
 	else if (geometry == "OddEven")
@@ -229,6 +231,7 @@ void GridSystem::EnableSpellTargetingMode(Math::ivec2 center, const std::string&
 		// 전체 타일 표시
 		for (int y = 0; y < MAP_HEIGHT; ++y)
 			for (int x = 0; x < MAP_WIDTH; ++x)
+			if (GetTileType({x,y}) != TileType::Wall)
 				spell_targetable_tiles_.insert({ x, y });
 	}
 	else
@@ -240,7 +243,8 @@ void GridSystem::EnableSpellTargetingMode(Math::ivec2 center, const std::string&
 			for (int x = 0; x < MAP_WIDTH; ++x)
 			{
 				Math::ivec2 tile{ x, y };
-				if (IsValidTile(tile) && ManhattanDistance(center, tile) <= r)
+				// 수정 — Wall 제외
+				if (IsValidTile(tile) && GetTileType(tile) != TileType::Wall && ManhattanDistance(center, tile) <= r)
 					spell_targetable_tiles_.insert(tile);
 			}
 		}

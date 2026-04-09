@@ -139,8 +139,12 @@ MakeDecision
 |---|---|---|---|
 | Smite | `S_ATK_050` | 1 | Enemy:Single:1 (인접 필수) |
 | Bloodlust | `S_ENH_010` | 2 | Self:Single:0 |
-| Frenzy | `S_ENH_020` | **0** (슬롯 불필요) | Self:Single:0 |
+| Frenzy | `S_ENH_020` | 2 | Self:Single:0 |
 | Fearful Cry | `S_DEB_020` | 1 | Enemy:Around:3 |
+
+**FighterStrategy 미구현 분기** (`FighterStrategy.cpp` 상단 주석 블록):
+- **보물 탈출**: `actor->HasTreasure()` → Exit 타일로 이동 (`grid->HasExit()`, `grid->GetExitPosition()` 필요) — 보물 시스템 구현 후 활성화
+- **클레릭 추적**: 위험 시(`IsInDanger`) `FindCleric()`으로 클레릭을 찾아 인접 대기 또는 이동 — Cleric 캐릭터 구현 후 활성화
 
 **⚠️ UseAbility AIDecision 작성 시 주의**:
 - `AISystem::ExecuteDecision`은 `decision.target->GetGridPosition()->Get()`을 target_tile로 `CastSpell`에 전달 (`destination` 필드 무시됨)

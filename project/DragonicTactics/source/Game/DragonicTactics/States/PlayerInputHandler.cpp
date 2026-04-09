@@ -175,10 +175,6 @@ void PlayerInputHandler::Update(double dt, Character* current_character, GridSys
         for (int lv = 1; lv <= 5; ++lv)
             btns.SetVisible("S_GEO_020_lv" + std::to_string(lv), true);
 
-        // 업캐스트: Teleport Lv0~5
-        btns.SetVisible("lbl_S_GEO_030", true);
-        for (int lv = 0; lv <= 5; ++lv)
-            btns.SetVisible("S_GEO_030_lv" + std::to_string(lv), true);
     }
 
     // ── Spell Cancel 버튼 ─────────────────────────────────────────

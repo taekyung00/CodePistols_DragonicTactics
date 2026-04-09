@@ -52,7 +52,7 @@ S_ATK_010,Fire Bolt,Attack,"Dragon, Wizard",1,Enemy:Single:4,TRUE,"Deals 2d8 + (
 Applies ""Basic"" status for 0 turns.
 Move to current location.
 Summons NULL at current location."
-S_ENH_040,Mana Conversion,Buff,"Dragon, Wizard",0,Self:Single:0,TRUE,"Deals 0 + (Spell Level - Required Spell Level + 1)d10 damage.
+S_ENH_040,Mana Conversion,Buff,"Dragon, Wizard",0,Self:Single:0,TRUE,"Deals (Spell Level - Required Spell Level + 1)d10 damage.
 Applies ""Basic"" status for 0 turns.
 Move to current location.
 Summons NULL at current location.
