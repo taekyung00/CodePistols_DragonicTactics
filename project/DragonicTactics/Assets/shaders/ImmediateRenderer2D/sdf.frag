@@ -39,9 +39,7 @@ vec4 evalute_color(float sdf)
     vec4 fill_color = vec4(uFillColor.rgb, fill_alpha * uFillColor.a);//modulate,mix
     vec4 line_color = vec4(uLineColor.rgb, outline_alpha * uLineColor.a);//modulate,mix
 
-    if(line_color.a > 0.0)
-        return line_color;
-    return fill_color;
+    return mix(fill_color,line_color,line_color.a);
 }
 
 void main()

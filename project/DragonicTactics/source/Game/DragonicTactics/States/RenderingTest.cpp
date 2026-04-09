@@ -18,7 +18,6 @@
 #include "./Game/MainMenu.h"
 #include "Game/DragonicTactics/Factories/CharacterFactory.h"
 #include "Game/DragonicTactics/Objects/Character.h"
-#include "Game/Samurai.h"
 #include <numbers>
 
 RenderingTest::RenderingTest()
