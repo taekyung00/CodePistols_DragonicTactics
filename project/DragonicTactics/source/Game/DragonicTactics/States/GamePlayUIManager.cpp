@@ -114,6 +114,14 @@ void GamePlayUIManager::Update(double dt)
   m_damage_texts.erase(std::remove_if(m_damage_texts.begin(), m_damage_texts.end(), [](const DamageText& text) { return text.lifetime <= 0; }), m_damage_texts.end());
 
   m_damage_log.erase(std::remove_if(m_damage_log.begin(), m_damage_log.end(), [](const DamageText& text) { return text.lifetime <= 0; }), m_damage_log.end());
+
+  for (auto& log : m_spell_logs)
+	  log.lifetime -= dt;
+
+  m_spell_logs.erase(
+	  std::remove_if(m_spell_logs.begin(), m_spell_logs.end(),
+		  [](const SpellLog& l) { return l.lifetime <= 0.0; }),
+	  m_spell_logs.end());
 }
 
 void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_matrix)
@@ -158,6 +166,17 @@ void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_
 //         current_character->GetSpellSlotCount(available[i].spell_level) == 0  // 슬롯 없으면 disabled
 //     });
 // }
+  // 오른쪽 하단 SpellLog (화면 기준 고정 위치)
+  const float LOG_X      = 800.0f;
+  const float LOG_BASE_Y = 50.0f;
+  const float LOG_LINE_H = 28.0f;
+
+  for (int li = 0; li < static_cast<int>(m_spell_logs.size()); ++li)
+  {
+	  Math::vec2 pos = { LOG_X, LOG_BASE_Y + LOG_LINE_H * li };
+	  textMng.DrawText(m_spell_logs[li].text, pos, Fonts::Outlined, { 0.5f, 0.5f }, CS200::GOLD);
+  }
+
   DrawCharacterStatsPanel(camera_matrix);
 }
 
@@ -359,6 +378,15 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
     add_btn("lbl_S_GEO_030", { SX, get_spell_y(6) }, { ULW, S_H }, "Teleport", false);
     for (int lv = 0; lv <= 5; ++lv)
         add_btn("S_GEO_030_lv" + std::to_string(lv), { SX + ULW + (UBW+UGAP)*lv, get_spell_y(6) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_GEO_030", lv));
+}
+
+void GamePlayUIManager::AddSpellLog(const std::string& caster_name, const std::string& spell_name, int level)
+{
+  std::string text = "[" + caster_name + "] " + spell_name + " Lv." + std::to_string(level);
+  m_spell_logs.push_back({ text, SPELL_LOG_LIFETIME });
+
+  if (static_cast<int>(m_spell_logs.size()) > SPELL_LOG_MAX_COUNT)
+	  m_spell_logs.erase(m_spell_logs.begin());
 }
 
 ButtonManager& GamePlayUIManager::GetButtons(){

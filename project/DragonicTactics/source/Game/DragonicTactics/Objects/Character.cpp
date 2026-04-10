@@ -89,9 +89,9 @@ void Character::Update(double dt)
   CS230::GameObject::Update(dt);
 }
 
-void Character::Draw(Math::TransformationMatrix camera_matrix)
+void Character::Draw(Math::TransformationMatrix camera_matrix , unsigned int color, float depth)
 {
-  CS230::GameObject::Draw(camera_matrix);
+  CS230::GameObject::Draw(camera_matrix, color, depth);
 }
 
 void Character::OnTurnStart()

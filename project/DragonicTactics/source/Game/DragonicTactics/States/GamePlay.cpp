@@ -140,6 +140,13 @@ void GamePlay::Load()
 		this->DisplayDamageLog(event);
 	  });
 
+  GetGSComponent<EventBus>()->Subscribe<SpellCastEvent>(
+	  [this](const SpellCastEvent& event)
+	  {
+		if (event.caster)
+		  m_ui_manager->AddSpellLog(event.caster->TypeName(), event.spellName, event.spellLevel);
+	  });
+
   GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>([this]([[maybe_unused]] const CharacterDeathEvent& event) { this->CheckGameEnd(event); });
 
   GetGSComponent<EventBus>()->Subscribe<CharacterEscapedEvent>(
@@ -251,14 +258,15 @@ void GamePlay::Update(double dt)
   if (debugMgr)
 	debugMgr->Update(dt);
 
+  // SpellDelayObject가 AI 결정 전에 발화되도록 goMgr를 orchestrator 앞에 업데이트
+  goMgr->UpdateAll(dt);
+
   if (current != nullptr)
   {
 	m_input_handler->Update(dt, current, grid, combatSystem, m_ui_manager->GetButtons());
 	m_orchestrator->Update(dt, turnMgr, aiSystem);
 	m_ui_manager->Update(dt);
   }
-
-  goMgr->UpdateAll(dt);
   UpdateGSComponents(dt);
 }
 

@@ -24,6 +24,8 @@ class RenderingTest : public CS230::GameState
 
   std::unique_ptr<CS230::GameObject> dragon;
   std::unique_ptr<CS230::GameObject> fighter;
+  constexpr static float timer_max = 3.f;
+  float timer = 0.f;
   Math::fvec2 scale = {1.f,1.f};
 	float rotate = 0.f;
 	Math::fvec2 translate = {0.f,0.f};
