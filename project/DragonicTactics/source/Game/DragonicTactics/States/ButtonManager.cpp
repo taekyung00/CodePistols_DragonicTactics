@@ -8,6 +8,23 @@
 
 void ButtonManager::AddButton(const Button& button)
 {
+    auto& text_mgr = Engine::GetTextManager();
+    
+    // text_mgr.점(.) 찍고 나오는 함수 이름으로 바꿔주세요!
+    Math::vec2 textSize = text_mgr.CalculateTextSize(button.label, Fonts::Outlined);
+
+    // 스케일 축소 비율 적용 (Draw 함수와 동일하게 0.4배)
+    textSize.x *= 0.4f;
+    textSize.y *= 0.4f;
+
+    // 크기 비교 검사
+    if (textSize.x > button.size.x || textSize.y > button.size.y)
+    {
+        Engine::GetLogger().LogError("텍스트가 버튼보다 커서 추가가 취소되었습니다. Button ID: " + button.id);
+        return; 
+    }
+
+    // --- 기존 로직 ---
     // 기존 ID면 덮어씀
     for (auto& b : buttons_)
     {

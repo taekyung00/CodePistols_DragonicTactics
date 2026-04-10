@@ -21,6 +21,7 @@ Updated:    Oct 09, 2025
 #include "Game/DragonicTactics/Types/GameTypes.h"
 #include <map>
 #include <vector>
+#include "Components/ShakeComponent.h"
 
 class GridSystem;
 class GridPosition;
@@ -34,6 +35,7 @@ class GridFootprint;
 class Action;
 class StatsComponent;
 class MovementComponent;
+class ShakeComponent;
 
 class Character : public CS230::GameObject
 {
@@ -77,6 +79,7 @@ class Character : public CS230::GameObject
   StatsComponent* GetStatsComponent();
   ActionPoints*	  GetActionPointsComponent();
   SpellSlots*	  GetSpellSlots();
+  ShakeComponent* GetShakeComponent();
   void			  SetActionPoints(int new_points);
   // StatusEffects* GetStatusEffects() const;
   // GridFootprint* GetGridFootprint() const;

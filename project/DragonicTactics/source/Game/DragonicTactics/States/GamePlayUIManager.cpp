@@ -295,10 +295,29 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
     constexpr double S_STEP   = S_H + S_GAP; // 한 행당 차지하는 높이 (45)
     
     // 스펠 리스트 시작 Y 좌표 (Cancel 버튼 아래부터 시작)
-    // Row 3(Cancel) 위치인 750 - (70 * 3) = 540 에서 조금 더 띄워서 시작
     const double SPELL_START_Y = 540.0 - 45.0; 
 
-    auto add_btn = [&](const std::string& id, Math::vec2 pos, Math::vec2 size, const std::string& label, bool visible, std::function<void()> onClick = nullptr) {
+    // [수정됨] 최종 가로 길이를 반환하도록 -> double 추가
+    auto add_btn = [&](const std::string& id, Math::vec2 pos, Math::vec2 size, const std::string& label, bool visible, std::function<void()> onClick = nullptr) -> double {
+        
+        // 1. 텍스트 픽셀 크기 계산 및 스케일 적용
+        auto& text_mgr = Engine::GetTextManager();
+        Math::vec2 textSize = text_mgr.CalculateTextSize(label, Fonts::Outlined);
+        textSize.x *= 0.4f;
+        textSize.y *= 0.4f;
+
+        // 2. 텍스트가 크면 버튼 사이즈 자동 늘리기
+        constexpr double PADDING_X = 15.0; 
+        constexpr double PADDING_Y = 10.0; 
+        
+        if (textSize.x + PADDING_X > size.x) {
+            size.x = textSize.x + PADDING_X; 
+        }
+        if (textSize.y + PADDING_Y > size.y) {
+            size.y = textSize.y + PADDING_Y; 
+        }
+
+        // 3. 버튼 생성 및 추가
         Button b;
         b.id = id;
         b.position = pos;
@@ -306,7 +325,11 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
         b.label = label;
         b.visible = visible;
         b.on_click = onClick; 
+        
         button_manager_.AddButton(b);
+
+        // 4. 늘어난 버튼의 최종 가로 길이를 반환
+        return size.x;
     };
 
     auto create_spell_callback = [this, inputHandler](const std::string& spell_id, int level) {
@@ -330,7 +353,7 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
     add_btn("btn_spell",  { START_X + BTN_W + GAP, BTN_Y - (BTN_H+GAP)*2 },   { BTN_W, BTN_H }, "Spell",  false);
     add_btn("btn_spell_cancel", { START_X + BTN_W + GAP, BTN_Y - (BTN_H+GAP)*3 }, { BTN_W, BTN_H }, "Cancel", false);
 
-    // ── [스펠 리스트] 압축 간격(45step) 적용 ──────────────────────────────
+    // ── [스펠 리스트] 압축 간격(45step) 적용 및 동적 레이아웃 ──────────────────────────────
     constexpr double SX   = START_X + BTN_W + GAP; 
     constexpr double ULW  = 130.0; 
     constexpr double UBW  = 42.0;  
@@ -344,40 +367,42 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
     // 업캐스트 스펠 (Row 3~9 of list)
     auto get_spell_y = [&](int idx) { return SPELL_START_Y - S_STEP * (idx + 3); };
 
+    // [수정됨] 스펠 이름 버튼이 반환한 가로 길이(w0~w6)를 받아 다음 버튼 위치 계산에 사용
+    
     // Fire Bolt
-    add_btn("lbl_S_ATK_010", { SX, get_spell_y(0) }, { ULW, S_H }, "Fire Bolt", false);
+    double w0 = add_btn("lbl_S_ATK_010", { SX, get_spell_y(0) }, { ULW, S_H }, "Fire Bolt", false);
     for (int lv = 1; lv <= 5; ++lv)
-        add_btn("S_ATK_010_lv" + std::to_string(lv), { SX + ULW + (UBW+UGAP)*(lv-1), get_spell_y(0) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_ATK_010", lv));
+        add_btn("S_ATK_010_lv" + std::to_string(lv), { SX + w0 + UGAP + (UBW+UGAP)*(lv-1), get_spell_y(0) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_ATK_010", lv));
 
     // Mana Conversion
-    add_btn("lbl_S_ENH_040", { SX, get_spell_y(1) }, { ULW, S_H }, "Mana Conversion", false);
+    double w1 = add_btn("lbl_S_ENH_040", { SX, get_spell_y(1) }, { ULW, S_H }, "Mana Conversion", false);
     for (int lv = 0; lv <= 5; ++lv)
-        add_btn("S_ENH_040_lv" + std::to_string(lv), { SX + ULW + (UBW+UGAP)*lv, get_spell_y(1) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_ENH_040", lv));
+        add_btn("S_ENH_040_lv" + std::to_string(lv), { SX + w1 + UGAP + (UBW+UGAP)*lv, get_spell_y(1) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_ENH_040", lv));
 
     // Dragon's Fury
-    add_btn("lbl_S_ATK_030", { SX, get_spell_y(2) }, { ULW, S_H }, "Dragon's Fury", false);
+    double w2 = add_btn("lbl_S_ATK_030", { SX, get_spell_y(2) }, { ULW, S_H }, "Dragon's Fury", false);
     for (int lv = 3; lv <= 5; ++lv)
-        add_btn("S_ATK_030_lv" + std::to_string(lv), { SX + ULW + (UBW+UGAP)*(lv-3), get_spell_y(2) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_ATK_030", lv));
+        add_btn("S_ATK_030_lv" + std::to_string(lv), { SX + w2 + UGAP + (UBW+UGAP)*(lv-3), get_spell_y(2) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_ATK_030", lv));
 
     // Meteor
-    add_btn("lbl_S_ATK_040", { SX, get_spell_y(3) }, { ULW, S_H }, "Meteor", false);
+    double w3 = add_btn("lbl_S_ATK_040", { SX, get_spell_y(3) }, { ULW, S_H }, "Meteor", false);
     for (int lv = 3; lv <= 5; ++lv)
-        add_btn("S_ATK_040_lv" + std::to_string(lv), { SX + ULW + (UBW+UGAP)*(lv-3), get_spell_y(3) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_ATK_040", lv));
+        add_btn("S_ATK_040_lv" + std::to_string(lv), { SX + w3 + UGAP + (UBW+UGAP)*(lv-3), get_spell_y(3) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_ATK_040", lv));
 
     // Magma Blast
-    add_btn("lbl_S_GEO_010", { SX, get_spell_y(4) }, { ULW, S_H }, "Magma Blast", false);
+    double w4 = add_btn("lbl_S_GEO_010", { SX, get_spell_y(4) }, { ULW, S_H }, "Magma Blast", false);
     for (int lv = 2; lv <= 5; ++lv)
-        add_btn("S_GEO_010_lv" + std::to_string(lv), { SX + ULW + (UBW+UGAP)*(lv-2), get_spell_y(4) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_GEO_010", lv));
+        add_btn("S_GEO_010_lv" + std::to_string(lv), { SX + w4 + UGAP + (UBW+UGAP)*(lv-2), get_spell_y(4) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_GEO_010", lv));
 
     // Wall Creation
-    add_btn("lbl_S_GEO_020", { SX, get_spell_y(5) }, { ULW, S_H }, "Wall Creation", false);
+    double w5 = add_btn("lbl_S_GEO_020", { SX, get_spell_y(5) }, { ULW, S_H }, "Wall Creation", false);
     for (int lv = 1; lv <= 5; ++lv)
-        add_btn("S_GEO_020_lv" + std::to_string(lv), { SX + ULW + (UBW+UGAP)*(lv-1), get_spell_y(5) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_GEO_020", lv));
+        add_btn("S_GEO_020_lv" + std::to_string(lv), { SX + w5 + UGAP + (UBW+UGAP)*(lv-1), get_spell_y(5) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_GEO_020", lv));
 
     // Teleport
-    add_btn("lbl_S_GEO_030", { SX, get_spell_y(6) }, { ULW, S_H }, "Teleport", false);
+    double w6 = add_btn("lbl_S_GEO_030", { SX, get_spell_y(6) }, { ULW, S_H }, "Teleport", false);
     for (int lv = 0; lv <= 5; ++lv)
-        add_btn("S_GEO_030_lv" + std::to_string(lv), { SX + ULW + (UBW+UGAP)*lv, get_spell_y(6) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_GEO_030", lv));
+        add_btn("S_GEO_030_lv" + std::to_string(lv), { SX + w6 + UGAP + (UBW+UGAP)*lv, get_spell_y(6) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_GEO_030", lv));
 }
 
 void GamePlayUIManager::AddSpellLog(const std::string& caster_name, const std::string& spell_name, int level)
