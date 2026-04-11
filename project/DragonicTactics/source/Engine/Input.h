@@ -61,6 +61,19 @@ public:
 	  Two,
 	  Three,
 	  Four,
+	  F1,
+	  F2,
+	  F3,
+	  F4,
+	  F5,
+	  F6,
+	  F7,
+	  F8,
+	  F9,
+	  F10,
+	  F11,
+	  F12,
+	  Backtick,
 	  Count
 	};
 
@@ -150,6 +163,19 @@ private:
 	  case Input::Keys::Two: return "Two";
 	  case Input::Keys::Three: return "Three";
 	  case Input::Keys::Four: return "Four";
+	  case Input::Keys::F1: return "F1";
+	  case Input::Keys::F2: return "F2";
+	  case Input::Keys::F3: return "F3";
+	  case Input::Keys::F4: return "F4";
+	  case Input::Keys::F5: return "F5";
+	  case Input::Keys::F6: return "F6";
+	  case Input::Keys::F7: return "F7";
+	  case Input::Keys::F8: return "F8";
+	  case Input::Keys::F9: return "F9";
+	  case Input::Keys::F10: return "F10";
+	  case Input::Keys::F11: return "F11";
+	  case Input::Keys::F12: return "F12";
+	  case Input::Keys::Backtick: return "Backtick";
 	  case Input::Keys::Count: return "Count";
 	}
 	return "Unknown";

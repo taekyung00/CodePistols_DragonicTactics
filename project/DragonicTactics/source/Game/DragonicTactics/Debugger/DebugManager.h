@@ -69,9 +69,10 @@ class DebugManager : public CS230::Component
 
   private:
   void DrawDebugControlPanel();
+  void RegisterGameCommands();
 
   bool debug_mode{ false };
-  bool show_debug_tools_{ true };
+  bool show_debug_tools_{ false };
   bool grid_overlay{ false };
   bool collision_boxes{ false };
   bool status_info{ false };

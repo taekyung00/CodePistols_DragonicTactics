@@ -37,6 +37,8 @@ class GamePlayUIManager
   void InitButtons(PlayerInputHandler* inputHandler);          // 버튼 초기 배치
   ButtonManager& GetButtons(); // PlayerInputHandler에서 접근용
 
+  void AddSpellLog(const std::string& caster_name, const std::string& spell_name, int level);
+
   private:
   struct DamageText
   {
@@ -46,9 +48,18 @@ class GamePlayUIManager
 	double		lifetime;
   };
 
+  struct SpellLog
+  {
+	std::string text;
+	double		lifetime;
+  };
+
   std::vector<DamageText> m_damage_texts;
-  
   std::vector<DamageText> m_damage_log;
+  std::vector<SpellLog>   m_spell_logs;
+
+  static constexpr double SPELL_LOG_LIFETIME  = 3.0;
+  static constexpr int    SPELL_LOG_MAX_COUNT = 5;
 
   const double GAME_END_TEXT_SIZE = 2.0;
 

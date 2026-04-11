@@ -187,7 +187,7 @@ AIDecision FighterStrategy::MakeSurvivalDecision(Character* actor, Character* dr
   int distance = grid->ManhattanDistance(actor->GetGridPosition()->Get(),
                                           dragon->GetGridPosition()->Get());
 
-  if (!HasBuff(actor, "Bloodlust"))
+  if (!HasBuff(actor, "Lifesteal"))
   {
     // 피의 갈망 없음
     if (HasSpellSlot(actor, 2))
@@ -257,7 +257,7 @@ AIDecision FighterStrategy::MakeNormalCombatDecision(Character* actor, Character
   if (HasBuff(actor, "Blessing"))
   {
     // 축복 적용 중
-    if (!HasBuff(actor, "Frenzy") && actor->GetActionPoints() >= 2)
+    if (!HasBuff(actor, "Frenzy") && actor->GetActionPoints() >= 2 && HasSpellSlot(actor, 2))
     {
       std::string reason = "[STUB] Normal+Blessing: Casting Frenzy (AP bonus buff)";
       Engine::GetLogger().LogEvent(reason);
@@ -277,7 +277,7 @@ AIDecision FighterStrategy::MakeNormalCombatDecision(Character* actor, Character
     else
     {
       // 클레릭 없음 → 독립 광란 판단
-      if (!HasBuff(actor, "Frenzy") && actor->GetActionPoints() >= 2)  // Frenzy는 레벨 0: 슬롯 불필요
+      if (!HasBuff(actor, "Frenzy") && actor->GetActionPoints() >= 2 && HasSpellSlot(actor, 2))  // Frenzy는 레벨 2: 슬롯 필요
       {
         std::string reason = "[STUB] Normal(no cleric): Casting Frenzy independently";
         Engine::GetLogger().LogEvent(reason);

@@ -115,6 +115,7 @@ void AISystem::ExecuteDecision(Character* actor, const AIDecision& decision)
 
   if (auto* eventbus = gs.GetGSComponent<EventBus>())
   {
-	eventbus->Publish(AIDecisionEvent{ actor, decision.type, decision.target, decision.reasoning });
+	Math::ivec2 dest = (decision.type == AIDecisionType::Move) ? decision.destination : Math::ivec2{ -1, -1 };
+	eventbus->Publish(AIDecisionEvent{ actor, decision.type, decision.target, decision.reasoning, dest });
   }
 }

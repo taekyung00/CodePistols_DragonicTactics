@@ -141,6 +141,10 @@ std::vector<Math::ivec2> GetLineTiles(Math::ivec2 center, int reach) const;
   public:
   static const int TILE_SIZE = MAP_WIDTH * MAP_HEIGHT;
 
+  // 그리드 크기 조회 (10×10, 12×12 등 가변 크기 전환 대비)
+  int GetWidth()  const { return MAP_WIDTH; }
+  int GetHeight() const { return MAP_HEIGHT; }
+
   GridSystem();
 
   void Reset();

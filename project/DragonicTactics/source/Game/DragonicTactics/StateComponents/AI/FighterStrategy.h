@@ -41,7 +41,6 @@ class FighterStrategy : public IAIStrategy
   static constexpr int SMITE_BASE_DAMAGE   = 8;   // FindBestSmiteSlot 기준 데미지/레벨
   int                  CountLavaTiles(const std::vector<Math::ivec2>& path, GridSystem* grid) const;
   int                  ComputePathCost(const std::vector<Math::ivec2>& path, GridSystem* grid) const;
-
   // --- 서브 의사결정 ---
   AIDecision MakeKillLoopDecision(Character* actor, Character* dragon, GridSystem* grid);
   AIDecision MakeFarMoveDecision(Character* actor, Character* dragon, GridSystem* grid);

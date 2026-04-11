@@ -31,6 +31,7 @@ class DebugConsole
 
   void RegisterCommand(const std::string& name, std::function<void(std::vector<std::string>)> handler, const std::string& helpText);
   void ExecuteCommand(const std::string& commandLine);
+  void Print(const std::string& msg); // 히스토리 기록 없이 출력 전용
 
   // Command history
   void AddToHistory(const std::string& command);
@@ -47,6 +48,7 @@ class DebugConsole
   std::vector<std::string> ParseCommandLine(const std::string& commandLine);
 
   bool								 open_{ false };
+  bool								 defaults_registered_{ false };
   char								 input_buffer_[256];
   std::deque<std::string>			 command_history_;
   std::deque<std::string>			 output_log_;

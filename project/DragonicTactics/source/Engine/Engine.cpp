@@ -70,6 +70,19 @@ namespace
 	  case SDL_SCANCODE_X: return CS230::Input::Keys::X;
 	  case SDL_SCANCODE_Y: return CS230::Input::Keys::Y;
 	  case SDL_SCANCODE_Z: return CS230::Input::Keys::Z;
+	  case SDL_SCANCODE_F1:  return CS230::Input::Keys::F1;
+	  case SDL_SCANCODE_F2:  return CS230::Input::Keys::F2;
+	  case SDL_SCANCODE_F3:  return CS230::Input::Keys::F3;
+	  case SDL_SCANCODE_F4:  return CS230::Input::Keys::F4;
+	  case SDL_SCANCODE_F5:  return CS230::Input::Keys::F5;
+	  case SDL_SCANCODE_F6:  return CS230::Input::Keys::F6;
+	  case SDL_SCANCODE_F7:  return CS230::Input::Keys::F7;
+	  case SDL_SCANCODE_F8:  return CS230::Input::Keys::F8;
+	  case SDL_SCANCODE_F9:  return CS230::Input::Keys::F9;
+	  case SDL_SCANCODE_F10: return CS230::Input::Keys::F10;
+	  case SDL_SCANCODE_F11: return CS230::Input::Keys::F11;
+	  case SDL_SCANCODE_F12: return CS230::Input::Keys::F12;
+	  case SDL_SCANCODE_GRAVE: return CS230::Input::Keys::Backtick;
 	  default: return CS230::Input::Keys::Count;
 	}
   }

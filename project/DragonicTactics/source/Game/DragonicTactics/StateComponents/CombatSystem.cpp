@@ -16,6 +16,7 @@
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
 #include "./Game/DragonicTactics/StateComponents/GridSystem.h"
+#include "Game/DragonicTactics/Debugger/DebugManager.h"
 #include "Game/DragonicTactics/StateComponents/StatusEffectHandler.h"
 #include "CombatSystem.h"
 
@@ -55,7 +56,16 @@ void CombatSystem::ApplyDamage(Character* attacker, Character* defender, int dam
 {
   if (defender == nullptr)
   {
-	Engine::GetLogger().LogError("CombatSystem: Null " + defender->TypeName());
+	Engine::GetLogger().LogError("CombatSystem: Null defender in ApplyDamage");
+	return;
+  }
+
+  // God Mode: Dragon은 데미지 무효
+  auto* debug_mgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
+  if (debug_mgr && debug_mgr->IsGodModeEnabled()
+	  && defender->GetCharacterType() == CharacterTypes::Dragon)
+  {
+	Engine::GetLogger().LogDebug("[GodMode] Damage blocked for Dragon");
 	return;
   }
 
@@ -141,6 +151,10 @@ bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender)
         damage = handler->ModifyDamageTaken(defender, damage);
     }
   ApplyDamage(attacker, defender, damage);
+
+  if (handler)
+	handler->OnAfterAttack(attacker, defender, damage);
+
   attacker->SetHasAttackedThisTurn(true);
 
   // Consume AP
