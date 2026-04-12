@@ -1,0 +1,57 @@
+flowchart TD
+    %% Nodes for fighter
+    SettingTarget("Set Fighter Target")
+    SettingTarget --> AreWeInDanger("Has Treasure?")
+    
+    AreWeInDanger--"Yes" --> TargetExit("Target = Exit")
+    AreWeInDanger--"No" --> AmIInDanger("Is My HP <= 30%?")
+    
+    AmIInDanger--"Yes" --> IsClericAlive("Is Cleric Alive?")
+    AmIInDanger--"No" --> TargetDragon("Target = Dragon")
+    
+    IsClericAlive--"Yes" --> TargetCleric("Target = Cleric")
+    IsClericAlive--"No" --> TargetDragon("Target = Dragon")
+    
+    
+    TargetCleric --> MoveStart("Start Action")
+    
+    TargetDragon --> MoveStart("Start Action")
+    TargetExit --> MoveStart("Start Action")
+
+    MoveStart --> AmIOnTarget("Reached Target?<br>(Exit: On Tile, Else: In Range)")
+
+    AmIOnTarget--"Yes" --> CheckTargetType{"Current Target Type?"}
+    
+    CheckTargetType--"Exit" --> GameOver("Game Over<br>(Enemy Escaped)")
+    CheckTargetType--"Cleric" --> WaitHeal("Wait for Heal<br>(End Turn)")
+    CheckTargetType--"Dragon" --> CanIAttack("Action Points >= 1?")
+
+    
+    AmIOnTarget--"No" --> CanIMove("Move Points >= 1?")
+
+    CanIMove--"Yes" --> MoveToTarget("Move 1 Tile to Target")
+    CanIMove--"No" --> TurnEnd("End Turn")
+    MoveToTarget --> DecreaseMovePoint("Consume 1 Move Point")
+
+    CanIAttack--"Yes" --> IsClericAlive2("Is Cleric Alive?")
+    CanIAttack--"No" --> TurnEnd("End Turn")
+    
+    IsClericAlive2--"Yes" --> DoIHaveBuffAndDoesDragonHasDebuff("Do I have Buff AND<br>Dragon has Debuff?")
+
+    DoIHaveBuffAndDoesDragonHasDebuff--"Yes" --> DoIHaveSpellSlot("Spell Slots >= 1?")
+    DoIHaveBuffAndDoesDragonHasDebuff--"No" --> AttackDragon("Basic Attack on Dragon<br>(Save Spell)")
+    
+    IsClericAlive2--"No" --> DoIHaveSpellSlot("Spell Slots >= 1?")
+    
+    DoIHaveSpellSlot--"Yes" --> SpellAttackDragon("Strongest Spell Attack<br>on Dragon (Use Slot)")
+    DoIHaveSpellSlot--"No" --> AttackDragon("Basic Attack on Dragon")
+
+    AttackDragon --> DecreaseActionPoint("Consume 1 Action Point")
+
+    
+    SpellAttackDragon --> DecreaseSpellSlot("Consume Spell Slot")
+    DecreaseSpellSlot --> DecreaseActionPoint("Consume 1 Action Point")
+
+    DecreaseMovePoint --> AmIOnTarget("Reached Target?<br>(Exit: On Tile, Else: In Range)")
+    
+    DecreaseActionPoint --> CanIAttack("Action Points >= 1?")

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dragonic Tactics – Q1 Part 6: Summary</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: #0b0f14;
+      color: #e5e7eb;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .card {
+      background: rgba(17,24,39,0.85);
+      border-radius: 1rem;
+      border: 1px solid rgba(99, 102, 241, 0.25);
+    }
+    .nav-button {
+      background: rgba(99, 102, 241, 0.3);
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      border: 1px solid rgba(99, 102, 241, 0.5);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .nav-button:hover {
+      background: rgba(99, 102, 241, 0.5);
+      border-color: rgba(99, 102, 241, 0.8);
+    }
+  </style>
+</head>
+<body class="p-6">
+  <div class="flex flex-col h-full max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-4">
+      <h1 class="text-3xl font-bold mb-2">🐉 Dragonic Tactics</h1>
+      <h2 class="text-xl text-gray-300 mb-1">Technical Guide - Question 1</h2>
+      <h3 class="text-lg text-gray-400">Part 6: Architecture Summary</h3>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-hidden flex flex-col">
+      <div class="card border-indigo-500/40 p-6 flex-1 flex flex-col">
+        <h2 class="text-2xl font-semibold mb-4 text-indigo-300 text-center">Architecture Design Summary</h2>
+
+        <div class="flex-1 grid grid-cols-2 gap-6">
+          <!-- Left Column -->
+          <div class="space-y-4">
+            <div class="card border-purple-500/40 p-4">
+              <h3 class="text-lg font-semibold text-purple-300 mb-3">Four-Layer Architecture</h3>
+              <div class="space-y-2 text-sm">
+                <div class="flex items-start">
+                  <span class="text-purple-400 mr-2 font-bold">1.</span>
+                  <div>
+                    <p class="font-semibold text-gray-200">Game Logic Layer</p>
+                    <p class="text-gray-400 text-xs">DragonicTactics-specific gameplay code</p>
+                  </div>
+                </div>
+                <div class="flex items-start">
+                  <span class="text-indigo-400 mr-2 font-bold">2.</span>
+                  <div>
+                    <p class="font-semibold text-gray-200">Engine Core Layer</p>
+                    <p class="text-gray-400 text-xs">Reusable CS230 engine systems</p>
+                  </div>
+                </div>
+                <div class="flex items-start">
+                  <span class="text-cyan-400 mr-2 font-bold">3.</span>
+                  <div>
+                    <p class="font-semibold text-gray-200">Rendering Abstraction</p>
+                    <p class="text-gray-400 text-xs">CS200 graphics API abstraction</p>
+                  </div>
+                </div>
+                <div class="flex items-start">
+                  <span class="text-green-400 mr-2 font-bold">4.</span>
+                  <div>
+                    <p class="font-semibold text-gray-200">OpenGL Wrapper</p>
+                    <p class="text-gray-400 text-xs">Low-level OpenGL 3.3+ interface</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card border-emerald-500/40 p-4">
+              <h3 class="text-lg font-semibold text-emerald-300 mb-3">Key Design Patterns</h3>
+              <ul class="space-y-2 text-sm">
+                <li class="flex items-start">
+                  <span class="text-emerald-400 mr-2">✓</span>
+                  <div>
+                    <p class="font-semibold text-gray-200">Component Pattern</p>
+                    <p class="text-gray-400 text-xs">GameObject + Component composition</p>
+                  </div>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-emerald-400 mr-2">✓</span>
+                  <div>
+                    <p class="font-semibold text-gray-200">Strategy Pattern</p>
+                    <p class="text-gray-400 text-xs">IAIStrategy for different AI behaviors</p>
+                  </div>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-emerald-400 mr-2">✓</span>
+                  <div>
+                    <p class="font-semibold text-gray-200">Factory Pattern</p>
+                    <p class="text-gray-400 text-xs">CharacterFactory for object creation</p>
+                  </div>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-emerald-400 mr-2">✓</span>
+                  <div>
+                    <p class="font-semibold text-gray-200">Observer Pattern</p>
+                    <p class="text-gray-400 text-xs">EventBus for publish-subscribe</p>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Right Column -->
+          <div class="space-y-4">
+            <div class="card border-yellow-500/40 p-4">
+              <h3 class="text-lg font-semibold text-yellow-300 mb-3">Core Technologies</h3>
+              <div class="space-y-2 text-sm">
+                <div class="p-2 bg-yellow-900/20 rounded">
+                  <p class="font-semibold text-yellow-300 text-xs">Language</p>
+                  <p class="text-gray-300">C++20 with modern features</p>
+                </div>
+                <div class="p-2 bg-blue-900/20 rounded">
+                  <p class="font-semibold text-blue-300 text-xs">Graphics</p>
+                  <p class="text-gray-300">OpenGL 3.3+ core profile</p>
+                </div>
+                <div class="p-2 bg-green-900/20 rounded">
+                  <p class="font-semibold text-green-300 text-xs">Build System</p>
+                  <p class="text-gray-300">CMake with FetchContent</p>
+                </div>
+                <div class="p-2 bg-purple-900/20 rounded">
+                  <p class="font-semibold text-purple-300 text-xs">Data Format</p>
+                  <p class="text-gray-300">JSON (nlohmann/json)</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="card border-cyan-500/40 p-4">
+              <h3 class="text-lg font-semibold text-cyan-300 mb-3">Architectural Benefits</h3>
+              <ul class="space-y-2 text-sm text-gray-300">
+                <li class="flex items-start">
+                  <span class="text-cyan-400 mr-2">→</span>
+                  <span><strong>Modularity:</strong> Each layer can be developed and tested independently</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-cyan-400 mr-2">→</span>
+                  <span><strong>Reusability:</strong> Engine layer (CS230) can be used in future projects</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-cyan-400 mr-2">→</span>
+                  <span><strong>Maintainability:</strong> Clear separation of concerns between layers</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-cyan-400 mr-2">→</span>
+                  <span><strong>Flexibility:</strong> Multiple renderer implementations can be swapped at runtime</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-cyan-400 mr-2">→</span>
+                  <span><strong>Data-Driven:</strong> Game content can be modified without recompilation</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer Info -->
+        <div class="mt-4 text-center">
+          <div class="inline-block bg-indigo-900/30 rounded-lg px-6 py-3 border border-indigo-500/40">
+            <p class="text-sm text-gray-300 font-semibold">Team: Code Pistols</p>
+            <p class="text-xs text-gray-400 mt-1">GAM200 Milestone 4 (Fall 2025) | 5-person development team</p>
+            <p class="text-xs text-gray-500 mt-1">Custom C++20 Game Engine | Turn-Based Tactical RPG</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="mt-4 flex justify-between items-center">
+      <div class="text-sm text-gray-500">Page 6 of 6</div>
+      <div class="flex gap-2">
+        <button class="nav-button" onclick="window.location.href='TechnicalGuide_Q1_Part5_Communication.html'">← Previous</button>
+        <button class="nav-button" onclick="window.location.href='TechnicalGuide_Q1_Part1_Overview.html'">↺ Back to Start</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

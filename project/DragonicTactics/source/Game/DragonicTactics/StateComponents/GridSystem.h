@@ -1,0 +1,204 @@
+/**
+ * \file
+ * \author Junyoung Ki
+ * \date 2025 Fall
+ * \copyright DigiPen Institute of Technology
+ */
+#pragma once
+#include "./Engine/Component.h"
+#include "./Engine/Vec2.h"
+#include "./Game/DragonicTactics/Objects/Character.h"
+// #include "./Game/DragonicTactics/States/Test.h"
+#include "./Game/DragonicTactics/StateComponents/MapDataRegistry.h"
+#include "./Game/DragonicTactics/Test/Week1TestMocks.h"
+#include <map>
+#include <memory>
+
+struct MapData;
+
+class GridSystem : public CS230::Component
+{
+  public:
+  enum class TileType
+  {
+	Empty,
+	Wall,
+	Lava,
+	Difficult,
+	Exit,
+	Invalid
+  };
+
+  // 출구 위치 관리
+  void SetExitPosition(Math::ivec2 pos);
+
+  Math::ivec2 GetExitPosition() const;
+
+  bool HasExit() const;
+
+  // ========================================
+  // 신규 추가: 이동 범위 시각화
+  // ========================================
+
+  /// @brief 이동 가능한 타일들을 계산 (BFS 기반)
+  /// @param start 시작 위치
+  /// @param max_distance 최대 이동 거리 (Speed)
+  /// @return 이동 가능한 타일 목록
+  std::vector<Math::ivec2> GetReachableTiles(Math::ivec2 start, int max_distance);
+
+  /// @brief 이동 모드 활성화 (이동 가능 타일 계산 및 저장)
+  /// @param character_pos 캐릭터 현재 위치
+  /// @param movement_range 캐릭터 이동 범위
+  void EnableMovementMode(Math::ivec2 character_pos, int movement_range);
+
+  /// @brief 이동 모드 비활성화 (시각화 데이터 초기화)
+  void DisableMovementMode();
+
+  /// @brief 스펠 타겟팅 가능 타일 계산 (맨해튼 거리 기반)
+  /// @param center  시전자 위치
+  /// @param range   스펠 사거리
+  void EnableSpellTargetingMode(Math::ivec2 center, const std::string& geometry, int range);
+
+  /// @brief 4방향 직선 타일 목록 반환 (Line 기하학 시각화용)
+std::vector<Math::ivec2> GetLineTiles(Math::ivec2 center, int reach) const;
+  
+  /// @brief 스펠 타겟팅 모드 해제 (시각화 데이터 초기화)
+  void DisableSpellTargetingMode();
+
+  /// @brief 벽 배치 미리보기 타일 갱신
+  void SetWallPreviewTiles(const std::vector<Math::ivec2>& tiles);
+  /// @brief 벽 배치 미리보기 초기화
+  void ClearWallPreviewTiles();
+
+  /// @brief 마우스 호버 위치 설정 (경로 계산)
+  /// @param hovered_tile 마우스가 위치한 타일
+  void SetHoveredTile(Math::ivec2 hovered_tile);
+
+  /// @brief 마우스 호버 해제
+  void ClearHoveredTile();
+
+  /// @brief 이동 모드 활성화 여부
+  bool IsMovementModeActive() const
+  {
+	return movement_mode_active_;
+  }
+
+  /// @brief 특정 타일이 이동 가능한지 확인
+  bool IsReachable(Math::ivec2 tile) const;
+
+  
+  private:
+  int map_width_  = 8;
+  int map_height_ = 8;
+  std::vector<std::vector<TileType>>   tile_grid_;
+  std::vector<std::vector<Character*>> character_grid_;
+
+  void ResizeGrid(int w, int h);
+
+  // A* pathfinding node
+  struct Node
+  {
+	Math::ivec2 position;
+	int			gCost;
+	int			hCost;
+
+	int fCost() const
+	{
+	  return gCost + hCost;
+	}
+
+	Node* parent;
+
+	Node(Math::ivec2 pos, int g, int h, Node* p = nullptr) : position(pos), gCost(g), hCost(h), parent(p)
+	{
+	}
+  };
+
+  Math::ivec2 exit_position_ = { -1, -1 }; // 출구 위치 (-1, -1은 없음)
+
+  // ========================================
+  // 신규 추가: 시각화 데이터
+  // ========================================
+  bool					   movement_mode_active_ = false;	   // 이동 모드 활성화 여부
+  Math::ivec2			   movement_source_pos_	 = { -1, -1 }; // 이동 시작 위치
+  std::set<Math::ivec2>	   reachable_tiles_;				   // 이동 가능한 타일 집합
+  std::vector<Math::ivec2> hovered_path_;					   // 마우스 호버 시 경로
+  Math::ivec2			   hovered_tile_ = { -1, -1 };		   // 현재 마우스 호버 타일
+  double				   pulse_timer_	 = 0.0;
+
+
+  // ─ 스펠 타겟팅 시각화 ─
+  bool					spell_targeting_mode_active_ = false;
+  std::set<Math::ivec2> spell_targetable_tiles_;
+
+  // ─ 벽 배치 미리보기 시각화 ─
+  std::vector<Math::ivec2> wall_preview_tiles_;
+
+  //tile texture
+  std::shared_ptr<CS230::Texture> stone_tile_bright;
+  std::shared_ptr<CS230::Texture> stone_tile_dark;
+
+
+
+  public:
+  // 타일 당 픽셀 크기. 맵 크기와 무관한 렌더링 상수.
+  static const int TILE_SIZE = 64;
+
+  // 그리드 크기 조회 (런타임 가변)
+  int GetWidth()  const { return map_width_; }
+  int GetHeight() const { return map_height_; }
+
+  GridSystem();
+
+  void Reset();
+
+  // validation methods
+  bool	   IsValidTile(Math::ivec2 tile) const;
+  bool	   IsWalkable(Math::ivec2 tile) const;
+  bool	   IsOccupied(Math::ivec2 tile) const;
+  void	   SetTileType(Math::ivec2 tile, TileType type);
+  TileType GetTileType(Math::ivec2 tile) const;
+
+  // Character placement
+  void		 AddCharacter(Character* character, Math::ivec2 pos); // instead of void PlaceCharacter(Character* character, Math::vec2 pos);
+  void		 RemoveCharacter(Math::ivec2 pos);
+  void		 MoveCharacter(Math::ivec2 old_pos, Math::ivec2 new_pos);
+  Character* GetCharacterAt(Math::ivec2 pos) const;
+
+  // week2 : pathfinding methods
+  std::vector<Math::ivec2> FindPath(Math::ivec2 start, Math::ivec2 goal, int lava_penalty = 0);
+  // int						GetPathLength(Math::ivec2 start, Math::ivec2 goal);
+  // std::vector<Math::ivec2> GetReachableTiles(Math::ivec2 start, int maxDistance);
+
+  // week2 : helper methods
+  int					   ManhattanDistance(Math::ivec2 a, Math::ivec2 b) const;
+  std::vector<Math::ivec2> GetNeighbors(Math::ivec2 position) const;
+
+  std::vector<Character*> GetAllCharacters();
+
+  void Draw() const;
+
+  void Update(double dt) override;
+
+  void LoadMap(const MapData& map_data);
+};
+
+// ========================================
+// Math::ivec2 비교 연산자 (std::set 사용을 위해 필요)
+// ========================================
+inline bool operator<(const Math::ivec2& a, const Math::ivec2& b)
+{
+  if (a.x != b.x)
+	return a.x < b.x;
+  return a.y < b.y;
+}
+
+// inline bool operator==(const Math::ivec2& a, const Math::ivec2& b)
+//{
+//   return a.x == b.x && a.y == b.y;
+// }
+
+// inline bool operator!=(const Math::ivec2& a, const Math::ivec2& b)
+//{
+//   return !(a == b);
+// }
