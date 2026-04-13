@@ -12,6 +12,7 @@ Created:    November 24, 2025
 #pragma once
 #include "Engine/Matrix.h"
 #include "Engine/Vec2.h"
+#include <deque>
 #include <string>
 #include <vector>
 #include "ButtonManager.h"
@@ -39,6 +40,10 @@ class GamePlayUIManager
 
   void AddSpellLog(const std::string& caster_name, const std::string& spell_name, int level);
 
+  // Battle log
+  void OnTurnStarted(const std::string& actor_name, int turn_number);
+  void AddBattleLogEntry(const std::string& line);
+
   private:
   struct DamageText
   {
@@ -65,6 +70,20 @@ class GamePlayUIManager
 
   std::unique_ptr<std::string> game_end_text = nullptr;
 
-  std::vector<Character*> m_characters; 
+  std::vector<Character*> m_characters;
   ButtonManager button_manager_;
+
+  // === Battle Log ===
+  struct TurnEntry
+  {
+	int						 turn_number;
+	std::string				 actor_name;
+	std::vector<std::string> lines;
+  };
+
+  void DrawBattleLog();
+
+  std::deque<TurnEntry>	 turn_history_;
+  bool					 show_battle_log_{ false };
+  static constexpr int   MAX_LOG_TURNS = 5;
 };
