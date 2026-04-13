@@ -84,7 +84,7 @@ void DebugVisualizer::Update(double dt)
 	  roll_info.total = 0;
 	  for (int r : last_rolls)
 		roll_info.total += r;
-	  roll_info.notation  = "Unknown"; // We don't have notation here, just the results
+	  roll_info.notation  = dice_mgr->GetLastNotation();
 	  roll_info.timestamp = game_time_;
 
 	  dice_history_.push_back(roll_info);
@@ -255,23 +255,37 @@ void DebugVisualizer::DrawImGuiDiceHistory()
   {
 	const auto& roll = *it;
 
-	ImGui::Text("[%.1fs] Total: %d", roll.timestamp, roll.total);
-	ImGui::SameLine(150);
-	ImGui::Text("Rolls: [");
+	// Notation (e.g. "2d6"): highlight in yellow
+	ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.3f, 1.0f), "%s", roll.notation.c_str());
 	ImGui::SameLine();
 
+	// count x sides info derived from notation and rolls vector
+	int count = static_cast<int>(roll.rolls.size());
+	ImGui::TextDisabled("(%dx dice)", count);
+	ImGui::SameLine(120);
+
+	// Total
+	ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "= %d", roll.total);
+	ImGui::SameLine();
+
+	// Individual results
+	ImGui::Text("  [");
 	for (size_t i = 0; i < roll.rolls.size(); ++i)
 	{
-	  ImGui::SameLine();
+	  ImGui::SameLine(0, 0);
 	  ImGui::Text("%d", roll.rolls[i]);
 	  if (i + 1 < roll.rolls.size())
 	  {
-		ImGui::SameLine();
-		ImGui::Text(",");
+		ImGui::SameLine(0, 0);
+		ImGui::Text(", ");
 	  }
 	}
-	ImGui::SameLine();
+	ImGui::SameLine(0, 0);
 	ImGui::Text("]");
+
+	// Timestamp (dimmed, right side)
+	ImGui::SameLine();
+	ImGui::TextDisabled("  @%.1fs", roll.timestamp);
   }
 
   ImGui::EndChild();

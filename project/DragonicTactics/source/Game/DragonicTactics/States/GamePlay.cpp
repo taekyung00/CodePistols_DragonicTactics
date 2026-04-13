@@ -130,30 +130,54 @@ void GamePlay::Load()
   }
 
 
-  TurnManager* turnMgr = GetGSComponent<TurnManager>();
-  turnMgr->SetEventBus(GetGSComponent<EventBus>());
-  turnMgr->InitializeTurnOrder(std::vector<Character*>{ player, enemy });
-  turnMgr->StartCombat();
-
-  // 신규 추가: UI Manager에 캐릭터 등록
+  // UI Manager에 캐릭터 등록
   m_ui_manager->SetCharacters({ player, enemy });
   Engine::GetLogger().LogEvent("GamePlay::Load - Characters registered to UI Manager");
+
+  // EventBus 구독을 StartCombat() 전에 등록 — 첫 TurnStartedEvent를 놓치지 않기 위함
+  GetGSComponent<EventBus>()->Subscribe<TurnStartedEvent>(
+	  [this](const TurnStartedEvent& e)
+	  {
+		if (e.character)
+		  m_ui_manager->OnTurnStarted(e.character->TypeName(), e.turnNumber);
+	  });
 
   GetGSComponent<EventBus>()->Subscribe<CharacterDamagedEvent>(
 	  [this](const CharacterDamagedEvent& event)
 	  {
 		this->DisplayDamageAmount(event);
 		this->DisplayDamageLog(event);
+		std::string att = event.attacker ? event.attacker->TypeName() : "?";
+		m_ui_manager->AddBattleLogEntry(
+		  att + "->" + event.target->TypeName()
+		  + " " + std::to_string(event.damageAmount) + "dmg"
+		  + " (HP:" + std::to_string(event.remainingHP) + ")");
 	  });
 
   GetGSComponent<EventBus>()->Subscribe<SpellCastEvent>(
 	  [this](const SpellCastEvent& event)
 	  {
 		if (event.caster)
+		{
 		  m_ui_manager->AddSpellLog(event.caster->TypeName(), event.spellName, event.spellLevel);
+		  m_ui_manager->AddBattleLogEntry(
+			event.caster->TypeName() + " cast " + event.spellName
+			+ " Lv." + std::to_string(event.spellLevel));
+		}
 	  });
 
-  GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>([this]([[maybe_unused]] const CharacterDeathEvent& event) { this->CheckGameEnd(event); });
+  GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>(
+	  [this](const CharacterDeathEvent& event)
+	  {
+		this->CheckGameEnd(event);
+		if (event.character)
+		  m_ui_manager->AddBattleLogEntry(event.character->TypeName() + " died!");
+	  });
+
+  TurnManager* turnMgr = GetGSComponent<TurnManager>();
+  turnMgr->SetEventBus(GetGSComponent<EventBus>());
+  turnMgr->InitializeTurnOrder(std::vector<Character*>{ player, enemy });
+  turnMgr->StartCombat();
 
   GetGSComponent<EventBus>()->Subscribe<CharacterEscapedEvent>(
 	  [this]([[maybe_unused]] const CharacterEscapedEvent& event)
