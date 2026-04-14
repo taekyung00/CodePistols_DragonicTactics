@@ -84,6 +84,6 @@ class GamePlayUIManager
   void DrawBattleLog();
 
   std::deque<TurnEntry> turn_history_;
-  bool                  show_battle_log_{ true };
+  bool                  show_battle_log_{ false };
   static constexpr int  MAX_LOG_TURNS = 5;
 };
