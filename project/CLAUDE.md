@@ -297,6 +297,14 @@ CastSpell → CanCast(클래스/슬롯/Geometry/Range/AP 체크) → ConsumeSpel
 3. CMake가 GLOB_RECURSE로 자동 감지 → CMakeLists.txt 수동 편집 불필요
 4. 새 파일 추가 후 `cmake --preset windows-debug` 재실행
 5. 캐릭터 생성: `new Dragon()` 대신 `CharacterFactory::Create()` 사용
+   ```cpp
+   // CharacterFactory는 GS 컴포넌트 — GamePlay::Load()에서 등록 후 사용
+   auto* factory = GetGSComponent<CharacterFactory>();
+   auto* character = factory->Create(CharacterTypes::Dragon, startPos);
+   GetGSComponent<GameObjectManager>()->Add(character);
+   ```
+
+**캐릭터 클래스 계층**: `CS230::GameObject` ← `Character` ← `Dragon` / `Fighter` / `Cleric` / `Wizard` / `Rogue`
 
 ---
 
@@ -367,7 +375,9 @@ Engine::GetSoundManager().SetBGMVolume(0.7f);                  // 0.0 ~ 1.0
 
 - **게임 시스템**: `source/Game/DragonicTactics/StateComponents/`
 - **AI 전략**: `StateComponents/AI/` (IAIStrategy 인터페이스 + 캐릭터별 전략)
+- **게임 상태 파일**: `source/Game/DragonicTactics/States/` (GamePlay, BattleOrchestrator, PlayerInputHandler, GamePlayUIManager)
 - **캐릭터 엔티티**: `source/Game/DragonicTactics/Objects/`
+- **캐릭터 팩토리**: `source/Game/DragonicTactics/Factories/` (CharacterFactory)
 - **Actions**: `Objects/Actions/` (Action.h, ActionAttack.h)
 - **타입 정의**: `source/Game/DragonicTactics/Types/` (CharacterTypes.h, GameTypes.h, Events.h)
 - **SpellData 구조체**: `StateComponents/SpellSystem.h` (SpellData, SpellTargeting, SpellMove)
