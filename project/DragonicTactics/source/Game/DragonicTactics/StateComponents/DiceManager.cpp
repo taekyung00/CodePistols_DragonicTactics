@@ -26,6 +26,14 @@ const std::vector<int>& DiceManager::GetLastRolls() const
   return lastRolls;
 }
 
+<<<<<<< HEAD
+=======
+const std::string& DiceManager::GetLastNotation() const
+{
+  return lastNotation;
+}
+
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 int DiceManager::RollDice(int count, int sides)
 {
   lastRolls.clear();
@@ -37,6 +45,10 @@ int DiceManager::RollDice(int count, int sides)
 
   std::uniform_int_distribution<int> dice(1, sides);
   lastRolls.clear();
+<<<<<<< HEAD
+=======
+  lastNotation = std::to_string(count) + "d" + std::to_string(sides);
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
   int sum = 0;
 
   for (int i = 0; i < count; i++)

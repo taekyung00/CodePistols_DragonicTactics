@@ -48,6 +48,14 @@ class DebugVisualizer
 	show_debug_panel_ = !show_debug_panel_;
   }
 
+<<<<<<< HEAD
+=======
+  void ClosePanel()
+  {
+	show_debug_panel_ = false;
+  }
+
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
   bool IsDebugPanelOpen() const
   {
 	return show_debug_panel_;
@@ -122,6 +130,12 @@ class DebugVisualizer
   void OnCharacterDamaged(const struct CharacterDamagedEvent& event);
   void OnCharacterDeath(const struct CharacterDeathEvent& event);
   void OnTurnStarted(const struct TurnStartedEvent& event);
+<<<<<<< HEAD
+=======
+  void OnSpellCast(const struct SpellCastEvent& event);
+  void OnStatusEffectAdded(const struct StatusEffectAddedEvent& event);
+  void OnCharacterMoved(const struct CharacterMovedEvent& event);
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 
   // === Rendering Helpers ===
   // ImGui panels only - no in-game overlays for damage/HP

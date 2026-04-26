@@ -88,10 +88,19 @@ std::vector<Math::ivec2> GetLineTiles(Math::ivec2 center, int reach) const;
 
   
   private:
+<<<<<<< HEAD
   static const int MAP_WIDTH  = 8;
   static const int MAP_HEIGHT = 8;
   TileType		   tile_grid[MAP_HEIGHT][MAP_WIDTH];
   Character*	   character_grid[MAP_HEIGHT][MAP_WIDTH]; // instead of std::map<Math::vec2, Character*> occupiedTiles;
+=======
+  int map_width_  = 8;
+  int map_height_ = 8;
+  std::vector<std::vector<TileType>>   tile_grid_;
+  std::vector<std::vector<Character*>> character_grid_;
+
+  void ResizeGrid(int w, int h);
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 
   // A* pathfinding node
   struct Node
@@ -139,7 +148,16 @@ std::vector<Math::ivec2> GetLineTiles(Math::ivec2 center, int reach) const;
 
 
   public:
+<<<<<<< HEAD
   static const int TILE_SIZE = MAP_WIDTH * MAP_HEIGHT;
+=======
+  // 타일 당 픽셀 크기. 맵 크기와 무관한 렌더링 상수.
+  static const int TILE_SIZE = 64;
+
+  // 그리드 크기 조회 (런타임 가변)
+  int GetWidth()  const { return map_width_; }
+  int GetHeight() const { return map_height_; }
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 
   GridSystem();
 

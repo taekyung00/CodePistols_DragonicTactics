@@ -178,6 +178,10 @@ void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_
   }
 
   DrawCharacterStatsPanel(camera_matrix);
+<<<<<<< HEAD
+=======
+  DrawBattleLog();
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 }
 
 void GamePlayUIManager::SetCharacters(const std::vector<Character*>& characters)
@@ -403,6 +407,29 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
     double w6 = add_btn("lbl_S_GEO_030", { SX, get_spell_y(6) }, { ULW, S_H }, "Teleport", false);
     for (int lv = 0; lv <= 5; ++lv)
         add_btn("S_GEO_030_lv" + std::to_string(lv), { SX + w6 + UGAP + (UBW+UGAP)*lv, get_spell_y(6) }, { UBW, S_H }, "Lv" + std::to_string(lv), false, create_spell_callback("S_GEO_030", lv));
+<<<<<<< HEAD
+=======
+
+    // ── Battle Log 토글 버튼 (우중단) ──────────────────────────────────────
+    {
+        constexpr double LOG_BTN_W  = 40.0;
+        constexpr double LOG_BTN_H  = 40.0;
+        constexpr double LOG_MARGIN = 10.0;
+        auto win = Engine::GetWindow().GetSize();
+
+        Button log_btn;
+        log_btn.id       = "btn_battle_log";
+        log_btn.position = { static_cast<double>(win.x) - LOG_BTN_W - LOG_MARGIN,
+                             static_cast<double>(win.y) * 0.5 + LOG_BTN_H * 0.5 };
+        log_btn.size     = { LOG_BTN_W, LOG_BTN_H };
+        log_btn.label    = "<";
+        log_btn.on_click = [this]() {
+            show_battle_log_ = !show_battle_log_;
+            button_manager_.SetLabel("btn_battle_log", show_battle_log_ ? ">" : "<");
+        };
+        button_manager_.AddButton(log_btn);
+    }
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 }
 
 void GamePlayUIManager::AddSpellLog(const std::string& caster_name, const std::string& spell_name, int level)
@@ -416,4 +443,73 @@ void GamePlayUIManager::AddSpellLog(const std::string& caster_name, const std::s
 
 ButtonManager& GamePlayUIManager::GetButtons(){
   return button_manager_;
+<<<<<<< HEAD
+=======
+}
+
+void GamePlayUIManager::OnTurnStarted(const std::string& actor_name, int turn_number)
+{
+  turn_history_.push_back({ turn_number, actor_name, {} });
+  if (static_cast<int>(turn_history_.size()) > MAX_LOG_TURNS)
+    turn_history_.pop_front();
+}
+
+void GamePlayUIManager::AddBattleLogEntry(const std::string& line)
+{
+  if (!turn_history_.empty())
+    turn_history_.back().lines.push_back(line);
+}
+
+void GamePlayUIManager::DrawBattleLog()
+{
+  if (!show_battle_log_)
+    return;
+
+  auto* renderer = CS230::TextureManager::GetRenderer2D();
+  auto& text_mgr = Engine::GetTextManager();
+  auto  win      = Engine::GetWindow().GetSize();
+
+  constexpr double BTN_W         = 40.0;
+  constexpr double MARGIN        = 10.0;
+  constexpr double PANEL_W_RATIO = 0.30;
+  constexpr double PANEL_H_RATIO = 0.60;
+  constexpr double LINE_H        = 22.0;
+  constexpr double INDENT        = 12.0;
+  const Math::vec2 TS            = { 0.35, 0.35 };
+
+  const double PANEL_W = static_cast<double>(win.x) * PANEL_W_RATIO;
+  const double PANEL_H = static_cast<double>(win.y) * PANEL_H_RATIO;
+  const double PANEL_X = static_cast<double>(win.x) - BTN_W - MARGIN - PANEL_W - 4.0;
+  const double PANEL_Y = static_cast<double>(win.y) * 0.5 + PANEL_H * 0.5;
+
+  Math::TransformationMatrix bg =
+    Math::TranslationMatrix(Math::vec2{ PANEL_X + PANEL_W * 0.5, PANEL_Y - PANEL_H * 0.5 }) *
+    Math::ScaleMatrix(Math::vec2{ PANEL_W, PANEL_H });
+  renderer->DrawRectangle(bg, 0x1a1a2ecc, 0x5555aaff, 1.5, DrawDepth::UI - 0.01f);
+
+  text_mgr.DrawText("Battle Log", Math::vec2{ PANEL_X + 8.0, PANEL_Y - 18.0 },
+                    Fonts::Outlined, { 0.45, 0.45 }, CS200::WHITE, DrawDepth::UI - 0.02f);
+
+  double cur_y = PANEL_Y - 45.0;
+  for (auto it = turn_history_.rbegin(); it != turn_history_.rend(); ++it)
+  {
+    if (cur_y < PANEL_Y - PANEL_H + LINE_H)
+      break;
+
+    std::string header = "Turn " + std::to_string(it->turn_number) + ": " + it->actor_name;
+    text_mgr.DrawText(header, Math::vec2{ PANEL_X + 8.0, cur_y },
+                      Fonts::Outlined, TS, CS200::GOLD, DrawDepth::UI - 0.02f);
+    cur_y -= LINE_H;
+
+    for (const auto& line : it->lines)
+    {
+      if (cur_y < PANEL_Y - PANEL_H + LINE_H)
+        break;
+      text_mgr.DrawText(line, Math::vec2{ PANEL_X + 8.0 + INDENT, cur_y },
+                        Fonts::Outlined, TS, CS200::WHITE, DrawDepth::UI - 0.02f);
+      cur_y -= LINE_H;
+    }
+    cur_y -= 4.0;
+  }
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 }

@@ -42,6 +42,15 @@ void MapDataRegistry::LoadMaps(const std::string& json_path) {
             map_data.spawn_points[char_type] = spawn_pos;
         }
 
+<<<<<<< HEAD
+=======
+        if (map_json.contains("exit")) {
+            const auto& exit_json = map_json["exit"];
+            map_data.exit_position = Math::ivec2{exit_json["x"], exit_json["y"]};
+            map_data.has_exit = true;
+        }
+
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
         maps_[map_data.id] = map_data;
         Engine::GetLogger().LogEvent("Loaded map: " + map_data.id);
     }

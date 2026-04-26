@@ -224,4 +224,8 @@ struct AIDecisionEvent
   AIDecisionType decision_type;
   Character*	 decision_target;
   std::string	 decision_reasoning;
+<<<<<<< HEAD
+=======
+  Math::ivec2	 destination{ -1, -1 }; // Move 타입일 때 목적지 타일
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 };

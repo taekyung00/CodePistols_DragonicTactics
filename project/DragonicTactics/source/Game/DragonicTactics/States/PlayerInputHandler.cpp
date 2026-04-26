@@ -87,6 +87,7 @@ static void HideAllSpellButtons(ButtonManager& btns)
 
 void PlayerInputHandler::Update(double dt, Character* current_character, GridSystem* grid, CombatSystem* combat_system, ButtonManager& btns)
 {
+<<<<<<< HEAD
 // 1. GameStateManager를 통해 DebugManager 컴포넌트 포인터를 가져옵니다.
     auto debugMgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
 
@@ -107,6 +108,9 @@ void PlayerInputHandler::Update(double dt, Character* current_character, GridSys
         }
     }
 
+=======
+ 
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
     // Move 버튼 클릭
     if (btns.IsPressed("btn_move"))
     {
@@ -292,8 +296,11 @@ void PlayerInputHandler::Update(double dt, Character* current_character, GridSys
 	  // Engine::GetLogger().LogEvent("Dragon finished moving.");
 	}
   } 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
   
   HandleDragonInput(dt, dragon, grid, combat_system);
 }

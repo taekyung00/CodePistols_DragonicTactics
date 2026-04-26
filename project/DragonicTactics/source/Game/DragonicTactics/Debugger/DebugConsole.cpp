@@ -20,9 +20,16 @@ void DebugConsole::ToggleConsole()
 {
   open_ = !open_;
 
+<<<<<<< HEAD
   if (open_ && commands_.empty())
   {
 	RegisterDefaultCommands();
+=======
+  if (open_ && !defaults_registered_)
+  {
+	RegisterDefaultCommands();
+	defaults_registered_ = true;
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 	std::memset(input_buffer_, 0, sizeof(input_buffer_));
   }
 
@@ -106,6 +113,19 @@ void DebugConsole::ClearHistory()
   history_index_ = -1;
 }
 
+<<<<<<< HEAD
+=======
+void DebugConsole::Print(const std::string& msg)
+{
+  output_log_.push_back(msg);
+  scroll_to_bottom_ = true;
+  while (output_log_.size() > max_output_)
+  {
+	output_log_.pop_front();
+  }
+}
+
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 void DebugConsole::RegisterDefaultCommands()
 {
   // Help command
@@ -166,7 +186,11 @@ void DebugConsole::DrawImGui()
   }
 
   ImGui::SetNextWindowSize(ImVec2(500, 300), ImGuiCond_FirstUseEver);
+<<<<<<< HEAD
   ImGui::SetNextWindowPos(ImVec2(660, 520), ImGuiCond_FirstUseEver);
+=======
+  ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 
   if (!ImGui::Begin("Console", &open_, ImGuiWindowFlags_None))
   {

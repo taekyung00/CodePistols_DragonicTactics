@@ -7,12 +7,46 @@
 #include "pch.h"
 
 #include "./Engine/Engine.h"
+<<<<<<< HEAD
+=======
+#include "./Engine/GameStateManager.h"
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 #include "./Engine/Input.h"
 #include "./Engine/Logger.h"
 #include "./Engine/SoundManager.h"
 #include "DebugConsole.h"
 #include "DebugManager.h"
 #include "DebugVisualizer.h"
+<<<<<<< HEAD
+=======
+#include "Game/DragonicTactics/Objects/Character.h"
+#include "Game/DragonicTactics/Objects/Components/SpellSlots.h"
+#include "Game/DragonicTactics/StateComponents/GridSystem.h"
+#include "Game/DragonicTactics/StateComponents/TurnManager.h"
+
+#include <algorithm>
+#include <cctype>
+
+namespace {
+Character* FindCharacterByName(const std::string& name)
+{
+  auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+  if (!grid)
+	return nullptr;
+  for (auto* ch : grid->GetAllCharacters())
+  {
+	if (!ch)
+	  continue;
+	std::string type = ch->TypeName();
+	std::transform(type.begin(), type.end(), type.begin(),
+		[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+	if (type == name)
+	  return ch;
+  }
+  return nullptr;
+}
+} // namespace
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 
 DebugManager::DebugManager() : console_(std::make_unique<DebugConsole>()), visualizer_(std::make_unique<DebugVisualizer>())
 {
@@ -37,6 +71,11 @@ void DebugManager::Init()
 
   initialized_ = true;
   Engine::GetLogger().LogEvent("DebugManager: Initialization complete");
+<<<<<<< HEAD
+=======
+
+  RegisterGameCommands();
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 }
 
 void DebugManager::Update(double dt)
@@ -62,14 +101,30 @@ void DebugManager::Update(double dt)
   }
 }
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 void DebugManager::ProcessInput()
 {
   CS230::Input& input = Engine::Instance().GetInput();
 
+<<<<<<< HEAD
   if (input.KeyJustPressed(CS230::Input::Keys::Tab))
   {
 	ToggleDebugTools();
+=======
+  // F1: debug_mode 자체 토글 (항상 작동 — Tab 없이도 진입 가능)
+  if (input.KeyJustPressed(CS230::Input::Keys::F1))
+  {
+    ToggleDebugMode();
+  }
+
+  // Tab: debug_mode가 true일 때만 Debug Tools 패널 토글
+  if (debug_mode && input.KeyJustPressed(CS230::Input::Keys::Tab))
+  {
+    ToggleDebugTools();
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
   }
 }
 
@@ -90,7 +145,11 @@ void DebugManager::Draw(const GridSystem* grid)
 void DebugManager::DrawImGui([[maybe_unused]]const GridSystem* grid)
 {
 #if defined(DEVELOPER_VERSION)
+<<<<<<< HEAD
   if (!initialized_)
+=======
+  if (!initialized_ || !debug_mode)
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
   {
 	return;
   }
@@ -134,6 +193,7 @@ void DebugManager::DrawDebugControlPanel()
 	ImGui::Separator();
 	ImGui::Spacing();
 
+<<<<<<< HEAD
 	// === Visualization (TODO : Not perfect) ===
 	// ImGui::Text("Visualization");
 	// ImGui::Spacing();
@@ -147,6 +207,8 @@ void DebugManager::DrawDebugControlPanel()
 	// ImGui::Separator();
 	// ImGui::Spacing();
 
+=======
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 	// === Panels ===
 	ImGui::Text("Panels");
 	ImGui::Spacing();
@@ -231,7 +293,11 @@ void DebugManager::DrawDebugControlPanel()
 	//===========================================
 
 	// === Info ===
+<<<<<<< HEAD
 	ImGui::TextWrapped("Tab: Toggle This Panel\nESC: Close Panel");
+=======
+	ImGui::TextWrapped("F1: Toggle Debug Mode\nTab: Toggle This Panel");
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
   }
   ImGui::End();
 }
@@ -273,11 +339,24 @@ DebugVisualizer* DebugManager::GetVisualizer()
 void DebugManager::SetDebugMode(bool enabled)
 {
   debug_mode = enabled;
+<<<<<<< HEAD
+=======
+  if (!enabled)
+  {
+    show_debug_tools_ = false;
+    if (visualizer_) visualizer_->ClosePanel();
+    if (console_ && console_->IsOpen()) console_->ToggleConsole();
+  }
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 }
 
 void DebugManager::ToggleDebugMode()
 {
+<<<<<<< HEAD
   debug_mode = !debug_mode;
+=======
+  SetDebugMode(!debug_mode);
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
   Engine::GetLogger().LogEvent(debug_mode ? "Debug Mode ON" : "Debug Mode OFF");
 }
 
@@ -373,3 +452,149 @@ bool DebugManager::IsGodModeEnabled() const
 {
   return debug_mode && god_mode;
 }
+<<<<<<< HEAD
+=======
+
+void DebugManager::RegisterGameCommands()
+{
+  if (!console_)
+	return;
+
+  // set_hp dragon 30
+  console_->RegisterCommand(
+	"set_hp",
+	[](std::vector<std::string> args)
+	{
+	  if (args.size() < 2)
+		return;
+	  if (auto* ch = FindCharacterByName(args[0]))
+		ch->SetHP(std::stoi(args[1]));
+	},
+	"set_hp <target> <value> — HP 직접 설정");
+
+  // set_ap dragon 3
+  console_->RegisterCommand(
+	"set_ap",
+	[](std::vector<std::string> args)
+	{
+	  if (args.size() < 2)
+		return;
+	  if (auto* ch = FindCharacterByName(args[0]))
+		ch->SetActionPoints(std::stoi(args[1]));
+	},
+	"set_ap <target> <value> — AP 설정");
+
+  // end_turn
+  console_->RegisterCommand(
+	"end_turn",
+	[](std::vector<std::string>)
+	{
+	  auto* tm = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
+	  if (tm)
+		tm->EndCurrentTurn();
+	},
+	"end_turn — 현재 턴 강제 종료");
+
+  // kill fighter
+  console_->RegisterCommand(
+	"kill",
+	[](std::vector<std::string> args)
+	{
+	  if (args.empty())
+		return;
+	  auto* ch = FindCharacterByName(args[0]);
+	  if (ch && ch->IsAlive())
+		ch->TakeDamage(ch->GetHP() + 1, nullptr);
+	},
+	"kill <target> — 즉사 (DeathEvent 발행됨)");
+
+  // add_effect dragon Fear 3
+  console_->RegisterCommand(
+	"add_effect",
+	[](std::vector<std::string> args)
+	{
+	  if (args.size() < 3)
+		return;
+	  if (auto* ch = FindCharacterByName(args[0]))
+		ch->AddEffect(args[1], std::stoi(args[2]));
+	},
+	"add_effect <target> <effect_name> <duration> — 상태이상 부여");
+
+  // spell_restore dragon 1
+  console_->RegisterCommand(
+	"spell_restore",
+	[](std::vector<std::string> args)
+	{
+	  if (args.size() < 2)
+		return;
+	  auto* ch = FindCharacterByName(args[0]);
+	  if (!ch)
+		return;
+	  if (auto* slots = ch->GetSpellSlots())
+		slots->RestoreOne(std::stoi(args[1]));
+	},
+	"spell_restore <target> <level> — 해당 레벨 슬롯 1개 복구");
+
+  // spell_restore_all dragon
+  console_->RegisterCommand(
+	"spell_restore_all",
+	[](std::vector<std::string> args)
+	{
+	  if (args.empty())
+		return;
+	  auto* ch = FindCharacterByName(args[0]);
+	  if (!ch)
+		return;
+	  if (auto* slots = ch->GetSpellSlots())
+	  {
+		const auto& m = slots->GetMaxSlots();
+		if (!m.empty())
+		  slots->Recover(m.rbegin()->first);
+	  }
+	},
+	"spell_restore_all <target> — 모든 슬롯 최대치 복구");
+
+  // spell_consume dragon 2
+  console_->RegisterCommand(
+	"spell_consume",
+	[](std::vector<std::string> args)
+	{
+	  if (args.size() < 2)
+		return;
+	  auto* ch = FindCharacterByName(args[0]);
+	  if (!ch)
+		return;
+	  if (auto* slots = ch->GetSpellSlots())
+		slots->Consume(std::stoi(args[1]));
+	},
+	"spell_consume <target> <level> — 해당 레벨 슬롯 1개 소모");
+
+  // spell_slots dragon
+  console_->RegisterCommand(
+	"spell_slots",
+	[this](std::vector<std::string> args)
+	{
+	  if (args.empty())
+		return;
+	  auto* ch = FindCharacterByName(args[0]);
+	  if (!ch)
+	  {
+		console_->Print("Character not found: " + args[0]);
+		return;
+	  }
+	  auto* slots = ch->GetSpellSlots();
+	  if (!slots)
+	  {
+		console_->Print(args[0] + " has no spell slots");
+		return;
+	  }
+	  console_->Print("=== " + ch->TypeName() + " Spell Slots ===");
+	  for (const auto& [lv, max_cnt] : slots->GetMaxSlots())
+	  {
+		int cur = ch->GetSpellSlotCount(lv);
+		console_->Print("  Lv" + std::to_string(lv) + ": " + std::to_string(cur) + " / " + std::to_string(max_cnt));
+	  }
+	},
+	"spell_slots <target> — 슬롯 잔량 전체 출력");
+}
+>>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
