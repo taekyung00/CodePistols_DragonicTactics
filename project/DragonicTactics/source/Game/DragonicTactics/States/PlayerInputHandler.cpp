@@ -97,6 +97,7 @@ void PlayerInputHandler::Update(double dt, Character* current_character, GridSys
             // 'F' 키를 누르고 있는 동안 빨리감기
             if (Engine::GetInput().KeyDown(CS230::Input::Keys::F)) {
                 debugMgr->timeScale = debugMgr->FAST_FORWARD_SPEED;
+                
             } else {
                 debugMgr->timeScale = 1.0f; // 키를 떼면 원상복구
             }

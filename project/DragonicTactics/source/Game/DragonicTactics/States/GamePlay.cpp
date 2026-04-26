@@ -248,6 +248,7 @@ void GamePlay::Update(double dt)
   {
 	return;
   }
+  
 
   double scaledDt = dt * debugMgr->timeScale;
   Character* current = nullptr;
@@ -269,7 +270,7 @@ void GamePlay::Update(double dt)
 	m_orchestrator->Update(scaledDt, turnMgr, aiSystem);
 	m_ui_manager->Update(dt);
   }
-  UpdateGSComponents(dt);
+  UpdateGSComponents(scaledDt);
 }
 
 void GamePlay::Unload()
