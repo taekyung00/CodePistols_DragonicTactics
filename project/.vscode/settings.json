@@ -83,9 +83,5 @@
         "xtree": "cpp",
         "xutility": "cpp"
     },
-<<<<<<< HEAD
     "cmake.sourceDirectory": "C:/Users/taek0/Desktop/25fall_semester/GAM200/CodePistols_DragonicTactics/DragonicTactics"
-=======
-    "cmake.sourceDirectory": "C:/Users/taek0/Desktop/CodePistols_DragonicTactics/project/DragonicTactics"
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 }

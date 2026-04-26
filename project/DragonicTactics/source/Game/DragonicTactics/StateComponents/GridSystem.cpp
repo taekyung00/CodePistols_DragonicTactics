@@ -34,16 +34,11 @@ bool GridSystem::HasExit() const
 
 GridSystem::GridSystem()
 {
-<<<<<<< HEAD
-=======
-	ResizeGrid(8, 8);
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 	Reset();
 	stone_tile_bright = Engine::GetTextureManager().Load("Assets/images/stone_tile_bright.png");
 	stone_tile_dark	  = Engine::GetTextureManager().Load("Assets/images/stone_tile_dark.png");
 }
 
-<<<<<<< HEAD
 void GridSystem::Reset()
 {
 	for (int y = 0; y < MAP_HEIGHT; ++y)
@@ -52,24 +47,6 @@ void GridSystem::Reset()
 		{
 			tile_grid[y][x]		 = TileType::Empty;
 			character_grid[y][x] = nullptr;
-=======
-void GridSystem::ResizeGrid(int w, int h)
-{
-	map_width_  = w;
-	map_height_ = h;
-	tile_grid_.assign(static_cast<std::size_t>(h), std::vector<TileType>(static_cast<std::size_t>(w), TileType::Empty));
-	character_grid_.assign(static_cast<std::size_t>(h), std::vector<Character*>(static_cast<std::size_t>(w), nullptr));
-}
-
-void GridSystem::Reset()
-{
-	for (int y = 0; y < map_height_; ++y)
-	{
-		for (int x = 0; x < map_width_; ++x)
-		{
-			tile_grid_[static_cast<std::size_t>(y)][static_cast<std::size_t>(x)]	  = TileType::Empty;
-			character_grid_[static_cast<std::size_t>(y)][static_cast<std::size_t>(x)] = nullptr;
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 		}
 	}
 	exit_position_ = { -1, -1 };
@@ -77,11 +54,7 @@ void GridSystem::Reset()
 
 bool GridSystem::IsValidTile(Math::ivec2 pos) const
 {
-<<<<<<< HEAD
 	return pos.x >= 0 && pos.x < MAP_WIDTH && pos.y >= 0 && pos.y < MAP_HEIGHT;
-=======
-	return pos.x >= 0 && pos.x < map_width_ && pos.y >= 0 && pos.y < map_height_;
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 }
 
 void GridSystem::SetTileType(Math::ivec2 pos, TileType type)
@@ -91,11 +64,7 @@ void GridSystem::SetTileType(Math::ivec2 pos, TileType type)
 		Engine::GetLogger().LogError("SetTileType: Invalid tile position.");
 		return;
 	}
-<<<<<<< HEAD
 	tile_grid[pos.y][pos.x] = type;
-=======
-	tile_grid_[static_cast<std::size_t>(pos.y)][static_cast<std::size_t>(pos.x)] = type;
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 }
 
 GridSystem::TileType GridSystem::GetTileType(Math::ivec2 pos) const
@@ -104,11 +73,7 @@ GridSystem::TileType GridSystem::GetTileType(Math::ivec2 pos) const
 	{
 		return TileType::Invalid;
 	}
-<<<<<<< HEAD
 	return tile_grid[pos.y][pos.x];
-=======
-	return tile_grid_[static_cast<std::size_t>(pos.y)][static_cast<std::size_t>(pos.x)];
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 }
 
 bool GridSystem::IsOccupied(Math::ivec2 pos) const
@@ -117,11 +82,7 @@ bool GridSystem::IsOccupied(Math::ivec2 pos) const
 	{
 		return true;
 	}
-<<<<<<< HEAD
 	return character_grid[pos.y][pos.x] != nullptr;
-=======
-	return character_grid_[static_cast<std::size_t>(pos.y)][static_cast<std::size_t>(pos.x)] != nullptr;
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 }
 
 void GridSystem::Draw() const
@@ -130,24 +91,14 @@ void GridSystem::Draw() const
 
 
 	double tile_scale = static_cast<double>(TILE_SIZE) / static_cast<double>(stone_tile_bright->GetSize().x);
-<<<<<<< HEAD
 	for (int y = 0; y < MAP_HEIGHT; ++y)
 	{
 		for (int x = 0; x < MAP_WIDTH; ++x)
-=======
-	for (int y = 0; y < map_height_; ++y)
-	{
-		for (int x = 0; x < map_width_; ++x)
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 		{
 			int screen_x = x * TILE_SIZE + TILE_SIZE;
 			int screen_y = y * TILE_SIZE + TILE_SIZE;
 
-<<<<<<< HEAD
 			switch (tile_grid[y][x])
-=======
-			switch (tile_grid_[static_cast<std::size_t>(y)][static_cast<std::size_t>(x)])
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 			{
 				case TileType::Wall:
 					renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), CS200::DARKGRAY, 0U);
@@ -275,41 +226,25 @@ void GridSystem::EnableSpellTargetingMode(Math::ivec2 center, const std::string&
 	}
 	else if (geometry == "Line")
 	{
-<<<<<<< HEAD
 		for (const auto& tile : GetLineTiles(center, (range < 0 ? MAP_HEIGHT : range)))
-=======
-		for (const auto& tile : GetLineTiles(center, (range < 0 ? map_height_ : range)))
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 		if (GetTileType(tile) != TileType::Wall)
 			spell_targetable_tiles_.insert(tile);
 	}
 	else if (geometry == "OddEven")
 	{
 		// 전체 타일 표시
-<<<<<<< HEAD
 		for (int y = 0; y < MAP_HEIGHT; ++y)
 			for (int x = 0; x < MAP_WIDTH; ++x)
-=======
-		for (int y = 0; y < map_height_; ++y)
-			for (int x = 0; x < map_width_; ++x)
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 			if (GetTileType({x,y}) != TileType::Wall)
 				spell_targetable_tiles_.insert({ x, y });
 	}
 	else
 	{
 		// Single / Around / Point — 맨해튼 거리 이내 모든 타일
-<<<<<<< HEAD
 		int r = (range < 0) ? MAP_HEIGHT + MAP_WIDTH : range;
 		for (int y = 0; y < MAP_HEIGHT; ++y)
 		{
 			for (int x = 0; x < MAP_WIDTH; ++x)
-=======
-		int r = (range < 0) ? map_height_ + map_width_ : range;
-		for (int y = 0; y < map_height_; ++y)
-		{
-			for (int x = 0; x < map_width_; ++x)
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 			{
 				Math::ivec2 tile{ x, y };
 				// 수정 — Wall 제외
@@ -377,22 +312,14 @@ void GridSystem::AddCharacter(Character* character, Math::ivec2 pos)
 		Engine::GetLogger().LogError("AddCharacter: Tile is already occupied.");
 		return;
 	}
-<<<<<<< HEAD
 	character_grid[pos.y][pos.x] = character;
-=======
-	character_grid_[static_cast<std::size_t>(pos.y)][static_cast<std::size_t>(pos.x)] = character;
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 }
 
 void GridSystem::RemoveCharacter(Math::ivec2 pos)
 {
 	if (!IsValidTile(pos))
 		return;
-<<<<<<< HEAD
 	character_grid[pos.y][pos.x] = nullptr;
-=======
-	character_grid_[static_cast<std::size_t>(pos.y)][static_cast<std::size_t>(pos.x)] = nullptr;
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 }
 
 Character* GridSystem::GetCharacterAt(Math::ivec2 pos) const
@@ -401,11 +328,7 @@ Character* GridSystem::GetCharacterAt(Math::ivec2 pos) const
 	{
 		return nullptr;
 	}
-<<<<<<< HEAD
 	return character_grid[pos.y][pos.x];
-=======
-	return character_grid_[static_cast<std::size_t>(pos.y)][static_cast<std::size_t>(pos.x)];
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 }
 
 void GridSystem::MoveCharacter(Math::ivec2 old_pos, Math::ivec2 new_pos)
@@ -415,13 +338,8 @@ void GridSystem::MoveCharacter(Math::ivec2 old_pos, Math::ivec2 new_pos)
 		Engine::GetLogger().LogError("MoveCharacter: Invalid tile position.");
 		return;
 	}
-<<<<<<< HEAD
 	character_grid[new_pos.y][new_pos.x] = character_grid[old_pos.y][old_pos.x];
 	character_grid[old_pos.y][old_pos.x] = nullptr;
-=======
-	character_grid_[static_cast<std::size_t>(new_pos.y)][static_cast<std::size_t>(new_pos.x)] = character_grid_[static_cast<std::size_t>(old_pos.y)][static_cast<std::size_t>(old_pos.x)];
-	character_grid_[static_cast<std::size_t>(old_pos.y)][static_cast<std::size_t>(old_pos.x)] = nullptr;
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 }
 
 void GridSystem::Update([[maybe_unused]] double dt)
@@ -440,19 +358,11 @@ void GridSystem::Update([[maybe_unused]] double dt)
 std::vector<Character*> GridSystem::GetAllCharacters()
 {
 	std::vector<Character*> result;
-<<<<<<< HEAD
 	for (int y = 0; y < MAP_HEIGHT; ++y)
 	{
 		for (int x = 0; x < MAP_WIDTH; ++x)
 		{
 			result.push_back(character_grid[y][x]);
-=======
-	for (int y = 0; y < map_height_; ++y)
-	{
-		for (int x = 0; x < map_width_; ++x)
-		{
-			result.push_back(character_grid_[static_cast<std::size_t>(y)][static_cast<std::size_t>(x)]);
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 		}
 	}
 	return result;
@@ -599,10 +509,6 @@ void GridSystem::LoadMap(const MapData& map_data)
 {
 	Engine::GetLogger().LogEvent("GridSystem::LoadMap - Loading map: " + map_data.id);
 
-<<<<<<< HEAD
-=======
-	ResizeGrid(map_data.width, map_data.height);
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 	Reset();
 
 	for (int y = 0; y < map_data.height; ++y)
@@ -657,18 +563,6 @@ void GridSystem::LoadMap(const MapData& map_data)
 		}
 	}
 
-<<<<<<< HEAD
-=======
-	if (map_data.has_exit)
-	{
-		SetTileType(map_data.exit_position, TileType::Exit);
-		SetExitPosition(map_data.exit_position);
-		Engine::GetLogger().LogEvent("GridSystem::LoadMap - Exit set at (" +
-			std::to_string(map_data.exit_position.x) + "," +
-			std::to_string(map_data.exit_position.y) + ")");
-	}
-
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 	Engine::GetLogger().LogEvent("GridSystem::LoadMap - Completed (" + std::to_string(map_data.width * map_data.height) + " tiles)");
 }
 

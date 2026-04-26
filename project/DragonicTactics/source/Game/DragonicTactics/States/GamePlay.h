@@ -32,15 +32,12 @@ class GamePlay : public CS230::GameState
   void			DrawImGui() override;
   gsl::czstring GetName() const override;
 
-<<<<<<< HEAD
   enum class MapSource{
     First,
     Json
   };
 
   static MapSource s_next_map_source;
-=======
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
   static int s_next_map_index;
   static bool s_should_restart;
 
@@ -62,17 +59,11 @@ class GamePlay : public CS230::GameState
   Character* enemy	  = nullptr; // TODO : we have to make it vector
   bool		 game_end = false;
 
-<<<<<<< HEAD
   MapSource current_map_source_ = MapSource::First;
   int selected_json_map_index_ = 0;
   std::vector<std::string> available_json_maps_;
 
   void LoadFirstMap();
-=======
-  int selected_json_map_index_ = 0;
-  std::vector<std::string> available_json_maps_;
-
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
   void LoadJSONMap(const std::string& map_id);
 };
 

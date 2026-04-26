@@ -46,14 +46,9 @@ Created:    November 5, 2025
 #include "Game/Particles.h"
 #include "./Engine/Particle.h"
 
-<<<<<<< HEAD
 GamePlay::MapSource GamePlay::s_next_map_source = GamePlay::MapSource::First;
 int					GamePlay::s_next_map_index	= 0;
 bool				GamePlay::s_should_restart	= false;
-=======
-int				GamePlay::s_next_map_index	= 0;
-bool			GamePlay::s_should_restart	= false;
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 
 GamePlay::GamePlay() // : fighter(nullptr), dragon(nullptr)
 {
@@ -100,10 +95,7 @@ void GamePlay::Load()
   GetGSComponent<SpellSystem>()->LoadFromCSV("Assets/Data/spell_table.csv");
   // GetGSComponent<SpellSystem>()->SetEventBus(GetGSComponent<EventBus>());
 
-<<<<<<< HEAD
   current_map_source_	   = s_next_map_source;
-=======
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
   selected_json_map_index_ = s_next_map_index;
 
   auto* map_registry = GetGSComponent<MapDataRegistry>();
@@ -111,7 +103,6 @@ void GamePlay::Load()
   available_json_maps_ = map_registry->GetAllMapIds();
 
   Engine::GetLogger().LogEvent("Available maps: " + std::to_string(available_json_maps_.size()));
-<<<<<<< HEAD
   if (current_map_source_ == MapSource::First)
   {
 	Engine::GetLogger().LogEvent("Loading First map");
@@ -142,95 +133,21 @@ void GamePlay::Load()
   m_ui_manager->SetCharacters({ player, enemy });
   Engine::GetLogger().LogEvent("GamePlay::Load - Characters registered to UI Manager");
 
-=======
-
-  if (available_json_maps_.empty())
-  {
-	Engine::GetLogger().LogError("No maps loaded from maps.json - returning to MainMenu");
-	Engine::GetGameStateManager().PopState();
-	Engine::GetGameStateManager().PushState<MainMenu>();
-	return;
-  }
-
-  if (selected_json_map_index_ < 0 || selected_json_map_index_ >= static_cast<int>(available_json_maps_.size()))
-  {
-	Engine::GetLogger().LogError("Invalid map index " + std::to_string(selected_json_map_index_) + ", defaulting to 0");
-	selected_json_map_index_ = 0;
-	s_next_map_index		 = 0;
-  }
-
-  const std::string& selected_map_id = available_json_maps_[static_cast<std::size_t>(selected_json_map_index_)];
-  Engine::GetLogger().LogEvent("Loading map: " + selected_map_id);
-  LoadJSONMap(selected_map_id);
-
-  if (player == nullptr || enemy == nullptr)
-  {
-	Engine::GetLogger().LogError("LoadJSONMap failed to spawn characters - returning to MainMenu");
-	Engine::GetGameStateManager().PopState();
-	Engine::GetGameStateManager().PushState<MainMenu>();
-	return;
-  }
-
-
-  // UI Manager에 캐릭터 등록
-  m_ui_manager->SetCharacters({ player, enemy });
-  Engine::GetLogger().LogEvent("GamePlay::Load - Characters registered to UI Manager");
-
-  // EventBus 구독을 StartCombat() 전에 등록 — 첫 TurnStartedEvent를 놓치지 않기 위함
-  GetGSComponent<EventBus>()->Subscribe<TurnStartedEvent>(
-	  [this](const TurnStartedEvent& e)
-	  {
-		if (e.character)
-		  m_ui_manager->OnTurnStarted(e.character->TypeName(), e.turnNumber);
-	  });
-
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
   GetGSComponent<EventBus>()->Subscribe<CharacterDamagedEvent>(
 	  [this](const CharacterDamagedEvent& event)
 	  {
 		this->DisplayDamageAmount(event);
 		this->DisplayDamageLog(event);
-<<<<<<< HEAD
-=======
-		std::string att = event.attacker ? event.attacker->TypeName() : "?";
-		m_ui_manager->AddBattleLogEntry(
-		  att + "->" + event.target->TypeName()
-		  + " " + std::to_string(event.damageAmount) + "dmg"
-		  + " (HP:" + std::to_string(event.remainingHP) + ")");
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 	  });
 
   GetGSComponent<EventBus>()->Subscribe<SpellCastEvent>(
 	  [this](const SpellCastEvent& event)
 	  {
 		if (event.caster)
-<<<<<<< HEAD
 		  m_ui_manager->AddSpellLog(event.caster->TypeName(), event.spellName, event.spellLevel);
 	  });
 
   GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>([this]([[maybe_unused]] const CharacterDeathEvent& event) { this->CheckGameEnd(event); });
-=======
-		{
-		  m_ui_manager->AddSpellLog(event.caster->TypeName(), event.spellName, event.spellLevel);
-		  m_ui_manager->AddBattleLogEntry(
-			event.caster->TypeName() + " cast " + event.spellName
-			+ " Lv." + std::to_string(event.spellLevel));
-		}
-	  });
-
-  GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>(
-	  [this](const CharacterDeathEvent& event)
-	  {
-		this->CheckGameEnd(event);
-		if (event.character)
-		  m_ui_manager->AddBattleLogEntry(event.character->TypeName() + " died!");
-	  });
-
-  TurnManager* turnMgr = GetGSComponent<TurnManager>();
-  turnMgr->SetEventBus(GetGSComponent<EventBus>());
-  turnMgr->InitializeTurnOrder(std::vector<Character*>{ player, enemy });
-  turnMgr->StartCombat();
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 
   GetGSComponent<EventBus>()->Subscribe<CharacterEscapedEvent>(
 	  [this]([[maybe_unused]] const CharacterEscapedEvent& event)
@@ -316,11 +233,8 @@ void GamePlay::Update(double dt)
   CombatSystem*				combatSystem = GetGSComponent<CombatSystem>();
   AISystem*					aiSystem	 = GetGSComponent<AISystem>();
   CS230::GameObjectManager* goMgr		 = GetGSComponent<CS230::GameObjectManager>();
-<<<<<<< HEAD
   DebugManager*				debugMgr	 = GetGSComponent<DebugManager>();
 
-=======
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
   if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Escape))
   {
 	if (turnMgr)
@@ -334,20 +248,15 @@ void GamePlay::Update(double dt)
   {
 	return;
   }
-<<<<<<< HEAD
   
 
   double scaledDt = dt * debugMgr->timeScale;
-=======
-
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
   Character* current = nullptr;
   if (turnMgr && turnMgr->IsCombatActive())
   {
 	current = turnMgr->GetCurrentCharacter();
   }
 
-<<<<<<< HEAD
   if (debugMgr)
 	debugMgr->Update(dt);
 
@@ -362,19 +271,6 @@ void GamePlay::Update(double dt)
 	m_ui_manager->Update(dt);
   }
   UpdateGSComponents(scaledDt);
-=======
-  // SpellDelayObject가 AI 결정 전에 발화되도록 goMgr를 orchestrator 앞에 업데이트
-  // Note: debugMgr->Update는 UpdateGSComponents(dt)에서 호출됨 — 중복 호출 금지
-  goMgr->UpdateAll(dt);
-
-  if (current != nullptr)
-  {
-	m_input_handler->Update(dt, current, grid, combatSystem, m_ui_manager->GetButtons());
-	m_orchestrator->Update(dt, turnMgr, aiSystem);
-	m_ui_manager->Update(dt);
-  }
-  UpdateGSComponents(dt);
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 }
 
 void GamePlay::Unload()
@@ -432,7 +328,6 @@ void GamePlay::DrawImGui()
 
   ImGui::Begin("Map Selection");
 
-<<<<<<< HEAD
   const char* current_source = (current_map_source_ == MapSource::First) ? "First" : "JSON";
   ImGui::Text("Current Map: %s", current_source);
 
@@ -463,25 +358,12 @@ void GamePlay::DrawImGui()
   ImGui::Separator();
 
   ImGui::Text("JSON Maps:");
-=======
-  if (selected_json_map_index_ >= 0 && selected_json_map_index_ < static_cast<int>(available_json_maps_.size()))
-  {
-	ImGui::Text("Current Map: %s", available_json_maps_[static_cast<std::size_t>(selected_json_map_index_)].c_str());
-  }
-
-  ImGui::Separator();
-  ImGui::Text("Maps:");
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 
   for (int i = 0; i < static_cast<int>(available_json_maps_.size()); ++i)
   {
 	const std::string& map_id = available_json_maps_[static_cast<std::size_t>(i)];
 
-<<<<<<< HEAD
 	bool is_selected = (s_next_map_source == MapSource::Json && s_next_map_index == i);
-=======
-	bool is_selected = (s_next_map_index == i);
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 	if (is_selected)
 	{
 	  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.6f, 0.2f, 1.0f));
@@ -489,14 +371,9 @@ void GamePlay::DrawImGui()
 
 	if (ImGui::Button(map_id.c_str()))
 	{
-<<<<<<< HEAD
 	  s_next_map_source = MapSource::Json;
 	  s_next_map_index	= i;
 	  Engine::GetLogger().LogEvent("Selected JSON map: " + map_id + " (click Restart to apply)");
-=======
-	  s_next_map_index = i;
-	  Engine::GetLogger().LogEvent("Selected map: " + map_id + " (click Restart to apply)");
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 	}
 
 	if (is_selected)
@@ -702,7 +579,6 @@ gsl::czstring GamePlay::GetName() const
   return "GamePlay";
 }
 
-<<<<<<< HEAD
 void GamePlay::LoadFirstMap()
 {
   Engine::GetLogger().LogEvent("LoadHardcodedMap - BEGIN");
@@ -757,8 +633,6 @@ void GamePlay::LoadFirstMap()
   Engine::GetLogger().LogEvent("First map loaded.");
 }
 
-=======
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 void GamePlay::LoadJSONMap(const std::string& map_id)
 {
   Engine::GetLogger().LogEvent("LoadJSONMap - BEGIN: " + map_id);
@@ -772,36 +646,13 @@ void GamePlay::LoadJSONMap(const std::string& map_id)
 
   if (map_data.id.empty())
   {
-<<<<<<< HEAD
 	Engine::GetLogger().LogError("Failed to load map: " + map_id + ", falling back to hardcoded");
 	LoadFirstMap();
-=======
-	Engine::GetLogger().LogError("Failed to load map: " + map_id);
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 	return;
   }
 
   grid_system->LoadMap(map_data);
 
-<<<<<<< HEAD
-=======
-  auto dragon_it  = map_data.spawn_points.find("dragon");
-  auto fighter_it = map_data.spawn_points.find("fighter");
-  if (map_data.has_exit)
-  {
-	if (dragon_it != map_data.spawn_points.end() && dragon_it->second == map_data.exit_position)
-	{
-	  Engine::GetLogger().LogError("WARNING: dragon spawn overlaps exit at (" +
-		std::to_string(map_data.exit_position.x) + "," + std::to_string(map_data.exit_position.y) + ")");
-	}
-	if (fighter_it != map_data.spawn_points.end() && fighter_it->second == map_data.exit_position)
-	{
-	  Engine::GetLogger().LogError("WARNING: fighter spawn overlaps exit at (" +
-		std::to_string(map_data.exit_position.x) + "," + std::to_string(map_data.exit_position.y) + ")");
-	}
-  }
-
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
   auto dragon_spawn_it = map_data.spawn_points.find("dragon");
   if (dragon_spawn_it != map_data.spawn_points.end())
   {

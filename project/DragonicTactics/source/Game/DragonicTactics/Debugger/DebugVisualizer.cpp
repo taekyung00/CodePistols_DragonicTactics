@@ -12,10 +12,6 @@
 #include "./Engine/Logger.h"
 #include "./Game/DragonicTactics/Objects/Character.h"
 #include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
-<<<<<<< HEAD
-=======
-#include "./Game/DragonicTactics/Objects/Components/SpellSlots.h"
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
 #include "./Game/DragonicTactics/StateComponents/DiceManager.h"
@@ -42,14 +38,6 @@ void DebugVisualizer::Init()
   // Subscribe to turn events
   event_bus->Subscribe<TurnStartedEvent>([this](const TurnStartedEvent& e) { OnTurnStarted(e); });
 
-<<<<<<< HEAD
-=======
-  // Subscribe to spell / status / movement events
-  event_bus->Subscribe<SpellCastEvent>([this](const SpellCastEvent& e) { OnSpellCast(e); });
-  event_bus->Subscribe<StatusEffectAddedEvent>([this](const StatusEffectAddedEvent& e) { OnStatusEffectAdded(e); });
-  event_bus->Subscribe<CharacterMovedEvent>([this](const CharacterMovedEvent& e) { OnCharacterMoved(e); });
-
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
   Engine::GetLogger().LogEvent("DebugVisualizer: Event subscriptions complete");
 }
 
@@ -90,11 +78,7 @@ void DebugVisualizer::Update(double dt)
 	  roll_info.total = 0;
 	  for (int r : last_rolls)
 		roll_info.total += r;
-<<<<<<< HEAD
 	  roll_info.notation  = "Unknown"; // We don't have notation here, just the results
-=======
-	  roll_info.notation  = dice_mgr->GetLastNotation();
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 	  roll_info.timestamp = game_time_;
 
 	  dice_history_.push_back(roll_info);
@@ -119,13 +103,8 @@ void DebugVisualizer::DrawGridOverlay(const GridSystem* grid)
   auto renderer_2d = Engine::GetTextureManager().GetRenderer2D();
 
   const int TILE_SIZE  = GridSystem::TILE_SIZE;
-<<<<<<< HEAD
   const int MAP_WIDTH  = 8;
   const int MAP_HEIGHT = 8;
-=======
-  const int MAP_WIDTH  = grid->GetWidth();
-  const int MAP_HEIGHT = grid->GetHeight();
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 
   CS200::RGBA grid_color = 0xFFFFFF44; // Semi-transparent white
 
@@ -157,11 +136,7 @@ void DebugVisualizer::DrawImGuiDebugPanel([[maybe_unused]]const GridSystem* grid
   }
 
   ImGui::SetNextWindowSize(ImVec2(650, 600), ImGuiCond_FirstUseEver);
-<<<<<<< HEAD
   ImGui::SetNextWindowPos(ImVec2(300, 10), ImGuiCond_FirstUseEver);
-=======
-  ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 
   if (ImGui::Begin("Events & Stats", &show_debug_panel_))
   {
@@ -195,16 +170,6 @@ void DebugVisualizer::DrawImGuiDebugPanel([[maybe_unused]]const GridSystem* grid
 		ImGui::EndTabItem();
 	  }
 
-<<<<<<< HEAD
-=======
-	  // Tab 5: AI Decisions
-	  if (ImGui::BeginTabItem("AI Decisions"))
-	  {
-		DrawImGuiAIDecisions();
-		ImGui::EndTabItem();
-	  }
-
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 	  ImGui::EndTabBar();
 	}
   }
@@ -239,31 +204,12 @@ void DebugVisualizer::DrawImGuiEventLog()
 	}
 	else if (entry.event_type == "Spell")
 	{
-<<<<<<< HEAD
 	  color = ImVec4(0.5f, 0.5f, 1.0f, 1.0f);
-=======
-	  color = ImVec4(0.5f, 0.5f, 1.0f, 1.0f);  // 보라
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 	}
 	else if (entry.event_type == "Turn")
 	{
 	  color = ImVec4(0.5f, 1.0f, 0.5f, 1.0f);
 	}
-<<<<<<< HEAD
-=======
-	else if (entry.event_type == "Status")
-	{
-	  color = ImVec4(1.0f, 0.8f, 0.2f, 1.0f);  // 노랑
-	}
-	else if (entry.event_type == "Move")
-	{
-	  color = ImVec4(0.4f, 1.0f, 0.8f, 1.0f);  // 청록
-	}
-	else if (entry.event_type == "AI")
-	{
-	  color = ImVec4(0.6f, 0.8f, 1.0f, 1.0f);  // 하늘
-	}
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 
 	ImGui::PushStyleColor(ImGuiCol_Text, color);
 	ImGui::Text("[%.1fs] %s: %s", entry.timestamp, entry.event_type.c_str(), entry.details.c_str());
@@ -284,7 +230,6 @@ void DebugVisualizer::DrawImGuiDiceHistory()
   {
 	const auto& roll = *it;
 
-<<<<<<< HEAD
 	ImGui::Text("[%.1fs] Total: %d", roll.timestamp, roll.total);
 	ImGui::SameLine(150);
 	ImGui::Text("Rolls: [");
@@ -302,39 +247,6 @@ void DebugVisualizer::DrawImGuiDiceHistory()
 	}
 	ImGui::SameLine();
 	ImGui::Text("]");
-=======
-	// Notation (e.g. "2d6"): highlight in yellow
-	ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.3f, 1.0f), "%s", roll.notation.c_str());
-	ImGui::SameLine();
-
-	// count x sides info derived from notation and rolls vector
-	int count = static_cast<int>(roll.rolls.size());
-	ImGui::TextDisabled("(%dx dice)", count);
-	ImGui::SameLine(120);
-
-	// Total
-	ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "= %d", roll.total);
-	ImGui::SameLine();
-
-	// Individual results
-	ImGui::Text("  [");
-	for (size_t i = 0; i < roll.rolls.size(); ++i)
-	{
-	  ImGui::SameLine(0, 0);
-	  ImGui::Text("%d", roll.rolls[i]);
-	  if (i + 1 < roll.rolls.size())
-	  {
-		ImGui::SameLine(0, 0);
-		ImGui::Text(", ");
-	  }
-	}
-	ImGui::SameLine(0, 0);
-	ImGui::Text("]");
-
-	// Timestamp (dimmed, right side)
-	ImGui::SameLine();
-	ImGui::TextDisabled("  @%.1fs", roll.timestamp);
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
   }
 
   ImGui::EndChild();
@@ -351,13 +263,8 @@ void DebugVisualizer::DrawImGuiCharacterStats(const GridSystem* grid)
   ImGui::Text("All Characters on Grid");
   ImGui::Separator();
 
-<<<<<<< HEAD
   const int MAP_WIDTH  = 8;
   const int MAP_HEIGHT = 8;
-=======
-  const int MAP_WIDTH  = grid->GetWidth();
-  const int MAP_HEIGHT = grid->GetHeight();
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 
   ImGui::BeginChild("CharacterStatsScroll", ImVec2(0, 0), false);
 
@@ -398,44 +305,6 @@ void DebugVisualizer::DrawImGuiCharacterStats(const GridSystem* grid)
 		  ImGui::Text("AP: %d / %d", ap_comp->GetCurrentPoints(), ap_comp->GetMaxPoints());
 		}
 
-<<<<<<< HEAD
-=======
-		ImGui::Text("Movement Range: %d", character->GetMovementRange());
-
-		// 스펠 슬롯
-		auto* slots = character->GetSpellSlots();
-		if (slots != nullptr)
-		{
-		  const auto& max_map = slots->GetMaxSlots();
-		  if (!max_map.empty())
-		  {
-			ImGui::Text("Spell Slots:");
-			for (const auto& [lv, max_cnt] : max_map)
-			{
-			  int    cur = character->GetSpellSlotCount(lv);
-			  ImVec4 col = (cur == 0)
-						   ? ImVec4(1.0f, 0.3f, 0.3f, 1.0f)
-						   : ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-			  ImGui::TextColored(col, "  Lv%d: %d / %d", lv, cur, max_cnt);
-			}
-		  }
-		}
-
-		// 활성 상태이상
-		const auto& effects = character->GetActiveEffects();
-		if (!effects.empty())
-		{
-		  ImGui::Text("Status Effects:");
-		  for (const auto& fx : effects)
-			ImGui::BulletText("%s (%d turns, mag:%d)",
-							  fx.name.c_str(), fx.duration, fx.magnitude);
-		}
-		else
-		{
-		  ImGui::TextDisabled("  (no active effects)");
-		}
-
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 		ImGui::Unindent();
 	  }
 
@@ -573,15 +442,10 @@ void DebugVisualizer::OnAIDecision(const AIDecisionEvent& event)
   }
   else if (event.decision_type == AIDecisionType::Move)
   {
-<<<<<<< HEAD
 	// Move 타입은 destination 정보가 필요하지만, 현재 이벤트 구조체에는 없을 수 있음.
 	// (필요하다면 AIDecisionEvent 구조체에 destination 필드 추가 권장)
 	log.targetName = "-";
 	// log.destination = event.destination; // 구조체에 추가 후 사용
-=======
-	log.targetName	= "-";
-	log.destination = event.destination;
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
   }
   else
   {
@@ -633,16 +497,7 @@ void DebugVisualizer::DrawImGuiAIDecisions()
 		typeColor = ImVec4(0.4f, 1.0f, 0.4f, 1.0f); // 초록
 
 	  ImGui::TextColored(typeColor, "%s", it->actionType.c_str());
-<<<<<<< HEAD
 	  if (it->targetName != "-" && it->targetName != "None")
-=======
-	  if (it->actionType == "Move" && it->destination.x >= 0)
-	  {
-		ImGui::SameLine();
-		ImGui::TextDisabled("-> (%d,%d)", it->destination.x, it->destination.y);
-	  }
-	  else if (it->targetName != "-" && it->targetName != "None")
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 	  {
 		ImGui::SameLine();
 		ImGui::TextDisabled("-> %s", it->targetName.c_str());
@@ -655,45 +510,6 @@ void DebugVisualizer::DrawImGuiAIDecisions()
   }
 }
 
-<<<<<<< HEAD
-=======
-void DebugVisualizer::OnSpellCast(const SpellCastEvent& event)
-{
-  std::string details = (event.caster ? event.caster->TypeName() : "?")
-                      + " cast [" + event.spellName + "]"
-                      + " Lv" + std::to_string(event.spellLevel);
-  EventLogEntry entry{ "Spell", details, game_time_ };
-  event_log_.push_back(entry);
-}
-
-void DebugVisualizer::OnStatusEffectAdded(const StatusEffectAddedEvent& event)
-{
-  std::string details = (event.target ? event.target->TypeName() : "?")
-                      + " gained [" + event.effectName + "]"
-                      + " " + std::to_string(event.duration) + " turns";
-  EventLogEntry entry{ "Status", details, game_time_ };
-  event_log_.push_back(entry);
-}
-
-void DebugVisualizer::OnCharacterMoved(const CharacterMovedEvent& event)
-{
-  if (!event.character) return;
-
-  MovementInfo info;
-  info.character = event.character;
-  info.from      = event.fromGrid;
-  info.to        = event.toGrid;
-  info.timestamp = game_time_;
-  recent_moves_.push_back(info);
-
-  std::string details = event.character->TypeName()
-      + " (" + std::to_string(event.fromGrid.x) + "," + std::to_string(event.fromGrid.y) + ")"
-      + " -> (" + std::to_string(event.toGrid.x) + "," + std::to_string(event.toGrid.y) + ")";
-  EventLogEntry entry{ "Move", details, game_time_ };
-  event_log_.push_back(entry);
-}
-
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 std::string DebugVisualizer::GetDecisionTypeString(AIDecisionType type)
 {
   switch (type)

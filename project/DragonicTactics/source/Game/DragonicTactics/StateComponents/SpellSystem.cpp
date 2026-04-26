@@ -24,10 +24,6 @@
 #include "Game/DragonicTactics/Objects/Components/ActionPoints.h"
 #include "Game/DragonicTactics/Objects/Components/SpellSlots.h"
 #include "Game/DragonicTactics/StateComponents/StatusEffectHandler.h"
-<<<<<<< HEAD
-=======
-#include "Game/DragonicTactics/Debugger/DebugManager.h"
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 #include "Game/DragonicTactics/StateComponents/TurnManager.h"
 #include "Game/Particles.h"
 #include "SpellSystem.h"
@@ -542,18 +538,9 @@ bool SpellSystem::CastSpell(Character* caster, const std::string& spell_id, Math
 	if (consume_level > 0)
 		caster->ConsumeSpell(consume_level);
 
-<<<<<<< HEAD
 	// AP 소모 — CanCast에서 이미 >= 1 보장됨
 	caster->GetActionPointsComponent()->Consume(1);
 	std::cout << "what";
-=======
-	// AP 소모 — 갓모드 Dragon은 AP 소모 없음
-	{
-		auto* debug_mgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
-		if (!(debug_mgr && debug_mgr->IsGodModeEnabled() && caster->GetCharacterType() == CharacterTypes::Dragon))
-			caster->GetActionPointsComponent()->Consume(1);
-	}
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 
 	// 1. 시전자가 드래곤인지 검사하여 파티클 생성
 	// 시전자 무관 스펠 종류에 따라서 나타나는 파티클 분류 필요
@@ -812,15 +799,7 @@ bool SpellSystem::CastWalls(Character* caster, const std::string& spell_id, cons
 	int consume_level = (upcast_level > 0) ? upcast_level : spell.spell_level;
 	if (consume_level > 0)
 		caster->ConsumeSpell(consume_level);
-<<<<<<< HEAD
 	caster->GetActionPointsComponent()->Consume(1);
-=======
-	{
-		auto* debug_mgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
-		if (!(debug_mgr && debug_mgr->IsGodModeEnabled() && caster->GetCharacterType() == CharacterTypes::Dragon))
-			caster->GetActionPointsComponent()->Consume(1);
-	}
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 
 	int current_round = tm->GetRoundNumber();
 
@@ -855,15 +834,7 @@ bool SpellSystem::CastLavaZones(Character* caster, const std::string& spell_id, 
 	int consume_level = (upcast_level > 0) ? upcast_level : spell.spell_level;
 	if (consume_level > 0)
 		caster->ConsumeSpell(consume_level);
-<<<<<<< HEAD
 	caster->GetActionPointsComponent()->Consume(1);
-=======
-	{
-		auto* debug_mgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
-		if (!(debug_mgr && debug_mgr->IsGodModeEnabled() && caster->GetCharacterType() == CharacterTypes::Dragon))
-			caster->GetActionPointsComponent()->Consume(1);
-	}
->>>>>>> a9fcc3c17804591a293c7d78ce2c79ee42247835
 
 	int current_round = tm->GetRoundNumber();
 	int damage		  = CalculateSpellDamage(spell, upcast_level);
