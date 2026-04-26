@@ -67,6 +67,9 @@ class DebugManager : public CS230::Component
   DebugConsole*	   GetConsole();
   DebugVisualizer* GetVisualizer();
 
+  float timeScale = 1.0f;      // 게임 속도 배수 (기본 1.0배속)
+  const float FAST_FORWARD_SPEED = 3.0f; // 빨리감기 시 적용할 배속 (예: 3배속)
+  
   private:
   void DrawDebugControlPanel();
 
@@ -80,6 +83,7 @@ class DebugManager : public CS230::Component
   bool combat_inspector{ false };
   bool event_tracer{ false };
   bool god_mode{ false };
+  
 
   // Owned subsystems
   std::unique_ptr<DebugConsole>	   console_;

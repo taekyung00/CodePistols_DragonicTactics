@@ -249,6 +249,7 @@ void GamePlay::Update(double dt)
 	return;
   }
 
+  double scaledDt = dt * debugMgr->timeScale;
   Character* current = nullptr;
   if (turnMgr && turnMgr->IsCombatActive())
   {
@@ -259,12 +260,13 @@ void GamePlay::Update(double dt)
 	debugMgr->Update(dt);
 
   // SpellDelayObject가 AI 결정 전에 발화되도록 goMgr를 orchestrator 앞에 업데이트
-  goMgr->UpdateAll(dt);
+  
+  goMgr->UpdateAll(scaledDt);
 
   if (current != nullptr)
   {
-	m_input_handler->Update(dt, current, grid, combatSystem, m_ui_manager->GetButtons());
-	m_orchestrator->Update(dt, turnMgr, aiSystem);
+	m_input_handler->Update(scaledDt, current, grid, combatSystem, m_ui_manager->GetButtons());
+	m_orchestrator->Update(scaledDt, turnMgr, aiSystem);
 	m_ui_manager->Update(dt);
   }
   UpdateGSComponents(dt);

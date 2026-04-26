@@ -62,6 +62,7 @@ void DebugManager::Update(double dt)
   }
 }
 
+
 void DebugManager::ProcessInput()
 {
   CS230::Input& input = Engine::Instance().GetInput();
