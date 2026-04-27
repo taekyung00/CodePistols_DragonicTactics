@@ -263,6 +263,8 @@ void GamePlay::Update(double dt)
   CombatSystem*				combatSystem = GetGSComponent<CombatSystem>();
   AISystem*					aiSystem	 = GetGSComponent<AISystem>();
   CS230::GameObjectManager* goMgr		 = GetGSComponent<CS230::GameObjectManager>();
+  DebugManager*				debugMgr	 = GetGSComponent<DebugManager>();
+
   if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Escape))
   {
 	if (turnMgr)
@@ -277,7 +279,15 @@ void GamePlay::Update(double dt)
 	return;
   }
 
-  Character* current = nullptr;
+  double scaledDt = dt * debugMgr->timeScale;
+	Character* current = nullptr;
+	if (turnMgr && turnMgr->IsCombatActive())
+	{
+		current = turnMgr->GetCurrentCharacter();
+	}	
+	if (debugMgr)
+		debugMgr->Update(dt);
+
   if (turnMgr && turnMgr->IsCombatActive())
   {
 	current = turnMgr->GetCurrentCharacter();
@@ -285,15 +295,15 @@ void GamePlay::Update(double dt)
 
   // SpellDelayObject가 AI 결정 전에 발화되도록 goMgr를 orchestrator 앞에 업데이트
   // Note: debugMgr->Update는 UpdateGSComponents(dt)에서 호출됨 — 중복 호출 금지
-  goMgr->UpdateAll(dt);
+  goMgr->UpdateAll(scaledDt);
 
   if (current != nullptr)
   {
-	m_input_handler->Update(dt, current, grid, combatSystem, m_ui_manager->GetButtons());
-	m_orchestrator->Update(dt, turnMgr, aiSystem);
+	m_input_handler->Update(scaledDt, current, grid, combatSystem, m_ui_manager->GetButtons());
+	m_orchestrator->Update(scaledDt, turnMgr, aiSystem);
 	m_ui_manager->Update(dt);
   }
-  UpdateGSComponents(dt);
+  UpdateGSComponents(scaledDt);
 }
 
 void GamePlay::Unload()

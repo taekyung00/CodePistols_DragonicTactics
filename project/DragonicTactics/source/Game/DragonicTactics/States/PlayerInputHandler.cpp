@@ -88,6 +88,25 @@ static void HideAllSpellButtons(ButtonManager& btns)
 void PlayerInputHandler::Update(double dt, Character* current_character, GridSystem* grid, CombatSystem* combat_system, ButtonManager& btns)
 {
  
+    // 1. GameStateManager를 통해 DebugManager 컴포넌트 포인터를 가져옵니다.
+    auto debugMgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
+
+    // 2. 컴포넌트가 정상적으로 등록되어 있는지 확인 (안전장치)
+    if (debugMgr != nullptr) {
+        // 3. 갓모드 체크 및 빨리감기 로직
+        if (debugMgr->IsGodModeEnabled()) { 
+            // 'F' 키를 누르고 있는 동안 빨리감기
+            if (Engine::GetInput().KeyDown(CS230::Input::Keys::F)) {
+                debugMgr->timeScale = debugMgr->FAST_FORWARD_SPEED;
+                
+            } else {
+                debugMgr->timeScale = 1.0f; // 키를 떼면 원상복구
+            }
+        } else {
+            // 갓모드가 꺼지면 무조건 기본 속도 유지
+            debugMgr->timeScale = 1.0f; 
+        }
+    }
     // Move 버튼 클릭
     if (btns.IsPressed("btn_move"))
     {
