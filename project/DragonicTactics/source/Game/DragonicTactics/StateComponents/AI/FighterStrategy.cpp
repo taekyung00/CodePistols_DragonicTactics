@@ -29,9 +29,8 @@ AIDecision FighterStrategy::MakeDecision(Character* actor)
   GridSystem* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
 
   // ============================================================
-  // TODO [미구현]: 보물 탈출 / 클레릭 추적 분기
-  // 보물 시스템(grid->HasExit, grid->GetExitPosition) 및
-  // Cleric 캐릭터 구현 후 아래 주석을 활성화할 것.
+  // TODO [미구현]: 보물 탈출 분기
+  // 보물 시스템(grid->HasExit, grid->GetExitPosition) 구현 후 활성화.
   // ============================================================
   //
   // if (actor->HasTreasure()) {
@@ -47,25 +46,31 @@ AIDecision FighterStrategy::MakeDecision(Character* actor)
   //   return { AIDecisionType::Move, nullptr, exitPos, "", "Escaping with treasure", LAVA_TILE_PENALTY };
   // }
   //
-  // if (IsInDanger(actor)) {
-  //   Character* cleric = FindCleric();
-  //   if (cleric != nullptr) {
-  //     int clericDist = grid->ManhattanDistance(actor->GetGridPosition()->Get(),
-  //                                              cleric->GetGridPosition()->Get());
-  //     if (clericDist <= 1) {
-  //       return { AIDecisionType::EndTurn, nullptr, {}, "", "Waiting for heal from Cleric" };
-  //     }
-  //     if (actor->GetMovementRange() > 0) {
-  //       Math::ivec2 movePos = FindNextMovePos(actor, cleric, grid);
-  //       if (movePos != actor->GetGridPosition()->Get()) {
-  //         return { AIDecisionType::Move, nullptr, movePos, "", "Moving toward Cleric", LAVA_TILE_PENALTY };
-  //       }
-  //     }
-  //     return { AIDecisionType::EndTurn, nullptr, {}, "", "Can't reach Cleric" };
-  //   }
-  // }
-  //
   // ============================================================
+
+  // ── 클레릭 추적: 위험 시 클레릭에게 이동해 힐 대기 ──────────────
+  if (IsInDanger(actor))
+  {
+    Character* cleric = FindCleric();
+    if (cleric != nullptr)
+    {
+      int clericDist = grid->ManhattanDistance(actor->GetGridPosition()->Get(),
+                                               cleric->GetGridPosition()->Get());
+      if (clericDist <= 1)
+      {
+        return { AIDecisionType::EndTurn, nullptr, {}, "", "Waiting for heal from Cleric" };
+      }
+      if (actor->GetMovementRange() > 0)
+      {
+        Math::ivec2 movePos = FindNextMovePos(actor, cleric, grid);
+        if (movePos != actor->GetGridPosition()->Get())
+        {
+          return { AIDecisionType::Move, nullptr, movePos, "", "Moving toward Cleric", LAVA_TILE_PENALTY };
+        }
+      }
+      return { AIDecisionType::EndTurn, nullptr, {}, "", "Can't reach Cleric" };
+    }
+  }
 
   // 드래곤 탐색
   Character* dragon = FindDragon();
@@ -323,7 +328,7 @@ Character* FighterStrategy::FindCleric()
       return c;
     }
   }
-  return nullptr; // TODO: Cleric 캐릭터 구현 전까지 항상 nullptr 반환
+  return nullptr;
 }
 
 // ============================================================

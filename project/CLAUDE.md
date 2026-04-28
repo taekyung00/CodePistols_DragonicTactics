@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | ----------------------- | -------------------------------------------------------------------- |
 | `GamePlay::Load()`      | 모든 GS 컴포넌트 등록 + CSV/JSON 데이터 로드 + 캐릭터 스폰                             |
 | `GamePlay::Update()`    | `PlayerInputHandler` / `BattleOrchestrator` / `GameObjectManager` 구동 |
-| `GamePlay::DrawImGui()` | Player Actions / Action List / Spell List / Map Selection 패널         |
+| `GamePlay::DrawImGui()` | Map Selection / Combat Status 패널 (Move·Action·Spell UI는 ButtonManager가 담당) |
 | `GamePlay::Draw()`      | `GridSystem::Draw()` + `GameObjectManager::DrawAll()`                |
 
 **현재 맵 구성**: Dragon = 플레이어, Fighter + Cleric = AI 적 (`maps.json` spawn_points 기준, `enemys` 벡터로 관리).
@@ -76,7 +76,7 @@ CS230::ParticleManager<Particles::Hit>
 - `DiceManager` — `Roll("2d6")`, `Roll("1d20+5")` 형식으로 주사위 굴림
 - `CombatSystem` — 공격/방어 주사위 굴림 + 최종 데미지 계산 (StatusEffectHandler 훅 연동)
 
-**GameObject 컴포넌트**: `GridPosition`, `ActionPoints`, `StatsComponent`, `SpellSlots`, `MovementComponent`, `StatusEffectComponent`
+**GameObject 컴포넌트**: `GridPosition`, `ActionPoints`, `StatsComponent`, `SpellSlots`, `MovementComponent`, `StatusEffectComponent`, `ShakeComponent`
 
 ### GS 컴포넌트 접근 패턴
 
@@ -177,7 +177,7 @@ MakeDecision
 
 **FighterStrategy 미구현 분기** (`FighterStrategy.cpp` 상단 주석 블록):
 - **보물 탈출**: `actor->HasTreasure()` → Exit 타일로 이동 (`grid->HasExit()`, `grid->GetExitPosition()` 필요) — 보물 시스템 구현 후 활성화
-- **클레릭 추적**: 위험 시(`IsInDanger`) `FindCleric()`으로 클레릭을 찾아 인접 대기 또는 이동 — Cleric 캐릭터 구현 후 활성화
+- **클레릭 추적**: 위험 시(`IsInDanger`) `FindCleric()`으로 클레릭을 찾아 인접 대기 또는 이동 — Cleric 캐릭터 구현됨, 코드 주석 해제로 활성화 가능
 
 **⚠️ UseAbility AIDecision 작성 시 주의**:
 - `AISystem::ExecuteDecision`은 `decision.target->GetGridPosition()->Get()`을 target_tile로 `CastSpell`에 전달 (`destination` 필드 무시됨)
@@ -462,4 +462,7 @@ Engine::GetSoundManager().SetBGMVolume(0.7f);                  // 0.0 ~ 1.0
 - [docs/Detailed Implementations/features/spell_system.md](docs/Detailed%20Implementations/features/spell_system.md) — SpellSystem 전체 구현 가이드 (Targeting 템플릿, Effect 파싱, 업캐스팅, Move 템플릿)
 - [architecture/game_architecture_rules.md](architecture/game_architecture_rules.md) — 아키텍처 원칙
 - [architecture/Implementation_Checklist.md](architecture/Implementation_Checklist.md) — 진행 체크리스트
+- [docs/Detailed Implementations/features/fighter_strategy.md](docs/Detailed%20Implementations/features/fighter_strategy.md) — FighterStrategy 구현 상세 가이드
+- [docs/Detailed Implementations/features/rogue_strategy.md](docs/Detailed%20Implementations/features/rogue_strategy.md) — RogueStrategy 구현 가이드 (참조용)
+- [docs/Detailed Implementations/weeks/cleric_implementation.md](docs/Detailed%20Implementations/weeks/cleric_implementation.md) — Cleric 구현 가이드
 - [DragonicTactics/README.md](DragonicTactics/README.md) — 빌드 셋업 (영문/한글)
