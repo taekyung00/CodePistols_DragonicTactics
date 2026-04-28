@@ -176,8 +176,8 @@ MakeDecision
 **⚠️ Cleric 무한루프 방지 (기구현됨)**: Curse(range=5)는 시작 위치(거리=6)에서 CanCast 실패 → AP 미소모 → 무한루프 위험. `MakeSupportDecision`에서 `dist_to_dragon <= CURSE_RANGE` 직접 체크 후 범위 밖이면 `MakeMeleePhaseDecision`(이동)으로 fall-through.
 
 **FighterStrategy 미구현 분기** (`FighterStrategy.cpp` 상단 주석 블록):
-- **보물 탈출**: `actor->HasTreasure()` → Exit 타일로 이동 (`grid->HasExit()`, `grid->GetExitPosition()` 필요) — 보물 시스템 구현 후 활성화
-- **클레릭 추적**: 위험 시(`IsInDanger`) `FindCleric()`으로 클레릭을 찾아 인접 대기 또는 이동 — Cleric 캐릭터 구현됨, 코드 주석 해제로 활성화 가능
+- **보물 탈출**: `actor->HasTreasure()` → Exit 타일로 이동 (`grid->HasExit()`, `grid->GetExitPosition()` 필요) — 보물 시스템 구현 후 활성화 (주석 처리 중)
+- **클레릭 추적**: ✅ 활성화됨 — 위험 시(`IsInDanger`) `FindCleric()`으로 클레릭 탐색 → 인접이면 EndTurn(힐 대기), 비인접이면 클레릭 방향 이동
 
 **⚠️ UseAbility AIDecision 작성 시 주의**:
 - `AISystem::ExecuteDecision`은 `decision.target->GetGridPosition()->Get()`을 target_tile로 `CastSpell`에 전달 (`destination` 필드 무시됨)
