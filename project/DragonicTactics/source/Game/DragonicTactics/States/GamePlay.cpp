@@ -19,6 +19,7 @@ Created:    November 5, 2025
 
 #include "Game/DragonicTactics/Objects/Components/GridPosition.h"
 #include "Game/DragonicTactics/Objects/Components/StatsComponent.h"
+#include "Game/DragonicTactics/Objects/Cleric.h"
 #include "Game/DragonicTactics/Objects/Dragon.h"
 #include "Game/DragonicTactics/Objects/Fighter.h"
 
@@ -121,7 +122,7 @@ void GamePlay::Load()
   Engine::GetLogger().LogEvent("Loading map: " + selected_map_id);
   LoadJSONMap(selected_map_id);
 
-  if (player == nullptr || enemy == nullptr)
+  if (player == nullptr || enemys.empty())
   {
 	Engine::GetLogger().LogError("LoadJSONMap failed to spawn characters - returning to MainMenu");
 	Engine::GetGameStateManager().PopState();
@@ -131,7 +132,9 @@ void GamePlay::Load()
 
 
   // UI Manager에 캐릭터 등록
-  m_ui_manager->SetCharacters({ player, enemy });
+  std::vector<Character*> all_characters = { player };
+  all_characters.insert(all_characters.end(), enemys.begin(), enemys.end());
+  m_ui_manager->SetCharacters(all_characters);
   Engine::GetLogger().LogEvent("GamePlay::Load - Characters registered to UI Manager");
 
   // EventBus 구독을 StartCombat() 전에 등록 — 첫 TurnStartedEvent를 놓치지 않기 위함
@@ -176,7 +179,9 @@ void GamePlay::Load()
 
   TurnManager* turnMgr = GetGSComponent<TurnManager>();
   turnMgr->SetEventBus(GetGSComponent<EventBus>());
-  turnMgr->InitializeTurnOrder(std::vector<Character*>{ player, enemy });
+  std::vector<Character*> turn_order = { player };
+  turn_order.insert(turn_order.end(), enemys.begin(), enemys.end());
+  turnMgr->InitializeTurnOrder(turn_order);
   turnMgr->StartCombat();
 
   GetGSComponent<EventBus>()->Subscribe<CharacterEscapedEvent>(
@@ -230,7 +235,6 @@ void GamePlay::DisplayDamageLog(const CharacterDamagedEvent& event)
   m_ui_manager->ShowDamageLog(str, position, Math::vec2{ 0.5, 0.5 });
 }
 
-//  ======== TODO : we have to make it for loop to check all enemy is retired ========
 void GamePlay::CheckGameEnd(const CharacterDeathEvent& event)
 {
   if (event.character == player)
@@ -240,7 +244,9 @@ void GamePlay::CheckGameEnd(const CharacterDeathEvent& event)
 	return;
   }
 
-  if (event.character == enemy)
+  bool all_enemies_dead = std::all_of(enemys.begin(), enemys.end(),
+	[](Character* c) { return c == nullptr || !c->IsAlive(); });
+  if (all_enemies_dead && !enemys.empty())
   {
 	m_ui_manager->ShowGameEnd("Player Win");
 	game_end = true;
@@ -280,14 +286,8 @@ void GamePlay::Update(double dt)
   }
 
   double scaledDt = dt * debugMgr->timeScale;
-	Character* current = nullptr;
-	if (turnMgr && turnMgr->IsCombatActive())
-	{
-		current = turnMgr->GetCurrentCharacter();
-	}	
-	if (debugMgr)
-		debugMgr->Update(dt);
 
+  Character* current = nullptr;
   if (turnMgr && turnMgr->IsCombatActive())
   {
 	current = turnMgr->GetCurrentCharacter();
@@ -320,7 +320,7 @@ void GamePlay::Unload()
   m_orchestrator.reset();
 
 
-  enemy	 = nullptr;
+  enemys.clear();
   player = nullptr;
 }
 
@@ -644,16 +644,31 @@ void GamePlay::LoadJSONMap(const std::string& map_id)
   if (fighter_spawn_it != map_data.spawn_points.end())
   {
 	Math::ivec2 fighter_spawn = fighter_spawn_it->second;
-	auto		enemy_ptr	  = character_factory->Create(CharacterTypes::Fighter, fighter_spawn);
-	enemy					  = enemy_ptr.get();
-	enemy->SetGridSystem(grid_system);
+	auto  enemy_ptr   = character_factory->Create(CharacterTypes::Fighter, fighter_spawn);
+	auto* fighter_raw = enemy_ptr.get();
+	fighter_raw->SetGridSystem(grid_system);
 	go_manager->Add(std::move(enemy_ptr));
-	grid_system->AddCharacter(enemy, fighter_spawn);
+	grid_system->AddCharacter(fighter_raw, fighter_spawn);
+	enemys.push_back(fighter_raw);
 	Engine::GetLogger().LogEvent("Fighter spawned at: " + std::to_string(fighter_spawn.x) + ", " + std::to_string(fighter_spawn.y));
   }
   else
   {
 	Engine::GetLogger().LogError("No fighter spawn point in map: " + map_id);
+  }
+
+  // Cleric
+  auto cleric_spawn_it = map_data.spawn_points.find("cleric");
+  if (cleric_spawn_it != map_data.spawn_points.end())
+  {
+	Math::ivec2 cleric_spawn = cleric_spawn_it->second;
+	auto  cleric_ptr = character_factory->Create(CharacterTypes::Cleric, cleric_spawn);
+	auto* cleric_raw = cleric_ptr.get();
+	cleric_raw->SetGridSystem(grid_system);
+	go_manager->Add(std::move(cleric_ptr));
+	grid_system->AddCharacter(cleric_raw, cleric_spawn);
+	enemys.push_back(cleric_raw);
+	Engine::GetLogger().LogEvent("Cleric spawned at: " + std::to_string(cleric_spawn.x) + ", " + std::to_string(cleric_spawn.y));
   }
 
   Engine::GetLogger().LogEvent("LoadJSONMap - END: " + map_data.name);

@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `GamePlay::DrawImGui()` | Player Actions / Action List / Spell List / Map Selection 패널         |
 | `GamePlay::Draw()`      | `GridSystem::Draw()` + `GameObjectManager::DrawAll()`                |
 
-**현재 맵 구성**: Dragon = 플레이어(좌측 하단 `'d'`), Fighter = AI 적(좌측 상단 `'f'`).
+**현재 맵 구성**: Dragon = 플레이어, Fighter + Cleric = AI 적 (`maps.json` spawn_points 기준, `enemys` 벡터로 관리).
 
 ---
 
@@ -25,7 +25,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **폐기됨**: `Abilities/` 디렉토리 전체 (AbilityBase, MeleeAttack, ShieldBash) — `Objects/Actions/ActionAttack`만 사용
 - **구현 완료**: SpellSystem (CSV 파싱 + 시전 + UI), StatusEffectHandler (9가지 효과 + OnApplied/OnRemoved), TurnManager, GridSystem, SoundManager (BGM/SFX)
 - **구현 완료**: FighterStrategy (`fighter.mmd` 플로우차트 완전 반영 — 킬루프/생존/일반교전/원거리 분기)
-- **진행 중**: ClericStrategy, WizardStrategy, RogueStrategy (`FighterStrategy`가 참조 구현)
+- **구현 완료**: ClericStrategy (`cleric.mmd` 플로우차트 완전 반영 — 킬루프/힐/버프·디버프/근접 분기) + Cleric 캐릭터 클래스
+- **미구현**: WizardStrategy, RogueStrategy — 캐릭터 클래스 및 characters.json 스탯도 없음 (`FighterStrategy`/`ClericStrategy`가 참조 구현)
 
 ---
 
@@ -144,6 +145,36 @@ MakeDecision
 | Frenzy | `S_ENH_020` | 2 | Self:Single:0 |
 | Fearful Cry | `S_DEB_020` | 1 | Enemy:Around:3 |
 
+**ClericStrategy 의사결정 구조** (`StateComponents/AI/ClericStrategy.cpp`):
+
+```
+MakeDecision
+  ├── CanReachThisTurn && CanKillDragonThisTurn → MakeKillLoopDecision (기본 공격, 공격 스펠 없음)
+  └── Phase_Decision
+        ├── AP = 0 & MP > 0 → TacticalMove → EndTurn
+        ├── AP = 0 & MP = 0 → EndTurn
+        ├── [2순위] 힐 대상 HP < 50% + 슬롯 + 거리 ≤ 5 → S_ENH_030 Healing Touch
+        ├── 슬롯 있음 → MakeSupportDecision
+        │     ├── !Cursed && 거리 ≤ 5 → S_DEB_010 Curse
+        │     ├── !Blessed(self) → S_BUF_010 Divine Shield on self (자신=거리0, 항상 통과)
+        │     └── 지원 불필요 → MakeMeleePhaseDecision
+        └── 슬롯 없음 → MakeMeleePhaseDecision
+              ├── 인접 → 기본 공격
+              └── 비인접 & MP > 0 → 이동
+```
+
+**Cleric 스펠 ID** (`Assets/Data/spell_table.csv` 기준):
+
+| 스펠 | ID | 레벨 | 타겟팅 | 전략 상수 |
+|---|---|---|---|---|
+| Healing Touch | `S_ENH_030` | 1 | Ally:Single:**5** | `HEAL_RANGE=5` |
+| Divine Shield | `S_BUF_010` | 1 | Ally:Single:**4** | self 타겟, 체크 불필요 |
+| Curse of Suffering | `S_DEB_010` | 1 | Enemy:Single:**5** | `CURSE_RANGE=5` |
+
+**Cleric 스탯** (`Assets/Data/characters.json`): HP 75, Speed 3, AP 2, 1d6 공격, 슬롯 Lv1×3 / Lv2×2
+
+**⚠️ Cleric 무한루프 방지 (기구현됨)**: Curse(range=5)는 시작 위치(거리=6)에서 CanCast 실패 → AP 미소모 → 무한루프 위험. `MakeSupportDecision`에서 `dist_to_dragon <= CURSE_RANGE` 직접 체크 후 범위 밖이면 `MakeMeleePhaseDecision`(이동)으로 fall-through.
+
 **FighterStrategy 미구현 분기** (`FighterStrategy.cpp` 상단 주석 블록):
 - **보물 탈출**: `actor->HasTreasure()` → Exit 타일로 이동 (`grid->HasExit()`, `grid->GetExitPosition()` 필요) — 보물 시스템 구현 후 활성화
 - **클레릭 추적**: 위험 시(`IsInDanger`) `FindCleric()`으로 클레릭을 찾아 인접 대기 또는 이동 — Cleric 캐릭터 구현 후 활성화
@@ -151,7 +182,7 @@ MakeDecision
 **⚠️ UseAbility AIDecision 작성 시 주의**:
 - `AISystem::ExecuteDecision`은 `decision.target->GetGridPosition()->Get()`을 target_tile로 `CastSpell`에 전달 (`destination` 필드 무시됨)
 - `Around` geometry 스펠(Fearful Cry): caster 중심 AoE → `CanCast` 범위 체크가 `caster→target_tile` 거리로 계산 → **`target = actor(자신)`** 으로 설정해야 거리=0으로 항상 통과
-- `Single` geometry 스펠(Smite): range=1 → CanCast 실패 시 AP 미소모 → 다음 프레임에 동일 결정 반복 → **무한루프** — Strategy에서 `distance <= 1`을 직접 보장해야 함
+- `Single` geometry 스펠: CanCast 실패(사거리 초과) 시 AP 미소모 → 다음 프레임에 동일 결정 반복 → **무한루프** — **Strategy에서 반드시 `distance <= SPELL_RANGE`를 직접 체크**해야 함. 범위 밖이면 UseAbility 반환 금지, `MakeMeleePhaseDecision`(이동)으로 fall-through.
 
 ### GridSystem::TileType
 
@@ -195,6 +226,18 @@ GamePlay (GameState)
   └── TurnManager → AISystem → Strategy::MakeDecision()
 ```
 
+**GamePlay AI 캐릭터 관리** (`States/GamePlay.h`):
+
+```cpp
+Character* player = nullptr;              // Dragon (플레이어)
+std::vector<Character*> enemys {};        // 모든 AI 캐릭터 (Fighter, Cleric, ...)
+```
+
+- 스폰 시 `enemys.push_back(raw_ptr)` — Fighter·Cleric 모두 동일
+- `InitializeTurnOrder({ player } + enemys)` — 새 AI 추가 시 자동 반영
+- `CheckGameEnd`: `std::all_of(enemys, IsAlive==false)` → 전원 사망 시 Player Win
+- ⚠️ `LoadJSONMap`은 `maps.json`의 `spawn_points` 키(`"fighter"`, `"cleric"`, ...)를 찾아 스폰 — 새 캐릭터는 maps.json에 spawn_point 추가 필요
+
 **PlayerInputHandler.ActionState** (입력 상태 머신):
 
 ```
@@ -206,6 +249,19 @@ None → SelectingMove → Moving
 ```
 
 Dragon(플레이어) 턴에서만 동작. AI(Fighter) 턴은 `BattleOrchestrator`가 처리.
+
+**⚠️ GS 컴포넌트 Update 중복 호출 금지** (`States/GamePlay.cpp`):
+
+`UpdateGSComponents(dt)`가 등록된 모든 GS 컴포넌트(`DebugManager` 포함)의 `Update()`를 자동 호출한다. 특정 컴포넌트를 추가로 명시 호출하면 같은 프레임에 `ProcessInput()`이 두 번 실행되어 `KeyJustPressed`가 두 번 true → 토글이 ON→OFF로 즉시 복귀하는 버그 발생.
+
+```cpp
+// ❌ 잘못된 패턴 — debugMgr->Update(dt)를 명시 호출 후 UpdateGSComponents도 호출
+debugMgr->Update(dt);        // 1번째 ProcessInput
+UpdateGSComponents(scaledDt); // 2번째 ProcessInput → F1 두 번 처리
+
+// ✅ 올바른 패턴
+UpdateGSComponents(scaledDt); // 한 번만 호출
+```
 
 **⚠️ SpellDelayObject 타이밍 주의** (`States/BattleOrchestrator.cpp`):
 
@@ -297,12 +353,18 @@ CastSpell → CanCast(클래스/슬롯/Geometry/Range/AP 체크) → ConsumeSpel
 3. CMake가 GLOB_RECURSE로 자동 감지 → CMakeLists.txt 수동 편집 불필요
 4. 새 파일 추가 후 `cmake --preset windows-debug` 재실행
 5. 캐릭터 생성: `new Dragon()` 대신 `CharacterFactory::Create()` 사용
-   ```cpp
-   // CharacterFactory는 GS 컴포넌트 — GamePlay::Load()에서 등록 후 사용
-   auto* factory = GetGSComponent<CharacterFactory>();
-   auto* character = factory->Create(CharacterTypes::Dragon, startPos);
-   GetGSComponent<GameObjectManager>()->Add(character);
-   ```
+
+**새 AI 캐릭터 추가 체크리스트** (Cleric 추가 패턴 기준):
+```
+□ Objects/X.h + X.cpp            — Character 상속, IsAIControlled()=true, Action()→AISystem 위임
+□ StateComponents/AI/XStrategy.h/.cpp — IAIStrategy 구현, Single 스펠에 range 상수 + 거리 체크 필수
+□ StateComponents/AISystem.cpp   — m_strategies[CharacterTypes::X] = new XStrategy()
+□ Factories/CharacterFactory.h   — class X; + CreateX() 선언
+□ Factories/CharacterFactory.cpp — #include X.h + Create() switch case + CreateX() 구현
+□ Assets/Data/characters.json    — "X": { hp, speed, ap, attack_dice, spell_slots, ... }
+□ Assets/Data/maps.json          — 각 맵 spawn_points에 "x": {"x":N, "y":N} 추가
+□ States/GamePlay.cpp            — LoadJSONMap에 spawn_points.find("x") + enemys.push_back()
+```
 
 **캐릭터 클래스 계층**: `CS230::GameObject` ← `Character` ← `Dragon` / `Fighter` / `Cleric` / `Wizard` / `Rogue`
 

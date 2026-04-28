@@ -47,10 +47,8 @@ class GamePlay : public CS230::GameState
 	void CheckGameEnd(const CharacterDeathEvent& event);
 
 
-  // Fighter* fighter = nullptr;
-  // Dragon* dragon  = nullptr;
-  Character* player	  = nullptr;
-  Character* enemy	  = nullptr; // TODO : we have to make it vector
+  Character* player  = nullptr;
+  std::vector<Character*> enemys {};
   bool		 game_end = false;
 
   int selected_json_map_index_ = 0;
