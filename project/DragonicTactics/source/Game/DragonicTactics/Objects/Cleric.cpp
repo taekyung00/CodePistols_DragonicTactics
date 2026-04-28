@@ -10,16 +10,16 @@
 
 Cleric::Cleric(Math::ivec2 start_coordinates)
   : Character(
-      CharacterTypes::Cleric, start_coordinates, 2,
+      CharacterTypes::Cleric, start_coordinates, 1,
       {
         { 1, 3 },
         { 2, 2 }
       })
 {
   CharacterStats cleric_stats;
-  cleric_stats.max_hp       = 75;
-  cleric_stats.current_hp   = 75;
-  cleric_stats.speed        = 3;
+  cleric_stats.max_hp       = 90;
+  cleric_stats.current_hp   = 90;
+  cleric_stats.speed        = 2;
   cleric_stats.base_attack  = 4;
   cleric_stats.attack_dice  = "1d6";
   cleric_stats.base_defend  = 2;
@@ -28,8 +28,7 @@ Cleric::Cleric(Math::ivec2 start_coordinates)
 
   *GetStatsComponent() = StatsComponent(cleric_stats);
   m_action_list.push_back(new ActionAttack());
-  // cleric.spt 미존재 — 임시로 fighter.spt 사용
-  AddGOComponent(new CS230::Sprite("Assets/sprites/fighter.spt", this));
+  AddGOComponent(new CS230::Sprite("Assets/sprites/cleric.spt", this));
 }
 
 void Cleric::OnTurnStart()

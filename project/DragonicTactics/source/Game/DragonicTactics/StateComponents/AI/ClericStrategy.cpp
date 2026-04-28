@@ -1,16 +1,17 @@
 /**
  * @file ClericStrategy.cpp
- * @brief 클레릭 AI 구현: cleric.mmd 플로우차트 기반 의사결정
+ * @brief 클레릭 AI 구현: cleric.jpg 플로우차트 기반 의사결정
  *
- * 스펠 시전은 모두 [STUB] 로그 출력 + UseAbility 반환으로 대체.
+ * 스펠 시전은 모두 [STUB] UseAbility 반환으로 대체.
  * AISystem::ExecuteDecision이 CastSpell을 호출하므로 실제 효과는 SpellSystem이 처리.
  *
- * 클레릭 스펠 (공격 스펠 없음 — 기본 공격으로만 딜):
- *   S_ENH_030  Healing Touch   Ally:Single:5   힐 + Blessing 3턴
- *   S_BUF_010  Divine Shield   Ally:Single:4   Blessing 3턴
- *   S_DEB_010  Curse           Enemy:Single:5  Curse 3턴
+ * 클레릭 스펠 (자신에게 사용 불가 — 모두 아군/적 대상):
+ *   S_ENH_030  치유의 손길(Healing Touch)    Ally:Single:5   힐 + Blessing 3턴
+ *   S_BUF_010  성스러운 가호(Divine Shield)   Ally:Single:4   Blessing 3턴
+ *   S_DEB_010  고통의 저주(Curse of Suffering) Enemy:Single:5  Curse 3턴
  *
- * Kill_Loop K_Slot Yes 경로가 cleric.mmd에 미정의 → 공격 스펠 없으므로 항상 기본 공격.
+ * 힐/버프 타겟 우선순위: 파이터 > 로그 > 위자드 (자신 제외)
+ * 힐 임계값: HP 30% 이하 (cleric.jpg 기준)
  */
 #include "pch.h"
 
@@ -27,7 +28,7 @@
 #include "Game/DragonicTactics/Types/CharacterTypes.h"
 
 // ============================================================
-// MakeDecision — 플로우차트 최상위 흐름 (cleric.mmd)
+// MakeDecision — 플로우차트 최상위 흐름 (cleric.jpg)
 // ============================================================
 
 AIDecision ClericStrategy::MakeDecision(Character* actor)
@@ -37,7 +38,7 @@ AIDecision ClericStrategy::MakeDecision(Character* actor)
   Character* dragon = FindDragon();
   if (dragon == nullptr)
   {
-    return { AIDecisionType::EndTurn, nullptr, {}, "", "Cleric: No dragon found" };
+    return { AIDecisionType::EndTurn, nullptr, {}, "", "No dragon found" };
   }
 
   // ── [1순위] 확정 킬 ────────────────────────────────────────
@@ -55,13 +56,13 @@ AIDecision ClericStrategy::MakeDecision(Character* actor)
       Math::ivec2 movePos = FindNextMovePos(actor, dragon, grid);
       if (movePos != actor->GetGridPosition()->Get())
       {
-        return { AIDecisionType::Move, nullptr, movePos, "", "Cleric: Tactical positioning (no AP)", LAVA_TILE_PENALTY };
+        return { AIDecisionType::Move, nullptr, movePos, "", "Tactical positioning (no AP)", LAVA_TILE_PENALTY };
       }
     }
-    return { AIDecisionType::EndTurn, nullptr, {}, "", "Cleric: No AP remaining" };
+    return { AIDecisionType::EndTurn, nullptr, {}, "", "No AP remaining" };
   }
 
-  // ── [2순위] 힐 필요 여부 체크 ─────────────────────────────
+  // ── [2순위] 치유의 손길(Healing Touch) — 파이터>로그>위자드 우선 ─
   Character* healTarget = FindAllyNeedingHeal(HEAL_THRESHOLD);
   if (healTarget != nullptr && HasSpellSlot(actor, 1))
   {
@@ -69,11 +70,18 @@ AIDecision ClericStrategy::MakeDecision(Character* actor)
                                         healTarget->GetGridPosition()->Get());
     if (dist <= HEAL_RANGE)
     {
-      std::string reason = "[STUB] Cleric: Healing Touch on " + healTarget->TypeName();
-      Engine::GetLogger().LogEvent(reason);
-      return { AIDecisionType::UseAbility, healTarget, {}, "S_ENH_030", reason };
+      return { AIDecisionType::UseAbility, healTarget, {}, "S_ENH_030", "Heal: Healing Touch on " + healTarget->TypeName() };
     }
-    // 사거리 밖이면 힐 건너뜀 → 지원/근접 단계로 계속
+    // out of range -> move toward heal target (not Dragon)
+    if (actor->GetMovementRange() > 0)
+    {
+      Math::ivec2 movePos = FindNextMovePos(actor, healTarget, grid);
+      if (movePos != actor->GetGridPosition()->Get())
+      {
+        return { AIDecisionType::Move, nullptr, movePos, "", "Heal: Moving to " + healTarget->TypeName(), LAVA_TILE_PENALTY };
+      }
+    }
+    // 이동 불가 → fall-through
   }
 
   // ── 버프/디버프 지원 ──────────────────────────────────────
@@ -87,8 +95,8 @@ AIDecision ClericStrategy::MakeDecision(Character* actor)
 }
 
 // ============================================================
-// Kill_Loop: 확정 킬 시퀀스 (cleric.mmd Kill_Loop 서브그래프)
-// 클레릭은 공격 스펠 없음 → K_Slot Yes/No 무관, 항상 기본 공격
+// Kill_Loop: 확정 킬 시퀀스
+// 클레릭은 공격 스펠 없음 → 항상 기본 공격
 // ============================================================
 
 AIDecision ClericStrategy::MakeKillLoopDecision(Character* actor, Character* dragon, GridSystem* grid)
@@ -103,31 +111,29 @@ AIDecision ClericStrategy::MakeKillLoopDecision(Character* actor, Character* dra
       Math::ivec2 movePos = FindNextMovePos(actor, dragon, grid);
       if (movePos != actor->GetGridPosition()->Get())
       {
-        return { AIDecisionType::Move, nullptr, movePos, "", "Cleric Kill: moving to reach dragon", LAVA_TILE_PENALTY };
+        return { AIDecisionType::Move, nullptr, movePos, "", "Cleric Kill: Moving to reach dragon", LAVA_TILE_PENALTY };
       }
     }
     if (actor->GetActionPoints() <= 0)
     {
-      return { AIDecisionType::EndTurn, nullptr, {}, "", "Cleric Kill: no AP, can't move" };
+      return { AIDecisionType::EndTurn, nullptr, {}, "", "Cleric Kill: No AP, can't move" };
     }
     return MakeMeleePhaseDecision(actor, dragon, grid);
   }
 
   if (actor->GetActionPoints() <= 0)
   {
-    return { AIDecisionType::EndTurn, nullptr, {}, "", "Cleric Kill: no AP" };
+    return { AIDecisionType::EndTurn, nullptr, {}, "", "Cleric Kill: No AP" };
   }
 
-  // 공격 스펠 없으므로 슬롯 유무 관계없이 기본 공격
-  return { AIDecisionType::Attack, dragon, {}, "", "Cleric Kill: basic attack" };
+  return { AIDecisionType::Attack, dragon, {}, "", "Cleric Kill: Basic attack -> Dragon" };
 }
 
 // ============================================================
-// MakeSupportDecision: 버프/디버프 우선순위 결정
-//   1. Dragon에 Curse 없으면 → Curse (S_DEB_010, range 5)
-//   2. 자신에 Blessing 없으면 → Divine Shield (S_BUF_010, range 4)
-//      ※ Healing Touch로 힐받은 아군은 이미 Blessed → 중복 방지
-//   3. 지원 불필요 → MeleePhase
+// MakeSupportDecision: 버프/디버프 우선순위 (cleric.jpg 기준)
+//   [3순위] 고통의 저주(Curse of Suffering) — Dragon 디버프 없을 때
+//   [4순위] 성스러운 가호(Divine Shield) — 파이터>로그>위자드 (자신 제외)
+//   → 사거리 밖이면 MeleePhase로 fall-through
 // ============================================================
 
 AIDecision ClericStrategy::MakeSupportDecision(Character* actor, Character* dragon, GridSystem* grid)
@@ -135,26 +141,30 @@ AIDecision ClericStrategy::MakeSupportDecision(Character* actor, Character* drag
   int dist_to_dragon = grid->ManhattanDistance(actor->GetGridPosition()->Get(),
                                                 dragon->GetGridPosition()->Get());
 
+  // [3순위] 고통의 저주(Curse of Suffering)
   if (!IsCurseActive(dragon) && HasSpellSlot(actor, 1) && dist_to_dragon <= CURSE_RANGE)
   {
-    std::string reason = "[STUB] Cleric: Curse of Suffering on " + dragon->TypeName();
-    Engine::GetLogger().LogEvent(reason);
-    return { AIDecisionType::UseAbility, dragon, {}, "S_DEB_010", reason };
+    return { AIDecisionType::UseAbility, dragon, {}, "S_DEB_010", "Support: Curse of Suffering on Dragon" };
   }
 
-  // Healing Touch가 Blessing을 같이 부여하므로 힐받은 아군은 이미 Blessed
-  if (!IsBlessingActive(actor) && HasSpellSlot(actor, 1))
+  // [4순위] 성스러운 가호(Divine Shield) — 자신 제외, 파이터>로그>위자드 우선
+  Character* buffTarget = FindAllyNeedingBuff();
+  if (buffTarget != nullptr && HasSpellSlot(actor, 1))
   {
-    std::string reason = "[STUB] Cleric: Divine Shield on self";
-    Engine::GetLogger().LogEvent(reason);
-    return { AIDecisionType::UseAbility, actor, {}, "S_BUF_010", reason };
+    int dist = grid->ManhattanDistance(actor->GetGridPosition()->Get(),
+                                        buffTarget->GetGridPosition()->Get());
+    if (dist <= BLESSING_RANGE)
+    {
+      return { AIDecisionType::UseAbility, buffTarget, {}, "S_BUF_010", "Support: Divine Shield on " + buffTarget->TypeName() };
+    }
+    // 사거리 밖 → fall-through
   }
 
   return MakeMeleePhaseDecision(actor, dragon, grid);
 }
 
 // ============================================================
-// MakeMeleePhaseDecision: 기본 공격 프로세스 (cleric.mmd MeleePhase)
+// MakeMeleePhaseDecision: 기본 공격 프로세스 (cleric.jpg MeleePhase)
 // ============================================================
 
 AIDecision ClericStrategy::MakeMeleePhaseDecision(Character* actor, Character* dragon, GridSystem* grid)
@@ -164,7 +174,7 @@ AIDecision ClericStrategy::MakeMeleePhaseDecision(Character* actor, Character* d
 
   if (distance <= 1)
   {
-    return { AIDecisionType::Attack, dragon, {}, "", "Cleric Melee: basic attack (adjacent)" };
+    return { AIDecisionType::Attack, dragon, {}, "", "Cleric Melee: Basic attack -> Dragon" };
   }
 
   if (actor->GetMovementRange() > 0)
@@ -172,11 +182,11 @@ AIDecision ClericStrategy::MakeMeleePhaseDecision(Character* actor, Character* d
     Math::ivec2 movePos = FindNextMovePos(actor, dragon, grid);
     if (movePos != actor->GetGridPosition()->Get())
     {
-      return { AIDecisionType::Move, nullptr, movePos, "", "Cleric Melee: moving toward dragon", LAVA_TILE_PENALTY };
+      return { AIDecisionType::Move, nullptr, movePos, "", "Cleric Melee: Moving toward dragon", LAVA_TILE_PENALTY };
     }
   }
 
-  return { AIDecisionType::EndTurn, nullptr, {}, "", "Cleric Melee: no move possible" };
+  return { AIDecisionType::EndTurn, nullptr, {}, "", "Cleric Melee: No move possible" };
 }
 
 // ============================================================
@@ -203,22 +213,47 @@ Character* ClericStrategy::FindAllyNeedingHeal(float hpThreshold)
   GridSystem* grid     = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
   auto        allChars = grid->GetAllCharacters();
 
-  Character* bestTarget    = nullptr;
-  float      lowestHPRatio = hpThreshold;
+  // cleric.jpg: 파이터>로그>위자드 우선순위, 자신(Cleric) 제외
+  static const CharacterTypes priority[] = {
+    CharacterTypes::Fighter, CharacterTypes::Rogue, CharacterTypes::Wizard
+  };
 
-  for (auto* c : allChars)
+  for (auto type : priority)
   {
-    if (c && c->IsAlive() && c->GetCharacterType() != CharacterTypes::Dragon)
+    for (auto* c : allChars)
     {
-      float ratio = c->GetHPPercentage();
-      if (ratio < lowestHPRatio)
+      if (c && c->IsAlive() && c->GetCharacterType() == type
+          && c->GetHPPercentage() < hpThreshold)
       {
-        lowestHPRatio = ratio;
-        bestTarget    = c;
+        return c;
       }
     }
   }
-  return bestTarget;
+  return nullptr;
+}
+
+Character* ClericStrategy::FindAllyNeedingBuff()
+{
+  GridSystem* grid     = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+  auto        allChars = grid->GetAllCharacters();
+
+  // 클레릭 스펠은 자신에게 사용 불가 → 자신(Cleric) 제외
+  // 파이터>로그>위자드 우선순위
+  static const CharacterTypes priority[] = {
+    CharacterTypes::Fighter, CharacterTypes::Rogue, CharacterTypes::Wizard
+  };
+
+  for (auto type : priority)
+  {
+    for (auto* c : allChars)
+    {
+      if (c && c->IsAlive() && c->GetCharacterType() == type && !c->Has("Blessing"))
+      {
+        return c;
+      }
+    }
+  }
+  return nullptr;
 }
 
 // ============================================================

@@ -48,30 +48,6 @@ AIDecision FighterStrategy::MakeDecision(Character* actor)
   //
   // ============================================================
 
-  // ── 클레릭 추적: 위험 시 클레릭에게 이동해 힐 대기 ──────────────
-  if (IsInDanger(actor))
-  {
-    Character* cleric = FindCleric();
-    if (cleric != nullptr)
-    {
-      int clericDist = grid->ManhattanDistance(actor->GetGridPosition()->Get(),
-                                               cleric->GetGridPosition()->Get());
-      if (clericDist <= 1)
-      {
-        return { AIDecisionType::EndTurn, nullptr, {}, "", "Waiting for heal from Cleric" };
-      }
-      if (actor->GetMovementRange() > 0)
-      {
-        Math::ivec2 movePos = FindNextMovePos(actor, cleric, grid);
-        if (movePos != actor->GetGridPosition()->Get())
-        {
-          return { AIDecisionType::Move, nullptr, movePos, "", "Moving toward Cleric", LAVA_TILE_PENALTY };
-        }
-      }
-      return { AIDecisionType::EndTurn, nullptr, {}, "", "Can't reach Cleric" };
-    }
-  }
-
   // 드래곤 탐색
   Character* dragon = FindDragon();
   if (dragon == nullptr)
@@ -92,7 +68,7 @@ AIDecision FighterStrategy::MakeDecision(Character* actor)
   // ── Phase_Decision ────────────────────────────────────────────
   if (actor->GetActionPoints() <= 0)
   {
-    return { AIDecisionType::EndTurn, nullptr, {}, "", "Phase: no AP remaining" };
+    return { AIDecisionType::EndTurn, nullptr, {}, "", "No AP remaining" };
   }
 
   if (distance > 1)
@@ -127,13 +103,13 @@ AIDecision FighterStrategy::MakeKillLoopDecision(Character* actor, Character* dr
       Math::ivec2 movePos = FindNextMovePos(actor, dragon, grid);
       if (movePos != actor->GetGridPosition()->Get())
       {
-        return { AIDecisionType::Move, nullptr, movePos, "", "Kill: moving to reach dragon", LAVA_TILE_PENALTY };
+        return { AIDecisionType::Move, nullptr, movePos, "", "Kill: Moving to dragon", LAVA_TILE_PENALTY };
       }
     }
     // 이동 불가 & 비인접 → Phase_Decision으로 낙하 (비인접이므로 FarMove가 적절)
     if (actor->GetActionPoints() <= 0)
     {
-      return { AIDecisionType::EndTurn, nullptr, {}, "", "Kill: no AP, can't move" };
+      return { AIDecisionType::EndTurn, nullptr, {}, "", "Kill: No AP, can't move" };
     }
     return MakeFarMoveDecision(actor, dragon, grid);
   }
@@ -141,15 +117,14 @@ AIDecision FighterStrategy::MakeKillLoopDecision(Character* actor, Character* dr
   // 인접 상태
   if (actor->GetActionPoints() <= 0)
   {
-    return { AIDecisionType::EndTurn, nullptr, {}, "", "Kill loop: no AP" };
+    return { AIDecisionType::EndTurn, nullptr, {}, "", "Kill: No AP" };
   }
 
   // 오버킬 방지: 드래곤 HP에 맞는 최저 슬롯 탐색
   int bestSlot = FindBestSmiteSlot(actor, dragon);
   if (bestSlot > 0)
   {
-    std::string reason = "[STUB] Kill: Smite lv" + std::to_string(bestSlot) + " (overkill guard)";
-    Engine::GetLogger().LogEvent(reason);
+    std::string reason = "Kill: Smite lv" + std::to_string(bestSlot);
     return { AIDecisionType::UseAbility, dragon, {}, "S_ATK_050", reason };
   }
 
@@ -168,19 +143,17 @@ AIDecision FighterStrategy::MakeFarMoveDecision(Character* actor, Character* dra
     Math::ivec2 movePos = FindNextMovePos(actor, dragon, grid);
     if (movePos != actor->GetGridPosition()->Get())
     {
-      return { AIDecisionType::Move, nullptr, movePos, "", "Far: moving toward dragon", LAVA_TILE_PENALTY };
+      return { AIDecisionType::Move, nullptr, movePos, "", "Far: Moving to dragon", LAVA_TILE_PENALTY };
     }
   }
 
   // 이동 불가 → 드래곤 공포 없음 & 1레벨 슬롯 & 사거리 내 → 공포의 외침
   if (!IsFearActive(dragon) && HasSpellSlot(actor, 1) && IsInFearRange(actor, dragon, grid))
   {
-    std::string reason = "[STUB] Far: Fear Cry on Dragon (can't move, range cast)";
-    Engine::GetLogger().LogEvent(reason);
-    return { AIDecisionType::UseAbility, actor, {}, "S_DEB_020", reason };
+    return { AIDecisionType::UseAbility, actor, {}, "S_DEB_020", "Far: Fear Cry on Dragon" };
   }
 
-  return { AIDecisionType::EndTurn, nullptr, {}, "", "Far: no move, no fear cast available" };
+  return { AIDecisionType::EndTurn, nullptr, {}, "", "Far: No move or Fear Cry available" };
 }
 
 // ============================================================
@@ -197,18 +170,14 @@ AIDecision FighterStrategy::MakeSurvivalDecision(Character* actor, Character* dr
     // 피의 갈망 없음
     if (HasSpellSlot(actor, 2))
     {
-      std::string reason = "[STUB] Survival: Casting Bloodlust (self-buff, lifesteal on next attacks)";
-      Engine::GetLogger().LogEvent(reason);
-      return { AIDecisionType::UseAbility, actor, {}, "S_ENH_010", reason };
+      return { AIDecisionType::UseAbility, actor, {}, "S_ENH_010", "Survival: Casting Bloodlust" };
     }
     // 2레벨 슬롯 없음 → CheckFearNear (사거리 체크 추가)
     if (!IsFearActive(dragon) && HasSpellSlot(actor, 1) && IsInFearRange(actor, dragon, grid))
     {
-      std::string reason = "[STUB] Survival: Fear Cry at Dragon (no bloodlust, near)";
-      Engine::GetLogger().LogEvent(reason);
-      return { AIDecisionType::UseAbility, actor, {}, "S_DEB_020", reason };
+      return { AIDecisionType::UseAbility, actor, {}, "S_DEB_020", "Survival: Fear Cry on Dragon" };
     }
-    return { AIDecisionType::Attack, dragon, {}, "", "Survival: basic attack (no slots)" };
+    return { AIDecisionType::Attack, dragon, {}, "", "Survival: Basic attack" };
   }
   else
   {
@@ -216,11 +185,9 @@ AIDecision FighterStrategy::MakeSurvivalDecision(Character* actor, Character* dr
     int bestSlot = FindBestSmiteSlot(actor, dragon);
     if (bestSlot > 0 && distance <= 1)
     {
-      std::string reason = "[STUB] Survival+Bloodlust: Smite lv" + std::to_string(bestSlot) + " (lifesteal maximize)";
-      Engine::GetLogger().LogEvent(reason);
-      return { AIDecisionType::UseAbility, dragon, {}, "S_ATK_050", reason };
+      return { AIDecisionType::UseAbility, dragon, {}, "S_ATK_050", "Survival: Smite lv" + std::to_string(bestSlot) };
     }
-    return { AIDecisionType::Attack, dragon, {}, "", "Survival+Bloodlust: basic attack (lifesteal active)" };
+    return { AIDecisionType::Attack, dragon, {}, "", "Survival: Basic attack" };
   }
 }
 
@@ -240,11 +207,9 @@ AIDecision FighterStrategy::MakeNormalCombatDecision(Character* actor, Character
     int slot = FindHighestSmiteSlot(actor);
     if (slot > 0 && distance <= 1)
     {
-      std::string reason = "[STUB] Normal: Smite lv" + std::to_string(slot) + " (highest available slot)";
-      Engine::GetLogger().LogEvent(reason);
-      return { AIDecisionType::UseAbility, dragon, {}, "S_ATK_050", reason };
+      return { AIDecisionType::UseAbility, dragon, {}, "S_ATK_050", "Normal: Smite lv" + std::to_string(slot) };
     }
-    return { AIDecisionType::Attack, dragon, {}, "", "Normal: basic attack (no slots)" };
+    return { AIDecisionType::Attack, dragon, {}, "", "Normal: Basic attack" };
   };
 
   // 공통: 인접 공포 or 일반 공격
@@ -252,11 +217,9 @@ AIDecision FighterStrategy::MakeNormalCombatDecision(Character* actor, Character
   {
     if (!IsFearActive(dragon) && HasSpellSlot(actor, 1) && IsInFearRange(actor, dragon, grid))
     {
-      std::string reason = "[STUB] Normal: Fear Cry (near, dragon not feared)";
-      Engine::GetLogger().LogEvent(reason);
-      return { AIDecisionType::UseAbility, actor, {}, "S_DEB_020", reason };
+      return { AIDecisionType::UseAbility, actor, {}, "S_DEB_020", "Normal: Fear Cry on Dragon" };
     }
-    return { AIDecisionType::Attack, dragon, {}, "", "Normal: basic attack" };
+    return { AIDecisionType::Attack, dragon, {}, "", "Normal: Basic attack" };
   };
 
   if (HasBuff(actor, "Blessing"))
@@ -264,9 +227,7 @@ AIDecision FighterStrategy::MakeNormalCombatDecision(Character* actor, Character
     // 축복 적용 중
     if (!HasBuff(actor, "Frenzy") && actor->GetActionPoints() >= 2 && HasSpellSlot(actor, 2))
     {
-      std::string reason = "[STUB] Normal+Blessing: Casting Frenzy (AP bonus buff)";
-      Engine::GetLogger().LogEvent(reason);
-      return { AIDecisionType::UseAbility, actor, {}, "S_ENH_020", reason };
+      return { AIDecisionType::UseAbility, actor, {}, "S_ENH_020", "Normal: Casting Frenzy" };
     }
     // 광란 이미 있거나 AP 부족 → 강타 or 일반
     return SmiteOrNormal();
@@ -284,9 +245,7 @@ AIDecision FighterStrategy::MakeNormalCombatDecision(Character* actor, Character
       // 클레릭 없음 → 독립 광란 판단
       if (!HasBuff(actor, "Frenzy") && actor->GetActionPoints() >= 2 && HasSpellSlot(actor, 2))  // Frenzy는 레벨 2: 슬롯 필요
       {
-        std::string reason = "[STUB] Normal(no cleric): Casting Frenzy independently";
-        Engine::GetLogger().LogEvent(reason);
-        return { AIDecisionType::UseAbility, actor, {}, "S_ENH_020", reason };
+        return { AIDecisionType::UseAbility, actor, {}, "S_ENH_020", "Normal: Casting Frenzy" };
       }
       if (HasBuff(actor, "Frenzy"))
       {

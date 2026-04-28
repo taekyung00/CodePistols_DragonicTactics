@@ -35,9 +35,9 @@
     "known_abilities": ["MeleeAttack", "ShieldBash"]
   },
   "Cleric": {
-    "max_hp": 75,
-    "speed": 3,
-    "max_action_points": 2,
+    "max_hp": 90,
+    "speed": 2,
+    "max_action_points": 1,
     "base_attack_power": 4,
     "attack_dice": "1d6",
     "base_defense_power": 2,

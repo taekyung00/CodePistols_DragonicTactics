@@ -15,7 +15,8 @@ class ClericStrategy : public IAIStrategy
   private:
   // --- 탐색 헬퍼 ---
   Character* FindDragon();
-  Character* FindAllyNeedingHeal(float hpThreshold); // HP < threshold 인 아군 (자신 포함)
+  Character* FindAllyNeedingHeal(float hpThreshold); // 파이터>로그>위자드 순, 자신 제외
+  Character* FindAllyNeedingBuff();                  // Blessing 없는 아군, 파이터>로그>위자드, 자신 제외
 
   // --- 조건 헬퍼 ---
   bool IsHealNeeded(Character* ally) const;
@@ -37,8 +38,8 @@ class ClericStrategy : public IAIStrategy
 
   static constexpr int   LAVA_TILE_PENALTY   = 3;
   static constexpr int   AVG_DAMAGE_ESTIMATE = 4;    // 클레릭 평균 딜 (1d6 기준)
-  static constexpr float HEAL_THRESHOLD      = 0.5f; // 50% 미만이면 힐 대상
-  static constexpr int   CURSE_RANGE         = 5;    // S_DEB_010 Enemy:Single:5
-  static constexpr int   HEAL_RANGE          = 5;    // S_ENH_030 Ally:Single:5
-  // S_BUF_010 Divine Shield: self 타겟 → 거리=0, 체크 불필요
+  static constexpr float HEAL_THRESHOLD      = 0.3f; // 30% 미만이면 힐 대상 (cleric.jpg 기준)
+  static constexpr int   CURSE_RANGE         = 5;    // S_DEB_010 고통의 저주 Enemy:Single:5
+  static constexpr int   HEAL_RANGE          = 5;    // S_ENH_030 치유의 손길 Ally:Single:5
+  static constexpr int   BLESSING_RANGE      = 4;    // S_BUF_010 성스러운 가호 Ally:Single:4
 };
