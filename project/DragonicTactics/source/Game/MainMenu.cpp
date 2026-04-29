@@ -173,7 +173,7 @@ void MainMenu::Draw()
 
 	auto& text_manager = Engine::GetTextManager();
 
-	text_manager.DrawText("Dragonic Tactics", title_pos, Fonts::Outlined, title_scale, title_color);
+	text_manager.DrawText("Dragonic Tactics", title_pos, Fonts::Kings, title_scale, title_color);
 
 	[[maybe_unused]] static constexpr CS200::RGBA DEBUG_FILL_COLOR = 0xFFFF0030;
 	[[maybe_unused]] static constexpr CS200::RGBA DEBUG_LINE_COLOR = 0xFFFF00FF;
@@ -196,7 +196,7 @@ void MainMenu::Draw()
 		text_draw_pos.y -= y_offset;
 
 
-		text_manager.DrawText(item.text, text_draw_pos, Fonts::Outlined, { 1.0, 1.0 }, item_color);
+		text_manager.DrawText(item.text, text_draw_pos, Fonts::Kings, { 1.0, 1.0 }, item_color);
 
 		// Math::vec2 center_pos = item_pos + (item_size * 0.5);
 
