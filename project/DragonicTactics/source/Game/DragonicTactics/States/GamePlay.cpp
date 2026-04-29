@@ -177,6 +177,17 @@ void GamePlay::Load()
 		  m_ui_manager->AddBattleLogEntry(event.character->TypeName() + " died!");
 	  });
 
+  GetGSComponent<EventBus>()->Subscribe<CharacterHealedEvent>(
+	  [this](const CharacterHealedEvent& e)
+	  {
+		std::string src  = e.healer ? e.healer->TypeName() + "->" : "";
+		std::string line = src + e.target->TypeName()
+		                 + " +" + std::to_string(e.healAmount) + "HP"
+		                 + " (" + std::to_string(e.currentHP) + "/"
+		                 + std::to_string(e.maxHP) + ")";
+		m_ui_manager->AddBattleLogEntry(line);
+	  });
+
   TurnManager* turnMgr = GetGSComponent<TurnManager>();
   turnMgr->SetEventBus(GetGSComponent<EventBus>());
   std::vector<Character*> turn_order = { player };

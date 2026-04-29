@@ -106,12 +106,8 @@ AIDecision FighterStrategy::MakeKillLoopDecision(Character* actor, Character* dr
         return { AIDecisionType::Move, nullptr, movePos, "", "Kill: Moving to dragon", LAVA_TILE_PENALTY };
       }
     }
-    // 이동 불가 & 비인접 → Phase_Decision으로 낙하 (비인접이므로 FarMove가 적절)
-    if (actor->GetActionPoints() <= 0)
-    {
-      return { AIDecisionType::EndTurn, nullptr, {}, "", "Kill: No AP, can't move" };
-    }
-    return MakeFarMoveDecision(actor, dragon, grid);
+    // 이동 불가 & 비인접 → 킬 루프 중단, 턴 종료 (플로우차트: K_CanMove -- No → Phase_Decision)
+    return { AIDecisionType::EndTurn, nullptr, {}, "", "Kill: Blocked, can't reach" };
   }
 
   // 인접 상태
@@ -168,7 +164,7 @@ AIDecision FighterStrategy::MakeSurvivalDecision(Character* actor, Character* dr
   if (!HasBuff(actor, "Lifesteal"))
   {
     // 피의 갈망 없음
-    if (HasSpellSlot(actor, 2))
+    if (HasSpellSlot(actor, 2) && actor->GetActionPoints() >= 2)
     {
       return { AIDecisionType::UseAbility, actor, {}, "S_ENH_010", "Survival: Casting Bloodlust" };
     }
@@ -181,8 +177,8 @@ AIDecision FighterStrategy::MakeSurvivalDecision(Character* actor, Character* dr
   }
   else
   {
-    // 피의 갈망 활성 → 강타로 피흡 극대화 (인접 보장 필요: range=1)
-    int bestSlot = FindBestSmiteSlot(actor, dragon);
+    // 피의 갈망 활성 → 강타로 피흡 극대화 (최고 슬롯, 인접 보장 필요: range=1)
+    int bestSlot = FindHighestSmiteSlot(actor);
     if (bestSlot > 0 && distance <= 1)
     {
       return { AIDecisionType::UseAbility, dragon, {}, "S_ATK_050", "Survival: Smite lv" + std::to_string(bestSlot) };

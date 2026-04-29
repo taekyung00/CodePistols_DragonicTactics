@@ -16,17 +16,7 @@ Cleric::Cleric(Math::ivec2 start_coordinates)
         { 2, 2 }
       })
 {
-  CharacterStats cleric_stats;
-  cleric_stats.max_hp       = 90;
-  cleric_stats.current_hp   = 90;
-  cleric_stats.speed        = 2;
-  cleric_stats.base_attack  = 4;
-  cleric_stats.attack_dice  = "1d6";
-  cleric_stats.base_defend  = 2;
-  cleric_stats.defend_dice  = "1d8";
-  cleric_stats.attack_range = 1;
-
-  *GetStatsComponent() = StatsComponent(cleric_stats);
+  // 스탯은 CharacterFactory::CreateCleric이 DataRegistry로 초기화
   m_action_list.push_back(new ActionAttack());
   AddGOComponent(new CS230::Sprite("Assets/sprites/cleric.spt", this));
 }

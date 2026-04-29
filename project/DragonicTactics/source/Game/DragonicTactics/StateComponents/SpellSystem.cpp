@@ -355,10 +355,17 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
 	}
 	else if (t.geometry == "Single" || t.geometry == "Point")
 	{
-		// 단일 타일 선택 — 기존 동작
 		Character* hit = grid->GetCharacterAt(target_tile);
 		if (hit)
-			targets.push_back(hit);
+		{
+			bool sameTeam = (caster->IsAIControlled() == hit->IsAIControlled());
+			bool filterOk = (t.filter == "Any")
+			             || (t.filter == "Ally"  && sameTeam)
+			             || (t.filter == "Enemy" && !sameTeam)
+			             || (t.filter == "Self"  && hit == caster);
+			if (filterOk)
+				targets.push_back(hit);
+		}
 	}
 	else if (t.geometry == "Around")
 	{
@@ -368,10 +375,10 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
 		{
 			if (!c || !c->IsAlive())
 				continue;
-			if (t.filter == "Self" && c != caster)
-				continue;
-			if (t.filter == "Enemy" && c == caster)
-				continue; // 간단 필터 (팀 구분은 추후)
+			bool sameTeam = (caster->IsAIControlled() == c->IsAIControlled());
+			if (t.filter == "Self"  && c != caster) continue;
+			if (t.filter == "Ally"  && !sameTeam)   continue;
+			if (t.filter == "Enemy" && sameTeam)     continue;
 			int dist = grid->ManhattanDistance(caster->GetGridPosition()->Get(), c->GetGridPosition()->Get());
 			if (dist <= radius)
 				targets.push_back(c);
@@ -458,7 +465,12 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
 			}
 			else if (damage < 0)
 			{
-				tgt->SetHP(std::min(tgt->GetHP() + (-damage), tgt->GetMaxHP()));
+				int hpBefore   = tgt->GetHP();
+				tgt->SetHP(std::min(hpBefore + (-damage), tgt->GetMaxHP()));
+				int actualHeal = tgt->GetHP() - hpBefore;
+				auto& gs       = Engine::GetGameStateManager();
+				if (auto* eventBus = gs.GetGSComponent<EventBus>())
+				  eventBus->Publish(CharacterHealedEvent{ tgt, actualHeal, tgt->GetHP(), tgt->GetMaxHP(), caster });
 			}
 		}
 	}
@@ -663,6 +675,34 @@ bool SpellSystem::CanCast(Character* caster, const std::string& spell_id, Math::
 	// 사거리 체크 이후, return true 바로 앞에 추가
 	if (caster->GetActionPoints() < 1)
 		return false;
+
+	// Ally/Enemy/Self/Empty 필터 검증 (Single/Point 지오메트리)
+	if (t.geometry == "Single" || t.geometry == "Point")
+	{
+		auto* grid_check = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+		if (grid_check)
+		{
+			Character* hit = grid_check->GetCharacterAt(target_tile);
+			if (t.filter == "Empty")
+			{
+				if (hit != nullptr)
+					return false;
+			}
+			else if (t.filter == "Self")
+			{
+				if (hit != caster)
+					return false;
+			}
+			else if (t.filter == "Ally" || t.filter == "Enemy")
+			{
+				if (!hit)
+					return false;
+				bool sameTeam = (caster->IsAIControlled() == hit->IsAIControlled());
+				if (t.filter == "Ally"  && !sameTeam) return false;
+				if (t.filter == "Enemy" && sameTeam)  return false;
+			}
+		}
+	}
 
 	return true;
 }

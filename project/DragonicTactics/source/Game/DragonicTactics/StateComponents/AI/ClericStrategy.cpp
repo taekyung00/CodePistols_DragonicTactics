@@ -131,9 +131,8 @@ AIDecision ClericStrategy::MakeKillLoopDecision(Character* actor, Character* dra
 
 // ============================================================
 // MakeSupportDecision: 버프/디버프 우선순위 (cleric.jpg 기준)
-//   [3순위] 고통의 저주(Curse of Suffering) — Dragon 디버프 없을 때
-//   [4순위] 성스러운 가호(Divine Shield) — 파이터>로그>위자드 (자신 제외)
-//   → 사거리 밖이면 MeleePhase로 fall-through
+//   [3순위] 성스러운 가호(Divine Shield) — 파이터>로그>위자드 (자신 제외), 사거리 밖이면 이동
+//   [4순위] 고통의 저주(Curse of Suffering) — Dragon 디버프 없을 때, 사거리 밖이면 MeleePhase
 // ============================================================
 
 AIDecision ClericStrategy::MakeSupportDecision(Character* actor, Character* dragon, GridSystem* grid)
@@ -141,17 +140,41 @@ AIDecision ClericStrategy::MakeSupportDecision(Character* actor, Character* drag
   int dist_to_dragon = grid->ManhattanDistance(actor->GetGridPosition()->Get(),
                                                 dragon->GetGridPosition()->Get());
 
-  // [3순위] 성스러운 가호(Divine Shield) — 자신 제외, 파이터>로그>위자드 우선
-  Character* buffTarget = FindAllyNeedingBuff();
-  if (buffTarget != nullptr && HasSpellSlot(actor, 1))
+  // [3순위] 성스러운 가호(Divine Shield) — 파이터>로그>위자드 우선순위로 사거리 체크
+  // Critical-2: 사거리 내 후보를 우선순위 순서대로 탐색 (Fighter 범위 밖이어도 Wizard 체크)
+  // Major-3: 사거리 내 후보 없으면 최우선 후보에게 이동
+  if (HasSpellSlot(actor, 1))
   {
-    int dist = grid->ManhattanDistance(actor->GetGridPosition()->Get(),
-                                        buffTarget->GetGridPosition()->Get());
-    if (dist <= BLESSING_RANGE)
+    static const CharacterTypes buffPriority[] = {
+      CharacterTypes::Fighter, CharacterTypes::Rogue, CharacterTypes::Wizard
+    };
+    auto        allChars   = grid->GetAllCharacters();
+    Character*  moveTarget = nullptr; // 범위 밖 최우선 후보 (이동용)
+
+    for (auto type : buffPriority)
     {
-      return { AIDecisionType::UseAbility, buffTarget, {}, "S_BUF_010", "Support: Divine Shield on " + buffTarget->TypeName() };
+      for (auto* c : allChars)
+      {
+        if (!c || !c->IsAlive() || c->GetCharacterType() != type || c->Has("Blessing"))
+          continue;
+        int dist = grid->ManhattanDistance(actor->GetGridPosition()->Get(),
+                                            c->GetGridPosition()->Get());
+        if (dist <= BLESSING_RANGE)
+          return { AIDecisionType::UseAbility, c, {}, "S_BUF_010",
+                   "Support: Divine Shield on " + c->TypeName() };
+        if (!moveTarget)
+          moveTarget = c; // 사거리 밖 최우선 후보
+      }
     }
-    // 사거리 밖 → fall-through
+
+    // 사거리 내 후보 없음 → 최우선 후보에게 이동
+    if (moveTarget && actor->GetMovementRange() > 0)
+    {
+      Math::ivec2 movePos = FindNextMovePos(actor, moveTarget, grid);
+      if (movePos != actor->GetGridPosition()->Get())
+        return { AIDecisionType::Move, nullptr, movePos, "",
+                 "Support: Moving to buff " + moveTarget->TypeName(), LAVA_TILE_PENALTY };
+    }
   }
 
   // [4순위] 고통의 저주(Curse of Suffering)
@@ -277,7 +300,11 @@ bool ClericStrategy::IsCurseActive(Character* target) const
 
 bool ClericStrategy::HasSpellSlot(Character* actor, int level) const
 {
-  return actor->HasSpellSlot(level);
+  // SpellSystem::CanCast와 동일하게 "level 이상 슬롯 하나라도 있으면 OK"
+  for (int lv = level; lv <= 9; ++lv)
+    if (actor->HasSpellSlot(lv))
+      return true;
+  return false;
 }
 
 bool ClericStrategy::CanReachThisTurn(Character* actor, Character* target, GridSystem* grid) const
