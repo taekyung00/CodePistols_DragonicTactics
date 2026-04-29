@@ -68,13 +68,14 @@ python3 scripts/scan_build_project.py --help
 
 ```
 EventBus, DiceManager, AISystem, CombatSystem, GameObjectManager, GridSystem,
-TurnManager, DebugManager, CharacterFactory, DataRegistry, Timer,
+TurnManager, DebugManager, CharacterFactory, DataRegistry, util::Timer,
 MapDataRegistry, SpellSystem, StatusEffectHandler,
 CS230::ParticleManager<Particles::Hit>
 ```
 
 - `DiceManager` — `Roll("2d6")`, `Roll("1d20+5")` 형식으로 주사위 굴림
 - `CombatSystem` — 공격/방어 주사위 굴림 + 최종 데미지 계산 (StatusEffectHandler 훅 연동)
+- `util::Timer` — 엔진 제공 타이머 (`Engine/Timer.h`). `GetElapsedSeconds()` / `Reset()`으로 AI 재호출 간격 측정에 사용
 
 **GameObject 컴포넌트**: `GridPosition`, `ActionPoints`, `StatsComponent`, `SpellSlots`, `MovementComponent`, `StatusEffectComponent`, `ShakeComponent`
 
@@ -462,9 +463,15 @@ Engine::GetSoundManager().SetBGMVolume(0.7f);                  // 0.0 ~ 1.0
 - [docs/implementation-plan.md](docs/implementation-plan.md) — 26주 구현 계획 (우선순위 기반)
 - [docs/Detailed Implementations/weeks/](docs/Detailed%20Implementations/weeks/) — 주차별 상세 가이드 (한글)
 - [docs/Detailed Implementations/features/spell_system.md](docs/Detailed%20Implementations/features/spell_system.md) — SpellSystem 전체 구현 가이드 (Targeting 템플릿, Effect 파싱, 업캐스팅, Move 템플릿)
+- [docs/Detailed Implementations/features/status_effect_system.md](docs/Detailed%20Implementations/features/status_effect_system.md) — StatusEffect 두 레이어 구현 가이드
+- [docs/Detailed Implementations/features/terrain_spells.md](docs/Detailed%20Implementations/features/terrain_spells.md) — 지형 변환 스펠(Wall/Lava 배치) 구현 가이드
+- [docs/Detailed Implementations/features/map_loading.md](docs/Detailed%20Implementations/features/map_loading.md) — maps.json 로딩 및 맵 전환 구현 가이드
+- [docs/Detailed Implementations/features/button_manager.md](docs/Detailed%20Implementations/features/button_manager.md) — ButtonManager(Move·Action·Spell UI 버튼 패널) 구현 가이드
 - [architecture/game_architecture_rules.md](architecture/game_architecture_rules.md) — 아키텍처 원칙
 - [architecture/Implementation_Checklist.md](architecture/Implementation_Checklist.md) — 진행 체크리스트
 - [docs/Detailed Implementations/features/fighter_strategy.md](docs/Detailed%20Implementations/features/fighter_strategy.md) — FighterStrategy 구현 상세 가이드
 - [docs/Detailed Implementations/features/rogue_strategy.md](docs/Detailed%20Implementations/features/rogue_strategy.md) — RogueStrategy 구현 가이드 (참조용)
 - [docs/Detailed Implementations/weeks/cleric_implementation.md](docs/Detailed%20Implementations/weeks/cleric_implementation.md) — Cleric 구현 가이드
+- [docs/debug/commands.md](docs/debug/commands.md) — 디버그 콘솔 명령어 목록
+- [docs/systems/](docs/systems/) — 시스템별 상세 문서 (EventBus, Characters, Components 등)
 - [DragonicTactics/README.md](DragonicTactics/README.md) — 빌드 셋업 (영문/한글)

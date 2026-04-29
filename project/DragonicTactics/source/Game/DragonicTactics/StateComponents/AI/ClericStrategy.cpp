@@ -141,13 +141,7 @@ AIDecision ClericStrategy::MakeSupportDecision(Character* actor, Character* drag
   int dist_to_dragon = grid->ManhattanDistance(actor->GetGridPosition()->Get(),
                                                 dragon->GetGridPosition()->Get());
 
-  // [3순위] 고통의 저주(Curse of Suffering)
-  if (!IsCurseActive(dragon) && HasSpellSlot(actor, 1) && dist_to_dragon <= CURSE_RANGE)
-  {
-    return { AIDecisionType::UseAbility, dragon, {}, "S_DEB_010", "Support: Curse of Suffering on Dragon" };
-  }
-
-  // [4순위] 성스러운 가호(Divine Shield) — 자신 제외, 파이터>로그>위자드 우선
+  // [3순위] 성스러운 가호(Divine Shield) — 자신 제외, 파이터>로그>위자드 우선
   Character* buffTarget = FindAllyNeedingBuff();
   if (buffTarget != nullptr && HasSpellSlot(actor, 1))
   {
@@ -158,6 +152,12 @@ AIDecision ClericStrategy::MakeSupportDecision(Character* actor, Character* drag
       return { AIDecisionType::UseAbility, buffTarget, {}, "S_BUF_010", "Support: Divine Shield on " + buffTarget->TypeName() };
     }
     // 사거리 밖 → fall-through
+  }
+
+  // [4순위] 고통의 저주(Curse of Suffering)
+  if (!IsCurseActive(dragon) && HasSpellSlot(actor, 1) && dist_to_dragon <= CURSE_RANGE)
+  {
+    return { AIDecisionType::UseAbility, dragon, {}, "S_DEB_010", "Support: Curse of Suffering on Dragon" };
   }
 
   return MakeMeleePhaseDecision(actor, dragon, grid);
