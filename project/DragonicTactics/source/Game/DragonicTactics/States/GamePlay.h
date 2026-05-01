@@ -18,10 +18,15 @@ struct TacticalCamera {
     double zoom = 1.0;
     static constexpr double ZOOM_MIN = 0.25;
     static constexpr double ZOOM_MAX = 3.0;
+    static constexpr int    VIRTUAL_W = 1600;
+    static constexpr int    VIRTUAL_H = 900;
 
     Math::TransformationMatrix GetWorldMatrix(Math::ivec2 win) const;
     Math::vec2 ScreenToWorld(Math::vec2 screen, Math::ivec2 win) const;
     Math::vec2 WorldToScreen(Math::vec2 world, Math::ivec2 win) const;
+
+    // Build letterboxed virtual-resolution NDC matrix for UI pass
+    static Math::TransformationMatrix BuildVirtualNdc(Math::ivec2 win);
 };
 
 class PlayerInputHandler;
@@ -49,7 +54,7 @@ class GamePlay : public CS230::GameState
   static bool s_should_restart;
 
   private:
-  static constexpr Math::ivec2				  default_window_size = { 1200, 800 };
+  static constexpr Math::ivec2				  default_window_size = { TacticalCamera::VIRTUAL_W, TacticalCamera::VIRTUAL_H };
   std::unique_ptr<PlayerInputHandler> m_input_handler;
   std::unique_ptr<GamePlayUIManager>  m_ui_manager;
   std::unique_ptr<BattleOrchestrator> m_orchestrator;

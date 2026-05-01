@@ -50,30 +50,58 @@ Created:    November 5, 2025
 int  GamePlay::s_next_map_index = 0;
 bool GamePlay::s_should_restart = false;
 
+// Computes scale and letterbox offsets from actual window to virtual resolution
+static void cam_virt_layout(Math::ivec2 actual, double& scale, double& ox, double& oy) noexcept
+{
+    scale = std::min(
+        (double)actual.x / TacticalCamera::VIRTUAL_W,
+        (double)actual.y / TacticalCamera::VIRTUAL_H);
+    ox = (actual.x - TacticalCamera::VIRTUAL_W * scale) * 0.5;
+    oy = (actual.y - TacticalCamera::VIRTUAL_H * scale) * 0.5;
+}
+
+Math::TransformationMatrix TacticalCamera::BuildVirtualNdc(Math::ivec2 win)
+{
+    double scale, ox, oy;
+    cam_virt_layout(win, scale, ox, oy);
+    double sx = 2.0 * scale / win.x;
+    double sy = 2.0 * scale / win.y;
+    double tx = 2.0 * ox / win.x - 1.0;
+    double ty = 2.0 * oy / win.y - 1.0;
+    return Math::TranslationMatrix(Math::vec2{ tx, ty })
+         * Math::ScaleMatrix(Math::vec2{ sx, sy });
+}
+
 Math::TransformationMatrix TacticalCamera::GetWorldMatrix(Math::ivec2 win) const
 {
-    Math::vec2 center = { win.x * 0.5, win.y * 0.5 };
-    return CS200::build_ndc_matrix(win)
-        * Math::TranslationMatrix(center)
+    constexpr Math::vec2 vc = { VIRTUAL_W * 0.5, VIRTUAL_H * 0.5 };
+    return BuildVirtualNdc(win)
+        * Math::TranslationMatrix(vc)
         * Math::ScaleMatrix(Math::vec2{ zoom, zoom })
         * Math::TranslationMatrix(Math::vec2{ -target.x, -target.y });
 }
 
 Math::vec2 TacticalCamera::ScreenToWorld(Math::vec2 screen, Math::ivec2 win) const
 {
-    Math::vec2 center = { win.x * 0.5, win.y * 0.5 };
+    double scale, ox, oy;
+    cam_virt_layout(win, scale, ox, oy);
+    // actual → virtual
+    Math::vec2 virt = { (screen.x - ox) / scale, (screen.y - oy) / scale };
+    // virtual → world
+    constexpr Math::vec2 vc = { VIRTUAL_W * 0.5, VIRTUAL_H * 0.5 };
     return {
-        (screen.x - center.x) / zoom + target.x,
-        (screen.y - center.y) / zoom + target.y
+        (virt.x - vc.x) / zoom + target.x,
+        (virt.y - vc.y) / zoom + target.y
     };
 }
 
-Math::vec2 TacticalCamera::WorldToScreen(Math::vec2 world, Math::ivec2 win) const
+Math::vec2 TacticalCamera::WorldToScreen(Math::vec2 world, [[maybe_unused]] Math::ivec2 win) const
 {
-    Math::vec2 center = { win.x * 0.5, win.y * 0.5 };
+    // Returns virtual-resolution coordinates (1600x900 space)
+    constexpr Math::vec2 vc = { VIRTUAL_W * 0.5, VIRTUAL_H * 0.5 };
     return {
-        (world.x - target.x) * zoom + center.x,
-        (world.y - target.y) * zoom + center.y
+        (world.x - target.x) * zoom + vc.x,
+        (world.y - target.y) * zoom + vc.y
     };
 }
 
@@ -273,7 +301,7 @@ void GamePlay::DisplayDamageAmount(const CharacterDamagedEvent& event)
   }
   Math::ivec2 grid_pos = event.target->GetGridPosition()->Get();
   Math::vec2 text_position = {
-      grid_pos.x * (double)GridSystem::TILE_SIZE + GridSystem::TILE_SIZE * 0.5,
+      grid_pos.x * (double)GridSystem::TILE_SIZE /*+ GridSystem::TILE_SIZE * 0.5*/,
       grid_pos.y * (double)GridSystem::TILE_SIZE + GridSystem::TILE_SIZE
   };
 
@@ -328,8 +356,10 @@ void GamePlay::Update(double dt)
     {
       if (m_right_mouse_was_down)
       {
-        m_camera.target.x -= (mouse.x - m_prev_mouse.x) / m_camera.zoom;
-        m_camera.target.y -= (mouse.y - m_prev_mouse.y) / m_camera.zoom;
+        Math::vec2 world_prev = m_camera.ScreenToWorld(m_prev_mouse, win);
+        Math::vec2 world_curr = m_camera.ScreenToWorld(mouse, win);
+        m_camera.target.x -= world_curr.x - world_prev.x;
+        m_camera.target.y -= world_curr.y - world_prev.y;
       }
       m_right_mouse_was_down = true;
     }
@@ -433,10 +463,12 @@ void GamePlay::Draw()
 
   renderer_2d->EndScene();
 
-  // Pass 2: Screen space — UI fixed at screen coordinates (no camera)
-  Math::TransformationMatrix ndc = CS200::build_ndc_matrix(win);
-  renderer_2d->BeginScene(ndc);
-  m_ui_manager->Draw(ndc);
+  // Pass 2: UI — virtual 1600x900 coordinates, letterboxed to actual window
+  Math::TransformationMatrix ui_ndc = TacticalCamera::BuildVirtualNdc(win);
+  // Save ui_ndc so EndRenderTextureMode (triggered by font cache misses) restores it correctly
+  Engine::GetTextureManager().SaveCurrentScene(ui_ndc);
+  renderer_2d->BeginScene(ui_ndc);
+  m_ui_manager->Draw(ui_ndc);
   renderer_2d->EndScene();
 }
 

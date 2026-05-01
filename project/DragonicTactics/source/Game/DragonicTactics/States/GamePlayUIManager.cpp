@@ -44,6 +44,18 @@ Created:     November 24, 2025
 
 #include "PlayerInputHandler.h"
 
+// Virtual resolution helpers — mirrors the demo's letterbox approach
+static constexpr int VW = TacticalCamera::VIRTUAL_W;
+static constexpr int VH = TacticalCamera::VIRTUAL_H;
+
+static Math::vec2 to_virtual(Math::vec2 actual, Math::ivec2 actual_win) noexcept
+{
+    double scale = std::min((double)actual_win.x / VW, (double)actual_win.y / VH);
+    double ox    = (actual_win.x - VW * scale) * 0.5;
+    double oy    = (actual_win.y - VH * scale) * 0.5;
+    return { (actual.x - ox) / scale, (actual.y - oy) / scale };
+}
+
 void GamePlayUIManager::SetCamera(const TacticalCamera* camera)
 {
     m_camera_ = camera;
@@ -70,6 +82,11 @@ void GamePlayUIManager::Update(double dt)
 {
     Math::vec2 mouse_pos   = Engine::GetInput().GetMousePos();
     bool       mouse_click = Engine::GetInput().MouseJustPressed(0);
+
+    // Convert actual screen mouse to virtual 1600x900 coordinates
+    auto actual_win      = Engine::GetWindow().GetSize();
+    Math::vec2 virt_mouse = to_virtual(mouse_pos, actual_win);
+    m_virtual_mouse_      = virt_mouse;
 
     // ── 1. 슬롯 비활성화 갱신 ─────────────────────────────────────
     auto* turnMgr = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
@@ -135,8 +152,8 @@ void GamePlayUIManager::Update(double dt)
             double bx = start_x + i * (BTN_W + GAP);
             double by = popup_bottom; // top of button
 
-            if (mouse_pos.x >= bx && mouse_pos.x <= bx + BTN_W &&
-                mouse_pos.y >= by - BTN_H && mouse_pos.y <= by)
+            if (virt_mouse.x >= bx && virt_mouse.x <= bx + BTN_W &&
+                virt_mouse.y >= by - BTN_H && virt_mouse.y <= by)
             {
                 hit = true;
                 // spell slot 보유 여부 확인
@@ -165,7 +182,7 @@ void GamePlayUIManager::Update(double dt)
     }
 
     // ── 3. 버튼 업데이트 ─────────────────────────────────────────
-    button_manager_.Update(mouse_pos, mouse_click);
+    button_manager_.Update(virt_mouse, mouse_click);
 
     // ── 4. 호버 캐릭터 감지 ──────────────────────────────────────
     hovered_character_ = nullptr;
@@ -198,7 +215,7 @@ void GamePlayUIManager::Update(double dt)
                     hovered_character_->GetGridPosition()->Get(),
                     hovered_character_->GetMovementRange());
             }
-            else
+            else if (grid->IsMovementModeActive())
             {
                 grid->DisableMovementMode();
             }
@@ -286,7 +303,7 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
     m_input_handler_ptr_ = inputHandler;
     button_manager_.ClearAll();
 
-    auto win = Engine::GetWindow().GetSize();
+    const Math::ivec2 win = { VW, VH };
     constexpr int    TILE = 64;
     const double box_x    = TILE;
     const double bar_bot  = TILE;
@@ -592,7 +609,7 @@ void GamePlayUIManager::AddBattleLogEntry(const std::string& line)
 void GamePlayUIManager::DrawSlotBar()
 {
     auto* renderer = CS230::TextureManager::GetRenderer2D();
-    auto  win      = Engine::GetWindow().GetSize();
+    constexpr Math::ivec2 win = { VW, VH };
     constexpr double TILE = 64.0;
 
     double bar_w = static_cast<double>(win.x) - 2.0 * TILE;
@@ -643,7 +660,7 @@ void GamePlayUIManager::DrawUicastPopup()
 
     auto* renderer = CS230::TextureManager::GetRenderer2D();
     auto& textMgr  = Engine::GetTextManager();
-    Math::vec2 mouse = Engine::GetInput().GetMousePos();
+    Math::vec2 mouse = m_virtual_mouse_;
 
     Math::TransformationMatrix bg =
         Math::TranslationMatrix(Math::vec2{ panel_cx, panel_cy }) *
@@ -695,7 +712,7 @@ void GamePlayUIManager::DrawTurnIndicator()
 
     auto* renderer = CS230::TextureManager::GetRenderer2D();
     auto& textMgr  = Engine::GetTextManager();
-    auto  win      = Engine::GetWindow().GetSize();
+    constexpr Math::ivec2 win = { VW, VH };
 
     constexpr double PANEL_W = 320.0;
     constexpr double PANEL_H = 48.0;
@@ -722,8 +739,8 @@ void GamePlayUIManager::DrawHoverTooltip()
 
     auto& textMgr  = Engine::GetTextManager();
     auto* renderer = CS230::TextureManager::GetRenderer2D();
-    Math::vec2 mouse = Engine::GetInput().GetMousePos();
-    auto win = Engine::GetWindow().GetSize();
+    Math::vec2 mouse = m_virtual_mouse_;
+    constexpr Math::ivec2 win = { VW, VH };
 
     constexpr double TT_W = 256.0;
     constexpr double TT_H = 200.0;
@@ -904,7 +921,7 @@ void GamePlayUIManager::DrawActionLabel()
 
     auto& textMgr  = Engine::GetTextManager();
     auto* renderer = CS230::TextureManager::GetRenderer2D();
-    auto  win      = Engine::GetWindow().GetSize();
+    constexpr Math::ivec2 win = { VW, VH };
 
     constexpr double PAD_X = 20.0;
     constexpr double H     = 30.0;
@@ -928,7 +945,7 @@ void GamePlayUIManager::DrawBattleLog()
 
   auto* renderer = CS230::TextureManager::GetRenderer2D();
   auto& text_mgr = Engine::GetTextManager();
-  auto  win      = Engine::GetWindow().GetSize();
+  constexpr Math::ivec2 win = { VW, VH };
 
   constexpr double BTN_W  = 64.0;
   constexpr double MARGIN = 10.0;

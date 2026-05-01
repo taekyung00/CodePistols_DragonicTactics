@@ -93,6 +93,9 @@ class GamePlayUIManager
   PlayerInputHandler*   m_input_handler_ptr_ = nullptr;
   const TacticalCamera* m_camera_            = nullptr;
 
+  // Virtual-resolution mouse position (updated in Update(), used in Draw*)
+  Math::vec2 m_virtual_mouse_ = { 0.0, 0.0 };
+
   // === Battle Log ===
   struct TurnEntry
   {

@@ -40,6 +40,7 @@ public:
 	void							SwitchRenderer(RendererType type);
 	RendererType					GetCurrentRendererType() const;
 	static CS200::IRenderer2D*		GetRenderer2D();
+	static void						SaveCurrentScene(const Math::TransformationMatrix& m);
 	void							Shutdown();
 
 
@@ -56,6 +57,7 @@ private:
 	  Math::ivec2				   Size{};
 	  std::array<GLfloat, 4>	   ClearColor{};
 	  std::array<GLint, 4>		   Viewport{};
+	  Math::TransformationMatrix   SavedCameraMatrix{};
 	};
 
 	// inline static RenderInfo render_info{};
