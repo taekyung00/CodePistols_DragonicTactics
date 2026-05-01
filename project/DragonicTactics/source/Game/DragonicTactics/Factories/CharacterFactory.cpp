@@ -10,6 +10,7 @@ Updated:    November 25, 2025
 */
 
 #include "CharacterFactory.h"
+#include "../Objects/Cleric.h"
 #include "../Objects/Components/ActionPoints.h"
 #include "../Objects/Components/SpellSlots.h"
 #include "../Objects/Components/StatsComponent.h"
@@ -40,18 +41,13 @@ std::unique_ptr<Character> CharacterFactory::Create(CharacterTypes type, Math::i
 {
   switch (type)
   {
-	case CharacterTypes::Dragon: return CreateDragon(start_position);
+	case CharacterTypes::Dragon:  return CreateDragon(start_position);
+	case CharacterTypes::Fighter: return CreateFighter(start_position);
+	case CharacterTypes::Cleric:  return CreateCleric(start_position);
 
-	case CharacterTypes::Fighter:
-	  return CreateFighter(start_position);
-
-	  // TODO: Week 5+ - Add more character types
-	  // case CharacterTypes::Cleric:
-	  //     return CreateCleric(start_position);
-	  // case CharacterTypes::Wizard:
-	  //     return CreateWizard(start_position);
-	  // case CharacterTypes::Rogue:
-	  //     return CreateRogue(start_position);
+	  // TODO: Add more character types
+	  // case CharacterTypes::Wizard: return CreateWizard(start_position);
+	  // case CharacterTypes::Rogue:  return CreateRogue(start_position);
 
 	case CharacterTypes::None:
 	case CharacterTypes::Count:
@@ -75,6 +71,46 @@ std::unique_ptr<Character> CharacterFactory::CreateWithStats(CharacterTypes type
   }
 
   return character;
+}
+
+std::unique_ptr<Cleric> CharacterFactory::CreateCleric(Math::ivec2 position)
+{
+  std::unique_ptr<Cleric> cleric = std::make_unique<Cleric>(position);
+
+  DataRegistry* registry = Engine::GetGameStateManager().GetGSComponent<DataRegistry>();
+  if (registry != nullptr)
+  {
+    CharacterData  data  = registry->GetCharacterData("Cleric");
+    CharacterStats stats = ConvertToCharacterStats(data);
+
+    StatsComponent* stats_comp = cleric->GetStatsComponent();
+    if (stats_comp != nullptr)
+    {
+      *stats_comp = StatsComponent(stats);
+    }
+
+    ActionPoints* ap = cleric->GetActionPointsComponent();
+    if (ap != nullptr)
+    {
+      ap->SetPoints(data.max_action_points);
+    }
+
+    SpellSlots* spell_slots = cleric->GetSpellSlots();
+    if (spell_slots != nullptr && !data.spell_slots.empty())
+    {
+      cleric->SetSpellSlots(data.spell_slots);
+    }
+
+    Engine::GetLogger().LogDebug(
+      "CharacterFactory: Created Cleric from JSON at (" + std::to_string(position.x) + ", " + std::to_string(position.y) + ") - HP: " + std::to_string(data.max_hp) +
+      ", Speed: " + std::to_string(data.speed));
+  }
+  else
+  {
+    Engine::GetLogger().LogError("CharacterFactory: DataRegistry not found, using default Cleric stats");
+  }
+
+  return cleric;
 }
 
 // Developer D: Dragon-specific creation with JSON data loading

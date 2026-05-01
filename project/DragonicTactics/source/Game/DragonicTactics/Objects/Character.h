@@ -59,6 +59,7 @@ class Character : public CS230::GameObject
   virtual void PerformAction(Action* action, Character* target, Math::ivec2 tile_position);
   virtual void TakeDamage(int damage, Character* attacker);
   virtual void ReceiveHeal(int amount);
+  virtual bool IsAIControlled() const { return false; };
 
   void SetPath(std::vector<Math::ivec2> path);
   void SetGridSystem(GridSystem* grid);

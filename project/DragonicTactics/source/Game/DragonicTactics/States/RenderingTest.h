@@ -30,4 +30,5 @@ class RenderingTest : public CS230::GameState
 	float rotate = 0.f;
 	Math::fvec2 translate = {0.f,0.f};
 	Math::ivec2 window_size;
+  std::shared_ptr<CS230::Texture> testTexture;
 };

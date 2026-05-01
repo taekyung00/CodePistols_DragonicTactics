@@ -19,6 +19,7 @@ Created:    November 5, 2025
 
 #include "Game/DragonicTactics/Objects/Components/GridPosition.h"
 #include "Game/DragonicTactics/Objects/Components/StatsComponent.h"
+#include "Game/DragonicTactics/Objects/Cleric.h"
 #include "Game/DragonicTactics/Objects/Dragon.h"
 #include "Game/DragonicTactics/Objects/Fighter.h"
 
@@ -46,8 +47,88 @@ Created:    November 5, 2025
 #include "Game/Particles.h"
 #include "./Engine/Particle.h"
 
-int				GamePlay::s_next_map_index	= 0;
-bool			GamePlay::s_should_restart	= false;
+int  GamePlay::s_next_map_index = 0;
+bool GamePlay::s_should_restart = false;
+
+namespace
+{
+  const char* SfxActionFor(CharacterTypes t)
+  {
+    switch (t)
+    {
+      case CharacterTypes::Dragon:  return SoundManager::SFX_DRAGON_ACTION;
+      case CharacterTypes::Fighter: return SoundManager::SFX_FIGHTER_ACTION;
+      case CharacterTypes::Cleric:  return SoundManager::SFX_CLERIC_ACTION;
+      default:                      return nullptr;
+    }
+  }
+
+  const char* SfxHurtFor(CharacterTypes t)
+  {
+    switch (t)
+    {
+      case CharacterTypes::Dragon:  return SoundManager::SFX_DRAGON_HURT;
+      case CharacterTypes::Fighter: return SoundManager::SFX_FIGHTER_HURT;
+      case CharacterTypes::Cleric:  return SoundManager::SFX_CLERIC_HURT;
+      default:                      return nullptr;
+    }
+  }
+}
+
+// Computes scale and letterbox offsets from actual window to virtual resolution
+static void cam_virt_layout(Math::ivec2 actual, double& scale, double& ox, double& oy) noexcept
+{
+    scale = std::min(
+        (double)actual.x / TacticalCamera::VIRTUAL_W,
+        (double)actual.y / TacticalCamera::VIRTUAL_H);
+    ox = (actual.x - TacticalCamera::VIRTUAL_W * scale) * 0.5;
+    oy = (actual.y - TacticalCamera::VIRTUAL_H * scale) * 0.5;
+}
+
+Math::TransformationMatrix TacticalCamera::BuildVirtualNdc(Math::ivec2 win)
+{
+    double scale, ox, oy;
+    cam_virt_layout(win, scale, ox, oy);
+    double sx = 2.0 * scale / win.x;
+    double sy = 2.0 * scale / win.y;
+    double tx = 2.0 * ox / win.x - 1.0;
+    double ty = 2.0 * oy / win.y - 1.0;
+    return Math::TranslationMatrix(Math::vec2{ tx, ty })
+         * Math::ScaleMatrix(Math::vec2{ sx, sy });
+}
+
+Math::TransformationMatrix TacticalCamera::GetWorldMatrix(Math::ivec2 win) const
+{
+    constexpr Math::vec2 vc = { VIRTUAL_W * 0.5, VIRTUAL_H * 0.5 };
+    return BuildVirtualNdc(win)
+        * Math::TranslationMatrix(vc)
+        * Math::ScaleMatrix(Math::vec2{ zoom, zoom })
+        * Math::TranslationMatrix(Math::vec2{ -target.x, -target.y });
+}
+
+Math::vec2 TacticalCamera::ScreenToWorld(Math::vec2 screen, Math::ivec2 win) const
+{
+    double scale, ox, oy;
+    cam_virt_layout(win, scale, ox, oy);
+    // actual → virtual
+    Math::vec2 virt = { (screen.x - ox) / scale, (screen.y - oy) / scale };
+    // virtual → world
+    constexpr Math::vec2 vc = { VIRTUAL_W * 0.5, VIRTUAL_H * 0.5 };
+    return {
+        (virt.x - vc.x) / zoom + target.x,
+        (virt.y - vc.y) / zoom + target.y
+    };
+}
+
+Math::vec2 TacticalCamera::WorldToScreen(Math::vec2 world, [[maybe_unused]] Math::ivec2 win) const
+{
+    // Returns virtual-resolution coordinates (1600x900 space)
+    constexpr Math::vec2 vc = { VIRTUAL_W * 0.5, VIRTUAL_H * 0.5 };
+    return {
+        (world.x - target.x) * zoom + vc.x,
+        (world.y - target.y) * zoom + vc.y
+    };
+}
 
 GamePlay::GamePlay() // : fighter(nullptr), dragon(nullptr)
 {
@@ -121,7 +202,7 @@ void GamePlay::Load()
   Engine::GetLogger().LogEvent("Loading map: " + selected_map_id);
   LoadJSONMap(selected_map_id);
 
-  if (player == nullptr || enemy == nullptr)
+  if (player == nullptr || enemys.empty())
   {
 	Engine::GetLogger().LogError("LoadJSONMap failed to spawn characters - returning to MainMenu");
 	Engine::GetGameStateManager().PopState();
@@ -129,31 +210,108 @@ void GamePlay::Load()
 	return;
   }
 
+  // Init tactical camera centered on the grid
+  {
+    auto* gs = GetGSComponent<GridSystem>();
+    if (gs)
+    {
+      m_camera.target = {
+        gs->GetWidth()  * static_cast<double>(GridSystem::TILE_SIZE) * 0.5,
+        gs->GetHeight() * static_cast<double>(GridSystem::TILE_SIZE) * 0.5
+      };
+    }
+    m_camera.zoom = 1.0;
+    m_ui_manager->SetCamera(&m_camera);
+  }
 
-  TurnManager* turnMgr = GetGSComponent<TurnManager>();
-  turnMgr->SetEventBus(GetGSComponent<EventBus>());
-  turnMgr->InitializeTurnOrder(std::vector<Character*>{ player, enemy });
-  turnMgr->StartCombat();
-
-  // 신규 추가: UI Manager에 캐릭터 등록
-  m_ui_manager->SetCharacters({ player, enemy });
+  // UI Manager에 캐릭터 등록
+  std::vector<Character*> all_characters = { player };
+  all_characters.insert(all_characters.end(), enemys.begin(), enemys.end());
+  m_ui_manager->SetCharacters(all_characters);
   Engine::GetLogger().LogEvent("GamePlay::Load - Characters registered to UI Manager");
+
+  // EventBus 구독을 StartCombat() 전에 등록 — 첫 TurnStartedEvent를 놓치지 않기 위함
+  GetGSComponent<EventBus>()->Subscribe<TurnStartedEvent>(
+	  [this](const TurnStartedEvent& e)
+	  {
+		if (e.character)
+		  m_ui_manager->OnTurnStarted(e.character->TypeName(), e.turnNumber);
+	  });
 
   GetGSComponent<EventBus>()->Subscribe<CharacterDamagedEvent>(
 	  [this](const CharacterDamagedEvent& event)
 	  {
 		this->DisplayDamageAmount(event);
 		this->DisplayDamageLog(event);
+		std::string att = event.attacker ? event.attacker->TypeName() : "?";
+		m_ui_manager->AddBattleLogEntry(
+		  att + "->" + event.target->TypeName()
+		  + " " + std::to_string(event.damageAmount) + "dmg"
+		  + " (HP:" + std::to_string(event.remainingHP) + ")");
+
+		if (event.target)
+		{
+		  if (const char* sfx = SfxHurtFor(event.target->GetCharacterType()))
+			Engine::GetSoundManager().PlaySFX(sfx);
+		}
+	  });
+
+  GetGSComponent<EventBus>()->Subscribe<CharacterAttackedEvent>(
+	  []([[maybe_unused]] const CharacterAttackedEvent& event)
+	  {
+		if (event.attacker)
+		{
+		  if (const char* sfx = SfxActionFor(event.attacker->GetCharacterType()))
+			Engine::GetSoundManager().PlaySFX(sfx);
+		}
+		// 미스 시 hurt 보조 — 적중 시는 CharacterDamagedEvent가 처리하므로 중복 방지
+		if (event.damageAmount == 0 && event.defender)
+		{
+		  if (const char* sfx = SfxHurtFor(event.defender->GetCharacterType()))
+			Engine::GetSoundManager().PlaySFX(sfx);
+		}
 	  });
 
   GetGSComponent<EventBus>()->Subscribe<SpellCastEvent>(
 	  [this](const SpellCastEvent& event)
 	  {
 		if (event.caster)
+		{
 		  m_ui_manager->AddSpellLog(event.caster->TypeName(), event.spellName, event.spellLevel);
+		  m_ui_manager->AddBattleLogEntry(
+			event.caster->TypeName() + " cast " + event.spellName
+			+ " Lv." + std::to_string(event.spellLevel));
+
+		  if (const char* sfx = SfxActionFor(event.caster->GetCharacterType()))
+			Engine::GetSoundManager().PlaySFX(sfx);
+		}
 	  });
 
-  GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>([this]([[maybe_unused]] const CharacterDeathEvent& event) { this->CheckGameEnd(event); });
+  GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>(
+	  [this](const CharacterDeathEvent& event)
+	  {
+		this->CheckGameEnd(event);
+		if (event.character)
+		  m_ui_manager->AddBattleLogEntry(event.character->TypeName() + " died!");
+	  });
+
+  GetGSComponent<EventBus>()->Subscribe<CharacterHealedEvent>(
+	  [this](const CharacterHealedEvent& e)
+	  {
+		std::string src  = e.healer ? e.healer->TypeName() + "->" : "";
+		std::string line = src + e.target->TypeName()
+		                 + " +" + std::to_string(e.healAmount) + "HP"
+		                 + " (" + std::to_string(e.currentHP) + "/"
+		                 + std::to_string(e.maxHP) + ")";
+		m_ui_manager->AddBattleLogEntry(line);
+	  });
+
+  TurnManager* turnMgr = GetGSComponent<TurnManager>();
+  turnMgr->SetEventBus(GetGSComponent<EventBus>());
+  std::vector<Character*> turn_order = { player };
+  turn_order.insert(turn_order.end(), enemys.begin(), enemys.end());
+  turnMgr->InitializeTurnOrder(turn_order);
+  turnMgr->StartCombat();
 
   GetGSComponent<EventBus>()->Subscribe<CharacterEscapedEvent>(
 	  [this]([[maybe_unused]] const CharacterEscapedEvent& event)
@@ -166,6 +324,15 @@ void GamePlay::Load()
 	  });
 
   Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/SFX_test.wav");
+
+  Engine::GetSoundManager().LoadSFX(SoundManager::SFX_DRAGON_ACTION);
+  Engine::GetSoundManager().LoadSFX(SoundManager::SFX_DRAGON_HURT);
+  Engine::GetSoundManager().LoadSFX(SoundManager::SFX_DRAGON_WALK);
+  Engine::GetSoundManager().LoadSFX(SoundManager::SFX_FIGHTER_ACTION);
+  Engine::GetSoundManager().LoadSFX(SoundManager::SFX_FIGHTER_HURT);
+  Engine::GetSoundManager().LoadSFX(SoundManager::SFX_CLERIC_ACTION);
+  Engine::GetSoundManager().LoadSFX(SoundManager::SFX_CLERIC_HURT);
+  Engine::GetSoundManager().LoadSFX(SoundManager::SFX_HUMAN_WALK);
 
   Engine::GetSoundManager().LoadBGM("Assets/Audio/BGM/BGM_test.ogg");
   Engine::GetSoundManager().PlayBGM("Assets/Audio/BGM/BGM_test.ogg");
@@ -191,8 +358,11 @@ void GamePlay::DisplayDamageAmount(const CharacterDamagedEvent& event)
 		size = { 1.2, 1.2 };
 	}
   }
-  Math::vec2 text_position = event.target->GetGridPosition()->Get();
-  text_position *= GridSystem::TILE_SIZE;
+  Math::ivec2 grid_pos = event.target->GetGridPosition()->Get();
+  Math::vec2 text_position = {
+      grid_pos.x * (double)GridSystem::TILE_SIZE /*+ GridSystem::TILE_SIZE * 0.5*/,
+      grid_pos.y * (double)GridSystem::TILE_SIZE + GridSystem::TILE_SIZE
+  };
 
   m_ui_manager->ShowDamageText(event.damageAmount, text_position, size);
 }
@@ -206,7 +376,6 @@ void GamePlay::DisplayDamageLog(const CharacterDamagedEvent& event)
   m_ui_manager->ShowDamageLog(str, position, Math::vec2{ 0.5, 0.5 });
 }
 
-//  ======== TODO : we have to make it for loop to check all enemy is retired ========
 void GamePlay::CheckGameEnd(const CharacterDeathEvent& event)
 {
   if (event.character == player)
@@ -216,7 +385,9 @@ void GamePlay::CheckGameEnd(const CharacterDeathEvent& event)
 	return;
   }
 
-  if (event.character == enemy)
+  bool all_enemies_dead = std::all_of(enemys.begin(), enemys.end(),
+	[](Character* c) { return c == nullptr || !c->IsAlive(); });
+  if (all_enemies_dead && !enemys.empty())
   {
 	m_ui_manager->ShowGameEnd("Player Win");
 	game_end = true;
@@ -234,11 +405,49 @@ void GamePlay::Update(double dt)
 	return;
   }
 
+  // Camera pan (right-drag) and zoom (scroll wheel) — runs every frame
+  {
+    auto&      inp    = Engine::GetInput();
+    auto       win    = Engine::GetWindow().GetSize();
+    Math::vec2 mouse  = inp.GetMousePos();
+
+    if (inp.MouseDown(2) && !ImGui::GetIO().WantCaptureMouse)
+    {
+      if (m_right_mouse_was_down)
+      {
+        Math::vec2 world_prev = m_camera.ScreenToWorld(m_prev_mouse, win);
+        Math::vec2 world_curr = m_camera.ScreenToWorld(mouse, win);
+        m_camera.target.x -= world_curr.x - world_prev.x;
+        m_camera.target.y -= world_curr.y - world_prev.y;
+      }
+      m_right_mouse_was_down = true;
+    }
+    else
+    {
+      m_right_mouse_was_down = false;
+    }
+    m_prev_mouse = mouse;
+
+    double scroll = inp.GetMouseScroll();
+    if (scroll != 0.0 && !ImGui::GetIO().WantCaptureMouse)
+    {
+      Math::vec2 wb = m_camera.ScreenToWorld(mouse, win);
+      m_camera.zoom *= (1.0 + scroll * 0.125);
+      if (m_camera.zoom < TacticalCamera::ZOOM_MIN) m_camera.zoom = TacticalCamera::ZOOM_MIN;
+      if (m_camera.zoom > TacticalCamera::ZOOM_MAX) m_camera.zoom = TacticalCamera::ZOOM_MAX;
+      Math::vec2 wa = m_camera.ScreenToWorld(mouse, win);
+      m_camera.target.x -= wa.x - wb.x;
+      m_camera.target.y -= wa.y - wb.y;
+    }
+  }
+
   TurnManager*				turnMgr		 = GetGSComponent<TurnManager>();
   GridSystem*				grid		 = GetGSComponent<GridSystem>();
   CombatSystem*				combatSystem = GetGSComponent<CombatSystem>();
   AISystem*					aiSystem	 = GetGSComponent<AISystem>();
   CS230::GameObjectManager* goMgr		 = GetGSComponent<CS230::GameObjectManager>();
+  DebugManager*				debugMgr	 = GetGSComponent<DebugManager>();
+
   if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Escape))
   {
 	if (turnMgr)
@@ -253,6 +462,8 @@ void GamePlay::Update(double dt)
 	return;
   }
 
+  double scaledDt = dt * debugMgr->timeScale;
+
   Character* current = nullptr;
   if (turnMgr && turnMgr->IsCombatActive())
   {
@@ -261,15 +472,15 @@ void GamePlay::Update(double dt)
 
   // SpellDelayObject가 AI 결정 전에 발화되도록 goMgr를 orchestrator 앞에 업데이트
   // Note: debugMgr->Update는 UpdateGSComponents(dt)에서 호출됨 — 중복 호출 금지
-  goMgr->UpdateAll(dt);
+  goMgr->UpdateAll(scaledDt);
 
   if (current != nullptr)
   {
-	m_input_handler->Update(dt, current, grid, combatSystem, m_ui_manager->GetButtons());
-	m_orchestrator->Update(dt, turnMgr, aiSystem);
+	m_input_handler->Update(scaledDt, current, grid, combatSystem, m_ui_manager->GetButtons(), &m_camera);
+	m_orchestrator->Update(scaledDt, turnMgr, aiSystem);
 	m_ui_manager->Update(dt);
   }
-  UpdateGSComponents(dt);
+  UpdateGSComponents(scaledDt);
 }
 
 void GamePlay::Unload()
@@ -286,7 +497,7 @@ void GamePlay::Unload()
   m_orchestrator.reset();
 
 
-  enemy	 = nullptr;
+  enemys.clear();
   player = nullptr;
 }
 
@@ -294,28 +505,29 @@ void GamePlay::Draw()
 {
   Engine::GetWindow().Clear(0x1a1a1aff);
   auto renderer_2d = Engine::GetTextureManager().GetRenderer2D();
+  auto win          = Engine::GetWindow().GetSize();
 
-  Math::TransformationMatrix camera_matrix = CS200::build_ndc_matrix(Engine::GetWindow().GetSize());
-  renderer_2d->BeginScene(camera_matrix);
+  // Pass 1: World space — grid, characters, debug (camera transform applied)
+  renderer_2d->BeginScene(m_camera.GetWorldMatrix(win));
 
   GridSystem* grid_system = GetGSComponent<GridSystem>();
   if (grid_system != nullptr)
-  {
-	grid_system->Draw();
-  }
+    grid_system->Draw();
 
   CS230::GameObjectManager* goMgr = GetGSComponent<CS230::GameObjectManager>();
   if (goMgr)
-  {
-	goMgr->DrawAll(Math::TransformationMatrix{});
-  }
-
-  m_ui_manager->Draw(camera_matrix);
+    goMgr->DrawAll(Math::TransformationMatrix{});
 
   GetGSComponent<DebugManager>()->Draw(grid_system);
 
-  // m_button_manager->SetLabel("btn_move", "Cancel Move");
+  renderer_2d->EndScene();
 
+  // Pass 2: UI — virtual 1600x900 coordinates, letterboxed to actual window
+  Math::TransformationMatrix ui_ndc = TacticalCamera::BuildVirtualNdc(win);
+  // Save ui_ndc so EndRenderTextureMode (triggered by font cache misses) restores it correctly
+  Engine::GetTextureManager().SaveCurrentScene(ui_ndc);
+  renderer_2d->BeginScene(ui_ndc);
+  m_ui_manager->Draw(ui_ndc);
   renderer_2d->EndScene();
 }
 
@@ -367,9 +579,7 @@ void GamePlay::DrawImGui()
 
   ImGui::End();
 
-  ImGui::Begin("Player Actions");
   TurnManager* turnMgr = GetGSComponent<TurnManager>();
-
   if (turnMgr && turnMgr->IsCombatActive())
   {
 	ImGui::Begin("Combat Status");
@@ -379,171 +589,6 @@ void GamePlay::DrawImGui()
 	  ImGui::Text("Current Turn: %s", current->TypeName().c_str());
 	  ImGui::Text("Turn #%d | Round #%d", turnMgr->GetCurrentTurnNumber(), turnMgr->GetRoundNumber());
 	}
-	ImGui::End();
-  }
-
-
-  using ActionState		   = PlayerInputHandler::ActionState;
-  ActionState currentState = m_input_handler->GetCurrentState();
-
-  // Move Button
-  const char* move_text		   = (currentState == ActionState::SelectingMove) ? "Cancel Move" : "Move";
-  bool		  is_move_disabled = (currentState != ActionState::None && currentState != ActionState::SelectingMove);
-
-  if (is_move_disabled)
-	ImGui::BeginDisabled();
-  if (ImGui::Button(move_text))
-  {
-	if (currentState == ActionState::SelectingMove)
-	{
-	  m_input_handler->CancelCurrentAction();
-	  // 이동 모드 비활성화
-	  if (grid_system)
-	  {
-		Engine::GetLogger().LogEvent("UI: 'Cancel Move' button clicked.");
-		grid_system->DisableMovementMode();
-	  }
-	}
-	else
-	{
-	  m_input_handler->SetState(ActionState::SelectingMove);
-	  Engine::GetLogger().LogEvent("UI: 'Move' button clicked.");
-
-	  if (turnMgr && grid_system)
-	  {
-		Character* current = turnMgr->GetCurrentCharacter();
-		if (current)
-		{
-		  Math::ivec2 current_pos	 = current->GetGridPosition()->Get();
-		  int		  movement_range = current->GetMovementRange();
-
-		  grid_system->EnableMovementMode(current_pos, movement_range);
-
-		  Engine::GetLogger().LogEvent("UI: 'Move' button clicked. Movement mode enabled.");
-		}
-	  }
-	}
-  }
-  if (is_move_disabled)
-	ImGui::EndDisabled();
-
-  // Action Button
-  const char* action_text		 = (currentState == ActionState::SelectingAction || currentState == ActionState::SelectingSpell) ? "Cancel Action" : "Action";
-  bool		  is_action_disabled = (currentState != ActionState::None && currentState != ActionState::SelectingAction && currentState != ActionState::SelectingSpell);
-
-  if (is_action_disabled)
-	ImGui::BeginDisabled();
-  if (ImGui::Button(action_text))
-  {
-	if (currentState == ActionState::SelectingAction || currentState == ActionState::SelectingSpell)
-	{
-	  m_input_handler->CancelCurrentAction();
-	  Engine::GetLogger().LogEvent("UI: 'Cancel Action' button clicked.");
-	}
-	else
-	{
-	  m_input_handler->SetState(ActionState::SelectingAction);
-	  Engine::GetLogger().LogEvent("UI: 'Action' button clicked.");
-	}
-  }
-  if (is_action_disabled)
-	ImGui::EndDisabled();
-
-  // End Turn Button
-  bool is_end_turn_disabled = (currentState != ActionState::None);
-  if (is_end_turn_disabled)
-	ImGui::BeginDisabled();
-  if (ImGui::Button("End Turn"))
-  {
-	Engine::GetLogger().LogEvent("UI: 'End Turn' button clicked.");
-	if (turnMgr && turnMgr->IsCombatActive())
-	{
-	  turnMgr->EndCurrentTurn();
-	}
-  }
-  if (is_end_turn_disabled)
-	ImGui::EndDisabled();
-
-  ImGui::End();
-
-  if (currentState == ActionState::SelectingAction)
-  {
-	ImGui::Begin("Action List");
-
-	if (ImGui::Button("Attack"))
-	{
-	  Engine::GetLogger().LogEvent("UI: 'Attack' selected. Now targeting.");
-	  m_input_handler->SetState(ActionState::TargetingForAttack);
-	}
-
-	if (ImGui::Button("Spell"))
-	{
-	  Engine::GetLogger().LogEvent("UI: 'Spell' selected. Now targeting.");
-	  m_input_handler->SetState(ActionState::SelectingSpell);
-	}
-
-	ImGui::End();
-  }
-  if (currentState == ActionState::SelectingSpell)
-  {
-	ImGui::Begin("Spell List");
-
-	SpellSystem* spell_sys = GetGSComponent<SpellSystem>();
-	Character*	 current   = turnMgr ? turnMgr->GetCurrentCharacter() : nullptr;
-
-	if (spell_sys && current)
-	{
-	  auto available = spell_sys->GetAvailableSpells(current);
-
-	  if (available.empty())
-	  {
-		ImGui::Text("No spells available.");
-	  }
-
-	  for (const auto& spell_id : available)
-	  {
-		const SpellData* spell = spell_sys->GetSpellData(spell_id);
-		if (!spell)
-		  continue;
-
-		if (!spell->upcastable)
-		{
-		  // ── 비업캐스트: 기존 단일 버튼 ──
-		  std::string label = spell->spell_name + " (Lv." + std::to_string(spell->spell_level) + ")" + "##" + spell_id;
-		  if (ImGui::Button(label.c_str()))
-			m_input_handler->SelectSpell(spell_id, current, spell->spell_level, m_ui_manager->GetButtons());
-		}
-		else
-		{
-		  // ── 업캐스트 가능: 이름 표시 + 레벨 버튼 ──
-		  ImGui::Text("%s (Lv.%d Up)", spell->spell_name.c_str(), spell->spell_level);
-		  ImGui::SameLine();
-
-		  SpellSlots* slots = current->GetSpellSlots();
-		  for (int lv = spell->spell_level; lv <= 5; ++lv)
-		  {
-			bool has_slot = slots && slots->HasSlot(lv);
-			if (!has_slot)
-			  ImGui::BeginDisabled();
-
-			std::string lv_label = "Lv" + std::to_string(lv) + "##" + spell_id + std::to_string(lv);
-			if (ImGui::Button(lv_label.c_str()))
-			  m_input_handler->SelectSpell(spell_id, current, lv, m_ui_manager->GetButtons());
-
-			if (!has_slot)
-			  ImGui::EndDisabled();
-			ImGui::SameLine();
-		  }
-		  ImGui::NewLine();
-		}
-	  }
-	}
-
-	if (ImGui::Button("Cancel"))
-	{
-	  m_input_handler->CancelCurrentAction();
-	}
-
 	ImGui::End();
   }
 #endif // DEVELOPER_VERSION
@@ -610,16 +655,31 @@ void GamePlay::LoadJSONMap(const std::string& map_id)
   if (fighter_spawn_it != map_data.spawn_points.end())
   {
 	Math::ivec2 fighter_spawn = fighter_spawn_it->second;
-	auto		enemy_ptr	  = character_factory->Create(CharacterTypes::Fighter, fighter_spawn);
-	enemy					  = enemy_ptr.get();
-	enemy->SetGridSystem(grid_system);
+	auto  enemy_ptr   = character_factory->Create(CharacterTypes::Fighter, fighter_spawn);
+	auto* fighter_raw = enemy_ptr.get();
+	fighter_raw->SetGridSystem(grid_system);
 	go_manager->Add(std::move(enemy_ptr));
-	grid_system->AddCharacter(enemy, fighter_spawn);
+	grid_system->AddCharacter(fighter_raw, fighter_spawn);
+	enemys.push_back(fighter_raw);
 	Engine::GetLogger().LogEvent("Fighter spawned at: " + std::to_string(fighter_spawn.x) + ", " + std::to_string(fighter_spawn.y));
   }
   else
   {
 	Engine::GetLogger().LogError("No fighter spawn point in map: " + map_id);
+  }
+
+  // Cleric
+  auto cleric_spawn_it = map_data.spawn_points.find("cleric");
+  if (cleric_spawn_it != map_data.spawn_points.end())
+  {
+	Math::ivec2 cleric_spawn = cleric_spawn_it->second;
+	auto  cleric_ptr = character_factory->Create(CharacterTypes::Cleric, cleric_spawn);
+	auto* cleric_raw = cleric_ptr.get();
+	cleric_raw->SetGridSystem(grid_system);
+	go_manager->Add(std::move(cleric_ptr));
+	grid_system->AddCharacter(cleric_raw, cleric_spawn);
+	enemys.push_back(cleric_raw);
+	Engine::GetLogger().LogEvent("Cleric spawned at: " + std::to_string(cleric_spawn.x) + ", " + std::to_string(cleric_spawn.y));
   }
 
   Engine::GetLogger().LogEvent("LoadJSONMap - END: " + map_data.name);

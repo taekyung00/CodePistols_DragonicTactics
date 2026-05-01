@@ -31,6 +31,7 @@ void TextManager::Init()
 {
 	add_font("Assets/fonts/Font_Simple.png");
 	add_font("Assets/fonts/Font_Outlined.png");
+	add_font("Assets/fonts/Font_Kings.png");
 }
 
 void TextManager::add_font(const std::filesystem::path& file_name)

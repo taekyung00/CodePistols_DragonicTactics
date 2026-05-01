@@ -36,6 +36,7 @@ void RenderingTest::Load()
 	dragon->SetPosition({ 0.0, 0.0 });
 	fighter = character_factory->Create(CharacterTypes::Fighter, { 5, 5 });
 	AddGSComponent(new CS230::ParticleManager<Particles::Hit>());
+	testTexture = Engine::GetTextureManager().Load("Assets/images/dragon.png");
 	timer = timer_max;
 }
 
@@ -78,6 +79,10 @@ void RenderingTest::Draw()
 	if (goMgr)
 	{
 		goMgr->DrawAll(Math::TransformationMatrix{});
+	}
+	if (testTexture)
+	{
+		testTexture->Draw(Math::TranslationMatrix(Math::vec2{ 400.0, 300.0 }) );
 	}
 
 	renderer_2d->EndScene();

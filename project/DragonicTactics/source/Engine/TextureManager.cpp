@@ -108,8 +108,8 @@ namespace CS230
 	GL::Viewport(render_info.Viewport[0], render_info.Viewport[1], render_info.Viewport[2], render_info.Viewport[3]);
 	//  * - Restores original clear color values from saved state
 	GL::ClearColor(render_info.ClearColor[0], render_info.ClearColor[1], render_info.ClearColor[2], render_info.ClearColor[3]);
-	//  * - Begins new 2D renderer scene with screen-appropriate coordinate system
-	renderer_2d->BeginScene(CS200::build_ndc_matrix(Engine::GetWindow().GetSize()));
+	//  * - Begins new 2D renderer scene with the saved camera matrix
+	renderer_2d->BeginScene(render_info.SavedCameraMatrix);
 	//  * - Deletes temporary framebuffer to free GPU resources
 	auto framebuffer_to_delete = render_info.Target.Framebuffer;
 	GL::DeleteFramebuffers(1, &framebuffer_to_delete);
@@ -162,6 +162,11 @@ namespace CS230
   CS200::IRenderer2D* TextureManager::GetRenderer2D()
   {
 	return renderer2D.get();
+  }
+
+  void TextureManager::SaveCurrentScene(const Math::TransformationMatrix& m)
+  {
+	get_render_info().SavedCameraMatrix = m;
   }
 
   void TextureManager::Shutdown()

@@ -18,6 +18,7 @@ class Dragon;
 class GridSystem;
 class CombatSystem;
 class ButtonManager;
+struct TacticalCamera;
 
 class PlayerInputHandler
 {
@@ -38,9 +39,11 @@ class PlayerInputHandler
   PlayerInputHandler();
   ~PlayerInputHandler() = default;
 
-  void Update(double dt, Character* current_character, GridSystem* grid, CombatSystem* combat_system, ButtonManager& btns);
+  void Update(double dt, Character* current_character, GridSystem* grid, CombatSystem* combat_system, ButtonManager& btns, const TacticalCamera* camera = nullptr);
 
   void CancelCurrentAction();
+  void OnAttackPressed();
+  void OnEndTurnPressed();
 
   ActionState GetCurrentState() const
   {
@@ -52,6 +55,8 @@ class PlayerInputHandler
 	  m_state = new_state;
   }
 
+  std::string GetSelectedSpellId() const { return m_selected_spell_id; }
+
   void SelectSpell(const std::string& spell_id, Character* caster, int upcast_level, ButtonManager& btns);
 
   private:
@@ -60,6 +65,7 @@ class PlayerInputHandler
   int                      m_selected_upcast_level = 0;
   std::vector<Math::ivec2> m_wall_placement_tiles;
   int                      m_wall_placement_count = 0;
+  const TacticalCamera*    m_camera               = nullptr;
 
   //helper function
   Math::ivec2 ConvertScreenToGrid(Math::vec2 world_pos);

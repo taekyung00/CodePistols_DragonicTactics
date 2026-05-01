@@ -12,5 +12,6 @@ Created:    May 5, 2025
 enum Fonts
 {
   Simple,
-  Outlined
+  Outlined,
+  Kings
 };

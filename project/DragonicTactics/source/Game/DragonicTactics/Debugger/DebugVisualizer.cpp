@@ -10,6 +10,7 @@
 #include "./Engine/Engine.h"
 #include "./Engine/GameStateManager.h"
 #include "./Engine/Logger.h"
+#include "./Engine/SoundManager.h"
 #include "./Game/DragonicTactics/Objects/Character.h"
 #include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
 #include "./Game/DragonicTactics/Objects/Components/SpellSlots.h"
@@ -21,6 +22,25 @@
 #include "./Game/DragonicTactics/Types/Events.h"
 #include "DebugManager.h"
 #include "DebugVisualizer.h"
+
+namespace
+{
+  // "Assets/Audio/SFX/dragon_action.wav" -> filename "dragon_action.wav", display "Dragon action"
+  void SplitSfxPath(const std::string& path, std::string& filename, std::string& display)
+  {
+	auto slash = path.find_last_of("/\\");
+	filename   = (slash != std::string::npos) ? path.substr(slash + 1) : path;
+
+	auto dot = filename.find_last_of('.');
+	std::string base = (dot != std::string::npos) ? filename.substr(0, dot) : filename;
+
+	std::replace(base.begin(), base.end(), '_', ' ');
+	if (!base.empty())
+	  base[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(base[0])));
+
+	display = base;
+  }
+}
 
 void DebugVisualizer::Init()
 {
@@ -43,6 +63,9 @@ void DebugVisualizer::Init()
   event_bus->Subscribe<SpellCastEvent>([this](const SpellCastEvent& e) { OnSpellCast(e); });
   event_bus->Subscribe<StatusEffectAddedEvent>([this](const StatusEffectAddedEvent& e) { OnStatusEffectAdded(e); });
   event_bus->Subscribe<CharacterMovedEvent>([this](const CharacterMovedEvent& e) { OnCharacterMoved(e); });
+
+  // SFX 재생 추적 — SoundManager 직접 콜백 (EventBus 미경유)
+  Engine::GetSoundManager().SetSfxCallback([this](const std::string& path) { OnSfxPlayed(path); });
 
   Engine::GetLogger().LogEvent("DebugVisualizer: Event subscriptions complete");
 }
@@ -84,7 +107,7 @@ void DebugVisualizer::Update(double dt)
 	  roll_info.total = 0;
 	  for (int r : last_rolls)
 		roll_info.total += r;
-	  roll_info.notation  = "Unknown"; // We don't have notation here, just the results
+	  roll_info.notation  = dice_mgr->GetLastNotation();
 	  roll_info.timestamp = game_time_;
 
 	  dice_history_.push_back(roll_info);
@@ -183,6 +206,13 @@ void DebugVisualizer::DrawImGuiDebugPanel([[maybe_unused]]const GridSystem* grid
 		ImGui::EndTabItem();
 	  }
 
+	  // Tab 6: SFX
+	  if (ImGui::BeginTabItem("SFX"))
+	  {
+		DrawImGuiSfxLog();
+		ImGui::EndTabItem();
+	  }
+
 	  ImGui::EndTabBar();
 	}
   }
@@ -255,23 +285,37 @@ void DebugVisualizer::DrawImGuiDiceHistory()
   {
 	const auto& roll = *it;
 
-	ImGui::Text("[%.1fs] Total: %d", roll.timestamp, roll.total);
-	ImGui::SameLine(150);
-	ImGui::Text("Rolls: [");
+	// Notation (e.g. "2d6"): highlight in yellow
+	ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.3f, 1.0f), "%s", roll.notation.c_str());
 	ImGui::SameLine();
 
+	// count x sides info derived from notation and rolls vector
+	int count = static_cast<int>(roll.rolls.size());
+	ImGui::TextDisabled("(%dx dice)", count);
+	ImGui::SameLine(120);
+
+	// Total
+	ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "= %d", roll.total);
+	ImGui::SameLine();
+
+	// Individual results
+	ImGui::Text("  [");
 	for (size_t i = 0; i < roll.rolls.size(); ++i)
 	{
-	  ImGui::SameLine();
+	  ImGui::SameLine(0, 0);
 	  ImGui::Text("%d", roll.rolls[i]);
 	  if (i + 1 < roll.rolls.size())
 	  {
-		ImGui::SameLine();
-		ImGui::Text(",");
+		ImGui::SameLine(0, 0);
+		ImGui::Text(", ");
 	  }
 	}
-	ImGui::SameLine();
+	ImGui::SameLine(0, 0);
 	ImGui::Text("]");
+
+	// Timestamp (dimmed, right side)
+	ImGui::SameLine();
+	ImGui::TextDisabled("  @%.1fs", roll.timestamp);
   }
 
   ImGui::EndChild();
@@ -607,6 +651,43 @@ void DebugVisualizer::OnCharacterMoved(const CharacterMovedEvent& event)
       + " -> (" + std::to_string(event.toGrid.x) + "," + std::to_string(event.toGrid.y) + ")";
   EventLogEntry entry{ "Move", details, game_time_ };
   event_log_.push_back(entry);
+}
+
+void DebugVisualizer::OnSfxPlayed(const std::string& wav_path)
+{
+  SfxLogEntry entry;
+  SplitSfxPath(wav_path, entry.filename, entry.display_name);
+  entry.timestamp = game_time_;
+  sfx_log_.push_back(entry);
+
+  // Keep last 50 entries
+  if (sfx_log_.size() > 50)
+	sfx_log_.pop_front();
+}
+
+void DebugVisualizer::DrawImGuiSfxLog()
+{
+  if (ImGui::Button("Clear"))
+	sfx_log_.clear();
+  ImGui::SameLine();
+  ImGui::TextDisabled("(last %d)", static_cast<int>(sfx_log_.size()));
+  ImGui::Separator();
+
+  ImGui::BeginChild("SfxLogScroll", ImVec2(0, 0), false);
+
+  for (auto it = sfx_log_.rbegin(); it != sfx_log_.rend(); ++it)
+  {
+	const auto& entry = *it;
+	ImGui::TextDisabled("[%.1fs]", entry.timestamp);
+	ImGui::SameLine();
+	ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.3f, 1.0f), "SFX:");
+	ImGui::SameLine();
+	ImGui::Text("%s", entry.filename.c_str());
+	ImGui::SameLine();
+	ImGui::TextDisabled("(%s)", entry.display_name.c_str());
+  }
+
+  ImGui::EndChild();
 }
 
 std::string DebugVisualizer::GetDecisionTypeString(AIDecisionType type)

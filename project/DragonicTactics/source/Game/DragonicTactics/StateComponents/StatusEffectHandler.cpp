@@ -2,6 +2,8 @@
 #include "../Objects/Character.h"
 #include "../Objects/Components/StatsComponent.h"
 #include "../Objects/Components/StatusEffectComponent.h"
+#include "../StateComponents/EventBus.h"
+#include "../Types/Events.h"
 #include "DiceManager.h"
 #include "pch.h"
 // ──────────────────────────────────────────────
@@ -118,8 +120,13 @@ void StatusEffectHandler::OnAfterAttack(Character* attacker, Character* defender
   // ── Lifesteal: 피해의 50% 회복 (내림) ──
   if (attacker->Has("Lifesteal"))
   {
-	int heal = damage_dealt / 2;
-	attacker->SetHP(std::min(attacker->GetHP() + heal, attacker->GetMaxHP()));
+	int heal      = damage_dealt / 2;
+	int hpBefore  = attacker->GetHP();
+	attacker->SetHP(std::min(hpBefore + heal, attacker->GetMaxHP()));
+	int actualHeal = attacker->GetHP() - hpBefore;
+	auto* eventBus = Engine::GetGameStateManager().GetGSComponent<EventBus>();
+	if (eventBus)
+	  eventBus->Publish(CharacterHealedEvent{ attacker, actualHeal, attacker->GetHP(), attacker->GetMaxHP(), nullptr });
   }
 
   // ── Frenzy: 10 이상 피해 → 타겟에 무작위 효과, 미만 → 자신에게, 소모 ──

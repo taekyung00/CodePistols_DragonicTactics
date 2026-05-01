@@ -120,6 +120,16 @@ class DebugVisualizer
 
   std::deque<AIDecisionLog> ai_decision_history_;
 
+  // SFX playback log (populated via SoundManager callback)
+  struct SfxLogEntry
+  {
+	std::string filename;     // e.g. "dragon_action.wav"
+	std::string display_name; // e.g. "Dragon action"
+	double      timestamp;
+  };
+
+  std::deque<SfxLogEntry> sfx_log_;
+
   double game_time_{ 0.0 };
 
   // === Event Handlers ===
@@ -130,6 +140,7 @@ class DebugVisualizer
   void OnSpellCast(const struct SpellCastEvent& event);
   void OnStatusEffectAdded(const struct StatusEffectAddedEvent& event);
   void OnCharacterMoved(const struct CharacterMovedEvent& event);
+  void OnSfxPlayed(const std::string& wav_path);
 
   // === Rendering Helpers ===
   // ImGui panels only - no in-game overlays for damage/HP
@@ -138,6 +149,7 @@ class DebugVisualizer
   void DrawImGuiCharacterStats(const GridSystem* grid);
   void DrawImGuiCombatLog();
   void DrawImGuiAIDecisions();
+  void DrawImGuiSfxLog();
 
   //=== Utility ===
   std::string GetDecisionTypeString(AIDecisionType type);

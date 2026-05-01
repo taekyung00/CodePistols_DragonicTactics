@@ -157,8 +157,10 @@ bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender)
 
   attacker->SetHasAttackedThisTurn(true);
 
-  // Consume AP
-  attacker->GetActionPointsComponent()->Consume(attackCost);
+  // Consume AP (갓모드 Dragon은 AP 소모 없음)
+  auto* debug_mgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
+  if (!(debug_mgr && debug_mgr->IsGodModeEnabled() && attacker->GetCharacterType() == CharacterTypes::Dragon))
+    attacker->GetActionPointsComponent()->Consume(attackCost);
 
   // Publish attack event
   auto* eventBus = Engine::GetGameStateManager().GetGSComponent<EventBus>();

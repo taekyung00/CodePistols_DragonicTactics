@@ -11,10 +11,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | ----------------------- | -------------------------------------------------------------------- |
 | `GamePlay::Load()`      | 모든 GS 컴포넌트 등록 + CSV/JSON 데이터 로드 + 캐릭터 스폰                             |
 | `GamePlay::Update()`    | `PlayerInputHandler` / `BattleOrchestrator` / `GameObjectManager` 구동 |
-| `GamePlay::DrawImGui()` | Player Actions / Action List / Spell List / Map Selection 패널         |
+| `GamePlay::DrawImGui()` | Map Selection / Combat Status 패널 (Move·Action·Spell UI는 ButtonManager가 담당) |
 | `GamePlay::Draw()`      | `GridSystem::Draw()` + `GameObjectManager::DrawAll()`                |
 
-**현재 맵 구성**: Dragon = 플레이어(좌측 하단 `'d'`), Fighter = AI 적(좌측 상단 `'f'`).
+**현재 맵 구성**: Dragon = 플레이어, Fighter + Cleric = AI 적 (`maps.json` spawn_points 기준, `enemys` 벡터로 관리).
 
 ---
 
@@ -25,7 +25,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **폐기됨**: `Abilities/` 디렉토리 전체 (AbilityBase, MeleeAttack, ShieldBash) — `Objects/Actions/ActionAttack`만 사용
 - **구현 완료**: SpellSystem (CSV 파싱 + 시전 + UI), StatusEffectHandler (9가지 효과 + OnApplied/OnRemoved), TurnManager, GridSystem, SoundManager (BGM/SFX)
 - **구현 완료**: FighterStrategy (`fighter.mmd` 플로우차트 완전 반영 — 킬루프/생존/일반교전/원거리 분기)
-- **진행 중**: ClericStrategy, WizardStrategy, RogueStrategy (`FighterStrategy`가 참조 구현)
+- **구현 완료**: ClericStrategy (`cleric.mmd` 플로우차트 완전 반영 — 킬루프/힐/버프·디버프/근접 분기) + Cleric 캐릭터 클래스
+- **미구현**: WizardStrategy, RogueStrategy — 캐릭터 클래스 및 characters.json 스탯도 없음 (`FighterStrategy`/`ClericStrategy`가 참조 구현)
 
 ---
 
@@ -67,15 +68,16 @@ python3 scripts/scan_build_project.py --help
 
 ```
 EventBus, DiceManager, AISystem, CombatSystem, GameObjectManager, GridSystem,
-TurnManager, DebugManager, CharacterFactory, DataRegistry, Timer,
+TurnManager, DebugManager, CharacterFactory, DataRegistry, util::Timer,
 MapDataRegistry, SpellSystem, StatusEffectHandler,
 CS230::ParticleManager<Particles::Hit>
 ```
 
 - `DiceManager` — `Roll("2d6")`, `Roll("1d20+5")` 형식으로 주사위 굴림
 - `CombatSystem` — 공격/방어 주사위 굴림 + 최종 데미지 계산 (StatusEffectHandler 훅 연동)
+- `util::Timer` — 엔진 제공 타이머 (`Engine/Timer.h`). `GetElapsedSeconds()` / `Reset()`으로 AI 재호출 간격 측정에 사용
 
-**GameObject 컴포넌트**: `GridPosition`, `ActionPoints`, `StatsComponent`, `SpellSlots`, `MovementComponent`, `StatusEffectComponent`
+**GameObject 컴포넌트**: `GridPosition`, `ActionPoints`, `StatsComponent`, `SpellSlots`, `MovementComponent`, `StatusEffectComponent`, `ShakeComponent`
 
 ### GS 컴포넌트 접근 패턴
 
@@ -104,7 +106,21 @@ Engine::GetGameStateManager().GetGSComponent<EventBus>()->Publish(
     CharacterDamagedEvent{target, damage});
 ```
 
-`Events.h`에 전투·피해·이동·스펠·상태·턴·UI 카테고리로 27개+ 이벤트 정의됨.
+`Events.h`에 전투·피해·이동·스펠·상태·턴·UI 카테고리로 27개+ 이벤트 정의됨. 자주 쓰는 것:
+
+| 이벤트 | 주요 필드 |
+|---|---|
+| `TurnStartedEvent` | character, turnNumber, actionPoints |
+| `TurnEndedEvent` | character, actionsUsed |
+| `CharacterDamagedEvent` | target, damageAmount, remainingHP, attacker, wasCritical |
+| `CharacterHealedEvent` | target, healAmount, currentHP, healer |
+| `CharacterDeathEvent` | character, killer |
+| `CharacterMovedEvent` | character, fromGrid, toGrid |
+| `SpellCastEvent` | caster, spellName, spellLevel, targetGrid |
+| `StatusEffectAddedEvent` | target, effectName, duration, magnitude |
+| `StatusEffectRemovedEvent` | target, effectName, reason |
+| `AIDecisionEvent` | actor, decision_type, decision_target, destination |
+| `BattleEndedEvent` | playerVictory, turnsElapsed |
 
 ### AI Strategy 패턴
 
@@ -144,27 +160,112 @@ MakeDecision
 | Frenzy | `S_ENH_020` | 2 | Self:Single:0 |
 | Fearful Cry | `S_DEB_020` | 1 | Enemy:Around:3 |
 
+**ClericStrategy 의사결정 구조** (`StateComponents/AI/ClericStrategy.cpp`):
+
+```
+MakeDecision
+  ├── CanReachThisTurn && CanKillDragonThisTurn → MakeKillLoopDecision (기본 공격, 공격 스펠 없음)
+  └── Phase_Decision
+        ├── AP = 0 & MP > 0 → TacticalMove → EndTurn
+        ├── AP = 0 & MP = 0 → EndTurn
+        ├── [2순위] 힐 대상 HP < 30% + 슬롯 + 거리 ≤ 5 → S_ENH_030 Healing Touch (범위 밖이면 아군에게 이동)
+        ├── 슬롯 있음 → MakeSupportDecision
+        │     ├── !Cursed && 거리 ≤ 5 → S_DEB_010 Curse
+        │     ├── !Blessed 아군(파이터>로그>위자드) && 거리 ≤ 4 → S_BUF_010 Divine Shield (자신 제외)
+        │     └── 지원 불필요 → MakeMeleePhaseDecision
+        └── 슬롯 없음 → MakeMeleePhaseDecision
+              ├── 인접 → 기본 공격
+              └── 비인접 & MP > 0 → 이동
+```
+
+**Cleric 스펠 ID** (`Assets/Data/spell_table.csv` 기준):
+
+| 스펠 | ID | 레벨 | 타겟팅 | 전략 상수 |
+|---|---|---|---|---|
+| Healing Touch | `S_ENH_030` | 1 | Ally:Single:**5** | `HEAL_RANGE=5` |
+| Divine Shield | `S_BUF_010` | 1 | Ally:Single:**4** | 파이터>로그>위자드, 자신 제외, `BLESSING_RANGE=4` |
+| Curse of Suffering | `S_DEB_010` | 1 | Enemy:Single:**5** | `CURSE_RANGE=5` |
+
+**Cleric 스탯** (`Assets/Data/characters.json`): HP 90, Speed 2, AP 1, 1d6 공격, 슬롯 Lv1×3 / Lv2×2
+
+**⚠️ Cleric 스펠은 자신에게 사용 불가** — Divine Shield 포함 모든 스펠이 타 아군/적 대상. `FindAllyNeedingBuff()`는 actor 제외, 파이터>로그>위자드 순으로만 반환.
+
+**⚠️ Cleric 무한루프 방지 (기구현됨)**: Curse/Divine Shield(Single geometry) → CanCast 실패 시 AP 미소모 → 무한루프 위험. `MakeSupportDecision`에서 `dist <= SPELL_RANGE` 직접 체크 후 범위 밖이면 `MakeMeleePhaseDecision`(이동)으로 fall-through.
+
 **FighterStrategy 미구현 분기** (`FighterStrategy.cpp` 상단 주석 블록):
-- **보물 탈출**: `actor->HasTreasure()` → Exit 타일로 이동 (`grid->HasExit()`, `grid->GetExitPosition()` 필요) — 보물 시스템 구현 후 활성화
-- **클레릭 추적**: 위험 시(`IsInDanger`) `FindCleric()`으로 클레릭을 찾아 인접 대기 또는 이동 — Cleric 캐릭터 구현 후 활성화
+- **보물 탈출**: `actor->HasTreasure()` → Exit 타일로 이동 (`grid->HasExit()`, `grid->GetExitPosition()` 필요) — 보물 시스템 구현 후 활성화 (주석 처리 중)
+- **클레릭 추적**: 미구현 — fighter.mmd에 해당 분기 없음. Fighter는 위험 시 Survival 시퀀스(Bloodlust→FearCry→공격)만 실행. 클레릭이 Fighter에게 이동하는 방식이 맞음.
 
 **⚠️ UseAbility AIDecision 작성 시 주의**:
 - `AISystem::ExecuteDecision`은 `decision.target->GetGridPosition()->Get()`을 target_tile로 `CastSpell`에 전달 (`destination` 필드 무시됨)
 - `Around` geometry 스펠(Fearful Cry): caster 중심 AoE → `CanCast` 범위 체크가 `caster→target_tile` 거리로 계산 → **`target = actor(자신)`** 으로 설정해야 거리=0으로 항상 통과
-- `Single` geometry 스펠(Smite): range=1 → CanCast 실패 시 AP 미소모 → 다음 프레임에 동일 결정 반복 → **무한루프** — Strategy에서 `distance <= 1`을 직접 보장해야 함
+- `Single` geometry 스펠: CanCast 실패(사거리 초과) 시 AP 미소모 → 다음 프레임에 동일 결정 반복 → **무한루프** — **Strategy에서 반드시 `distance <= SPELL_RANGE`를 직접 체크**해야 함. 범위 밖이면 UseAbility 반환 금지, `MakeMeleePhaseDecision`(이동)으로 fall-through.
 
-### GridSystem::TileType
+### GridSystem API
 
 ```cpp
 enum class TileType { Empty, Wall, Lava, Difficult, Exit, Invalid };
-grid->GetTileType(pos)   // 타일 종류 조회
-grid->IsOccupied(pos)    // 캐릭터 점유 여부
+
+// 타일 조회
+grid->GetTileType(pos)            // 타일 종류
+grid->IsOccupied(pos)             // 캐릭터 점유 여부
+grid->IsWalkable(pos)             // 이동 가능 여부
+grid->IsValidTile(pos)            // 범위 내 유효 타일 여부
+grid->ManhattanDistance(a, b)     // 맨해튼 거리
+grid->GetWidth() / GetHeight()    // 맵 크기
+
+// 경로 탐색
+grid->FindPath(start, goal, lava_penalty)        // A* 경로 반환 (lava_penalty=0이면 용암 무시)
+grid->GetReachableTiles(start, max_distance)     // BFS 기반 이동 가능 타일 목록
+
+// 캐릭터 배치 관리
+grid->AddCharacter(character, pos)
+grid->RemoveCharacter(pos)
+grid->MoveCharacter(old_pos, new_pos)
+grid->GetCharacterAt(pos)         // → Character* (없으면 nullptr)
+grid->GetAllCharacters()          // → std::vector<Character*>
+
+// 출구 관리 (보물 탈출 시스템)
+grid->HasExit()
+grid->GetExitPosition()
+grid->SetExitPosition(pos)
 ```
 
 이동 목적지 유효성 검사 패턴 (`AISystem::ExecuteDecision` 참고):
 ```cpp
 TileType dt = grid->GetTileType(destination);
 bool dest_ok = (dt == TileType::Empty || dt == TileType::Lava) && !grid->IsOccupied(destination);
+```
+
+### Character 주요 API
+
+Strategy와 시스템에서 자주 쓰는 `Character` 메서드:
+
+```cpp
+// 상태 쿼리 (Fact)
+character->IsAlive()
+character->GetHP() / GetMaxHP()
+character->GetHPPercentage()          // 0.0 ~ 1.0
+character->GetMovementRange()         // 남은 이동 타일 수
+character->GetActionPoints()          // 남은 행동 포인트
+character->GetAttackRange()
+character->GetCharacterType()         // CharacterTypes enum
+character->IsAIControlled()           // Dragon=false, Fighter/Cleric=true
+character->HasAnySpellSlot()
+character->GetAvailableSpellSlots(level)
+character->HasAttackedThisTurn()
+character->HasTreasure()
+
+// 상태 효과
+character->Has("Blessed")             // 특정 효과 보유 여부
+character->AddEffect(name, duration, magnitude)
+character->RemoveEffect(name)
+character->GetActiveEffects()         // → const std::vector<ActiveEffect>&
+
+// 컴포넌트 직접 접근
+character->GetGridPosition()          // → GridPosition*
+character->GetStatsComponent()        // → StatsComponent*
+character->GetSpellSlots()            // → SpellSlots*
 ```
 
 ### ⚠️ ActionPoints vs MovementRange (혼동 주의)
@@ -195,6 +296,18 @@ GamePlay (GameState)
   └── TurnManager → AISystem → Strategy::MakeDecision()
 ```
 
+**GamePlay AI 캐릭터 관리** (`States/GamePlay.h`):
+
+```cpp
+Character* player = nullptr;              // Dragon (플레이어)
+std::vector<Character*> enemys {};        // 모든 AI 캐릭터 (Fighter, Cleric, ...)
+```
+
+- 스폰 시 `enemys.push_back(raw_ptr)` — Fighter·Cleric 모두 동일
+- `InitializeTurnOrder({ player } + enemys)` — 새 AI 추가 시 자동 반영
+- `CheckGameEnd`: `std::all_of(enemys, IsAlive==false)` → 전원 사망 시 Player Win
+- ⚠️ `LoadJSONMap`은 `maps.json`의 `spawn_points` 키(`"fighter"`, `"cleric"`, ...)를 찾아 스폰 — 새 캐릭터는 maps.json에 spawn_point 추가 필요
+
 **PlayerInputHandler.ActionState** (입력 상태 머신):
 
 ```
@@ -206,6 +319,19 @@ None → SelectingMove → Moving
 ```
 
 Dragon(플레이어) 턴에서만 동작. AI(Fighter) 턴은 `BattleOrchestrator`가 처리.
+
+**⚠️ GS 컴포넌트 Update 중복 호출 금지** (`States/GamePlay.cpp`):
+
+`UpdateGSComponents(dt)`가 등록된 모든 GS 컴포넌트(`DebugManager` 포함)의 `Update()`를 자동 호출한다. 특정 컴포넌트를 추가로 명시 호출하면 같은 프레임에 `ProcessInput()`이 두 번 실행되어 `KeyJustPressed`가 두 번 true → 토글이 ON→OFF로 즉시 복귀하는 버그 발생.
+
+```cpp
+// ❌ 잘못된 패턴 — debugMgr->Update(dt)를 명시 호출 후 UpdateGSComponents도 호출
+debugMgr->Update(dt);        // 1번째 ProcessInput
+UpdateGSComponents(scaledDt); // 2번째 ProcessInput → F1 두 번 처리
+
+// ✅ 올바른 패턴
+UpdateGSComponents(scaledDt); // 한 번만 호출
+```
 
 **⚠️ SpellDelayObject 타이밍 주의** (`States/BattleOrchestrator.cpp`):
 
@@ -297,6 +423,21 @@ CastSpell → CanCast(클래스/슬롯/Geometry/Range/AP 체크) → ConsumeSpel
 3. CMake가 GLOB_RECURSE로 자동 감지 → CMakeLists.txt 수동 편집 불필요
 4. 새 파일 추가 후 `cmake --preset windows-debug` 재실행
 5. 캐릭터 생성: `new Dragon()` 대신 `CharacterFactory::Create()` 사용
+6. JSON 파싱: `External/json.hpp` (nlohmann/json) 사용 — `#include "Game/DragonicTactics/External/json.hpp"`
+
+**새 AI 캐릭터 추가 체크리스트** (Cleric 추가 패턴 기준):
+```
+□ Objects/X.h + X.cpp            — Character 상속, IsAIControlled()=true, Action()→AISystem 위임
+□ StateComponents/AI/XStrategy.h/.cpp — IAIStrategy 구현, Single 스펠에 range 상수 + 거리 체크 필수
+□ StateComponents/AISystem.cpp   — m_strategies[CharacterTypes::X] = new XStrategy()
+□ Factories/CharacterFactory.h   — class X; + CreateX() 선언
+□ Factories/CharacterFactory.cpp — #include X.h + Create() switch case + CreateX() 구현
+□ Assets/Data/characters.json    — "X": { hp, speed, ap, attack_dice, spell_slots, ... }
+□ Assets/Data/maps.json          — 각 맵 spawn_points에 "x": {"x":N, "y":N} 추가
+□ States/GamePlay.cpp            — LoadJSONMap에 spawn_points.find("x") + enemys.push_back()
+```
+
+**캐릭터 클래스 계층**: `CS230::GameObject` ← `Character` ← `Dragon` / `Fighter` / `Cleric` / `Wizard` / `Rogue`
 
 ---
 
@@ -367,7 +508,9 @@ Engine::GetSoundManager().SetBGMVolume(0.7f);                  // 0.0 ~ 1.0
 
 - **게임 시스템**: `source/Game/DragonicTactics/StateComponents/`
 - **AI 전략**: `StateComponents/AI/` (IAIStrategy 인터페이스 + 캐릭터별 전략)
+- **게임 상태 파일**: `source/Game/DragonicTactics/States/` (GamePlay, BattleOrchestrator, PlayerInputHandler, GamePlayUIManager)
 - **캐릭터 엔티티**: `source/Game/DragonicTactics/Objects/`
+- **캐릭터 팩토리**: `source/Game/DragonicTactics/Factories/` (CharacterFactory)
 - **Actions**: `Objects/Actions/` (Action.h, ActionAttack.h)
 - **타입 정의**: `source/Game/DragonicTactics/Types/` (CharacterTypes.h, GameTypes.h, Events.h)
 - **SpellData 구조체**: `StateComponents/SpellSystem.h` (SpellData, SpellTargeting, SpellMove)
@@ -375,7 +518,7 @@ Engine::GetSoundManager().SetBGMVolume(0.7f);                  // 0.0 ~ 1.0
 - **경로 탐색**: `StateComponents/AStar.cpp` (GridSystem::FindPath에서 내부 사용)
 - **디버그 서브시스템**: `source/Game/DragonicTactics/Debugger/` (DebugConsole, DebugManager, DebugVisualizer)
 - **JSON 데이터**: `DragonicTactics/Assets/Data/`
-- **AI 플로우차트**: `architecture/character_flowchart/` (Mermaid .mmd — fighter.mmd, cleric.mmd, wizard.mmd, rouge.mmd 존재)
+- **AI 플로우차트**: `architecture/character_flowchart/` (Mermaid .mmd — fighter.mmd, cleric.mmd, rouge.mmd 존재 / wizard.mmd 미생성, wizard.jpg만 있음)
 
 엔진 접근: `Engine::GetLogger()`, `Engine::GetInput()`, `Engine::GetWindow()`, `Engine::GetGameStateManager()`
 
@@ -388,6 +531,15 @@ Engine::GetSoundManager().SetBGMVolume(0.7f);                  // 0.0 ~ 1.0
 - [docs/implementation-plan.md](docs/implementation-plan.md) — 26주 구현 계획 (우선순위 기반)
 - [docs/Detailed Implementations/weeks/](docs/Detailed%20Implementations/weeks/) — 주차별 상세 가이드 (한글)
 - [docs/Detailed Implementations/features/spell_system.md](docs/Detailed%20Implementations/features/spell_system.md) — SpellSystem 전체 구현 가이드 (Targeting 템플릿, Effect 파싱, 업캐스팅, Move 템플릿)
+- [docs/Detailed Implementations/features/status_effect_system.md](docs/Detailed%20Implementations/features/status_effect_system.md) — StatusEffect 두 레이어 구현 가이드
+- [docs/Detailed Implementations/features/terrain_spells.md](docs/Detailed%20Implementations/features/terrain_spells.md) — 지형 변환 스펠(Wall/Lava 배치) 구현 가이드
+- [docs/Detailed Implementations/features/map_loading.md](docs/Detailed%20Implementations/features/map_loading.md) — maps.json 로딩 및 맵 전환 구현 가이드
+- [docs/Detailed Implementations/features/button_manager.md](docs/Detailed%20Implementations/features/button_manager.md) — ButtonManager(Move·Action·Spell UI 버튼 패널) 구현 가이드
 - [architecture/game_architecture_rules.md](architecture/game_architecture_rules.md) — 아키텍처 원칙
 - [architecture/Implementation_Checklist.md](architecture/Implementation_Checklist.md) — 진행 체크리스트
+- [docs/Detailed Implementations/features/fighter_strategy.md](docs/Detailed%20Implementations/features/fighter_strategy.md) — FighterStrategy 구현 상세 가이드
+- [docs/Detailed Implementations/features/rogue_strategy.md](docs/Detailed%20Implementations/features/rogue_strategy.md) — RogueStrategy 구현 가이드 (참조용)
+- [docs/Detailed Implementations/weeks/cleric_implementation.md](docs/Detailed%20Implementations/weeks/cleric_implementation.md) — Cleric 구현 가이드
+- [docs/debug/commands.md](docs/debug/commands.md) — 디버그 콘솔 명령어 목록
+- [docs/systems/](docs/systems/) — 시스템별 상세 문서 (EventBus, Characters, Components 등)
 - [DragonicTactics/README.md](DragonicTactics/README.md) — 빌드 셋업 (영문/한글)
