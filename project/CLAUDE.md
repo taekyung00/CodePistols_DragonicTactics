@@ -106,7 +106,21 @@ Engine::GetGameStateManager().GetGSComponent<EventBus>()->Publish(
     CharacterDamagedEvent{target, damage});
 ```
 
-`Events.h`에 전투·피해·이동·스펠·상태·턴·UI 카테고리로 27개+ 이벤트 정의됨.
+`Events.h`에 전투·피해·이동·스펠·상태·턴·UI 카테고리로 27개+ 이벤트 정의됨. 자주 쓰는 것:
+
+| 이벤트 | 주요 필드 |
+|---|---|
+| `TurnStartedEvent` | character, turnNumber, actionPoints |
+| `TurnEndedEvent` | character, actionsUsed |
+| `CharacterDamagedEvent` | target, damageAmount, remainingHP, attacker, wasCritical |
+| `CharacterHealedEvent` | target, healAmount, currentHP, healer |
+| `CharacterDeathEvent` | character, killer |
+| `CharacterMovedEvent` | character, fromGrid, toGrid |
+| `SpellCastEvent` | caster, spellName, spellLevel, targetGrid |
+| `StatusEffectAddedEvent` | target, effectName, duration, magnitude |
+| `StatusEffectRemovedEvent` | target, effectName, reason |
+| `AIDecisionEvent` | actor, decision_type, decision_target, destination |
+| `BattleEndedEvent` | playerVictory, turnsElapsed |
 
 ### AI Strategy 패턴
 
@@ -187,18 +201,71 @@ MakeDecision
 - `Around` geometry 스펠(Fearful Cry): caster 중심 AoE → `CanCast` 범위 체크가 `caster→target_tile` 거리로 계산 → **`target = actor(자신)`** 으로 설정해야 거리=0으로 항상 통과
 - `Single` geometry 스펠: CanCast 실패(사거리 초과) 시 AP 미소모 → 다음 프레임에 동일 결정 반복 → **무한루프** — **Strategy에서 반드시 `distance <= SPELL_RANGE`를 직접 체크**해야 함. 범위 밖이면 UseAbility 반환 금지, `MakeMeleePhaseDecision`(이동)으로 fall-through.
 
-### GridSystem::TileType
+### GridSystem API
 
 ```cpp
 enum class TileType { Empty, Wall, Lava, Difficult, Exit, Invalid };
-grid->GetTileType(pos)   // 타일 종류 조회
-grid->IsOccupied(pos)    // 캐릭터 점유 여부
+
+// 타일 조회
+grid->GetTileType(pos)            // 타일 종류
+grid->IsOccupied(pos)             // 캐릭터 점유 여부
+grid->IsWalkable(pos)             // 이동 가능 여부
+grid->IsValidTile(pos)            // 범위 내 유효 타일 여부
+grid->ManhattanDistance(a, b)     // 맨해튼 거리
+grid->GetWidth() / GetHeight()    // 맵 크기
+
+// 경로 탐색
+grid->FindPath(start, goal, lava_penalty)        // A* 경로 반환 (lava_penalty=0이면 용암 무시)
+grid->GetReachableTiles(start, max_distance)     // BFS 기반 이동 가능 타일 목록
+
+// 캐릭터 배치 관리
+grid->AddCharacter(character, pos)
+grid->RemoveCharacter(pos)
+grid->MoveCharacter(old_pos, new_pos)
+grid->GetCharacterAt(pos)         // → Character* (없으면 nullptr)
+grid->GetAllCharacters()          // → std::vector<Character*>
+
+// 출구 관리 (보물 탈출 시스템)
+grid->HasExit()
+grid->GetExitPosition()
+grid->SetExitPosition(pos)
 ```
 
 이동 목적지 유효성 검사 패턴 (`AISystem::ExecuteDecision` 참고):
 ```cpp
 TileType dt = grid->GetTileType(destination);
 bool dest_ok = (dt == TileType::Empty || dt == TileType::Lava) && !grid->IsOccupied(destination);
+```
+
+### Character 주요 API
+
+Strategy와 시스템에서 자주 쓰는 `Character` 메서드:
+
+```cpp
+// 상태 쿼리 (Fact)
+character->IsAlive()
+character->GetHP() / GetMaxHP()
+character->GetHPPercentage()          // 0.0 ~ 1.0
+character->GetMovementRange()         // 남은 이동 타일 수
+character->GetActionPoints()          // 남은 행동 포인트
+character->GetAttackRange()
+character->GetCharacterType()         // CharacterTypes enum
+character->IsAIControlled()           // Dragon=false, Fighter/Cleric=true
+character->HasAnySpellSlot()
+character->GetAvailableSpellSlots(level)
+character->HasAttackedThisTurn()
+character->HasTreasure()
+
+// 상태 효과
+character->Has("Blessed")             // 특정 효과 보유 여부
+character->AddEffect(name, duration, magnitude)
+character->RemoveEffect(name)
+character->GetActiveEffects()         // → const std::vector<ActiveEffect>&
+
+// 컴포넌트 직접 접근
+character->GetGridPosition()          // → GridPosition*
+character->GetStatsComponent()        // → StatsComponent*
+character->GetSpellSlots()            // → SpellSlots*
 ```
 
 ### ⚠️ ActionPoints vs MovementRange (혼동 주의)
@@ -356,6 +423,7 @@ CastSpell → CanCast(클래스/슬롯/Geometry/Range/AP 체크) → ConsumeSpel
 3. CMake가 GLOB_RECURSE로 자동 감지 → CMakeLists.txt 수동 편집 불필요
 4. 새 파일 추가 후 `cmake --preset windows-debug` 재실행
 5. 캐릭터 생성: `new Dragon()` 대신 `CharacterFactory::Create()` 사용
+6. JSON 파싱: `External/json.hpp` (nlohmann/json) 사용 — `#include "Game/DragonicTactics/External/json.hpp"`
 
 **새 AI 캐릭터 추가 체크리스트** (Cleric 추가 패턴 기준):
 ```
@@ -450,7 +518,7 @@ Engine::GetSoundManager().SetBGMVolume(0.7f);                  // 0.0 ~ 1.0
 - **경로 탐색**: `StateComponents/AStar.cpp` (GridSystem::FindPath에서 내부 사용)
 - **디버그 서브시스템**: `source/Game/DragonicTactics/Debugger/` (DebugConsole, DebugManager, DebugVisualizer)
 - **JSON 데이터**: `DragonicTactics/Assets/Data/`
-- **AI 플로우차트**: `architecture/character_flowchart/` (Mermaid .mmd — fighter.mmd, cleric.mmd, wizard.mmd, rouge.mmd 존재)
+- **AI 플로우차트**: `architecture/character_flowchart/` (Mermaid .mmd — fighter.mmd, cleric.mmd, rouge.mmd 존재 / wizard.mmd 미생성, wizard.jpg만 있음)
 
 엔진 접근: `Engine::GetLogger()`, `Engine::GetInput()`, `Engine::GetWindow()`, `Engine::GetGameStateManager()`
 
