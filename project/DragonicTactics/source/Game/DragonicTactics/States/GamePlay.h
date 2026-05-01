@@ -9,7 +9,20 @@ Created:    November 5, 2025
 */
 #pragma once
 #include "Engine/GameState.h"
+#include "Engine/Matrix.h"
+#include "Engine/Vec2.h"
 #include <memory>
+
+struct TacticalCamera {
+    Math::vec2 target = { 0.0, 0.0 };
+    double zoom = 1.0;
+    static constexpr double ZOOM_MIN = 0.25;
+    static constexpr double ZOOM_MAX = 3.0;
+
+    Math::TransformationMatrix GetWorldMatrix(Math::ivec2 win) const;
+    Math::vec2 ScreenToWorld(Math::vec2 screen, Math::ivec2 win) const;
+    Math::vec2 WorldToScreen(Math::vec2 world, Math::ivec2 win) const;
+};
 
 class PlayerInputHandler;
 class GamePlayUIManager;
@@ -53,6 +66,10 @@ class GamePlay : public CS230::GameState
 
   int selected_json_map_index_ = 0;
   std::vector<std::string> available_json_maps_;
+
+  TacticalCamera m_camera;
+  Math::vec2     m_prev_mouse            = { 0.0, 0.0 };
+  bool           m_right_mouse_was_down  = false;
 
   void LoadJSONMap(const std::string& map_id);
 };

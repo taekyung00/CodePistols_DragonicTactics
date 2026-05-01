@@ -12,13 +12,17 @@ Created:    November 24, 2025
 #pragma once
 #include "Engine/Matrix.h"
 #include "Engine/Vec2.h"
+#include <array>
 #include <deque>
+#include <memory>
 #include <string>
 #include <vector>
 #include "ButtonManager.h"
 
+namespace CS230 { class Texture; }
 class Character;
-class PlayerInputHandler; // 전방 선언
+class PlayerInputHandler;
+struct TacticalCamera;
 
 class GamePlayUIManager
 {
@@ -29,18 +33,14 @@ class GamePlayUIManager
   void Update(double dt);
   void Draw(Math::TransformationMatrix camera_matrix);
 
-
-
   void SetCharacters(const std::vector<Character*>& characters);
 
-  void DrawCharacterStatsPanel(Math::TransformationMatrix camera_matrix);
-
-  void InitButtons(PlayerInputHandler* inputHandler);          // 버튼 초기 배치
-  ButtonManager& GetButtons(); // PlayerInputHandler에서 접근용
+  void InitButtons(PlayerInputHandler* inputHandler);
+  void SetCamera(const TacticalCamera* camera);
+  ButtonManager& GetButtons();
 
   void AddSpellLog(const std::string& caster_name, const std::string& spell_name, int level);
 
-  // Battle log
   void OnTurnStarted(const std::string& actor_name, int turn_number);
   void AddBattleLogEntry(const std::string& line);
 
@@ -73,6 +73,26 @@ class GamePlayUIManager
   std::vector<Character*> m_characters;
   ButtonManager button_manager_;
 
+  // Slot icons (index 0~9)
+  std::vector<std::shared_ptr<CS230::Texture>> slot_icons_;
+
+  // Slot coordinate cache ([0..9]=slots, [10]=End Turn)
+  std::array<double, 11> slot_bar_x_{};
+  double slot_bar_center_y_ = 0.0;
+
+  // Upcast popup state
+  bool        popup_open_           = false;
+  std::string popup_spell_id_;
+  int         popup_slot_index_     = -1;
+  bool        popup_hit_this_frame_ = false;
+
+  // Hover tooltip
+  Character* hovered_character_ = nullptr;
+
+  // InputHandler pointer
+  PlayerInputHandler*   m_input_handler_ptr_ = nullptr;
+  const TacticalCamera* m_camera_            = nullptr;
+
   // === Battle Log ===
   struct TurnEntry
   {
@@ -81,9 +101,15 @@ class GamePlayUIManager
     std::vector<std::string> lines;
   };
 
-  void DrawBattleLog();
-
   std::deque<TurnEntry> turn_history_;
   bool                  show_battle_log_{ false };
   static constexpr int  MAX_LOG_TURNS = 5;
+
+  void DrawCharacterStatsPanel(Math::TransformationMatrix camera_matrix);
+  void DrawBattleLog();
+  void DrawSlotBar();
+  void DrawUicastPopup();
+  void DrawTurnIndicator();
+  void DrawHoverTooltip();
+  void DrawActionLabel();
 };

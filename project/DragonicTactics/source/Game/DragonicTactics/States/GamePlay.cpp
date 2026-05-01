@@ -47,8 +47,35 @@ Created:    November 5, 2025
 #include "Game/Particles.h"
 #include "./Engine/Particle.h"
 
-int				GamePlay::s_next_map_index	= 0;
-bool			GamePlay::s_should_restart	= false;
+int  GamePlay::s_next_map_index = 0;
+bool GamePlay::s_should_restart = false;
+
+Math::TransformationMatrix TacticalCamera::GetWorldMatrix(Math::ivec2 win) const
+{
+    Math::vec2 center = { win.x * 0.5, win.y * 0.5 };
+    return CS200::build_ndc_matrix(win)
+        * Math::TranslationMatrix(center)
+        * Math::ScaleMatrix(Math::vec2{ zoom, zoom })
+        * Math::TranslationMatrix(Math::vec2{ -target.x, -target.y });
+}
+
+Math::vec2 TacticalCamera::ScreenToWorld(Math::vec2 screen, Math::ivec2 win) const
+{
+    Math::vec2 center = { win.x * 0.5, win.y * 0.5 };
+    return {
+        (screen.x - center.x) / zoom + target.x,
+        (screen.y - center.y) / zoom + target.y
+    };
+}
+
+Math::vec2 TacticalCamera::WorldToScreen(Math::vec2 world, Math::ivec2 win) const
+{
+    Math::vec2 center = { win.x * 0.5, win.y * 0.5 };
+    return {
+        (world.x - target.x) * zoom + center.x,
+        (world.y - target.y) * zoom + center.y
+    };
+}
 
 GamePlay::GamePlay() // : fighter(nullptr), dragon(nullptr)
 {
@@ -130,6 +157,19 @@ void GamePlay::Load()
 	return;
   }
 
+  // Init tactical camera centered on the grid
+  {
+    auto* gs = GetGSComponent<GridSystem>();
+    if (gs)
+    {
+      m_camera.target = {
+        gs->GetWidth()  * static_cast<double>(GridSystem::TILE_SIZE) * 0.5,
+        gs->GetHeight() * static_cast<double>(GridSystem::TILE_SIZE) * 0.5
+      };
+    }
+    m_camera.zoom = 1.0;
+    m_ui_manager->SetCamera(&m_camera);
+  }
 
   // UI Manager에 캐릭터 등록
   std::vector<Character*> all_characters = { player };
@@ -231,8 +271,11 @@ void GamePlay::DisplayDamageAmount(const CharacterDamagedEvent& event)
 		size = { 1.2, 1.2 };
 	}
   }
-  Math::vec2 text_position = event.target->GetGridPosition()->Get();
-  text_position *= GridSystem::TILE_SIZE;
+  Math::ivec2 grid_pos = event.target->GetGridPosition()->Get();
+  Math::vec2 text_position = {
+      grid_pos.x * (double)GridSystem::TILE_SIZE + GridSystem::TILE_SIZE * 0.5,
+      grid_pos.y * (double)GridSystem::TILE_SIZE + GridSystem::TILE_SIZE
+  };
 
   m_ui_manager->ShowDamageText(event.damageAmount, text_position, size);
 }
@@ -275,6 +318,40 @@ void GamePlay::Update(double dt)
 	return;
   }
 
+  // Camera pan (right-drag) and zoom (scroll wheel) — runs every frame
+  {
+    auto&      inp    = Engine::GetInput();
+    auto       win    = Engine::GetWindow().GetSize();
+    Math::vec2 mouse  = inp.GetMousePos();
+
+    if (inp.MouseDown(2) && !ImGui::GetIO().WantCaptureMouse)
+    {
+      if (m_right_mouse_was_down)
+      {
+        m_camera.target.x -= (mouse.x - m_prev_mouse.x) / m_camera.zoom;
+        m_camera.target.y -= (mouse.y - m_prev_mouse.y) / m_camera.zoom;
+      }
+      m_right_mouse_was_down = true;
+    }
+    else
+    {
+      m_right_mouse_was_down = false;
+    }
+    m_prev_mouse = mouse;
+
+    double scroll = inp.GetMouseScroll();
+    if (scroll != 0.0 && !ImGui::GetIO().WantCaptureMouse)
+    {
+      Math::vec2 wb = m_camera.ScreenToWorld(mouse, win);
+      m_camera.zoom *= (1.0 + scroll * 0.125);
+      if (m_camera.zoom < TacticalCamera::ZOOM_MIN) m_camera.zoom = TacticalCamera::ZOOM_MIN;
+      if (m_camera.zoom > TacticalCamera::ZOOM_MAX) m_camera.zoom = TacticalCamera::ZOOM_MAX;
+      Math::vec2 wa = m_camera.ScreenToWorld(mouse, win);
+      m_camera.target.x -= wa.x - wb.x;
+      m_camera.target.y -= wa.y - wb.y;
+    }
+  }
+
   TurnManager*				turnMgr		 = GetGSComponent<TurnManager>();
   GridSystem*				grid		 = GetGSComponent<GridSystem>();
   CombatSystem*				combatSystem = GetGSComponent<CombatSystem>();
@@ -310,7 +387,7 @@ void GamePlay::Update(double dt)
 
   if (current != nullptr)
   {
-	m_input_handler->Update(scaledDt, current, grid, combatSystem, m_ui_manager->GetButtons());
+	m_input_handler->Update(scaledDt, current, grid, combatSystem, m_ui_manager->GetButtons(), &m_camera);
 	m_orchestrator->Update(scaledDt, turnMgr, aiSystem);
 	m_ui_manager->Update(dt);
   }
@@ -339,28 +416,27 @@ void GamePlay::Draw()
 {
   Engine::GetWindow().Clear(0x1a1a1aff);
   auto renderer_2d = Engine::GetTextureManager().GetRenderer2D();
+  auto win          = Engine::GetWindow().GetSize();
 
-  Math::TransformationMatrix camera_matrix = CS200::build_ndc_matrix(Engine::GetWindow().GetSize());
-  renderer_2d->BeginScene(camera_matrix);
+  // Pass 1: World space — grid, characters, debug (camera transform applied)
+  renderer_2d->BeginScene(m_camera.GetWorldMatrix(win));
 
   GridSystem* grid_system = GetGSComponent<GridSystem>();
   if (grid_system != nullptr)
-  {
-	grid_system->Draw();
-  }
+    grid_system->Draw();
 
   CS230::GameObjectManager* goMgr = GetGSComponent<CS230::GameObjectManager>();
   if (goMgr)
-  {
-	goMgr->DrawAll(Math::TransformationMatrix{});
-  }
-
-  m_ui_manager->Draw(camera_matrix);
+    goMgr->DrawAll(Math::TransformationMatrix{});
 
   GetGSComponent<DebugManager>()->Draw(grid_system);
 
-  // m_button_manager->SetLabel("btn_move", "Cancel Move");
+  renderer_2d->EndScene();
 
+  // Pass 2: Screen space — UI fixed at screen coordinates (no camera)
+  Math::TransformationMatrix ndc = CS200::build_ndc_matrix(win);
+  renderer_2d->BeginScene(ndc);
+  m_ui_manager->Draw(ndc);
   renderer_2d->EndScene();
 }
 
