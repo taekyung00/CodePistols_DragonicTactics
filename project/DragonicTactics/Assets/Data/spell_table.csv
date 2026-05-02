@@ -66,7 +66,7 @@ Applies ""Basic"" status for 0 turns.
 Move to current location.
 Summons NULL at current location."
 S_ATK_040,Meteor,Attack,Dragon,3,Any:OddEven:-1,TRUE,"Deals 3d20 + (Spell Level - Required Spell Level) * 1d20 damage.
-Applies ""Exhaustion"" status for 1 turn.
+Applies ""Exhaustion"" status for 1 turn to self.
 Move to current location.
 Summons NULL at current location."
 S_ENH_050,Purify,Buff,Dragon,1,Self:Single:0,FALSE,"Deals 0 damage.

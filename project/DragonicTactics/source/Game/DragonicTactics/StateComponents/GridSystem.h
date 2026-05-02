@@ -137,6 +137,8 @@ std::vector<Math::ivec2> GetLineTiles(Math::ivec2 center, int reach) const;
   //tile texture
   std::shared_ptr<CS230::Texture> stone_tile_bright;
   std::shared_ptr<CS230::Texture> stone_tile_dark;
+  std::shared_ptr<CS230::Texture> lava_tile;
+  std::shared_ptr<CS230::Texture> wall_tile;
 
 
 

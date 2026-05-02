@@ -140,6 +140,17 @@ Engine::GetGameStateManager().GetGSComponent<EventBus>()->Publish(
 
 `AIDecision` 구조체: `type`(Move/Attack/UseAbility/EndTurn/None), `target`, `destination`, `abilityName`, `reasoning`, `lava_penalty`(이동 시 용암 타일 회피 가중치, 0 = 무시)
 
+**AI 이동 로직 주의사항** (FighterStrategy/ClericStrategy 공통):
+- `LAVA_TILE_PENALTY = 2` — 용암 경로를 비선호하나 가능하면 감수
+- `FindNextMovePos()` — Dragon/target 인접 타일로 A* 탐색. **Empty + Lava** 모두 공격 위치로 허용
+- `FindClosestReachableTile()` — `FindNextMovePos()`가 현재 위치를 반환(경로 차단)할 때 호출. BFS로 도달 가능 타일 중 Dragon에 최근접 타일 반환 (AI stuck 방지)
+- Cleric 힐 이동 시 `FindNextMovePos(actor, target, grid, 0)` — lava_penalty=0으로 호출해 용암 완전 무시
+- **공격 위치 유효성 체크 패턴** (전략 코드 내부): `IsWalkable()` 대신 명시적 타입 체크 사용
+  ```cpp
+  TileType t = grid->GetTileType(pos);
+  bool ok = (t == TileType::Empty || t == TileType::Lava) && !grid->IsOccupied(pos);
+  ```
+
 **FighterStrategy 의사결정 구조** (`StateComponents/AI/FighterStrategy.cpp`):
 
 ```
@@ -260,7 +271,15 @@ character->HasTreasure()
 character->Has("Blessed")             // 특정 효과 보유 여부
 character->AddEffect(name, duration, magnitude)
 character->RemoveEffect(name)
+character->RemoveAllEffects()         // 전체 제거 (Purify 등에서 사용)
 character->GetActiveEffects()         // → const std::vector<ActiveEffect>&
+
+// 가상 훅 (서브클래스 override 가능, TurnManager가 호출)
+character->OnTurnStart()
+character->OnTurnEnd()
+character->TakeDamage(damage, attacker)
+character->ReceiveHeal(amount)
+character->PerformAction(action, target, tile_position)
 
 // 컴포넌트 직접 접근
 character->GetGridPosition()          // → GridPosition*
@@ -274,6 +293,39 @@ character->GetSpellSlots()            // → SpellSlots*
 if (actor->GetMovementRange() > 0) { /* 이동 로직 */ }  // ✅ 이동 가능 타일 수
 if (actor->GetActionPoints() > 0)  { /* 공격 로직 */ }  // ✅ 턴당 행동 횟수
 ```
+
+### TurnManager API
+
+```cpp
+// 전투 시작/종료
+turn_manager->StartCombat()
+turn_manager->EndCombat()
+turn_manager->Reset()
+
+// 턴 순서 초기화
+turn_manager->InitializeTurnOrder(characters)   // 일반 / 목 캐릭터 오버로드
+turn_manager->RollInitiative(characters)        // 이니셔티브 굴림 후 정렬
+turn_manager->ResetInitiative()
+
+// 이니셔티브 모드 설정
+turn_manager->SetInitiativeMode(InitiativeMode::RollOnce)     // 전투 시작 시 한 번만 굴림 (D&D 기본)
+turn_manager->SetInitiativeMode(InitiativeMode::RollEachRound)// 매 라운드 재굴림
+
+// 현재 턴 상태
+turn_manager->GetCurrentCharacter()            // → Character*
+turn_manager->GetCurrentTurnNumber()
+turn_manager->GetRoundNumber()
+turn_manager->IsCombatActive()
+
+// 턴 제어
+turn_manager->StartNextTurn()
+turn_manager->EndCurrentTurn()                 // BattleOrchestrator에서 AI EndTurn 시 호출
+
+// 의존성 주입 (테스트용)
+turn_manager->SetEventBus(bus)
+```
+
+`InitiativeEntry` 구조체 (`TurnManager.h`): `Character*`, `MockCharacter*`(테스트용), `int speed`
 
 ### Action 시스템 (`Abilities/` 대체)
 
@@ -295,6 +347,20 @@ GamePlay (GameState)
   ├── GamePlayUIManager   — UI 패널 관리
   └── TurnManager → AISystem → Strategy::MakeDecision()
 ```
+
+**BattleOrchestrator::HandleAITurn 프레임 단위 실행 패턴**:
+
+```
+매 Update 프레임:
+  1. MovementComponent::IsMoving() → true면 즉시 return (이동 애니메이션 완료 대기)
+  2. timer 0.6s 바쁜 대기 (SpellDelayObject 0.5s 보장 + 여유)
+  3. AISystem::MakeDecision() → AIDecision 획득
+  4. EndTurn → TurnManager::EndCurrentTurn()
+     그 외  → AISystem::ExecuteDecision() 후 return
+  5. 다음 프레임에 다시 HandleAITurn 진입 → 또 MakeDecision 반복
+```
+
+⚠️ AI는 **한 Update 프레임에 행동 1회**만 실행 후 반환 — 이동·공격·스펠 각각 별도 프레임에서 처리됨.
 
 **GamePlay AI 캐릭터 관리** (`States/GamePlay.h`):
 
@@ -338,8 +404,9 @@ UpdateGSComponents(scaledDt); // 한 번만 호출
 `SpellSystem::CastSpell`은 효과를 **0.5초 딜레이** 후 적용(`SpellDelayObject`). AI 재호출 간격이 이보다 짧으면 상태 반영 전에 MakeDecision이 재호출되어 같은 스펠을 중복 시전한다.
 
 ```cpp
-// AI 재호출 간격은 반드시 SpellDelayObject 딜레이(0.5s)보다 길게 유지
-while (timer->GetElapsedSeconds() < 0.6) {}  // 현재 0.6s
+// BattleOrchestrator::HandleAITurn 실제 구현 — 메인 스레드를 0.6s 블로킹
+timer->ResetTimeStamp();
+while (timer->GetElapsedSeconds() < 0.6) {}  // busy-wait (0.5s SpellDelay 보장)
 ```
 
 ---
@@ -367,19 +434,30 @@ ID, Name, Category, Classes, Required Slot Level, Targeting, Upcasting Effect, E
 
 ```
 Deals {formula} damage.
-Applies "{STATUS}" status for {N} turns.
+Applies "{STATUS}" status for {N} turns [to self].
 Move to {mover:move_type:distance}.
 Summons {entity} at {location}.
 ```
 
 Move 값: `self:stay:0` (이동 없음) | `target:knockback:N` (밀쳐냄) | `self:teleport:selected` (순간이동)
 
+**`to self` 접미사** — Applies 줄에 `to self`를 붙이면 시전자(caster) 자신에게 효과 적용. 없으면 targets에 적용 (기본):
+
+```csv
+Applies "Exhaustion" status for 1 turn to self.   ← Dragon이 Meteor 시전 후 자신이 탈진
+Applies "Blessing" status for 2 turns.             ← 피격 대상들에게 적용 (기존 방식)
+```
+
+`SpellData` 파싱 결과: `caster_effect_status` / `caster_effect_duration` 필드 (`SpellSystem.h`).
+
 **시전 흐름**:
 
 ```
 CastSpell → CanCast(클래스/슬롯/Geometry/Range/AP 체크) → ConsumeSpell → AP.Consume(1) → ApplySpellEffect
-  ApplySpellEffect → targets 결정(Geometry) → 피해 → 상태효과 → ApplyMoveEffect → ApplySpecialEffect
+  ApplySpellEffect → targets 결정(Geometry) → 피해 → 상태효과(targets) → 시전자 자신 효과 → ApplyMoveEffect → ApplySpecialEffect
 ```
+
+**넉백 시 용암 허용**: `ApplyMoveEffect`의 knockback 루프는 `TileType::Lava`를 유효 착지 타일로 허용. 벽(Wall)은 여전히 차단.
 
 ---
 
@@ -482,7 +560,7 @@ GameState 컴포넌트가 아닌 **엔진 레벨 서비스**. `Engine::GetSoundM
 - **BGM**: OGG 파일 (`Assets/Audio/BGM/`) → 루프 재생
 - **SFX**: WAV 파일 (`Assets/Audio/SFX/`) → 단발, 8채널 소스 풀
 
-상수 경로가 헤더에 정의되어 있음: `SoundManager::BGM_MAIN_MENU`, `SoundManager::BGM_BATTLE`, `SoundManager::SFX_HIT`
+상수 경로가 헤더에 정의되어 있음: `SoundManager::BGM_MAIN_MENU`, `SoundManager::BGM_BATTLE`, `SFX_DRAGON_ACTION`, `SFX_DRAGON_HURT`, `SFX_FIGHTER_ACTION`, `SFX_FIGHTER_HURT`, `SFX_CLERIC_ACTION`, `SFX_CLERIC_HURT`, `SFX_HUMAN_WALK`
 
 ```cpp
 Engine::GetSoundManager().PlayBGM(SoundManager::BGM_BATTLE);   // 루프 BGM 시작
@@ -492,6 +570,67 @@ Engine::GetSoundManager().SetBGMVolume(0.7f);                  // 0.0 ~ 1.0
 ```
 
 `GamePlay::Load()`에서 `PlayBGM`, `GamePlay::Unload()`에서 `StopBGM` 호출 패턴을 따른다.
+
+**SFX 재생 순서** (`States/GamePlay.cpp` EventBus 구독, `StateComponents/CombatSystem.cpp`):
+
+| 순서 | 이벤트 | SFX |
+|---|---|---|
+| 1 | `CharacterAttackedEvent` | 공격자 action SFX (`SfxActionFor`) |
+| 2 | `CharacterDamagedEvent` | 피격자 hurt SFX (`SfxHurtFor`) |
+
+`CombatSystem::ExecuteAttack`에서 `CharacterAttackedEvent`를 `ApplyDamage` **전에** 발행해 순서 보장 (구현 완료). 이 순서를 바꾸면 hurt SFX가 먼저 재생되므로 변경 금지.
+
+---
+
+## 렌더링 패턴
+
+### 타일 텍스처 (`StateComponents/GridSystem.cpp`)
+
+타일 텍스처는 GridSystem 생성자에서 `Engine::GetTextureManager().Load()`로 로드, `Draw()`에서 stone_tile 패턴과 동일하게 사용:
+
+```cpp
+// GridSystem.h private:
+std::shared_ptr<CS230::Texture> stone_tile_bright;
+std::shared_ptr<CS230::Texture> stone_tile_dark;
+std::shared_ptr<CS230::Texture> lava_tile;   // Assets/images/lava.png
+std::shared_ptr<CS230::Texture> wall_tile;   // Assets/images/Wall.png
+
+// Draw() 패턴 — tile_scale = TILE_SIZE / tex->GetSize().x
+tex->Draw(Math::TranslationMatrix(Math::ivec2{screen_x - TILE_SIZE, screen_y - TILE_SIZE})
+          * Math::ScaleMatrix(tile_scale), 0xFFFFFFFF, DrawDepth::TILE);
+```
+
+⚠️ 모든 타일(Wall, Lava, Difficult, Empty)은 `DrawDepth::TILE`을 명시적으로 전달해야 한다. `DrawRectangle`의 기본 depth는 `DrawDepth::CHARACTER`(0.5f)로 캐릭터와 겹친다.
+
+### 슬롯 바 아이콘 (`States/GamePlayUIManager`)
+
+슬롯 아이콘은 `slot_icons_[]`(크기 11)에 로드되고 `DrawSlotBar()`에서 오버레이된다. 인덱스 0-9는 스펠 슬롯, 인덱스 10은 End Turn 버튼:
+
+```cpp
+// InitButtons() — 아이콘 로드
+slot_icons_.resize(11, nullptr);
+for (int i = 0; i < 10; ++i)
+    slot_icons_[i] = Engine::GetTextureManager().Load(ICON_PATHS[i]);
+slot_icons_[10] = Engine::GetTextureManager().Load("Assets/images/turn_end.png");
+
+// DrawSlotBar() — 아이콘 렌더링 (버튼 배경 위에 오버레이)
+for (int i = 0; i < static_cast<int>(slot_icons_.size()); ++i)
+    slot_icons_[i]->Draw(
+        Math::TranslationMatrix(Math::vec2{ slot_bar_x_[i], slot_bar_center_y_ - 32.0 }),
+        0xFFFFFFFF, DrawDepth::UI - 0.005f);
+```
+
+ButtonManager는 배경 사각형(`DrawRectangle`)만 담당하고, 아이콘은 항상 `DrawSlotBar()`가 그린다. `Button::image_path` 필드는 ButtonManager에 존재하지만 현재 슬롯 버튼에는 사용하지 않는다.
+
+### 폰트 (`Engine/TextManager`, `Engine/Fonts.h`)
+
+| 상수 | 파일 | 사용처 |
+|---|---|---|
+| `Fonts::Simple` (0) | Font_Simple.png | 미사용 |
+| `Fonts::Outlined` (1) | Font_Outlined.png | 미사용 |
+| `Fonts::Kings` (2) | Font_Kings.png | MainMenu + **게임플레이 전체 UI** |
+
+**⚠️ `Fonts::Kings`가 유일한 프로젝트 표준** — GamePlayUIManager, ButtonManager 모두 Kings 사용. `Fonts::Outlined`은 레거시 코드에서 이미 교체됨. 새 UI 텍스트는 반드시 `Fonts::Kings` 사용.
 
 ---
 

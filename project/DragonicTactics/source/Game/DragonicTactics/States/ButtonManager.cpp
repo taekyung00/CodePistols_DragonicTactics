@@ -5,13 +5,14 @@
 #include "Engine/TextureManager.h"
 #include "Engine/TextManager.h"
 #include "Engine/DrawDepth.h"
+#include "Engine/Texture.h"
 
 void ButtonManager::AddButton(const Button& button)
 {
     auto& text_mgr = Engine::GetTextManager();
     
     // text_mgr.점(.) 찍고 나오는 함수 이름으로 바꿔주세요!
-    Math::vec2 textSize = text_mgr.CalculateTextSize(button.label, Fonts::Outlined);
+    Math::vec2 textSize = text_mgr.CalculateTextSize(button.label, Fonts::Kings);
 
     // 스케일 축소 비율 적용 (Draw 함수와 동일하게 0.4배)
     textSize.x *= 0.4f;
@@ -120,15 +121,31 @@ void ButtonManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_matr
                                btn.position.y - btn.size.y * 0.5 };
 
         Math::TransformationMatrix btn_transform =
-            Math::TranslationMatrix(Math::vec2{ center.x, center.y }) * // MAth 오타 수정 및 생성자 호출 간소화
+            Math::TranslationMatrix(Math::vec2{ center.x, center.y }) *
             Math::ScaleMatrix(Math::vec2{ btn.size.x, btn.size.y });
-        
+
+        if (!btn.image_path.empty())
+        {
+            auto& tex = texture_cache_[btn.image_path];
+            if (!tex)
+                tex = Engine::GetTextureManager().Load(btn.image_path);
+            if (tex)
+            {
+                Math::TransformationMatrix img_transform =
+                    Math::TranslationMatrix(Math::vec2{ center.x, center.y }) *
+                    Math::ScaleMatrix(Math::vec2{ btn.size.x, btn.size.y });
+                tex->Draw(img_transform, 0xFFFFFFFF, DrawDepth::UI);
+            }
+        }
+        else
+        {
             renderer->DrawRectangle(btn_transform, bg_color, 0x888888ff, 1.5, DrawDepth::UI);
+        }
 
         // 텍스트 렌더링 (버튼 중앙)
         Math::vec2 text_pos = { btn.position.x + 8.0, btn.position.y - btn.size.y * 0.7 };
         CS200::RGBA tc = btn.disabled ? 0x888888ff : btn.text_color;
-        text_mgr.DrawText(btn.label, text_pos, Fonts::Outlined, {0.4, 0.4}, tc, DrawDepth::UI-0.001f); // UI보다 살짝 더 앞으로
+        text_mgr.DrawText(btn.label, text_pos, Fonts::Kings, {0.4, 0.4}, tc, DrawDepth::UI-0.001f); // UI보다 살짝 더 앞으로
     }
 }
 

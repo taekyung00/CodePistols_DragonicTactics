@@ -27,7 +27,9 @@ class ClericStrategy : public IAIStrategy
   bool CanKillDragonThisTurn(Character* actor, Character* dragon, GridSystem* grid) const;
 
   // --- 이동 헬퍼 (FighterStrategy 동일 로직) ---
-  Math::ivec2 FindNextMovePos(Character* actor, Character* target, GridSystem* grid);
+  Math::ivec2 FindNextMovePos(Character* actor, Character* target, GridSystem* grid,
+                               int lava_penalty = LAVA_TILE_PENALTY);
+  Math::ivec2 FindClosestReachableTile(Character* actor, Character* target, GridSystem* grid);
   int         CountLavaTiles(const std::vector<Math::ivec2>& path, GridSystem* grid) const;
   int         ComputePathCost(const std::vector<Math::ivec2>& path, GridSystem* grid) const;
 
@@ -36,7 +38,7 @@ class ClericStrategy : public IAIStrategy
   AIDecision MakeSupportDecision(Character* actor, Character* dragon, GridSystem* grid);
   AIDecision MakeMeleePhaseDecision(Character* actor, Character* dragon, GridSystem* grid);
 
-  static constexpr int   LAVA_TILE_PENALTY   = 3;
+  static constexpr int   LAVA_TILE_PENALTY   = 2;
   static constexpr int   AVG_DAMAGE_ESTIMATE = 4;    // 클레릭 평균 딜 (1d6 기준)
   static constexpr float HEAL_THRESHOLD      = 0.3f; // 30% 미만이면 힐 대상 (cleric.jpg 기준)
   static constexpr int   CURSE_RANGE         = 5;    // S_DEB_010 고통의 저주 Enemy:Single:5

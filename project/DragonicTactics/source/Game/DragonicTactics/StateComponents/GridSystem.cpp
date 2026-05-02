@@ -38,6 +38,8 @@ GridSystem::GridSystem()
 	Reset();
 	stone_tile_bright = Engine::GetTextureManager().Load("Assets/images/stone_tile_bright.png");
 	stone_tile_dark	  = Engine::GetTextureManager().Load("Assets/images/stone_tile_dark.png");
+	lava_tile         = Engine::GetTextureManager().Load("Assets/images/lava.png");
+	wall_tile         = Engine::GetTextureManager().Load("Assets/images/Wall.png");
 }
 
 void GridSystem::ResizeGrid(int w, int h)
@@ -110,17 +112,32 @@ void GridSystem::Draw() const
 			switch (tile_grid_[static_cast<std::size_t>(y)][static_cast<std::size_t>(x)])
 			{
 				case TileType::Wall:
-					renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), CS200::DARKGRAY, 0U);
-					// renderer_2d.DrawRectangle(, TILE_SIZE, TILE_SIZE, BROWN);
+					if (wall_tile)
+					{
+						double wall_scale = static_cast<double>(TILE_SIZE) / static_cast<double>(wall_tile->GetSize().x);
+						wall_tile->Draw(Math::TranslationMatrix(Math::ivec2{ screen_x - TILE_SIZE, screen_y - TILE_SIZE }) * Math::ScaleMatrix(wall_scale), 0xFFFFFFFF, DrawDepth::TILE);
+					}
+					else
+					{
+						renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), CS200::DARKGRAY, 0U, 0.0, DrawDepth::TILE);
+					}
 					break;
 				case TileType::Exit:
 					// renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), CS200::GREEN, 0U);
 					break;
 				case TileType::Lava:
-					renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), 0xFF8000FF, 0U);
+					if (lava_tile)
+					{
+						double lava_scale = static_cast<double>(TILE_SIZE) / static_cast<double>(lava_tile->GetSize().x);
+						lava_tile->Draw(Math::TranslationMatrix(Math::ivec2{ screen_x - TILE_SIZE, screen_y - TILE_SIZE }) * Math::ScaleMatrix(lava_scale), 0xFFFFFFFF, DrawDepth::TILE);
+					}
+					else
+					{
+						renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), 0xFF8000FF, 0U, 0.0, DrawDepth::TILE);
+					}
 					break;
 				case TileType::Difficult:
-					renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), 0x4080FFFF, 0U);
+					renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), 0x4080FFFF, 0U, 0.0, DrawDepth::TILE);
 					break;
 				case TileType::Empty:
 					if ((x + y) % 2 == 0) // 체커보드 패턴

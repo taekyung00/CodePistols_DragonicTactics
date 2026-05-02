@@ -33,9 +33,10 @@ class FighterStrategy : public IAIStrategy
 
   // --- 이동 ---
   Math::ivec2 FindNextMovePos(Character* actor, Character* target, GridSystem* grid);
+  Math::ivec2 FindClosestReachableTile(Character* actor, Character* target, GridSystem* grid);
 
   // --- 용암 회피 ---
-  static constexpr int LAVA_TILE_PENALTY   = 3;
+  static constexpr int LAVA_TILE_PENALTY   = 2;
   static constexpr int FEAR_RANGE          = 3;   // 공포의 외침 사거리 (타일)
   static constexpr int AVG_DAMAGE_ESTIMATE = 5;   // CanKill 계산용 평균 공격 데미지
   static constexpr int SMITE_BASE_DAMAGE   = 8;   // FindBestSmiteSlot 기준 데미지/레벨

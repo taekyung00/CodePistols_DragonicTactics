@@ -72,13 +72,19 @@ AIDecision ClericStrategy::MakeDecision(Character* actor)
     {
       return { AIDecisionType::UseAbility, healTarget, {}, "S_ENH_030", "Heal: Healing Touch on " + healTarget->TypeName() };
     }
-    // out of range -> move toward heal target (not Dragon)
+    // out of range -> move toward heal target (용암 무시, 부상 동료 우선)
     if (actor->GetMovementRange() > 0)
     {
-      Math::ivec2 movePos = FindNextMovePos(actor, healTarget, grid);
-      if (movePos != actor->GetGridPosition()->Get())
+      Math::ivec2 myPos   = actor->GetGridPosition()->Get();
+      Math::ivec2 movePos = FindNextMovePos(actor, healTarget, grid, 0);
+      if (movePos != myPos)
       {
-        return { AIDecisionType::Move, nullptr, movePos, "", "Heal: Moving to " + healTarget->TypeName(), LAVA_TILE_PENALTY };
+        return { AIDecisionType::Move, nullptr, movePos, "", "Heal: Rush to " + healTarget->TypeName(), 0 };
+      }
+      Math::ivec2 closestPos = FindClosestReachableTile(actor, healTarget, grid);
+      if (closestPos != myPos)
+      {
+        return { AIDecisionType::Move, nullptr, closestPos, "", "Heal: Rush closest tile to " + healTarget->TypeName(), 0 };
       }
     }
     // 이동 불가 → fall-through
@@ -202,10 +208,17 @@ AIDecision ClericStrategy::MakeMeleePhaseDecision(Character* actor, Character* d
 
   if (actor->GetMovementRange() > 0)
   {
+    Math::ivec2 myPos   = actor->GetGridPosition()->Get();
     Math::ivec2 movePos = FindNextMovePos(actor, dragon, grid);
-    if (movePos != actor->GetGridPosition()->Get())
+    if (movePos != myPos)
     {
       return { AIDecisionType::Move, nullptr, movePos, "", "Cleric Melee: Moving toward dragon", LAVA_TILE_PENALTY };
+    }
+
+    Math::ivec2 closestPos = FindClosestReachableTile(actor, dragon, grid);
+    if (closestPos != myPos)
+    {
+      return { AIDecisionType::Move, nullptr, closestPos, "", "Cleric Melee: Closest reachable tile", LAVA_TILE_PENALTY };
     }
   }
 
@@ -342,7 +355,8 @@ bool ClericStrategy::CanKillDragonThisTurn(Character* actor, Character* dragon, 
 // 이동 경로 탐색 (FighterStrategy 동일 로직)
 // ============================================================
 
-Math::ivec2 ClericStrategy::FindNextMovePos(Character* actor, Character* target, GridSystem* grid)
+Math::ivec2 ClericStrategy::FindNextMovePos(Character* actor, Character* target, GridSystem* grid,
+                                             int lava_penalty)
 {
   Math::ivec2 targetPos = target->GetGridPosition()->Get();
   Math::ivec2 myPos     = actor->GetGridPosition()->Get();
@@ -354,10 +368,15 @@ Math::ivec2 ClericStrategy::FindNextMovePos(Character* actor, Character* target,
   for (const auto& offset : offsets)
   {
     Math::ivec2 attackPos = targetPos + offset;
-    if (!grid->IsValidTile(attackPos) || !grid->IsWalkable(attackPos))
+    if (!grid->IsValidTile(attackPos))
+      continue;
+    GridSystem::TileType attack_tile = grid->GetTileType(attackPos);
+    bool attack_ok = (attack_tile == GridSystem::TileType::Empty || attack_tile == GridSystem::TileType::Lava)
+                      && !grid->IsOccupied(attackPos);
+    if (!attack_ok)
       continue;
 
-    std::vector<Math::ivec2> currentPath = grid->FindPath(myPos, attackPos, LAVA_TILE_PENALTY);
+    std::vector<Math::ivec2> currentPath = grid->FindPath(myPos, attackPos, lava_penalty);
     if (!currentPath.empty())
     {
       int effectiveCost = ComputePathCost(currentPath, grid);
@@ -396,4 +415,24 @@ int ClericStrategy::CountLavaTiles(const std::vector<Math::ivec2>& path, GridSys
 int ClericStrategy::ComputePathCost(const std::vector<Math::ivec2>& path, GridSystem* grid) const
 {
   return static_cast<int>(path.size()) + CountLavaTiles(path, grid) * LAVA_TILE_PENALTY;
+}
+
+Math::ivec2 ClericStrategy::FindClosestReachableTile(Character* actor, Character* target, GridSystem* grid)
+{
+  auto        reachable = grid->GetReachableTiles(actor->GetGridPosition()->Get(), actor->GetMovementRange());
+  Math::ivec2 targetPos = target->GetGridPosition()->Get();
+  Math::ivec2 myPos     = actor->GetGridPosition()->Get();
+  Math::ivec2 best      = myPos;
+  int         bestDist  = grid->ManhattanDistance(myPos, targetPos);
+
+  for (const auto& tile : reachable)
+  {
+    int d = grid->ManhattanDistance(tile, targetPos);
+    if (d < bestDist)
+    {
+      bestDist = d;
+      best     = tile;
+    }
+  }
+  return best;
 }

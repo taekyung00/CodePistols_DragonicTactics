@@ -28,7 +28,6 @@ class GamePlayUIManager
 {
   public:
   void ShowDamageText(int damage, Math::vec2 position, Math::vec2 size);
-  void ShowDamageLog(std::string str, Math::vec2 position, Math::vec2 size);
   void ShowGameEnd(std::string&& text);
   void Update(double dt);
   void Draw(Math::TransformationMatrix camera_matrix);
@@ -39,32 +38,19 @@ class GamePlayUIManager
   void SetCamera(const TacticalCamera* camera);
   ButtonManager& GetButtons();
 
-  void AddSpellLog(const std::string& caster_name, const std::string& spell_name, int level);
-
   void OnTurnStarted(const std::string& actor_name, int turn_number);
   void AddBattleLogEntry(const std::string& line);
 
   private:
   struct DamageText
   {
-	std::string text;
-	Math::vec2	position;
-	Math::vec2	size;
-	double		lifetime;
-  };
-
-  struct SpellLog
-  {
-	std::string text;
-	double		lifetime;
+    std::string text;
+    Math::vec2  position;
+    Math::vec2  size;
+    double      lifetime;
   };
 
   std::vector<DamageText> m_damage_texts;
-  std::vector<DamageText> m_damage_log;
-  std::vector<SpellLog>   m_spell_logs;
-
-  static constexpr double SPELL_LOG_LIFETIME  = 3.0;
-  static constexpr int    SPELL_LOG_MAX_COUNT = 5;
 
   const double GAME_END_TEXT_SIZE = 2.0;
 
@@ -73,7 +59,7 @@ class GamePlayUIManager
   std::vector<Character*> m_characters;
   ButtonManager button_manager_;
 
-  // Slot icons (index 0~9)
+  // Slot icons (index 0~9: spells, 10: End Turn)
   std::vector<std::shared_ptr<CS230::Texture>> slot_icons_;
 
   // Slot coordinate cache ([0..9]=slots, [10]=End Turn)

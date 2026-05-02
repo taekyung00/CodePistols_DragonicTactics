@@ -63,14 +63,7 @@ void GamePlayUIManager::SetCamera(const TacticalCamera* camera)
 
 void GamePlayUIManager::ShowDamageText(int damage, Math::vec2 position, Math::vec2 size)
 {
-  DamageText text{ std::to_string(damage), position, size, 0.5 };
-  m_damage_texts.push_back(text);
-}
-
-void GamePlayUIManager::ShowDamageLog(std::string str, Math::vec2 position, Math::vec2 size)
-{
-  DamageText text{ str, position, size, 1.0 };
-  m_damage_log.push_back(text);
+  m_damage_texts.push_back({ std::to_string(damage), position, size, 0.5 });
 }
 
 void GamePlayUIManager::ShowGameEnd(std::string&& text)
@@ -224,23 +217,10 @@ void GamePlayUIManager::Update(double dt)
 
     // ── 6. 데미지 텍스트 수명 갱신 ─────────────────────────────
     for (auto& text : m_damage_texts) text.lifetime -= dt;
-    for (auto& text : m_damage_log)   text.lifetime -= dt;
-
     m_damage_texts.erase(
         std::remove_if(m_damage_texts.begin(), m_damage_texts.end(),
             [](const DamageText& t) { return t.lifetime <= 0; }),
         m_damage_texts.end());
-
-    m_damage_log.erase(
-        std::remove_if(m_damage_log.begin(), m_damage_log.end(),
-            [](const DamageText& t) { return t.lifetime <= 0; }),
-        m_damage_log.end());
-
-    for (auto& log : m_spell_logs) log.lifetime -= dt;
-    m_spell_logs.erase(
-        std::remove_if(m_spell_logs.begin(), m_spell_logs.end(),
-            [](const SpellLog& l) { return l.lifetime <= 0.0; }),
-        m_spell_logs.end());
 }
 
 void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_matrix)
@@ -260,36 +240,18 @@ void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_
         Math::vec2 screen_pos = text.position;
         if (m_camera_)
             screen_pos = m_camera_->WorldToScreen(text.position, Engine::GetWindow().GetSize());
-        textMng.DrawText(text.text, screen_pos, Fonts::Outlined, text.size, CS200::VIOLET);
-    }
-
-    int i = 0;
-    for (const auto& text : m_damage_log)
-    {
-        textMng.DrawText(text.text, text.position + Math::vec2{ 0.0, 30.0 * i },
-                         Fonts::Outlined, text.size, CS200::RED);
-        ++i;
+        textMng.DrawText(text.text, screen_pos, Fonts::Kings, text.size, CS200::VIOLET);
     }
 
     if (game_end_text)
     {
         auto size = Engine::GetWindow().GetSize();
         textMng.DrawText(*game_end_text, Math::ivec2{ 0, size.y / 2 },
-                         Fonts::Outlined,
+                         Fonts::Kings,
                          Math::vec2{ GAME_END_TEXT_SIZE, GAME_END_TEXT_SIZE },
                          CS200::WHITE);
     }
 
-    const float LOG_X      = 800.0f;
-    const float LOG_BASE_Y = 50.0f;
-    const float LOG_LINE_H = 28.0f;
-
-    for (int li = 0; li < static_cast<int>(m_spell_logs.size()); ++li)
-    {
-        Math::vec2 pos = { LOG_X, LOG_BASE_Y + LOG_LINE_H * li };
-        textMng.DrawText(m_spell_logs[li].text, pos, Fonts::Outlined,
-                         { 0.5f, 0.5f }, CS200::GOLD);
-    }
 }
 
 void GamePlayUIManager::SetCharacters(const std::vector<Character*>& characters)
@@ -305,12 +267,12 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
 
     const Math::ivec2 win = { VW, VH };
     constexpr int    TILE = 64;
-    const double box_x    = TILE;
+    const double box_x    = TILE / 2;
     const double bar_bot  = TILE;
     const double bar_h    = TILE * 1.5;
-    const double bar_w    = static_cast<double>(win.x) - 2.0 * TILE;
+    const double bar_w    = static_cast<double>(win.x) - TILE;
     constexpr int N       = 10;
-    const double end_btn_w = TILE * 2.0;
+    const double end_btn_w = static_cast<double>(TILE);
     const double remaining = bar_w - N * TILE - end_btn_w;
     const double offset    = remaining / (N + 2);
 
@@ -333,9 +295,10 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
         "Assets/images/dragon_magma_blast.png",
         "Assets/images/dragon_wall_creation.png",
     };
-    slot_icons_.resize(10, nullptr);
+    slot_icons_.resize(11, nullptr);
     for (int i = 0; i < 10; ++i)
         slot_icons_[i] = Engine::GetTextureManager().Load(ICON_PATHS[i]);
+    slot_icons_[10] = Engine::GetTextureManager().Load("Assets/images/turn_end.png");
 
     // 슬롯 ID 및 스펠 ID 매핑
     const std::array<std::string, 10> SLOT_IDS = {
@@ -543,11 +506,11 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
     // End Turn 버튼
     {
         Button end;
-        end.id       = "slot_end_turn";
-        end.position = { slot_bar_x_[N], slot_bar_center_y_ + TILE * 0.5 };
-        end.size     = { end_btn_w, static_cast<double>(TILE) };
-        end.label    = "End Turn";
-        end.on_click = [inputHandler]() { inputHandler->OnEndTurnPressed(); };
+        end.id         = "slot_end_turn";
+        end.position   = { slot_bar_x_[N], slot_bar_center_y_ + TILE * 0.5 };
+        end.size       = { end_btn_w, static_cast<double>(TILE) };
+        end.label      = "";
+        end.on_click   = [inputHandler]() { inputHandler->OnEndTurnPressed(); };
         button_manager_.AddButton(end);
     }
 
@@ -578,15 +541,6 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
     }
 }
 
-void GamePlayUIManager::AddSpellLog(const std::string& caster_name, const std::string& spell_name, int level)
-{
-  std::string text = "[" + caster_name + "] " + spell_name + " Lv." + std::to_string(level);
-  m_spell_logs.push_back({ text, SPELL_LOG_LIFETIME });
-
-  if (static_cast<int>(m_spell_logs.size()) > SPELL_LOG_MAX_COUNT)
-	  m_spell_logs.erase(m_spell_logs.begin());
-}
-
 ButtonManager& GamePlayUIManager::GetButtons()
 {
   return button_manager_;
@@ -612,14 +566,14 @@ void GamePlayUIManager::DrawSlotBar()
     constexpr Math::ivec2 win = { VW, VH };
     constexpr double TILE = 64.0;
 
-    double bar_w = static_cast<double>(win.x) - 2.0 * TILE;
+    double bar_w = static_cast<double>(win.x) - TILE;
     Math::TransformationMatrix bg =
         Math::TranslationMatrix(Math::vec2{ win.x * 0.5, slot_bar_center_y_ }) *
         Math::ScaleMatrix(Math::vec2{ bar_w, TILE * 1.5 });
     renderer->DrawRectangle(bg, 0x1a1a2e99, 0x5555aaff, 1.5, DrawDepth::UI + 0.001f);
 
     // 아이콘은 버튼(UI=0.01f)보다 앞에 와야 보임 → UI - 0.005f = 0.005f
-    for (int i = 0; i < 10; ++i)
+    for (int i = 0; i < static_cast<int>(slot_icons_.size()); ++i)
     {
         if (!slot_icons_[i]) continue;
         slot_icons_[i]->Draw(
@@ -695,7 +649,7 @@ void GamePlayUIManager::DrawUicastPopup()
 
         textMgr.DrawText("Lv" + std::to_string(lv),
             Math::vec2{ bx + 6.0, by - 6.0 },
-            Fonts::Outlined, { 0.35, 0.35 },
+            Fonts::Kings, { 0.35, 0.35 },
             disabled ? CS200::WHITE : CS200::GOLD,
             DrawDepth::UI - 0.003f);
     }
@@ -729,7 +683,7 @@ void GamePlayUIManager::DrawTurnIndicator()
     std::string main_text = current->TypeName() + "'s Turn";
     textMgr.DrawText(main_text,
         Math::vec2{ panel_cx - PANEL_W * 0.5 + 8.0, panel_cy - 8.0 },
-        Fonts::Outlined, { 0.45, 0.45 }, CS200::GOLD, DrawDepth::UI);
+        Fonts::Kings, { 0.45, 0.45 }, CS200::GOLD, DrawDepth::UI);
 }
 
 // ─── 마우스 오버 스탯 툴팁 ──────────────────────────────────────────
@@ -760,23 +714,23 @@ void GamePlayUIManager::DrawHoverTooltip()
     double ty = tip_top - 8.0;
 
     textMgr.DrawText(hovered_character_->TypeName(),
-        Math::vec2{ tip_x + 8.0, ty }, Fonts::Outlined,
+        Math::vec2{ tip_x + 8.0, ty }, Fonts::Kings,
         { 0.5, 0.5 }, CS200::GOLD, DrawDepth::UI);
     ty -= LH;
 
     std::string hp_str = "HP: " + std::to_string(hovered_character_->GetHP())
                        + "/" + std::to_string(hovered_character_->GetMaxHP());
-    textMgr.DrawText(hp_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Outlined,
+    textMgr.DrawText(hp_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Kings,
         { 0.4, 0.4 }, CS200::RED, DrawDepth::UI);
     ty -= LH;
 
     std::string ap_str = "AP: " + std::to_string(hovered_character_->GetActionPoints());
-    textMgr.DrawText(ap_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Outlined,
+    textMgr.DrawText(ap_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Kings,
         { 0.4, 0.4 }, CS200::YELLOW, DrawDepth::UI);
     ty -= LH;
 
     std::string spd_str = "Speed: " + std::to_string(hovered_character_->GetMovementRange());
-    textMgr.DrawText(spd_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Outlined,
+    textMgr.DrawText(spd_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Kings,
         { 0.4, 0.4 }, CS200::GREEN, DrawDepth::UI);
     ty -= LH;
 
@@ -792,7 +746,7 @@ void GamePlayUIManager::DrawHoverTooltip()
             slot_str += " L" + std::to_string(lv) + ":"
                       + std::to_string(cur_c) + "/" + std::to_string(max_c);
         }
-        textMgr.DrawText(slot_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Outlined,
+        textMgr.DrawText(slot_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Kings,
             { 0.4, 0.4 }, CS200::ORANGE, DrawDepth::UI);
         ty -= LH;
     }
@@ -803,7 +757,7 @@ void GamePlayUIManager::DrawHoverTooltip()
         std::string fx_str = "FX:";
         for (const auto& e : effects)
             fx_str += " " + e.name + "(" + std::to_string(e.duration) + ")";
-        textMgr.DrawText(fx_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Outlined,
+        textMgr.DrawText(fx_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Kings,
             { 0.4, 0.4 }, CS200::YELLOW, DrawDepth::UI);
     }
 }
@@ -833,23 +787,23 @@ void GamePlayUIManager::DrawCharacterStatsPanel([[maybe_unused]] Math::Transform
 
 	Engine::GetTextManager().DrawText(character->TypeName(),
 	    Math::vec2{ text_x_pos + 40.0, current_y + panel_height_per_char - first_line_y },
-	    Fonts::Outlined, text_scale, CS200::WHITE);
+	    Fonts::Kings, text_scale, CS200::WHITE);
 
 	std::string hp_text = "HP: " + std::to_string(character->GetHP())
 	                    + " / " + std::to_string(character->GetMaxHP());
 	Engine::GetTextManager().DrawText(hp_text,
 	    Math::vec2{ text_x_pos, current_y + panel_height_per_char - (first_line_y + line_height * 1.0) },
-	    Fonts::Outlined, text_scale, CS200::RED);
+	    Fonts::Kings, text_scale, CS200::RED);
 
 	std::string ap_text = "AP: " + std::to_string(character->GetActionPoints());
 	Engine::GetTextManager().DrawText(ap_text,
 	    Math::vec2{ text_x_pos + 50.0, current_y + panel_height_per_char - (first_line_y + line_height * 2.0) },
-	    Fonts::Outlined, text_scale, CS200::YELLOW);
+	    Fonts::Kings, text_scale, CS200::YELLOW);
 
 	std::string speed_text = "Speed: " + std::to_string(character->GetMovementRange());
 	Engine::GetTextManager().DrawText(speed_text,
 	    Math::vec2{ text_x_pos + 30.0, current_y + panel_height_per_char - (first_line_y + line_height * 3.0) },
-	    Fonts::Outlined, text_scale, CS200::GREEN);
+	    Fonts::Kings, text_scale, CS200::GREEN);
 
 	SpellSlots* slots = character->GetSpellSlots();
 	if (slots)
@@ -864,7 +818,7 @@ void GamePlayUIManager::DrawCharacterStatsPanel([[maybe_unused]] Math::Transform
 	  }
 	  Engine::GetTextManager().DrawText(slot_text,
 	      Math::vec2{ text_x_pos, current_y + panel_height_per_char - (first_line_y + line_height * 4.0) },
-	      Fonts::Outlined, text_scale, CS200::ORANGE);
+	      Fonts::Kings, text_scale, CS200::ORANGE);
 	}
 
 	const auto& effects = character->GetActiveEffects();
@@ -873,7 +827,7 @@ void GamePlayUIManager::DrawCharacterStatsPanel([[maybe_unused]] Math::Transform
 	  fx_text += " " + e.name + "(" + std::to_string(e.duration) + ")";
 	Engine::GetTextManager().DrawText(fx_text,
 	    Math::vec2{ text_x_pos, current_y + panel_height_per_char - (first_line_y + line_height * 5.0) },
-	    Fonts::Outlined, text_scale, CS200::YELLOW);
+	    Fonts::Kings, text_scale, CS200::YELLOW);
 
 	current_y -= panel_height_per_char + 40.0;
   }
@@ -936,7 +890,7 @@ void GamePlayUIManager::DrawActionLabel()
 
     textMgr.DrawText(label,
         Math::vec2{ cx - approx_w * 0.5 + PAD_X, y_top - H + 6.0 },
-        Fonts::Outlined, { 0.4, 0.4 }, CS200::GOLD, DrawDepth::UI);
+        Fonts::Kings, { 0.4, 0.4 }, CS200::GOLD, DrawDepth::UI);
 }
 
 void GamePlayUIManager::DrawBattleLog()
@@ -964,7 +918,7 @@ void GamePlayUIManager::DrawBattleLog()
   renderer->DrawRectangle(bg, 0x1a1a2ecc, 0x5555aaff, 1.5, DrawDepth::UI - 0.01f);
 
   text_mgr.DrawText("Battle Log", Math::vec2{ PANEL_X + 8.0, PANEL_Y - 18.0 },
-                    Fonts::Outlined, { 0.45, 0.45 }, CS200::WHITE, DrawDepth::UI - 0.02f);
+                    Fonts::Kings, { 0.45, 0.45 }, CS200::WHITE, DrawDepth::UI - 0.02f);
 
   double cur_y = PANEL_Y - 45.0;
   for (auto it = turn_history_.rbegin(); it != turn_history_.rend(); ++it)
@@ -973,14 +927,14 @@ void GamePlayUIManager::DrawBattleLog()
 
     std::string header = "Turn " + std::to_string(it->turn_number) + ": " + it->actor_name;
     text_mgr.DrawText(header, Math::vec2{ PANEL_X + 8.0, cur_y },
-                      Fonts::Outlined, TS, CS200::GOLD, DrawDepth::UI - 0.02f);
+                      Fonts::Kings, TS, CS200::GOLD, DrawDepth::UI - 0.02f);
     cur_y -= LINE_H;
 
     for (const auto& line : it->lines)
     {
       if (cur_y < PANEL_Y - PANEL_H + LINE_H) break;
       text_mgr.DrawText(line, Math::vec2{ PANEL_X + 8.0 + INDENT, cur_y },
-                        Fonts::Outlined, TS, CS200::WHITE, DrawDepth::UI - 0.02f);
+                        Fonts::Kings, TS, CS200::WHITE, DrawDepth::UI - 0.02f);
       cur_y -= LINE_H;
     }
     cur_y -= 4.0;

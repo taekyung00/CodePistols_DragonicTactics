@@ -150,6 +150,13 @@ bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender)
         damage = handler->ModifyDamageDealt(attacker, damage);
         damage = handler->ModifyDamageTaken(defender, damage);
     }
+  // 공격 SFX 먼저 발행 (action SFX → hurt SFX 순서 보장)
+  auto* eventBus = Engine::GetGameStateManager().GetGSComponent<EventBus>();
+  if (eventBus)
+  {
+	eventBus->Publish(CharacterAttackedEvent{ attacker, defender, damage });
+  }
+
   ApplyDamage(attacker, defender, damage);
 
   if (handler)
@@ -161,13 +168,6 @@ bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender)
   auto* debug_mgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
   if (!(debug_mgr && debug_mgr->IsGodModeEnabled() && attacker->GetCharacterType() == CharacterTypes::Dragon))
     attacker->GetActionPointsComponent()->Consume(attackCost);
-
-  // Publish attack event
-  auto* eventBus = Engine::GetGameStateManager().GetGSComponent<EventBus>();
-  if (eventBus)
-  {
-	eventBus->Publish(CharacterAttackedEvent{ attacker, defender, damage });
-  }
 
   return true;
 }

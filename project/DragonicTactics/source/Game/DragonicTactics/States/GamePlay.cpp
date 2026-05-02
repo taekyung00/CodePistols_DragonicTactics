@@ -242,8 +242,7 @@ void GamePlay::Load()
 	  [this](const CharacterDamagedEvent& event)
 	  {
 		this->DisplayDamageAmount(event);
-		this->DisplayDamageLog(event);
-		std::string att = event.attacker ? event.attacker->TypeName() : "?";
+		std::string att = event.attacker ? event.attacker->TypeName() : "Lava";
 		m_ui_manager->AddBattleLogEntry(
 		  att + "->" + event.target->TypeName()
 		  + " " + std::to_string(event.damageAmount) + "dmg"
@@ -277,7 +276,6 @@ void GamePlay::Load()
 	  {
 		if (event.caster)
 		{
-		  m_ui_manager->AddSpellLog(event.caster->TypeName(), event.spellName, event.spellLevel);
 		  m_ui_manager->AddBattleLogEntry(
 			event.caster->TypeName() + " cast " + event.spellName
 			+ " Lv." + std::to_string(event.spellLevel));
@@ -338,42 +336,26 @@ void GamePlay::Load()
   Engine::GetSoundManager().PlayBGM("Assets/Audio/BGM/BGM_test.ogg");
 }
 
+
 void GamePlay::DisplayDamageAmount(const CharacterDamagedEvent& event)
 {
-  Engine::GetLogger().LogDebug("Damage Event! " + std::to_string(event.damageAmount));
+  if (event.target == nullptr) return;
   Math::vec2 size = { 1.0, 1.0 };
-  if (event.target != nullptr)
+  const StatsComponent* stats = event.target->GetStatsComponent();
+  if (stats != nullptr && stats->GetMaxHP() > 0)
   {
-	const StatsComponent* stats = event.target->GetStatsComponent();
-	if (stats != nullptr && stats->GetMaxHP() > 0)
-	{
-	  float damage_ratio = static_cast<float>(event.damageAmount) / static_cast<float>(stats->GetMaxHP());
-	  if (damage_ratio >= 0.5f)
-		size = { 2.5, 2.5 };
-	  else if (damage_ratio >= 0.33f)
-		size = { 2.0, 2.0 };
-	  else if (damage_ratio >= 0.2f)
-		size = { 1.5, 1.5 };
-	  else if (damage_ratio >= 0.1f)
-		size = { 1.2, 1.2 };
-	}
+    float ratio = static_cast<float>(event.damageAmount) / static_cast<float>(stats->GetMaxHP());
+    if      (ratio >= 0.5f)  size = { 2.5, 2.5 };
+    else if (ratio >= 0.33f) size = { 2.0, 2.0 };
+    else if (ratio >= 0.2f)  size = { 1.5, 1.5 };
+    else if (ratio >= 0.1f)  size = { 1.2, 1.2 };
   }
   Math::ivec2 grid_pos = event.target->GetGridPosition()->Get();
   Math::vec2 text_position = {
-      grid_pos.x * (double)GridSystem::TILE_SIZE /*+ GridSystem::TILE_SIZE * 0.5*/,
+      grid_pos.x * (double)GridSystem::TILE_SIZE,
       grid_pos.y * (double)GridSystem::TILE_SIZE + GridSystem::TILE_SIZE
   };
-
   m_ui_manager->ShowDamageText(event.damageAmount, text_position, size);
-}
-
-void GamePlay::DisplayDamageLog(const CharacterDamagedEvent& event)
-{
-  std::string attacker_name = (event.attacker != nullptr) ? event.attacker->TypeName() : "Environment";
-  std::string str			= event.target->TypeName() + " took " + std::to_string(event.damageAmount) + " damage from " + attacker_name + "(HP: " + std::to_string(event.remainingHP) + ")";
-  auto		  size			= GetGSComponent<GridSystem>()->TILE_SIZE;
-  auto		  position		= Math::vec2{ 9.0 * size, 1.0 * size };
-  m_ui_manager->ShowDamageLog(str, position, Math::vec2{ 0.5, 0.5 });
 }
 
 void GamePlay::CheckGameEnd(const CharacterDeathEvent& event)

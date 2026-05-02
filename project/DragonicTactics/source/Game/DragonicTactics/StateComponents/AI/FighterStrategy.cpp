@@ -136,10 +136,18 @@ AIDecision FighterStrategy::MakeFarMoveDecision(Character* actor, Character* dra
   // MP > 0 이면 이동
   if (actor->GetMovementRange() > 0)
   {
+    Math::ivec2 myPos   = actor->GetGridPosition()->Get();
     Math::ivec2 movePos = FindNextMovePos(actor, dragon, grid);
-    if (movePos != actor->GetGridPosition()->Get())
+    if (movePos != myPos)
     {
       return { AIDecisionType::Move, nullptr, movePos, "", "Far: Moving to dragon", LAVA_TILE_PENALTY };
+    }
+
+    // 폴백: Dragon 인접 경로 완전 차단 → 도달 가능 타일 중 Dragon에 최근접
+    Math::ivec2 closestPos = FindClosestReachableTile(actor, dragon, grid);
+    if (closestPos != myPos)
+    {
+      return { AIDecisionType::Move, nullptr, closestPos, "", "Far: Closest reachable tile", LAVA_TILE_PENALTY };
     }
   }
 
@@ -394,7 +402,12 @@ Math::ivec2 FighterStrategy::FindNextMovePos(Character* actor, Character* target
   for (const auto& offset : offsets)
   {
     Math::ivec2 attackPos = targetPos + offset;
-    if (!grid->IsValidTile(attackPos) || !grid->IsWalkable(attackPos))
+    if (!grid->IsValidTile(attackPos))
+      continue;
+    GridSystem::TileType attack_tile = grid->GetTileType(attackPos);
+    bool attack_ok = (attack_tile == GridSystem::TileType::Empty || attack_tile == GridSystem::TileType::Lava)
+                      && !grid->IsOccupied(attackPos);
+    if (!attack_ok)
       continue;
 
     std::vector<Math::ivec2> currentPath = grid->FindPath(myPos, attackPos, LAVA_TILE_PENALTY);
@@ -436,4 +449,24 @@ int FighterStrategy::CountLavaTiles(const std::vector<Math::ivec2>& path, GridSy
 int FighterStrategy::ComputePathCost(const std::vector<Math::ivec2>& path, GridSystem* grid) const
 {
   return static_cast<int>(path.size()) + CountLavaTiles(path, grid) * LAVA_TILE_PENALTY;
+}
+
+Math::ivec2 FighterStrategy::FindClosestReachableTile(Character* actor, Character* target, GridSystem* grid)
+{
+  auto        reachable = grid->GetReachableTiles(actor->GetGridPosition()->Get(), actor->GetMovementRange());
+  Math::ivec2 targetPos = target->GetGridPosition()->Get();
+  Math::ivec2 myPos     = actor->GetGridPosition()->Get();
+  Math::ivec2 best      = myPos;
+  int         bestDist  = grid->ManhattanDistance(myPos, targetPos);
+
+  for (const auto& tile : reachable)
+  {
+    int d = grid->ManhattanDistance(tile, targetPos);
+    if (d < bestDist)
+    {
+      bestDist = d;
+      best     = tile;
+    }
+  }
+  return best;
 }

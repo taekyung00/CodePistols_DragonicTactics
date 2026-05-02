@@ -60,8 +60,6 @@ class GamePlay : public CS230::GameState
   std::unique_ptr<BattleOrchestrator> m_orchestrator;
 
   void DisplayDamageAmount(const CharacterDamagedEvent& event);
-	void DisplayDamageLog(const CharacterDamagedEvent& event);
-
 	void CheckGameEnd(const CharacterDeathEvent& event);
 
 

@@ -176,27 +176,43 @@ void SpellSystem::ParseEffectField(const std::string& effect_str, SpellData& dat
 		}
 	}
 
-	// Line 2: Applies "STATUS" status for N turns.
+	// Line 2: Applies "STATUS" status for N turns [to self].
+	// "to self" 접미사가 있으면 시전자(caster)에게 적용, 없으면 targets에 적용
+	data.caster_effect_status   = "Basic";
+	data.caster_effect_duration = 0;
 	if (std::getline(ss, line))
 	{
+		bool to_self = (line.find("to self") != std::string::npos);
+
 		// 따옴표 사이의 STATUS 이름 추출
 		auto q1 = line.find('"');
 		auto q2 = line.find('"', q1 + 1);
+		std::string status_name = "Basic";
 		if (q1 != std::string::npos && q2 != std::string::npos)
-			data.effect_status = line.substr(q1 + 1, q2 - q1 - 1);
-		else
-			data.effect_status = "Basic";
+			status_name = line.substr(q1 + 1, q2 - q1 - 1);
 
 		// "for N turns" 에서 N 추출
+		int duration = 0;
 		auto ft = line.find("for ");
 		auto tt = line.find(" turn", ft);
 		if (ft != std::string::npos && tt != std::string::npos)
 		{
-			std::string n_str	 = line.substr(ft + 4, tt - (ft + 4));
-			data.effect_duration = n_str.empty() ? 0 : std::stoi(n_str);
+			std::string n_str = line.substr(ft + 4, tt - (ft + 4));
+			duration = n_str.empty() ? 0 : std::stoi(n_str);
+		}
+
+		if (to_self)
+		{
+			data.caster_effect_status   = status_name;
+			data.caster_effect_duration = duration;
+			data.effect_status          = "Basic";
+			data.effect_duration        = 0;
 		}
 		else
-			data.effect_duration = 0;
+		{
+			data.effect_status   = status_name;
+			data.effect_duration = duration;
+		}
 	}
 
 	// Line 3: "Move to {template}."
@@ -490,6 +506,17 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
 				handler->OnApplied(tgt, spell.effect_status);
 		}
 		// Around 타겟 없고 filter==Self 인 경우 (ex. Purify) 이미 Self geometry로 처리됨
+	}
+
+	// ─────────────────────────────────────────────────
+	// 시전자 자신에게 적용되는 효과 (CSV: "to self" 접미사)
+	// ─────────────────────────────────────────────────
+	if (spell.caster_effect_status != "Basic" && spell.caster_effect_duration > 0 && caster)
+	{
+		auto* handler = Engine::GetGameStateManager().GetGSComponent<StatusEffectHandler>();
+		caster->AddEffect(spell.caster_effect_status, spell.caster_effect_duration);
+		if (handler)
+			handler->OnApplied(caster, spell.caster_effect_status);
 	}
 
 	// ─────────────────────────────────────────────────
@@ -936,16 +963,17 @@ void SpellSystem::ApplyMoveEffect(Character* caster, const std::vector<Character
 			else
 				dir.y = (dy >= 0) ? 1 : -1;
 
-			// 가능한 만큼 이동 (벽/맵 끝에서 멈춤)
+			// 가능한 만큼 이동 (벽/맵 끝에서 멈춤, 용암은 착지 허용)
 			Math::ivec2 new_pos = tgt_pos;
 			for (int step = 0; step < dist; ++step)
 			{
 				Math::ivec2 next{ new_pos.x + dir.x, new_pos.y + dir.y };
 				if (!grid->IsValidTile(next))
 					break;
-				if (!grid->IsWalkable(next))
-					break;
-				if (grid->IsOccupied(next))
+				GridSystem::TileType next_type = grid->GetTileType(next);
+				bool knockback_ok = (next_type == GridSystem::TileType::Empty || next_type == GridSystem::TileType::Lava)
+				                    && !grid->IsOccupied(next);
+				if (!knockback_ok)
 					break;
 				new_pos = next;
 			}
