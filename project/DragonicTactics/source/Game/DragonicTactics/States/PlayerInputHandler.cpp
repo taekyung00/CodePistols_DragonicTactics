@@ -50,6 +50,7 @@ PlayerInputHandler::PlayerInputHandler() : m_state(ActionState::None)
 
 void PlayerInputHandler::OnAttackPressed()
 {
+    CancelCurrentAction();
     SetState(ActionState::TargetingForAttack);
 }
 

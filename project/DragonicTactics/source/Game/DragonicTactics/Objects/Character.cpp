@@ -217,6 +217,14 @@ void Character::TakeDamage(int damage, [[maybe_unused]] Character* attacker)
   if (IsAlive() == false)
   {
 	// Die();
+  // 1. 그리드 맵 상에서 해당 캐릭터의 데이터를 비워줍니다.
+        if (m_gridSystem != nullptr && GetGridPosition() != nullptr)
+        {
+            m_gridSystem->RemoveCharacter(GetGridPosition()->Get());
+        }
+        
+        // 2. 엔진의 GameObjectManager가 이 오브젝트를 메모리에서 파괴하도록 예약합니다.
+        Destroy();
   }
 }
 

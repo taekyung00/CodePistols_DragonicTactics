@@ -439,34 +439,36 @@ void GamePlay::Update(double dt)
 	return;
   }
 
-  if (game_end)
-  {
-	return;
-  }
+// 수정됨: if (game_end) return; 를 여기서 바로 호출하지 않습니다.
 
-  double scaledDt = dt * debugMgr->timeScale;
+    double scaledDt = dt * debugMgr->timeScale;
 
-  Character* current = nullptr;
-  if (turnMgr && turnMgr->IsCombatActive())
-  {
-	current = turnMgr->GetCurrentCharacter();
-  }
+    // 1. 게임이 끝나더라도 메모리 해제(Destroy 처리)와 파티클, UI 갱신을 위해 기본 시스템 업데이트는 계속 실행합니다.
+    if (goMgr) goMgr->UpdateAll(scaledDt);
+    if (m_ui_manager) m_ui_manager->Update(dt);
+    UpdateGSComponents(scaledDt);
 
-  // SpellDelayObject가 AI 결정 전에 발화되도록 goMgr를 orchestrator 앞에 업데이트
-  // Note: debugMgr->Update는 UpdateGSComponents(dt)에서 호출됨 — 중복 호출 금지
-  goMgr->UpdateAll(scaledDt);
+    // 2. 파괴 처리를 완료한 후, 게임이 끝났다면 여기서 끊어줍니다. (추가 조작 및 AI 턴 진행 방지)
+    if (game_end) return; 
 
-  if (current != nullptr)
-  {
-	m_input_handler->Update(scaledDt, current, grid, combatSystem, m_ui_manager->GetButtons(), &m_camera);
-	m_orchestrator->Update(scaledDt, turnMgr, aiSystem);
-	m_ui_manager->Update(dt);
-  }
-  UpdateGSComponents(scaledDt);
+    // 3. 게임이 진행 중일 때만 플레이어 조작 및 전투 흐름(Orchestrator) 로직을 실행합니다.
+    Character* current = nullptr;
+    if (turnMgr && turnMgr->IsCombatActive())
+    {
+        current = turnMgr->GetCurrentCharacter();
+    }
+
+    if (current != nullptr)
+    {
+        m_input_handler->Update(scaledDt, current, grid, combatSystem, m_ui_manager->GetButtons(), &m_camera);
+    }
+    m_orchestrator->Update(scaledDt, turnMgr, aiSystem);
 }
 
 void GamePlay::Unload()
 {
+  Engine::GetSoundManager().StopBGM();
+  
   if (auto goMgr = GetGSComponent<CS230::GameObjectManager>())
   {
 	goMgr->Unload();
