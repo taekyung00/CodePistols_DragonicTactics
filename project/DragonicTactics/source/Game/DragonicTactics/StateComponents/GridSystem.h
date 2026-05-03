@@ -65,6 +65,11 @@ std::vector<Math::ivec2> GetLineTiles(Math::ivec2 center, int reach) const;
   /// @brief 스펠 타겟팅 모드 해제 (시각화 데이터 초기화)
   void DisableSpellTargetingMode();
 
+  /// @brief 공격 범위 하이라이트 활성화 (주황색, 맨해튼 거리 기반)
+  void EnableAttackRangeMode(Math::ivec2 character_pos, int attack_range);
+  /// @brief 공격 범위 하이라이트 해제
+  void DisableAttackRangeMode();
+
   /// @brief 벽 배치 미리보기 타일 갱신
   void SetWallPreviewTiles(const std::vector<Math::ivec2>& tiles);
   /// @brief 벽 배치 미리보기 초기화
@@ -130,6 +135,10 @@ std::vector<Math::ivec2> GetLineTiles(Math::ivec2 center, int reach) const;
   // ─ 스펠 타겟팅 시각화 ─
   bool					spell_targeting_mode_active_ = false;
   std::set<Math::ivec2> spell_targetable_tiles_;
+
+  // ─ 공격 범위 시각화 ─
+  bool                  attack_range_mode_active_ = false;
+  std::set<Math::ivec2> attack_range_tiles_;
 
   // ─ 벽 배치 미리보기 시각화 ─
   std::vector<Math::ivec2> wall_preview_tiles_;

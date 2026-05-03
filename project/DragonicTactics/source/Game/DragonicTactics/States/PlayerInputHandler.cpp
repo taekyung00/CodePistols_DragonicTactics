@@ -52,6 +52,11 @@ void PlayerInputHandler::OnAttackPressed()
 {
     CancelCurrentAction();
     SetState(ActionState::TargetingForAttack);
+    auto* grid    = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    auto* turnMgr = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
+    if (grid && turnMgr)
+        if (Character* c = turnMgr->GetCurrentCharacter())
+            grid->EnableAttackRangeMode(c->GetGridPosition()->Get(), c->GetAttackRange());
 }
 
 void PlayerInputHandler::OnEndTurnPressed()
@@ -229,9 +234,8 @@ void PlayerInputHandler::HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, 
 		if (target && target != dragon)
 		{
 		  if (combat_system)
-		  {
 			combat_system->ExecuteAttack(dragon, target);
-		  }
+		  grid->DisableAttackRangeMode();
 		  m_state = ActionState::None;
 		}
 	  }
@@ -328,6 +332,12 @@ void PlayerInputHandler::HandleRightClick(Dragon* dragon)
 	grid->DisableMovementMode();
   }
 
+  if (m_state == ActionState::TargetingForAttack)
+  {
+    auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    if (grid) grid->DisableAttackRangeMode();
+  }
+
   if (m_state == ActionState::TargetingForSpell)
   {
     auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
@@ -350,6 +360,10 @@ void PlayerInputHandler::CancelCurrentAction()
   {
     Engine::GetLogger().LogEvent("Movement mode cancelled");
     if (grid) grid->DisableMovementMode();
+  }
+  else if (m_state == ActionState::TargetingForAttack)
+  {
+    if (grid) grid->DisableAttackRangeMode();
   }
   else if (m_state == ActionState::TargetingForSpell ||
            m_state == ActionState::WallPlacementMulti ||

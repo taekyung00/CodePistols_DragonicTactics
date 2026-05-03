@@ -221,7 +221,24 @@ void GridSystem::Draw() const
 	}
 
 	// ========================================
-	// 4. 스펠 타겟팅 가능 타일 시각화 (빨간색)
+	// 4. 공격 범위 타일 시각화 (주황색)
+	// ========================================
+	if (attack_range_mode_active_)
+	{
+		int alpha = static_cast<int>(80 + 40 * std::sin(pulse_timer_ * 3.0));
+		for (const auto& tile : attack_range_tiles_)
+		{
+			int screen_x = tile.x * TILE_SIZE + TILE_SIZE;
+			int screen_y = tile.y * TILE_SIZE + TILE_SIZE;
+			renderer_2d->DrawRectangle(
+				Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE),
+				CS200::pack_color({ 1.0f, 0.647f, 0.0f, alpha / 255.0f }),
+				0U, 0.0, DrawDepth::OVERLAY);
+		}
+	}
+
+	// ========================================
+	// 5. 스펠 타겟팅 가능 타일 시각화 (빨간색)
 	// ========================================
 	if (spell_targeting_mode_active_)
 	{
@@ -311,6 +328,26 @@ void GridSystem::DisableSpellTargetingMode()
 	spell_targetable_tiles_.clear();
 }
 
+void GridSystem::EnableAttackRangeMode(Math::ivec2 pos, int range)
+{
+	attack_range_mode_active_ = true;
+	attack_range_tiles_.clear();
+	for (int y = 0; y < map_height_; ++y)
+		for (int x = 0; x < map_width_; ++x)
+		{
+			Math::ivec2 t{ x, y };
+			if (IsValidTile(t) && GetTileType(t) != TileType::Wall
+				&& ManhattanDistance(pos, t) <= range)
+				attack_range_tiles_.insert(t);
+		}
+}
+
+void GridSystem::DisableAttackRangeMode()
+{
+	attack_range_mode_active_ = false;
+	attack_range_tiles_.clear();
+}
+
 void GridSystem::SetWallPreviewTiles(const std::vector<Math::ivec2>& tiles)
 {
 	wall_preview_tiles_ = tiles;
@@ -370,7 +407,7 @@ void GridSystem::MoveCharacter(Math::ivec2 old_pos, Math::ivec2 new_pos)
 
 void GridSystem::Update([[maybe_unused]] double dt)
 {
-	if (movement_mode_active_ || spell_targeting_mode_active_)
+	if (movement_mode_active_ || spell_targeting_mode_active_ || attack_range_mode_active_)
 	{
 		pulse_timer_ += dt;
 	}
