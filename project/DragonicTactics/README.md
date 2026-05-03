@@ -1,310 +1,139 @@
-# Dragonic Tactics
+# 🐉 Dragonic Tactics
 
-## Summary
+## 🎮 How to Play
 
-- Name of game: dragonic tactics
+- Run the `.exe` file located in the game folder to play.
 
-- Version: 0.1.3524
+- **Main Menu Controls:** Left-click the 'Dragonic Tactics' title on the screen, or press the `Enter` key when the title turns green to enter the game.
 
-- Developers: joonyoung ki, seungju song, sangyun lee, taekyung ho, ginam park
+## 📜 Game Rules & Win Condition
 
-- Team: code pistols
+- A turn-based strategy game where the player and the enemy AI take alternating turns.
 
-- Small description of game : This game reinterprets the battles of traditional DND campaigns, allowing players to become dragons and fight against a party of adventurers. Each character in the game has a turn. You play as a character called a dragon, and you have to chase away the adventurers who invade your house. Click the buttons to decide your actions, move and attack. You can do everything with a click of the mouse.
+- When your turn ends, the enemies' turn begins, and the AI will advance to attack the player.
 
-## Before Starting / Installation Instructions
+- **Win Condition:** Defeat all enemies on the map to claim victory!
 
-- Setup your [Development Environment](docs/DevEnvironment.md)
+## ⌨️ Shortcuts & Controls Summary
 
-## How to Build and Run
+- **Left Mouse Click:** Select character/tile, move, use skills
 
-### Command Line Build
+- **Right Mouse Click:** Cancel skill range display
 
-**Windows**
+- **Enter:** Enter the game (when the title text on the main menu is green)
 
-```sh
-# configure / generate build files
-cmake --preset windows-debug
-cmake --preset windows-developer-release
-cmake --preset windows-release
-cmake --preset web-debug-on-windows
+- **ESC:** Return to the main menu from the in-game screen
 
-# Build exe
-cmake --build --preset windows-debug
-cmake --build --preset windows-developer-release
-cmake --build --preset windows-release
-cmake --build --preset web-debug-on-windows
-```
+## 🕹️ System Guide
 
-**Linux**
-*Causion : even if we can build linux version, linux version can be relatively slow if you run this build file on virtual machine like WSL. It is recommended to build and run windows version or web version on such environment.*
+- **Check Status:** Hover your mouse cursor over the dragon or other characters to check their Health (HP), Action Points (AP), Movement (Speed), and Spell Slots.
 
-```sh
-# configure / generate build files
-cmake --preset linux-debug
-cmake --preset linux-developer-release
-cmake --preset linux-release
-cmake --preset web-debug
-cmake --preset web-developer-release
-cmake --preset web-release
+- **Movement Range:** Hover the cursor over the dragon during its turn to see the tiles it can move to for that turn.
 
-# Build exe
-cmake --build --preset linux-debug
-cmake --build --preset linux-developer-release
-cmake --build --preset linux-release
-cmake --build --preset web-debug
-cmake --build --preset web-developer-release
-cmake --build --preset web-release
-```
+## 💧 Resource Management
 
-### Automated Build Script
+- **Speed (Movement):** Click the dragon, then click a green tile to move. Speed points are consumed based on the distance traveled.
 
-For convenience, use the automated build script that handles all configurations:
+- **AP (Action Points):** Using attacks or skills consumes AP.
 
-```sh
-python3 scripts/scan_build_project.py
-```
+- **Spell Slots:** Consumed alongside AP when casting magic skills.
 
-See the script help for filtering options:
+> **※ Note:** Speed and AP are fully restored at the start of each turn, but consumed Spell Slots do not recover automatically. Use them wisely!
 
-```sh
-python3 scripts/scan_build_project.py --help
-```
+### ✨ Upcasting
 
-## Build Configurations
+Some magic skills (from *Firebolt* to *Create Wall*), excluding basic attacks, can consume a higher-level spell slot to increase the skill's power. Check your limited spell slots and enhance your magic according to the situation.
 
-This project supports three distinct build configurations, each designed for different stages of development and deployment:
+## ⚔️ Skill List
 
-### **Debug Configuration**
+Click the icons at the bottom of the screen (from left to right) to use your skills.
 
-- **Purpose**: Active development and debugging
-- **Features**: 
-  - Allows setting breakpoints to step through code line-by-line
-  - No compiler optimizations (preserves variable values for debugging)
-  - Console window for viewing debug output
-  - All developer helper features enabled
-- **Performance**: Slower execution, larger executable size
-- **When to use**: When you need to debug issues or understand code flow
+- **Basic Attack**
 
-### **Developer-Release Configuration**
-
-- **Purpose**: Testing with optimized performance while keeping developer tools
-- **Features**:
-  - Compiler optimizations enabled (faster execution)
-  - Cannot set breakpoints (optimizations interfere with debugging)
-  - Console window for viewing output
-  - Verbose logging and error checking enabled
-  - Developer assertions active
-- **Performance**: Fast execution, optimized code
-- **When to use**: Performance testing while retaining diagnostic capabilities
-
-### **Release Configuration**
-
-- **Purpose**: Final builds for end users
-- **Features**:
-  - Full compiler optimizations
-  - No console window (clean user experience)
-  - Minimal logging (only critical errors)
-  - No developer features or extra error checking
-  - Smallest executable size
-- **Performance**: Maximum speed, production-ready
-- **When to use**: Final builds for distribution to users
-
-## CMake Presets
-
-CMake presets simplify the build process by pre-configuring complex settings. Instead of manually specifying:
-
-- Compiler flags and optimization levels
-- Output directories and build paths  
-- Platform-specific configurations
-- Dependency locations
-- Debug/release-specific settings
-
-The presets handle all of this automatically. For example, `cmake --preset linux-debug` is equivalent to running:
-
-```sh
-cmake -S . -B build/linux-debug \
-  -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-  -DDEVELOPER_VERSION=ON \
-  [... many more flags ...]
-```
-
-This saves time and reduces configuration errors, especially when working across different platforms and build types.
-
-## Play
-
-
-
-New Things
-
-- We are working on Spells, Now only some of the dragon's spell is working.
-
-- Please Let us know other spell's are not working
-
-#### Spell Table
-
-- **ID: S_DEB_020**
+- **Firebolt (Level 1):** Single enemy target / Range: 4 tiles / **[Upcastable]**
   
-  - **Name**: Fearful Cry
+  - Damage: 2d8 + (Consumed Spell Level - 1)d6
+
+- **Tail Sweep (Level 2):** All enemies around the caster / Range: 2 tiles / **[Not Upcastable]**
   
-  - **Category**: (N/A)
+  - Damage: 1d8
   
-  - **Classes**: Dragon, Fighter
+  - Special Effect: Hit enemies are pushed back 2 tiles away from the dragon.
+
+- **Dragon's Wrath (Level 3):** All enemies in a straight line / Range: 4 tiles / **[Upcastable]**
   
-  - **Required Slot Level**: 1
+  - Damage: 4d6 + (Consumed Spell Level - 3) * 2d6
+
+- **Meteor (Level 3):** All enemies on the entire map / **[Upcastable]**
   
-  - **Targeting**: Enemy:Around:3
+  - Damage: 3d20 + (Consumed Spell Level - 3) * 1d20
   
-  - **Upcasting**: False
+  - Special Effect: Grants the caster 'Exhaustion' for 1 turn.
+
+- **Mana Conversion (Level 0):** Self / Range: 0 tiles / **[Upcastable]**
   
-  - **Effect**: Deals 0 damage. Applies "Fear" status for 3 turns. Move to current location. Summons NULL at current location.
+  - Effect: Deals (Consumed Spell Level + 1)d10 damage to yourself, but recovers one Spell Slot of (Consumed Spell Level + 1) level.
 
-**ID: S_ATK_010**
+- **Purify (Level 1):** Self / Range: 0 tiles / **[Not Upcastable]**
+  
+  - Effect: Grants 'Purify' status to yourself for 1 turn.
 
-- **Name**: Fire Bolt
+- **Frightful Presence (Level 1):** All enemies around the caster / Range: 3 tiles / **[Not Upcastable]**
+  
+  - Effect: Inflicts 'Fear' status on all enemies in range for 3 turns.
 
-- **Category**: Attack
+- **Lava Spit (Level 2):** Target empty tile / Range: 6 tiles / **[Upcastable]**
+  
+  - Effect: Summons a lava zone at the selected location. Creates additional tiles equal to (Consumed Spell Level - 2).
 
-- **Classes**: Dragon, Wizard
+- **Create Wall (Level 1):** Target empty tile / Range: 5 tiles / **[Upcastable]**
+  
+  - Effect: Summons a wall at the selected location. Creates additional tiles equal to (Consumed Spell Level - 1).
 
-- **Required Slot Level**: 1
+- **End Turn**
 
-- **Targeting**: Enemy:Single:4
+## 💫 Status Effects
 
-- **Upcasting**: True
+Buffs and debuffs applied by character skills or specific conditions.
 
-- **Effect**: Deals 2d8 + (\text{Spell Level} - \text{Required Spell Level})d6 damage. Applies "Basic" status for 0 turns. Move to current location. Summons NULL at current location.
+- **Lifesteal:** Restores HP equal to half of all damage dealt this turn. (Rounded down)
 
-**ID: S_ENH_040**
+- **Frenzy:** If the next attack deals 10 or more damage, the hit enemy receives a random detrimental status effect (Curse, Fear, or Exhaustion, excluding Frenzy). If the attack fails to deal 10+ damage, the caster (Fighter) receives the random detrimental effect instead.
 
-- **Name**: Mana Conversion
+- **Exhaustion:** Speed and AP drop to 0 on the next turn.
 
-- **Category**: Buff
+- **Purify:** Immediately removes all status effects applied to yourself.
 
-- **Classes**: Dragon, Wizard
+- **Blessing:** All damage taken is reduced by 3, and all damage dealt is increased by 3.
 
-- **Required Slot Level**: 0
+- **Curse:** All damage taken is increased by 3, and all damage dealt is reduced by 3.
 
-- **Targeting**: Self:Single:0
+- **Haste:** Speed increases by 1, and AP increases by 1.
 
-- **Upcasting**: True
+- **Stealth:** Cannot be targeted by enemies, and the first damage dealt on the next turn is doubled. Cannot be used after attacking, and attacking immediately breaks Stealth.
 
-- **Effect**: Deals 0 + (\text{Spell Level} - \text{Required Spell Level} + 1)d10 damage. Applies "Basic" status for 0 turns. Move to current location. Summons NULL at current location. Special: Recover a Spell Slot of (\text{Spell Level} - \text{Required Spell Level} + 1) level.
+- **Fear:** All damage dealt is reduced by 3, and Speed is reduced by 1.
 
-**ID: S_ATK_020**
+## ⚠️ Known Issues / Patch Notes
 
-- **Name**: Tail Swipe
+- In-game BGM overlapping continuously when returning to the main menu by pressing ESC **(Resolved)**
 
-- **Category**: Attack
+- Skill range UI remaining on the screen when using a basic attack without canceling the previous skill's range display with a right-click **(Resolved)**
 
-- **Classes**: Dragon
+- Character sprites not disappearing from the screen even when their HP reaches 0 **(Resolved)**
 
-- **Required Slot Level**: 2
+- Basic attack range not visually displayed **(Resolved)**
 
-- **Targeting**: Enemy:Around:2
+- Enemies falling into a stunned state instead of the player (caster) when using Meteor **(Resolved)**
 
-- **Upcasting**: False
+## 👥 Credits
 
-- **Effect**: Deals 1d8 damage. Applies "Basic" status for 0 turns. Move to target:knockback:2. Summons NULL at current location.
+- **Producer:** Taekyung Heo (Voice Act: Cleric)
 
-**ID: S_ATK_030**
+- **Tech Lead:** Junyoung Ki
 
-- **Name**: Dragon's Fury
+- **Test Lead:** Kinam Park
 
-- **Category**: Attack
+- **QA:** Sangyoon Lee
 
-- **Classes**: Dragon
-
-- **Required Slot Level**: 3
-
-- **Targeting**: Enemy:Line:4
-
-- **Upcasting**: True
-
-- **Effect**: Deals 4d6 + (\text{Spell Level} - \text{Required Spell Level}) \times 2d6 damage. Applies "Basic" status for 0 turns. Move to current location. Summons NULL at current location.
-
-**ID: S_ATK_040**
-
-- **Name**: Meteor
-
-- **Category**: Attack
-
-- **Classes**: Dragon
-
-- **Required Slot Level**: 3
-
-- **Targeting**: Any:OddEven:-1
-
-- **Upcasting**: True
-
-- **Effect**: Deals 3d20 + (\text{Spell Level} - \text{Required Spell Level}) \times 1d20 damage. Applies "Exhaustion" status for 1 turn. Move to current location. Summons NULL at current location.
-
-**ID: S_ENH_050**
-
-- **Name**: Purify
-
-- **Category**: Buff
-
-- **Classes**: Dragon
-
-- **Required Slot Level**: 1
-
-- **Targeting**: Any:Around:4
-
-- **Upcasting**: False
-
-- **Effect**: Deals 0 damage. Applies "Purify" status for 1 turn. Move to current location. Summons NULL at current location.
-
-**ID: S_GEO_010**
-
-- **Name**: ~~Magma Blast~~ << not working
-
-- **Category**: Terrain Change
-
-- **Classes**: Dragon
-
-- **Required Slot Level**: 2
-
-- **Targeting**: Empty:Point:6
-
-- **Upcasting**: True
-
-- **Effect**: Deals 0 damage. Applies "Basic" status for 0 turns. Move to current location. Summons Lava Zone at selected location.
-
-**ID: S_GEO_020**
-
-- **Name**: ~~Wall Creation~~ << not working
-
-- **Category**: Terrain Change
-
-- **Classes**: Dragon
-
-- **Required Slot Level**: 1
-
-- **Targeting**: Empty:Point:5
-
-- **Upcasting**: True
-
-- **Effect**: Deals 0 damage. Applies "Basic" status for 0 turns. Move to current location. Summons Wall at selected location.
-
-
-
-- After building the project, run the executable file located in the build directory.
-- For example, if you built the windows-debug preset, run ./build/windows-debug/dragonic_tactics.exe
-- At the main menu, click "Dragonic Tactics" to start the game.
-- When the game starts, turn order is determined by each character's speed stat.
-- we can see the turn order at Combat Status window.
-- We can choose player's action : Move, Action, End Turn.
-- Move : click the grid where you want to move. Each player can move according to their speed stat. For example, if a player's speed stat is 4, the player can move up to 4 grids. Player can also move less than their speed stat, or mix move and action like move 2 grids, action, move 2 grids. Each character's speed stat is shown at right UI.
-- Action - basic attack : click the "Action" button, then click attack to use basic attack. For now, only basic attack is implemented. If you click spell button, click right button to cancel. If enemy is in range of dragon(red one) - now it is 2 grids - click the enemy to attack. Damage is calculated by attacker's dice-based calculated attack amount minus defender's dice-based calculated defense amount. If enemy isn't in range, nothing happens. Dragon can attack based on its attack point. Attack point(AP) is shown at right UI. Each basic attack consumes 1 AP. 
-- End Turn : click the "End Turn" button to end your turn. Even if you have remaining speed or AP, you can end your turn.
-- If one of characters' HP reaches 0, game ends.
-
-### 
-
-## Feedback
-
-- if you have any feedbacks, contact to here:
-  - Email: taek020422@gamil.com
-  - Discord: taekyung.ho
+- **Designer:** Seungju Song (Voice Act: Dragon, Fighter)
