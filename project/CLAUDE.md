@@ -11,8 +11,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | ----------------------- | -------------------------------------------------------------------- |
 | `GamePlay::Load()`      | 모든 GS 컴포넌트 등록 + CSV/JSON 데이터 로드 + 캐릭터 스폰                             |
 | `GamePlay::Update()`    | `PlayerInputHandler` / `BattleOrchestrator` / `GameObjectManager` 구동 |
-| `GamePlay::DrawImGui()` | Map Selection / Combat Status 패널 (Move·Action·Spell UI는 ButtonManager가 담당) |
-| `GamePlay::Draw()`      | `GridSystem::Draw()` + `GameObjectManager::DrawAll()`                |
+| `GamePlay::DrawImGui()` | Map Selection / Combat Status 개발자 패널                                 |
+| `GamePlay::Draw()`      | **2-패스 렌더링**: Pass 1 = 월드 공간(TacticalCamera), Pass 2 = UI 공간(가상 1600×900) |
 
 **현재 맵 구성**: Dragon = 플레이어, Fighter + Cleric = AI 적 (`maps.json` spawn_points 기준, `enemys` 벡터로 관리).
 
@@ -240,7 +240,26 @@ grid->GetAllCharacters()          // → std::vector<Character*>
 grid->HasExit()
 grid->GetExitPosition()
 grid->SetExitPosition(pos)
+
+// 타일 하이라이트 시각화 (PlayerInputHandler가 제어, GridSystem::Draw()에서 렌더)
+grid->EnableMovementMode(pos, range)      // 초록 펄스 — BFS 이동 가능 타일
+grid->DisableMovementMode()
+grid->EnableSpellTargetingMode(pos, geometry, range)  // 빨간 펄스 — 스펠 타겟 타일
+grid->DisableSpellTargetingMode()
+grid->EnableAttackRangeMode(pos, range)   // 주황 펄스 — 공격 범위 타일 (Wall 제외, 맨해튼 거리)
+grid->DisableAttackRangeMode()
+grid->SetWallPreviewTiles(tiles)          // 반투명 미리보기 (WallPlacement 모드)
+grid->ClearWallPreviewTiles()
+grid->SetHoveredTile(tile)               // 경로 시각화
+grid->ClearHoveredTile()
+grid->IsMovementModeActive()             // 이동 모드 활성화 여부
+grid->IsReachable(tile)                  // 특정 타일이 이동 가능한지
 ```
+
+오버레이 색상 기준 (알파 80+40×sin 펄스):
+- 이동 범위: 초록 `(0.0f, 0.8f, 0.0f)`
+- 스펠 타겟: 빨강 `(0.8f, 0.0f, 0.0f)`
+- 공격 범위: 주황 `(1.0f, 0.647f, 0.0f)`
 
 이동 목적지 유효성 검사 패턴 (`AISystem::ExecuteDecision` 참고):
 ```cpp
@@ -377,13 +396,14 @@ std::vector<Character*> enemys {};        // 모든 AI 캐릭터 (Fighter, Cleri
 **PlayerInputHandler.ActionState** (입력 상태 머신):
 
 ```
-None → SelectingMove → Moving
-     → SelectingAction → TargetingForAttack
-                       → SelectingSpell → TargetingForSpell
-                                        → WallPlacementMulti
-                                        → LavaPlacementMulti
+None ──[Dragon 타일 클릭]──→ SelectingMove → Moving
+     ──[slot_attack 클릭]──→ TargetingForAttack
+     ──[스펠 슬롯 클릭]────→ TargetingForSpell
+                           → WallPlacementMulti
+                           → LavaPlacementMulti
 ```
 
+`SelectingAction` 상태는 폐지됨. Dragon 타일 클릭으로 이동 선택 진입 (Move 버튼 없음).
 Dragon(플레이어) 턴에서만 동작. AI(Fighter) 턴은 `BattleOrchestrator`가 처리.
 
 **⚠️ GS 컴포넌트 Update 중복 호출 금지** (`States/GamePlay.cpp`):
@@ -584,6 +604,57 @@ Engine::GetSoundManager().SetBGMVolume(0.7f);                  // 0.0 ~ 1.0
 
 ## 렌더링 패턴
 
+### 2-패스 렌더링 (`States/GamePlay.cpp::Draw()`)
+
+```cpp
+auto win          = Engine::GetWindow().GetSize();
+auto* renderer_2d = CS230::TextureManager::GetRenderer2D();
+
+// Pass 1: 월드 공간 — TacticalCamera 적용 (줌·패닝)
+Math::TransformationMatrix world_ndc = m_camera.GetWorldMatrix(win);
+renderer_2d->BeginScene(world_ndc);
+GetGSComponent<GridSystem>()->Draw();
+GetGSComponent<GameObjectManager>()->DrawAll(world_ndc);
+renderer_2d->EndScene();
+
+// Pass 2: UI 공간 — 가상 1600×900 좌표, 레터박스 적용
+Math::TransformationMatrix ui_ndc = TacticalCamera::BuildVirtualNdc(win);
+Engine::GetTextureManager().SaveCurrentScene(ui_ndc);  // 폰트 캐시 미스 복원용
+renderer_2d->BeginScene(ui_ndc);
+m_ui_manager->Draw(ui_ndc);
+renderer_2d->EndScene();
+```
+
+**TacticalCamera** (`States/GamePlay.h`):
+
+```cpp
+struct TacticalCamera {
+    Math::vec2 target = { 0.0, 0.0 };
+    double zoom = 1.0;
+    static constexpr int VIRTUAL_W = 1600;
+    static constexpr int VIRTUAL_H = 900;
+    Math::TransformationMatrix GetWorldMatrix(Math::ivec2 win) const;
+    Math::vec2 ScreenToWorld(Math::vec2 screen, Math::ivec2 win) const;
+    Math::vec2 WorldToScreen(Math::vec2 world, Math::ivec2 win) const;
+    static Math::TransformationMatrix BuildVirtualNdc(Math::ivec2 win);  // 레터박스 UI NDC
+};
+```
+
+**`SaveCurrentScene` 패턴** (`Engine/TextureManager.h/cpp`) — 폰트 캐시 미스 버그 대응:
+- 문제: `Font::PrintToTexture()` 캐시 미스 시 `EndRenderTextureMode()`가 잘못된 NDC 행렬로 씬을 복원 → UI 깜빡임
+- 해결: UI Pass 시작 직전 `SaveCurrentScene(ui_ndc)` 호출 → `EndRenderTextureMode` 내부에서 저장된 행렬로 정확히 복원
+
+```cpp
+// TextureManager.h - RenderInfo 구조체에 추가
+Math::TransformationMatrix SavedCameraMatrix{};
+static void SaveCurrentScene(const Math::TransformationMatrix& m);
+
+// TextureManager.cpp - EndRenderTextureMode 수정
+renderer_2d->BeginScene(render_info.SavedCameraMatrix);  // 저장된 ui_ndc 복원
+```
+
+⚠️ **CS200 소스 파일은 수정하지 않는다** — 렌더러 버그 대응은 `Engine/TextureManager.h/cpp`에서만 처리.
+
 ### 타일 텍스처 (`StateComponents/GridSystem.cpp`)
 
 타일 텍스처는 GridSystem 생성자에서 `Engine::GetTextureManager().Load()`로 로드, `Draw()`에서 stone_tile 패턴과 동일하게 사용:
@@ -673,7 +744,8 @@ ButtonManager는 배경 사각형(`DrawRectangle`)만 담당하고, 아이콘은
 - [docs/Detailed Implementations/features/status_effect_system.md](docs/Detailed%20Implementations/features/status_effect_system.md) — StatusEffect 두 레이어 구현 가이드
 - [docs/Detailed Implementations/features/terrain_spells.md](docs/Detailed%20Implementations/features/terrain_spells.md) — 지형 변환 스펠(Wall/Lava 배치) 구현 가이드
 - [docs/Detailed Implementations/features/map_loading.md](docs/Detailed%20Implementations/features/map_loading.md) — maps.json 로딩 및 맵 전환 구현 가이드
-- [docs/Detailed Implementations/features/button_manager.md](docs/Detailed%20Implementations/features/button_manager.md) — ButtonManager(Move·Action·Spell UI 버튼 패널) 구현 가이드
+- [docs/Detailed Implementations/features/button_manager.md](docs/Detailed%20Implementations/features/button_manager.md) — ButtonManager(슬롯 바 버튼 패널) 구현 가이드
+- [docs/Detailed Implementations/features/UI 개선 구현점.md](docs/Detailed%20Implementations/features/UI%20개선%20구현점.md) — UI 리팩토링 실제 변경점 (bb7e32fa 커밋 대비, TacticalCamera/2-패스/슬롯바/배틀로그 플리커 수정 포함)
 - [architecture/game_architecture_rules.md](architecture/game_architecture_rules.md) — 아키텍처 원칙
 - [architecture/Implementation_Checklist.md](architecture/Implementation_Checklist.md) — 진행 체크리스트
 - [docs/Detailed Implementations/features/fighter_strategy.md](docs/Detailed%20Implementations/features/fighter_strategy.md) — FighterStrategy 구현 상세 가이드

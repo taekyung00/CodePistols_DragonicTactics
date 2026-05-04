@@ -288,6 +288,14 @@ void GamePlay::Load()
   GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>(
 	  [this](const CharacterDeathEvent& event)
 	  {
+		// goMgr->UpdateAll()이 메모리를 해제하기 전에 즉시 처리
+		// (dangling pointer use-after-free 방지)
+		if (event.character)
+		  m_confirmed_dead_.insert(event.character);
+
+		if (auto* turnMgr = GetGSComponent<TurnManager>())
+		  turnMgr->RemoveFromTurnOrder(event.character);
+
 		this->CheckGameEnd(event);
 		if (event.character)
 		  m_ui_manager->AddBattleLogEntry(event.character->TypeName() + " died!");
@@ -368,7 +376,7 @@ void GamePlay::CheckGameEnd(const CharacterDeathEvent& event)
   }
 
   bool all_enemies_dead = std::all_of(enemys.begin(), enemys.end(),
-	[](Character* c) { return c == nullptr || !c->IsAlive(); });
+	[this](Character* c) { return c == nullptr || m_confirmed_dead_.count(c) > 0; });
   if (all_enemies_dead && !enemys.empty())
   {
 	m_ui_manager->ShowGameEnd("Player Win");
@@ -482,6 +490,7 @@ void GamePlay::Unload()
 
 
   enemys.clear();
+  m_confirmed_dead_.clear();
   player = nullptr;
 }
 

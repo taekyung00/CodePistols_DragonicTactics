@@ -12,6 +12,7 @@ Created:    November 5, 2025
 #include "Engine/Matrix.h"
 #include "Engine/Vec2.h"
 #include <memory>
+#include <set>
 
 struct TacticalCamera {
     Math::vec2 target = { 0.0, 0.0 };
@@ -66,6 +67,9 @@ class GamePlay : public CS230::GameState
   Character* player  = nullptr;
   std::vector<Character*> enemys {};
   bool		 game_end = false;
+
+  // 메모리 해제 후 IsAlive() 호출을 피하기 위해 포인터 값으로만 추적
+  std::set<Character*> m_confirmed_dead_;
 
   int selected_json_map_index_ = 0;
   std::vector<std::string> available_json_maps_;

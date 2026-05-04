@@ -89,6 +89,9 @@ class TurnManager : public CS230::Component
   void EndCombat();
   void Reset();
 
+  // 캐릭터 사망 즉시 turnOrder에서 제거 — CharacterDeathEvent 핸들러에서 호출
+  void RemoveFromTurnOrder(Character* character);
+
   private:
   TurnManager(const TurnManager&)			 = delete;
   TurnManager& operator=(const TurnManager&) = delete;

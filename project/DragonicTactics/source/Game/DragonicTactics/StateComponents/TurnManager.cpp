@@ -93,7 +93,7 @@ void TurnManager::StartNextTurn()
         std::remove_if(turnOrder.begin(), turnOrder.end(),
             [](Character* c) {
                 // 포인터가 유효하지 않거나 이미 죽은 캐릭터라면 목록에서 제거 대상으로 분류합니다.
-                return c == nullptr || !c->IsAlive(); 
+                return c == nullptr || !c->IsAlive();
             }),
         turnOrder.end()
     );
@@ -229,6 +229,36 @@ void TurnManager::EndCurrentTurn()
   StartNextTurn();
 
   // Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - END");
+}
+
+void TurnManager::RemoveFromTurnOrder(Character* character)
+{
+  if (!character) return;
+
+  // initiativeOrder에서도 제거
+  initiativeOrder.erase(
+      std::remove_if(initiativeOrder.begin(), initiativeOrder.end(),
+          [character](const InitiativeEntry& e) { return e.character == character; }),
+      initiativeOrder.end()
+  );
+
+  // turnOrder에서 위치 탐색
+  auto it = std::find(turnOrder.begin(), turnOrder.end(), character);
+  if (it == turnOrder.end()) return;
+
+  int removed_index = static_cast<int>(std::distance(turnOrder.begin(), it));
+  turnOrder.erase(it);
+
+  if (turnOrder.empty()) return; // StartNextTurn에서 EndCombat 처리
+
+  // currentTurnIndex 보정: 제거된 위치가 현재 인덱스보다 앞이면 한 칸 당김
+  if (removed_index < currentTurnIndex)
+    --currentTurnIndex;
+  else if (currentTurnIndex >= static_cast<int>(turnOrder.size()))
+    currentTurnIndex = 0;
+
+  Engine::GetLogger().LogEvent("[TurnManager] Removed " + character->TypeName()
+      + " from turnOrder on death. Remaining: " + std::to_string(turnOrder.size()));
 }
 
 void TurnManager::EndCombat()
