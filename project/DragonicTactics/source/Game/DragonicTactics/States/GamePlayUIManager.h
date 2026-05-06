@@ -94,6 +94,8 @@ class GamePlayUIManager
   bool                  show_battle_log_{ false };
   static constexpr int  MAX_LOG_TURNS = 5;
 
+  double end_turn_click_timer_ = 0.0;
+
   void DrawCharacterStatsPanel(Math::TransformationMatrix camera_matrix);
   void DrawBattleLog();
   void DrawSlotBar();
