@@ -137,3 +137,9 @@ Buffs and debuffs applied by character skills or specific conditions.
 - **QA:** Sangyoon Lee
 
 - **Designer:** Seungju Song (Voice Act: Dragon, Fighter)
+
+## 📝 Playtest Survey
+
+Thank you for playing **Dragonic Tactics**! Your feedback is essential for us to improve the gameplay experience. Please take a moment to fill out our playtest survey:
+
+👉 **[Take the Playtest Survey](https://forms.gle/fSAFsKoonyGdXREn7)**
