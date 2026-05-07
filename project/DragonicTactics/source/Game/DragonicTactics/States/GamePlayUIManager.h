@@ -38,8 +38,9 @@ class GamePlayUIManager
   void SetCamera(const TacticalCamera* camera);
   ButtonManager& GetButtons();
 
-  void OnTurnStarted(const std::string& actor_name, int turn_number);
+  void OnTurnStarted(const std::string& actor_name, int turn_number, bool is_player);
   void AddBattleLogEntry(const std::string& line);
+  bool IsMouseOverLogPanel() const;
 
   private:
   struct DamageText
@@ -87,17 +88,34 @@ class GamePlayUIManager
   {
     int                      turn_number;
     std::string              actor_name;
+    bool                     is_player;
     std::vector<std::string> lines;
   };
 
+  static constexpr int    MAX_LOG_TURNS  = 15;
+  static constexpr double LOG_PANEL_W    = 320.0;
+  static constexpr double LOG_PANEL_H    = 512.0;
+  static constexpr double LOG_PANEL_X    = 1600.0 - 64.0 - 10.0 - LOG_PANEL_W - 2.0;
+  static constexpr double LOG_PANEL_Y    = 900.0 * 0.5 + LOG_PANEL_H * 0.5;
+  static constexpr double LOG_TITLE_H    = 45.0;
+  static constexpr double LOG_LINE_H     = 22.0;
+  static constexpr double LOG_INDENT     = 12.0;
+  static constexpr double LOG_SB_W       = 8.0;
+  static constexpr double LOG_SB_X       = LOG_PANEL_X + LOG_PANEL_W - LOG_SB_W - 2.0;
+
   std::deque<TurnEntry> turn_history_;
   bool                  show_battle_log_{ false };
-  static constexpr int  MAX_LOG_TURNS = 5;
+
+  double log_scroll_offset_{ 0.0 };
+  bool   log_scrollbar_dragging_{ false };
+  double log_drag_start_mouse_y_{ 0.0 };
+  double log_drag_start_offset_{ 0.0 };
 
   double end_turn_click_timer_ = 0.0;
 
   void DrawCharacterStatsPanel(Math::TransformationMatrix camera_matrix);
-  void DrawBattleLog();
+  void   DrawBattleLog();
+  double ComputeLogContentHeight() const;
   void DrawSlotBar();
   void DrawUicastPopup();
   void DrawTurnIndicator();

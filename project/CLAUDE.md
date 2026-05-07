@@ -477,7 +477,7 @@ CastSpell → CanCast(클래스/슬롯/Geometry/Range/AP 체크) → ConsumeSpel
   ApplySpellEffect → targets 결정(Geometry) → 피해 → 상태효과(targets) → 시전자 자신 효과 → ApplyMoveEffect → ApplySpecialEffect
 ```
 
-**넉백 시 용암 허용**: `ApplyMoveEffect`의 knockback 루프는 `TileType::Lava`를 유효 착지 타일로 허용. 벽(Wall)은 여전히 차단.
+**넉백 시 용암 착지 → 즉시 정지 + 피해**: `ApplyMoveEffect`의 knockback 루프는 `TileType::Lava` 타일에 닿는 순간 멈추고 (`break`), 이후 `GetLavaDamageAt()`으로 피해를 즉시 적용한다. 벽(Wall)은 착지 불가, 그 앞에서 멈춤. 빈 타일은 계속 미끄러짐.
 
 ---
 
@@ -673,6 +673,15 @@ tex->Draw(Math::TranslationMatrix(Math::ivec2{screen_x - TILE_SIZE, screen_y - T
 
 ⚠️ 모든 타일(Wall, Lava, Difficult, Empty)은 `DrawDepth::TILE`을 명시적으로 전달해야 한다. `DrawRectangle`의 기본 depth는 `DrawDepth::CHARACTER`(0.5f)로 캐릭터와 겹친다.
 
+### 배틀 로그 (`States/GamePlayUIManager`)
+
+`TurnEntry` 구조체(`turn_number`, `actor_name`, `is_player`, `lines`)를 `std::deque<TurnEntry> turn_history_`로 관리 (최대 `MAX_LOG_TURNS = 15`).
+
+- **이벤트 타이밍 제약** (`TurnManager.cpp`): `PublishTurnStartEvent()`를 반드시 용암 피해 `ApplyDamage` **전에** 호출해야 함 — 배틀 로그가 `TurnStartedEvent`를 받아 새 턴 섹션을 열기 때문. 순서가 바뀌면 피해 항목이 이전 캐릭터의 섹션에 들어간다.
+- **패널 레이아웃 상수**: `GamePlayUIManager.h`의 `LOG_PANEL_X/Y/W/H`, `LOG_TITLE_H`, `LOG_LINE_H`, `LOG_INDENT`, `LOG_SB_W/X`에 집중 관리됨 — 패널 위치·크기 변경 시 이 상수들만 수정.
+- **스크롤**: 패널 위 마우스 휠(`GetMouseScroll()`) + 스크롤바 드래그. 패널 위에서는 카메라 줌 차단 (`IsMouseOverLogPanel()`).
+- **헤더 색상**: Player 턴 = 하늘색 `0x88ccffff`, Enemy 턴 = 주황색 `0xff8844ff`.
+
 ### 슬롯 바 아이콘 (`States/GamePlayUIManager`)
 
 슬롯 아이콘은 `slot_icons_[]`(크기 11)에 로드되고 `DrawSlotBar()`에서 오버레이된다. 인덱스 0-9는 스펠 슬롯, 인덱스 10은 End Turn 버튼:
@@ -728,7 +737,7 @@ ButtonManager는 배경 사각형(`DrawRectangle`)만 담당하고, 아이콘은
 - **경로 탐색**: `StateComponents/AStar.cpp` (GridSystem::FindPath에서 내부 사용)
 - **디버그 서브시스템**: `source/Game/DragonicTactics/Debugger/` (DebugConsole, DebugManager, DebugVisualizer)
 - **JSON 데이터**: `DragonicTactics/Assets/Data/`
-- **AI 플로우차트**: `architecture/character_flowchart/` (Mermaid .mmd — fighter.mmd, cleric.mmd, rouge.mmd 존재 / wizard.mmd 미생성, wizard.jpg만 있음)
+- **AI 플로우차트**: `architecture/character_flowchart/` (Mermaid .mmd — fighter.mmd, cleric.mmd, rouge.mmd, wizard.mmd 존재 / rouge.jpg, wizard.jpg 이미지도 있음)
 
 엔진 접근: `Engine::GetLogger()`, `Engine::GetInput()`, `Engine::GetWindow()`, `Engine::GetGameStateManager()`
 

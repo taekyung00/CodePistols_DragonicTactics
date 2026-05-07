@@ -963,17 +963,24 @@ void SpellSystem::ApplyMoveEffect(Character* caster, const std::vector<Character
 			else
 				dir.y = (dy >= 0) ? 1 : -1;
 
-			// 가능한 만큼 이동 (벽/맵 끝에서 멈춤, 용암은 착지 허용)
-			Math::ivec2 new_pos = tgt_pos;
+			// 가능한 만큼 이동 — 용암 타일에 닿으면 즉시 정지 후 피해
+			Math::ivec2 new_pos        = tgt_pos;
+			bool        landed_on_lava = false;
 			for (int step = 0; step < dist; ++step)
 			{
 				Math::ivec2 next{ new_pos.x + dir.x, new_pos.y + dir.y };
 				if (!grid->IsValidTile(next))
 					break;
 				GridSystem::TileType next_type = grid->GetTileType(next);
-				bool knockback_ok = (next_type == GridSystem::TileType::Empty || next_type == GridSystem::TileType::Lava)
-				                    && !grid->IsOccupied(next);
-				if (!knockback_ok)
+				if (grid->IsOccupied(next))
+					break;
+				if (next_type == GridSystem::TileType::Lava)
+				{
+					new_pos        = next;
+					landed_on_lava = true;
+					break; // 용암 착지 — 더 이상 밀리지 않음
+				}
+				if (next_type != GridSystem::TileType::Empty)
 					break;
 				new_pos = next;
 			}
@@ -982,6 +989,21 @@ void SpellSystem::ApplyMoveEffect(Character* caster, const std::vector<Character
 			{
 				grid->MoveCharacter(tgt_pos, new_pos);
 				tgt->SetGridPosition(new_pos);
+
+				if (landed_on_lava)
+				{
+					auto* combat = Engine::GetGameStateManager().GetGSComponent<CombatSystem>();
+					if (combat)
+					{
+						int dmg = GetLavaDamageAt(new_pos);
+						if (dmg > 0)
+						{
+							Engine::GetLogger().LogEvent(
+							    tgt->TypeName() + " takes " + std::to_string(dmg) + " lava damage from knockback");
+							combat->ApplyDamage(nullptr, tgt, dmg);
+						}
+					}
+				}
 			}
 		}
 	}

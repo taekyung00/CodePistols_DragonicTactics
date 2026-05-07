@@ -235,7 +235,8 @@ void GamePlay::Load()
 	  [this](const TurnStartedEvent& e)
 	  {
 		if (e.character)
-		  m_ui_manager->OnTurnStarted(e.character->TypeName(), e.turnNumber);
+		  m_ui_manager->OnTurnStarted(e.character->TypeName(), e.turnNumber,
+		                               !e.character->IsAIControlled());
 	  });
 
   GetGSComponent<EventBus>()->Subscribe<CharacterDamagedEvent>(
@@ -419,7 +420,8 @@ void GamePlay::Update(double dt)
     m_prev_mouse = mouse;
 
     double scroll = inp.GetMouseScroll();
-    if (scroll != 0.0 && !ImGui::GetIO().WantCaptureMouse)
+    if (scroll != 0.0 && !ImGui::GetIO().WantCaptureMouse
+        && !m_ui_manager->IsMouseOverLogPanel())
     {
       Math::vec2 wb = m_camera.ScreenToWorld(mouse, win);
       m_camera.zoom *= (1.0 + scroll * 0.125);
