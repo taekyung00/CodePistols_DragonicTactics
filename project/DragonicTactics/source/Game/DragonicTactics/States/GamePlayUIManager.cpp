@@ -507,8 +507,20 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
     {
         Button end;
         end.id         = "slot_end_turn";
+        // 레이아웃 위치는 전혀 건드리지 않고 그대로 유지합니다.
         end.position   = { slot_bar_x_[N], slot_bar_center_y_ + TILE * 0.5 };
-        end.size       = { end_btn_w, static_cast<double>(TILE) };
+        
+        // [수정된 부분] 히트박스의 크기(size)를 하드코딩하지 않고, 실제 에셋 이미지의 해상도로 딱 맞게 동기화합니다.
+        if (slot_icons_[10] != nullptr)
+        {
+            end.size = { static_cast<double>(slot_icons_[10]->GetSize().x),
+                         static_cast<double>(slot_icons_[10]->GetSize().y) };
+        }
+        else
+        {
+            end.size = { end_btn_w, static_cast<double>(TILE) };
+        }
+        
         end.label      = "";
         end.on_click   = [inputHandler]() { inputHandler->OnEndTurnPressed(); };
         button_manager_.AddButton(end);
