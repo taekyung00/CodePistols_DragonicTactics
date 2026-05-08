@@ -2,10 +2,8 @@
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
 prior written consent is prohibited
-File Name:  MainMenu.h
+File Name:  Settings.h
 Project:    CS230 Engine
-Author:     Taekyung Ho
-Created:    May 6, 2025
 */
 
 #pragma once
@@ -20,34 +18,40 @@ Created:    May 6, 2025
 #include <string>
 #include <vector>
 
-class MainMenu : public CS230::GameState
+class Settings : public CS230::GameState
 {
   public:
-  MainMenu();
+  Settings();
   void						   Load() override;
   void						   Update(double dt) override;
   void						   Unload() override;
   void						   Draw() override;
   void						   DrawImGui() override;
-  void						   SelecetOption();
+  void						   SelectOption();
   gsl::czstring				   GetName() const override;
-  static constexpr CS200::RGBA title_color		 = 0x9A2EFEFF;
-  static constexpr CS200::RGBA non_seleted_color = 0xFFFFFFFF;
-  static constexpr CS200::RGBA seleted_color	 = 0x3ADF00FF;
+
+  static constexpr CS200::RGBA title_color		  = 0x9A2EFEFF;
+  static constexpr CS200::RGBA non_selected_color = 0xFFFFFFFF;
+  static constexpr CS200::RGBA hover_color		  = 0x3ADF00FF;
+  static constexpr CS200::RGBA active_color		  = 0x00CFFFFF;
+
+  static bool s_bgm_enabled;
+  static int  s_bgm_volume_pct; // 10..100, multiples of 10
 
   private:
   enum class Option
   {
-	DragonicTactics,
-	Settings,
-#if defined(DEVELOPER_VERSION)
-	ConsoleTest,
-	RenderingTest,
-#endif
-	Exit,
+	Small,	// map index 0 (8x8)
+	Medium, // map index 1 (10x10)
+	Large,	// map index 2 (12x12)
+	BGMToggle,
+	BGMVolume,
+	Back,
 	COUNT
   };
   Option current_option;
+
+  static void ApplyBGMSettings();
 
   struct MenuItem
   {
@@ -64,6 +68,7 @@ class MainMenu : public CS230::GameState
   Math::vec2 menu_item_size;
   double	 menu_item_total_height;
 
-
   static constexpr Math::ivec2 default_window_size = { 800, 600 };
+
+  static std::string OptionToMapId(Option opt);
 };

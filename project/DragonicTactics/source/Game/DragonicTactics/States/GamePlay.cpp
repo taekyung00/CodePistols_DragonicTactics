@@ -47,8 +47,8 @@ Created:    November 5, 2025
 #include "Game/Particles.h"
 #include "./Engine/Particle.h"
 
-int  GamePlay::s_next_map_index = 0;
-bool GamePlay::s_should_restart = false;
+std::string GamePlay::s_next_map_id   = "first_map";
+bool		GamePlay::s_should_restart = false;
 
 namespace
 {
@@ -175,8 +175,6 @@ void GamePlay::Load()
   GetGSComponent<SpellSystem>()->LoadFromCSV("Assets/Data/spell_table.csv");
   // GetGSComponent<SpellSystem>()->SetEventBus(GetGSComponent<EventBus>());
 
-  selected_json_map_index_ = s_next_map_index;
-
   auto* map_registry = GetGSComponent<MapDataRegistry>();
   map_registry->LoadMaps("Assets/Data/maps.json");
   available_json_maps_ = map_registry->GetAllMapIds();
@@ -191,11 +189,21 @@ void GamePlay::Load()
 	return;
   }
 
-  if (selected_json_map_index_ < 0 || selected_json_map_index_ >= static_cast<int>(available_json_maps_.size()))
+  // Resolve s_next_map_id → index in available_json_maps_
+  selected_json_map_index_ = -1;
+  for (int i = 0; i < static_cast<int>(available_json_maps_.size()); ++i)
   {
-	Engine::GetLogger().LogError("Invalid map index " + std::to_string(selected_json_map_index_) + ", defaulting to 0");
+	if (available_json_maps_[static_cast<std::size_t>(i)] == s_next_map_id)
+	{
+	  selected_json_map_index_ = i;
+	  break;
+	}
+  }
+  if (selected_json_map_index_ < 0)
+  {
+	Engine::GetLogger().LogError("Map id '" + s_next_map_id + "' not found, defaulting to first available");
 	selected_json_map_index_ = 0;
-	s_next_map_index		 = 0;
+	s_next_map_id			 = available_json_maps_[0];
   }
 
   const std::string& selected_map_id = available_json_maps_[static_cast<std::size_t>(selected_json_map_index_)];
@@ -546,7 +554,7 @@ void GamePlay::DrawImGui()
   {
 	const std::string& map_id = available_json_maps_[static_cast<std::size_t>(i)];
 
-	bool is_selected = (s_next_map_index == i);
+	bool is_selected = (s_next_map_id == map_id);
 	if (is_selected)
 	{
 	  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.6f, 0.2f, 1.0f));
@@ -554,7 +562,7 @@ void GamePlay::DrawImGui()
 
 	if (ImGui::Button(map_id.c_str()))
 	{
-	  s_next_map_index = i;
+	  s_next_map_id = map_id;
 	  Engine::GetLogger().LogEvent("Selected map: " + map_id + " (click Restart to apply)");
 	}
 

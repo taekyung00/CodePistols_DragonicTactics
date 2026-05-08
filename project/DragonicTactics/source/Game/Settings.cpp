@@ -4,10 +4,8 @@
 Copyright (C) 2023 DigiPen Institute of Technology
 Reproduction or distribution of this file or its contents without
 prior written consent is prohibited
-File Name:  MainMenu.cpp
+File Name:  Settings.cpp
 Project:    CS230 Engine
-Author:     Taekyung Ho
-Created:    May 6, 2025
 */
 #include "CS200/IRenderer2D.h"
 #include "CS200/NDC.h"
@@ -16,23 +14,20 @@ Created:    May 6, 2025
 #include "Engine/GameStateManager.h"
 #include "Engine/Input.h"
 #include "Engine/Matrix.h"
+#include "Engine/SoundManager.h"
 #include "Engine/TextManager.h"
 #include "Engine/Window.h"
 #include "Game/DragonicTactics/States/GamePlay.h"
 #include "MainMenu.h"
 #include "Settings.h"
-// #include "./Game/DragonicTactics/States/Test.h"
-#if defined(DEVELOPER_VERSION)
-#include "Game/DragonicTactics/States/ConsoleTest.h"
-#include "Game/DragonicTactics/States/RenderingTest.h"
-#endif
 #include "OpenGL/Environment.h"
 #include "States.h"
 
-// (0.0 = 0%, 1.0 = 100%)
+bool Settings::s_bgm_enabled	= true;
+int	 Settings::s_bgm_volume_pct = 100;
+
 namespace
 {
-	// --- Menu UI Ratio ---
 	const double TITLE_X_RATIO			   = 0.25;
 	const double TITLE_Y_RATIO_FROM_BOTTOM = 0.8;
 	const double TITLE_SCALE_VAL		   = 1.5;
@@ -44,52 +39,64 @@ namespace
 	const double MENU_START_Y_RATIO		 = 0.4;
 }
 
-MainMenu::MainMenu() : current_option(Option::DragonicTactics)
+Settings::Settings() : current_option(Option::Small)
 {
 }
 
-void MainMenu::DrawImGui()
+std::string Settings::OptionToMapId(Option opt)
+{
+	switch (opt)
+	{
+		case Option::Small:	 return "first_map";  // 8x8
+		case Option::Medium: return "medium_map"; // 10x10
+		case Option::Large:	 return "large_map";  // 12x12
+		default:			 return "";
+	}
+}
+
+void Settings::ApplyBGMSettings()
+{
+	float vol = s_bgm_enabled ? (static_cast<float>(s_bgm_volume_pct) / 100.0f) : 0.0f;
+	Engine::GetSoundManager().SetBGMVolume(vol);
+}
+
+void Settings::DrawImGui()
 {
 #if defined(DEVELOPER_VERSION)
 	// ... ImGui 코드
 #endif
 }
 
-void MainMenu::SelecetOption()
+void Settings::SelectOption()
 {
 	switch (current_option)
 	{
-		case MainMenu::Option::DragonicTactics:
+		case Option::Small:
+		case Option::Medium:
+		case Option::Large:
+			GamePlay::s_next_map_id = OptionToMapId(current_option);
+			break;
+
+		case Option::BGMToggle:
+			s_bgm_enabled = !s_bgm_enabled;
+			ApplyBGMSettings();
+			break;
+
+		case Option::BGMVolume:
+			// 좌/우 방향키 전용 — Enter 무시
+			break;
+
+		case Option::Back:
 			Engine::GetGameStateManager().PopState();
-			Engine::GetGameStateManager().PushState<GamePlay>();
+			Engine::GetGameStateManager().PushState<MainMenu>();
 			break;
 
-		case MainMenu::Option::Settings:
-			Engine::GetGameStateManager().PopState();
-			Engine::GetGameStateManager().PushState<Settings>();
+		case Option::COUNT:
 			break;
-
-		case MainMenu::Option::COUNT:
-			// COUNT is not a selectable option, just a marker for enum size
-			break;
-
-#if defined(DEVELOPER_VERSION)
-		case MainMenu::Option::ConsoleTest:
-			Engine::GetGameStateManager().PopState();
-			Engine::GetGameStateManager().PushState<ConsoleTest>();
-			break;
-
-		case MainMenu::Option::RenderingTest:
-			Engine::GetGameStateManager().PopState();
-			Engine::GetGameStateManager().PushState<RenderingTest>();
-			break;
-#endif
-
-		case MainMenu::Option::Exit: Engine::GetGameStateManager().PopState(); break;
 	}
 }
 
-void MainMenu::Load()
+void Settings::Load()
 {
 	CS200::RenderingAPI::SetClearColor(0x000000FF);
 	if (!OpenGL::IsWebGL)
@@ -98,14 +105,18 @@ void MainMenu::Load()
 		Engine::GetWindow().SetWindowPosition(SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 	}
 
-	menu_items.push_back({ "Dragonic Tactics", Option::DragonicTactics });
-	menu_items.push_back({ "Settings", Option::Settings });
-#if defined(DEVELOPER_VERSION)
-	menu_items.push_back({ "Console test", Option::ConsoleTest });
-	menu_items.push_back({ "Rendering test", Option::RenderingTest });
-#endif
-	menu_items.push_back({ "Exit", Option::Exit });
+	menu_items.push_back({ "Small  (8x8)", Option::Small });
+	menu_items.push_back({ "Medium (10x10)", Option::Medium });
+	menu_items.push_back({ "Large  (12x12)", Option::Large });
+	menu_items.push_back({ "", Option::BGMToggle }); // text built dynamically in Draw()
+	menu_items.push_back({ "", Option::BGMVolume }); // text built dynamically in Draw()
+	menu_items.push_back({ "Back", Option::Back });
 
+	const std::string& active_id = GamePlay::s_next_map_id;
+	if (active_id == "first_map")		current_option = Option::Small;
+	else if (active_id == "medium_map") current_option = Option::Medium;
+	else if (active_id == "large_map")	current_option = Option::Large;
+	else								current_option = Option::Small;
 
 	const auto window_size = default_window_size;
 
@@ -126,7 +137,7 @@ void MainMenu::Load()
 	menu_item_total_height = text_height + (window_size.y * MENU_ITEM_SPACING_RATIO);
 }
 
-void MainMenu::Update([[maybe_unused]] double dt)
+void Settings::Update([[maybe_unused]] double dt)
 {
 	CS230::Input&		  input		  = Engine::GetInput();
 	Math::vec2			  mouse_pos	  = input.GetMousePos();
@@ -148,9 +159,23 @@ void MainMenu::Update([[maybe_unused]] double dt)
 	}
 	else if (input.KeyJustReleased(CS230::Input::Keys::Enter))
 	{
-		SelecetOption();
+		SelectOption();
 	}
-
+	else if (current_option == Option::BGMVolume)
+	{
+		if (input.KeyJustReleased(CS230::Input::Keys::Left))
+		{
+			s_bgm_volume_pct -= 10;
+			if (s_bgm_volume_pct < 10) s_bgm_volume_pct = 100;
+			ApplyBGMSettings();
+		}
+		else if (input.KeyJustReleased(CS230::Input::Keys::Right))
+		{
+			s_bgm_volume_pct += 10;
+			if (s_bgm_volume_pct > 100) s_bgm_volume_pct = 10;
+			ApplyBGMSettings();
+		}
+	}
 
 	bool mouse_is_hovering = false;
 	int	 total_options	   = static_cast<int>(Option::COUNT);
@@ -171,15 +196,19 @@ void MainMenu::Update([[maybe_unused]] double dt)
 
 	if (input.MouseJustPressed(0) && mouse_is_hovering)
 	{
-		SelecetOption();
+		// Volume 항목은 키보드 좌/우 방향키 전용 — 클릭 무시
+		if (current_option != Option::BGMVolume)
+		{
+			SelectOption();
+		}
 	}
 }
 
-void MainMenu::Unload()
+void Settings::Unload()
 {
 }
 
-void MainMenu::Draw()
+void Settings::Draw()
 {
 	CS200::RenderingAPI::Clear();
 	auto renderer_2d = Engine::GetTextureManager().GetRenderer2D();
@@ -187,11 +216,9 @@ void MainMenu::Draw()
 
 	auto& text_manager = Engine::GetTextManager();
 
-	text_manager.DrawText("Dragonic Tactics", title_pos, Fonts::Kings, title_scale, title_color);
+	text_manager.DrawText("Settings", title_pos, Fonts::Kings, title_scale, title_color);
 
-	[[maybe_unused]] static constexpr CS200::RGBA DEBUG_FILL_COLOR = 0xFFFF0030;
-	[[maybe_unused]] static constexpr CS200::RGBA DEBUG_LINE_COLOR = 0xFFFF00FF;
-	[[maybe_unused]] static constexpr double	  DEBUG_LINE_WIDTH = 1.5;
+	const std::string& active_id = GamePlay::s_next_map_id;
 
 	for (size_t i = 0; i < menu_items.size(); ++i)
 	{
@@ -201,7 +228,14 @@ void MainMenu::Draw()
 		Math::vec2 item_pos		  = { menu_start_pos_bl.x, current_item_y };
 		Math::vec2 item_size	  = menu_item_size;
 
-		CS200::RGBA item_color = (item.option == current_option) ? seleted_color : non_seleted_color;
+		bool is_hovered		= (item.option == current_option);
+		std::string opt_id	= OptionToMapId(item.option);
+		bool is_active		= !opt_id.empty() && (opt_id == active_id);
+
+		CS200::RGBA item_color;
+		if (is_hovered)		 item_color = hover_color;
+		else if (is_active)	 item_color = active_color;
+		else				 item_color = non_selected_color;
 
 		static constexpr double Y_OFFSET_RATIO = 0.5;
 		double					y_offset	   = item_size.y * Y_OFFSET_RATIO;
@@ -209,27 +243,34 @@ void MainMenu::Draw()
 		Math::vec2 text_draw_pos = item_pos;
 		text_draw_pos.y -= y_offset;
 
+		std::string label;
+		if (item.option == Option::BGMToggle)
+		{
+			label = std::string("BGM: ") + (s_bgm_enabled ? "ON" : "OFF");
+		}
+		else if (item.option == Option::BGMVolume)
+		{
+			// 키보드 좌/우 방향키 전용 (마우스 클릭 미지원) — 화살표로 힌트
+			label = is_hovered
+				? "Volume: < " + std::to_string(s_bgm_volume_pct) + "% >"
+				: "Volume:   " + std::to_string(s_bgm_volume_pct) + "%";
+		}
+		else
+		{
+			label = item.text;
+			if (is_active)
+			{
+				label += "  *";
+			}
+		}
 
-		text_manager.DrawText(item.text, text_draw_pos, Fonts::Kings, { 1.0, 1.0 }, item_color);
-
-		// Math::vec2 center_pos = item_pos + (item_size * 0.5);
-
-		// Math::ScaleMatrix							scale_matrix(item_size);
-		// Math::TranslationMatrix						trans_matrix(center_pos);
-		// [[maybe_unused]] Math::TransformationMatrix transform = trans_matrix * scale_matrix;
-
-		// renderer_2d.DrawRectangle(
-		// 	transform,
-		// 	DEBUG_FILL_COLOR,
-		// 	DEBUG_LINE_COLOR,
-		// 	DEBUG_LINE_WIDTH
-		// );
+		text_manager.DrawText(label, text_draw_pos, Fonts::Kings, { 1.0, 1.0 }, item_color);
 	}
 
 	renderer_2d->EndScene();
 }
 
-gsl::czstring MainMenu::GetName() const
+gsl::czstring Settings::GetName() const
 {
-	return "MainMenu";
+	return "Settings";
 }
