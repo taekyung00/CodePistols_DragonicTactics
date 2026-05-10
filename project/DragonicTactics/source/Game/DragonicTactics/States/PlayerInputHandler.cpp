@@ -382,21 +382,7 @@ void PlayerInputHandler::CancelCurrentAction()
 
 void PlayerInputHandler::SelectSpell(const std::string& spell_id, Character* caster, int upcast_level, ButtonManager& btns)
 {
-    // Cancel any previous targeting before switching spells
-    {
-        auto* g = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
-        if (g && (m_state == ActionState::TargetingForSpell ||
-                  m_state == ActionState::WallPlacementMulti ||
-                  m_state == ActionState::LavaPlacementMulti))
-        {
-            g->DisableSpellTargetingMode();
-            if (m_state == ActionState::WallPlacementMulti || m_state == ActionState::LavaPlacementMulti)
-            {
-                m_wall_placement_tiles.clear();
-                g->ClearWallPreviewTiles();
-            }
-        }
-    }
+    CancelCurrentAction();
 
     m_selected_spell_id     = spell_id;
     m_selected_upcast_level = upcast_level;

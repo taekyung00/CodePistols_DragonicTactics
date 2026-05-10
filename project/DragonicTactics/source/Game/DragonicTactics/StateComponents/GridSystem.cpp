@@ -232,7 +232,7 @@ void GridSystem::Draw() const
 			int screen_y = tile.y * TILE_SIZE + TILE_SIZE;
 			renderer_2d->DrawRectangle(
 				Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE),
-				CS200::pack_color({ 1.0f, 0.647f, 0.0f, alpha / 255.0f }),
+				CS200::pack_color({ 255 / 255.0f, 0 / 255.0f, 0 / 255.0f, alpha / 255.0f }),
 				0U, 0.0, DrawDepth::OVERLAY);
 		}
 	}
@@ -625,15 +625,6 @@ void GridSystem::LoadMap(const MapData& map_data)
 
 			SetTileType(pos, tile_type);
 		}
-	}
-
-	if (map_data.has_exit)
-	{
-		SetTileType(map_data.exit_position, TileType::Exit);
-		SetExitPosition(map_data.exit_position);
-		Engine::GetLogger().LogEvent("GridSystem::LoadMap - Exit set at (" +
-			std::to_string(map_data.exit_position.x) + "," +
-			std::to_string(map_data.exit_position.y) + ")");
 	}
 
 	Engine::GetLogger().LogEvent("GridSystem::LoadMap - Completed (" + std::to_string(map_data.width * map_data.height) + " tiles)");

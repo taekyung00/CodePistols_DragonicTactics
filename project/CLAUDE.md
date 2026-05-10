@@ -51,6 +51,43 @@ python3 scripts/scan_build_project.py          # DragonicTactics/ 에서 실행
 python3 scripts/scan_build_project.py --help
 ```
 
+### 플레이테스트 릴리즈 자동화
+
+`DragonicTactics/scripts/make_release.py` (또는 동일 위치의 `make_release.exe`) — 릴리즈 빌드 → ZIP 패키징 → GitHub Release 업로드를 자동화한다.
+
+```bash
+cd DragonicTactics
+
+# ZIP 생성 (windows-release 빌드 포함)
+python scripts/make_release.py --version v0.3.0
+
+# 이미 빌드된 경우 빌드 생략
+python scripts/make_release.py --version v0.3.0 --skip-build
+
+# ZIP 생성 + GitHub Release 업로드
+python scripts/make_release.py --version v0.3.0 --upload
+```
+
+더블클릭(`make_release.exe`) 실행 시 버전·옵션을 프롬프트로 입력받는다.
+사전 점검 로직 내장: `cmake` / `gh` CLI 미설치 시 winget으로 자동 설치, `gh` 미로그인 시 `gh auth login` 자동 실행.
+
+ZIP 출력 위치: 프로젝트 루트(`project/DragonicTactics_vX.Y.Z_playtest.zip`) — 루트 `.gitignore`의 `*.zip` 규칙으로 자동 무시됨.
+
+ZIP 내부 구조:
+```
+CODEPISTOLS_DRAGONICTACTICS/
+├── dragonic_tactics.exe
+├── OpenAL32.dll / SDL2.dll / soft_oal.dll
+├── README.md / README(KOR).md
+└── Assets/
+```
+
+릴리즈 노트는 `make_release.py` 상단 `RELEASE_NOTES` 상수에 하드코딩 — 변경 시 상수 수정 후 exe 재빌드 필요:
+```bash
+cd DragonicTactics
+python -m PyInstaller --onefile --console --name make_release --distpath scripts scripts/make_release.py
+```
+
 ---
 
 ## 핵심 아키텍처 원칙
@@ -755,6 +792,7 @@ ButtonManager는 배경 사각형(`DrawRectangle`)만 담당하고, 아이콘은
 - [docs/Detailed Implementations/features/map_loading.md](docs/Detailed%20Implementations/features/map_loading.md) — maps.json 로딩 및 맵 전환 구현 가이드
 - [docs/Detailed Implementations/features/button_manager.md](docs/Detailed%20Implementations/features/button_manager.md) — ButtonManager(슬롯 바 버튼 패널) 구현 가이드
 - [docs/Detailed Implementations/features/UI 개선 구현점.md](docs/Detailed%20Implementations/features/UI%20개선%20구현점.md) — UI 리팩토링 실제 변경점 (bb7e32fa 커밋 대비, TacticalCamera/2-패스/슬롯바/배틀로그 플리커 수정 포함)
+- [docs/Detailed Implementations/features/character_death_crash_fix.md](docs/Detailed%20Implementations/features/character_death_crash_fix.md) — 캐릭터 사망 시 비결정적 크래시 수정 (use-after-free, m_confirmed_dead_ 패턴, RemoveFromTurnOrder)
 - [architecture/game_architecture_rules.md](architecture/game_architecture_rules.md) — 아키텍처 원칙
 - [architecture/Implementation_Checklist.md](architecture/Implementation_Checklist.md) — 진행 체크리스트
 - [docs/Detailed Implementations/features/fighter_strategy.md](docs/Detailed%20Implementations/features/fighter_strategy.md) — FighterStrategy 구현 상세 가이드

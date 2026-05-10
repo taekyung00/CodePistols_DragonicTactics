@@ -23,8 +23,7 @@
                 "dragon":  {"x": 3, "y": 1},
                 "fighter": {"x": 3, "y": 6},
                 "cleric":  {"x": 4, "y": 6}
-            },
-            "exit": {"x": 0, "y": 6}
+            }
         },
         {
             "id": "medium_map",
@@ -51,8 +50,7 @@
                 "dragon":  {"x": 4, "y": 1},
                 "fighter": {"x": 4, "y": 8},
                 "cleric":  {"x": 5, "y": 8}
-            },
-            "exit": {"x": 0, "y": 8}
+            }
         },
         {
             "id": "large_map",
@@ -81,8 +79,7 @@
                 "dragon":  {"x": 5, "y": 1},
                 "fighter": {"x": 5, "y": 10},
                 "cleric":  {"x": 6, "y": 10}
-            },
-            "exit": {"x": 0, "y": 10}
+            }
         }
     ]
 }
