@@ -13,6 +13,7 @@ Created:    November 5, 2025
 #include "Engine/Vec2.h"
 #include <memory>
 #include <set>
+#include <string>
 
 struct TacticalCamera {
     Math::vec2 target = { 0.0, 0.0 };
@@ -51,7 +52,7 @@ class GamePlay : public CS230::GameState
   void			DrawImGui() override;
   gsl::czstring GetName() const override;
 
-  static int s_next_map_index;
+  static std::string s_next_map_id;
   static bool s_should_restart;
 
   private:

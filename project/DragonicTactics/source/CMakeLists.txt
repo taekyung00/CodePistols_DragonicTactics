@@ -140,10 +140,16 @@ file(GLOB_RECURSE OPENGL_SOURCES CONFIGURE_DEPENDS
 )
 
 file(GLOB_RECURSE GAME_SOURCES CONFIGURE_DEPENDS
-    "Game/*.cpp"           
+    "Game/*.cpp"
     "Game/*.h"
     "Game/*.hpp"
 )
+
+if (NOT IS_DEVELOPER_VERSION)
+    list(FILTER GAME_SOURCES EXCLUDE REGEX "/Test/")
+    list(FILTER GAME_SOURCES EXCLUDE REGEX "/States/ConsoleTest\\.")
+    list(FILTER GAME_SOURCES EXCLUDE REGEX "/States/RenderingTest\\.")
+endif()
 
 
 set(SOURCE_CODE

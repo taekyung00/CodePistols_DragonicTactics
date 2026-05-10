@@ -221,6 +221,48 @@ void GamePlayUIManager::Update(double dt)
         std::remove_if(m_damage_texts.begin(), m_damage_texts.end(),
             [](const DamageText& t) { return t.lifetime <= 0; }),
         m_damage_texts.end());
+
+    // ── 7. 배틀 로그 스크롤 입력 처리 ──────────────────────────
+    if (show_battle_log_)
+    {
+        bool over_panel = virt_mouse.x >= LOG_PANEL_X && virt_mouse.x <= LOG_PANEL_X + LOG_PANEL_W
+                       && virt_mouse.y <= LOG_PANEL_Y && virt_mouse.y >= LOG_PANEL_Y - LOG_PANEL_H;
+
+        if (over_panel)
+        {
+            double wheel = Engine::GetInput().GetMouseScroll();
+            if (wheel != 0.0)
+                log_scroll_offset_ -= wheel * 40.0;
+
+            bool over_scrollbar = virt_mouse.x >= LOG_SB_X && virt_mouse.x <= LOG_SB_X + LOG_SB_W;
+            if (Engine::GetInput().MouseJustPressed(0) && over_scrollbar)
+            {
+                log_scrollbar_dragging_ = true;
+                log_drag_start_mouse_y_ = virt_mouse.y;
+                log_drag_start_offset_  = log_scroll_offset_;
+            }
+        }
+
+        if (log_scrollbar_dragging_)
+        {
+            if (Engine::GetInput().MouseDown(0))
+            {
+                double track_h      = LOG_PANEL_H - LOG_TITLE_H;
+                double total_h      = ComputeLogContentHeight();
+                double scroll_range = std::max(0.0, total_h - track_h);
+                double drag_dy      = log_drag_start_mouse_y_ - virt_mouse.y;
+                log_scroll_offset_  = log_drag_start_offset_ + drag_dy * (scroll_range / track_h);
+            }
+            else
+                log_scrollbar_dragging_ = false;
+        }
+
+        // 클램프
+        double visible_h   = LOG_PANEL_H - LOG_TITLE_H;
+        double total_h     = ComputeLogContentHeight();
+        double max_scroll  = std::max(0.0, total_h - visible_h);
+        log_scroll_offset_ = std::max(0.0, std::min(log_scroll_offset_, max_scroll));
+    }
 }
 
 void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_matrix)
@@ -558,11 +600,27 @@ ButtonManager& GamePlayUIManager::GetButtons()
   return button_manager_;
 }
 
-void GamePlayUIManager::OnTurnStarted(const std::string& actor_name, int turn_number)
+void GamePlayUIManager::OnTurnStarted(const std::string& actor_name, int turn_number, bool is_player)
 {
-  turn_history_.push_back({ turn_number, actor_name, {} });
+  turn_history_.push_back({ turn_number, actor_name, is_player, {} });
   if (static_cast<int>(turn_history_.size()) > MAX_LOG_TURNS)
     turn_history_.pop_front();
+  log_scroll_offset_ = 0.0;
+}
+
+double GamePlayUIManager::ComputeLogContentHeight() const
+{
+  double h = 0.0;
+  for (const auto& entry : turn_history_)
+    h += LOG_LINE_H + static_cast<double>(entry.lines.size()) * LOG_LINE_H + 4.0;
+  return h;
+}
+
+bool GamePlayUIManager::IsMouseOverLogPanel() const
+{
+  if (!show_battle_log_) return false;
+  return m_virtual_mouse_.x >= LOG_PANEL_X && m_virtual_mouse_.x <= LOG_PANEL_X + LOG_PANEL_W
+      && m_virtual_mouse_.y <= LOG_PANEL_Y && m_virtual_mouse_.y >= LOG_PANEL_Y - LOG_PANEL_H;
 }
 
 void GamePlayUIManager::AddBattleLogEntry(const std::string& line)
@@ -911,44 +969,71 @@ void GamePlayUIManager::DrawBattleLog()
 
   auto* renderer = CS230::TextureManager::GetRenderer2D();
   auto& text_mgr = Engine::GetTextManager();
-  constexpr Math::ivec2 win = { VW, VH };
 
-  constexpr double BTN_W  = 64.0;
-  constexpr double MARGIN = 10.0;
-  constexpr double PANEL_W = 5 * 64.0;  // 320px (5 tiles)
-  constexpr double PANEL_H = 8 * 64.0;  // 512px (8 tiles)
-  constexpr double LINE_H  = 22.0;
-  constexpr double INDENT  = 12.0;
-  const Math::vec2 TS      = { 0.35, 0.35 };
+  const Math::vec2 TS = { 0.35, 0.35 };
 
-  const double PANEL_X = static_cast<double>(win.x) - BTN_W - MARGIN - PANEL_W - 2.0;
-  const double PANEL_Y = static_cast<double>(win.y) * 0.5 + PANEL_H * 0.5;
-
+  // 패널 배경
   Math::TransformationMatrix bg =
-    Math::TranslationMatrix(Math::vec2{ PANEL_X + PANEL_W * 0.5, PANEL_Y - PANEL_H * 0.5 }) *
-    Math::ScaleMatrix(Math::vec2{ PANEL_W, PANEL_H });
+    Math::TranslationMatrix(Math::vec2{ LOG_PANEL_X + LOG_PANEL_W * 0.5, LOG_PANEL_Y - LOG_PANEL_H * 0.5 }) *
+    Math::ScaleMatrix(Math::vec2{ LOG_PANEL_W, LOG_PANEL_H });
   renderer->DrawRectangle(bg, 0x1a1a2ecc, 0x5555aaff, 1.5, DrawDepth::UI - 0.01f);
 
-  text_mgr.DrawText("Battle Log", Math::vec2{ PANEL_X + 8.0, PANEL_Y - 18.0 },
+  text_mgr.DrawText("Battle Log", Math::vec2{ LOG_PANEL_X + 8.0, LOG_PANEL_Y - 18.0 },
                     Fonts::Kings, { 0.45, 0.45 }, CS200::WHITE, DrawDepth::UI - 0.02f);
 
-  double cur_y = PANEL_Y - 45.0;
+  // 콘텐츠 클립 경계
+  const double clip_top    = LOG_PANEL_Y - LOG_TITLE_H;
+  const double clip_bottom = LOG_PANEL_Y - LOG_PANEL_H;
+  const double visible_h   = LOG_PANEL_H - LOG_TITLE_H;
+  const double total_h     = ComputeLogContentHeight();
+
+  // newest-first 렌더링 (스크롤 오프셋 적용)
+  double cur_y = clip_top + log_scroll_offset_;
   for (auto it = turn_history_.rbegin(); it != turn_history_.rend(); ++it)
   {
-    if (cur_y < PANEL_Y - PANEL_H + LINE_H) break;
+    double section_h = LOG_LINE_H + static_cast<double>(it->lines.size()) * LOG_LINE_H + 4.0;
+    if (cur_y - section_h > clip_top) { cur_y -= section_h; continue; }
+    if (cur_y <= clip_bottom)         break;
 
-    std::string header = "Turn " + std::to_string(it->turn_number) + ": " + it->actor_name;
-    text_mgr.DrawText(header, Math::vec2{ PANEL_X + 8.0, cur_y },
-                      Fonts::Kings, TS, CS200::GOLD, DrawDepth::UI - 0.02f);
-    cur_y -= LINE_H;
+    // 헤더 색: Player=하늘색, Enemy=주황색
+    uint32_t    header_color = it->is_player ? 0x88ccffff : 0xff8844ff;
+    std::string header = (it->is_player ? "Player" : "Enemy")
+                         + std::string(" Turn ") + std::to_string(it->turn_number)
+                         + ": " + it->actor_name;
+
+    if (cur_y <= clip_top && cur_y > clip_bottom)
+      text_mgr.DrawText(header, Math::vec2{ LOG_PANEL_X + 8.0, cur_y },
+                        Fonts::Kings, TS, header_color, DrawDepth::UI - 0.02f);
+    cur_y -= LOG_LINE_H;
 
     for (const auto& line : it->lines)
     {
-      if (cur_y < PANEL_Y - PANEL_H + LINE_H) break;
-      text_mgr.DrawText(line, Math::vec2{ PANEL_X + 8.0 + INDENT, cur_y },
-                        Fonts::Kings, TS, CS200::WHITE, DrawDepth::UI - 0.02f);
-      cur_y -= LINE_H;
+      if (cur_y <= clip_bottom) break;
+      if (cur_y <= clip_top)
+        text_mgr.DrawText(line, Math::vec2{ LOG_PANEL_X + 8.0 + LOG_INDENT, cur_y },
+                          Fonts::Kings, TS, CS200::WHITE, DrawDepth::UI - 0.02f);
+      cur_y -= LOG_LINE_H;
     }
     cur_y -= 4.0;
+  }
+
+  // 스크롤바 (콘텐츠가 패널보다 길 때만)
+  if (total_h > visible_h)
+  {
+    double track_h    = visible_h;
+    double thumb_h    = std::max(20.0, track_h * track_h / total_h);
+    double max_scroll = total_h - visible_h;
+    double thumb_top  = clip_top - (log_scroll_offset_ / max_scroll) * (track_h - thumb_h);
+
+    Math::TransformationMatrix track_mat =
+      Math::TranslationMatrix(Math::vec2{ LOG_SB_X + LOG_SB_W * 0.5, clip_top - track_h * 0.5 }) *
+      Math::ScaleMatrix(Math::vec2{ LOG_SB_W, track_h });
+    renderer->DrawRectangle(track_mat, 0x333355cc, 0x00000000, 0.0, DrawDepth::UI - 0.015f);
+
+    uint32_t thumb_color = log_scrollbar_dragging_ ? 0xaaaaffff : 0x7777aaff;
+    Math::TransformationMatrix thumb_mat =
+      Math::TranslationMatrix(Math::vec2{ LOG_SB_X + LOG_SB_W * 0.5, thumb_top - thumb_h * 0.5 }) *
+      Math::ScaleMatrix(Math::vec2{ LOG_SB_W, thumb_h });
+    renderer->DrawRectangle(thumb_mat, thumb_color, 0x00000000, 0.0, DrawDepth::UI - 0.02f);
   }
 }

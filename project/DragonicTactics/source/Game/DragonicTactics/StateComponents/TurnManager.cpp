@@ -134,11 +134,14 @@ void TurnManager::StartNextTurn()
     if (se)
         se->TickDown(currentChar, eventBus);
 
-    // 용암 턴 시작 피해 — 현재 캐릭터가 용암 위에 있으면 피해
+    // Publish turn start event — 반드시 용암 피해보다 먼저: 배틀 로그가 이 이벤트로 새 턴 섹션을 열기 때문
+    PublishTurnStartEvent();
+
+    // 용암 턴 시작 피해 — TurnStartedEvent 이후에 적용해야 배틀 로그의 올바른 턴 섹션에 기록됨
     {
         auto* spell_system = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
         auto* combat       = Engine::GetGameStateManager().GetGSComponent<CombatSystem>();
-        
+
         if (spell_system && combat && currentChar->IsAlive())
         {
             GridPosition* gp = currentChar->GetGOComponent<GridPosition>();
@@ -153,9 +156,6 @@ void TurnManager::StartNextTurn()
             }
         }
     }
-
-    // Publish turn start event
-    PublishTurnStartEvent();
 
     // Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - END");
 }
