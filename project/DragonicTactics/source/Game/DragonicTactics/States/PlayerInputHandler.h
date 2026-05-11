@@ -66,6 +66,7 @@ class PlayerInputHandler
   std::vector<Math::ivec2> m_wall_placement_tiles;
   int                      m_wall_placement_count = 0;
   const TacticalCamera*    m_camera               = nullptr;
+  bool m_ignore_next_click = false;
 
   //helper function
   Math::ivec2 ConvertScreenToGrid(Math::vec2 world_pos);
