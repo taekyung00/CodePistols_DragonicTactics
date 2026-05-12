@@ -68,7 +68,7 @@ class Settings : public CS230::GameState
   Math::vec2 menu_item_size;
   double	 menu_item_total_height;
 
-  static constexpr Math::ivec2 default_window_size = { 800, 600 };
+  static constexpr Math::ivec2 default_window_size = { 1600, 900 };
 
   static std::string OptionToMapId(Option opt);
 };

@@ -99,11 +99,11 @@ void Settings::SelectOption()
 void Settings::Load()
 {
 	CS200::RenderingAPI::SetClearColor(0x000000FF);
-	if (!OpenGL::IsWebGL)
-	{
-		Engine::GetWindow().ForceResize(default_window_size.x, default_window_size.y);
-		Engine::GetWindow().SetWindowPosition(SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-	}
+	// if (!OpenGL::IsWebGL)
+	// {
+	// 	Engine::GetWindow().ForceResize(default_window_size.x, default_window_size.y);
+	// 	Engine::GetWindow().SetWindowPosition(SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+	// }
 
 	menu_items.push_back({ "Small  (8x8)", Option::Small });
 	menu_items.push_back({ "Medium (10x10)", Option::Medium });

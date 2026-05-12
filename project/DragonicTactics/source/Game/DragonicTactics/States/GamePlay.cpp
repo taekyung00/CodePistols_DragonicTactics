@@ -140,7 +140,6 @@ void GamePlay::Load()
 {
   if (!OpenGL::IsWebGL)
   {
-	Engine::GetWindow().ForceResize(default_window_size.x, default_window_size.y);
 	Engine::GetWindow().SetWindowPosition(SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
   }
   m_input_handler = std::make_unique<PlayerInputHandler>();

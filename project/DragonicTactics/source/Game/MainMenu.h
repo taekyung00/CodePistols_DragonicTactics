@@ -65,5 +65,5 @@ class MainMenu : public CS230::GameState
   double	 menu_item_total_height;
 
 
-  static constexpr Math::ivec2 default_window_size = { 800, 600 };
+  static constexpr Math::ivec2 default_window_size = { 1600, 900 };
 };
