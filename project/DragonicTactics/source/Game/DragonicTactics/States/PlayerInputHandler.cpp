@@ -185,9 +185,18 @@ void PlayerInputHandler::HandleDragonInput([[maybe_unused]] double dt, Dragon* d
   // 좌클릭 처리
   if (input.MouseJustPressed(0) && !is_clicking_ui)
   {
-	Math::vec2 mouse_pos = input.GetMousePos();
-	HandleMouseClick(mouse_pos, dragon, grid, combat_system);
-  }
+    // 💡 [추가된 부분] 만약 방금 스펠 버튼을 누른 클릭이라면?
+        if (m_ignore_next_click) 
+        {
+          m_ignore_next_click = false; // 플래그만 초기화하고 이번 클릭은 스킵!
+        }
+        else 
+        {
+	        Math::vec2 mouse_pos = input.GetMousePos();
+	
+          HandleMouseClick(mouse_pos, dragon, grid, combat_system);
+        }
+}
 }
 
 void PlayerInputHandler::HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, GridSystem* grid, CombatSystem* combat_system)
@@ -457,4 +466,5 @@ void PlayerInputHandler::SelectSpell(const std::string& spell_id, Character* cas
                 );
         }
     }
+    m_ignore_next_click = true;
 }

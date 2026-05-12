@@ -662,28 +662,43 @@ bool SpellSystem::CanCast(Character* caster, const std::string& spell_id, Math::
 	if (std::find(spell.usable_classes.begin(), spell.usable_classes.end(), caster->TypeName()) == spell.usable_classes.end())
 		return false;
 
-	// 주문 슬롯 여부
-	if (upcast_level > 0)
-	{
-		// 특정 레벨로 시전: 해당 레벨 >= spell_level 이고 슬롯 존재 확인
-		if (upcast_level < spell.spell_level)
-			return false;
-		if (!caster->HasSpellSlot(upcast_level))
-			return false;
-	}
-	else if (spell.spell_level > 0)
-	{
-		// GetAvailableSpells 호출 (레벨 미지정): spell_level 이상 슬롯 하나라도 있으면 OK
-		bool has_any = false;
-		for (int lv = spell.spell_level; lv <= 5; ++lv)
-			if (caster->HasSpellSlot(lv))
-			{
-				has_any = true;
-				break;
-			}
-		if (!has_any)
-			return false;
-	}
+// 주문 슬롯 여부
+    if (upcast_level > 0)
+    {
+        // 특정 레벨로 시전: 해당 레벨 >= spell_level 이고 슬롯 존재 확인
+        if (upcast_level < spell.spell_level)
+            return false;
+            
+        // [수정된 부분] 특정 레벨 슬롯만 확인하는 대신, 그 이상의 슬롯이 있는지 모두 확인합니다.
+        bool has_upcast_slot = false;
+        for (int lv = upcast_level; lv <= 5; ++lv) 
+        {
+            if (caster->HasSpellSlot(lv)) 
+            {
+                has_upcast_slot = true;
+                break;
+            }
+        }
+        
+        // 요구 레벨 이상의 슬롯이 하나도 없으면 시전 불가
+        if (!has_upcast_slot)
+            return false;
+    }
+    else if (spell.spell_level > 0)
+    {
+        // GetAvailableSpells 호출 (레벨 미지정): spell_level 이상 슬롯 하나라도 있으면 OK
+        bool has_any = false;
+        for (int lv = spell.spell_level; lv <= 5; ++lv)
+        {
+            if (caster->HasSpellSlot(lv))
+            {
+                has_any = true;
+                break;
+            }
+        }
+        if (!has_any)
+            return false;
+    }
 
 	const SpellTargeting& t = spell.targeting;
 

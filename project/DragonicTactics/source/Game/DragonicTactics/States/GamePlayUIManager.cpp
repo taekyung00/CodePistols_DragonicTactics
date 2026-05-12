@@ -81,7 +81,7 @@ void GamePlayUIManager::Update(double dt)
     Math::vec2 virt_mouse = to_virtual(mouse_pos, actual_win);
     m_virtual_mouse_      = virt_mouse;
 
-    // ── 1. 슬롯 비활성화 갱신 ─────────────────────────────────────
+// ── 1. 슬롯 비활성화 갱신 ─────────────────────────────────────
     auto* turnMgr = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
     if (turnMgr)
     {
@@ -99,14 +99,26 @@ void GamePlayUIManager::Update(double dt)
             set_disabled("slot_attack",    no_ap || is_ai);
             set_disabled("slot_end_turn",  is_ai);
 
+            // [수정된 부분] 요구 레벨 이상의 슬롯이 하나라도 있는지 확인하도록 변경!
             auto spell_disabled = [&](const std::string& id, int min_lv) {
-                bool no_slot = !slots || !slots->HasSlot(min_lv);
-                set_disabled(id, no_ap || no_slot || is_ai);
+                bool has_any_slot = false;
+                if (slots) {
+                    // 최대 레벨(5)까지 검사하여 하나라도 남아있다면 true
+                    for (int lv = min_lv; lv <= 5; ++lv) {
+                        if (slots->HasSlot(lv)) {
+                            has_any_slot = true;
+                            break;
+                        }
+                    }
+                }
+                
+                // 슬롯이 아예 없거나, AP가 없거나, AI 턴이면 비활성화
+                set_disabled(id, no_ap || !has_any_slot || is_ai);
             };
 
             spell_disabled("slot_S_ATK_010", 1);
             spell_disabled("slot_S_ATK_020", 2);
-            spell_disabled("slot_S_ATK_030", 3);
+            spell_disabled("slot_S_ATK_030", 3); // 용의 분노!
             spell_disabled("slot_S_ATK_040", 3);
             spell_disabled("slot_S_ENH_040", 1);
             spell_disabled("slot_S_ENH_050", 1);
