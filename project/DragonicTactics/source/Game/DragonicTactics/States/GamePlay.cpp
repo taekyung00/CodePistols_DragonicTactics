@@ -120,6 +120,13 @@ Math::vec2 TacticalCamera::ScreenToWorld(Math::vec2 screen, Math::ivec2 win) con
     };
 }
 
+Math::vec2 TacticalCamera::ScreenToVirtual(Math::vec2 screen, Math::ivec2 win)
+{
+    double scale, ox, oy;
+    cam_virt_layout(win, scale, ox, oy);
+    return { (screen.x - ox) / scale, (screen.y - oy) / scale };
+}
+
 Math::vec2 TacticalCamera::WorldToScreen(Math::vec2 world, [[maybe_unused]] Math::ivec2 win) const
 {
     // Returns virtual-resolution coordinates (1600x900 space)

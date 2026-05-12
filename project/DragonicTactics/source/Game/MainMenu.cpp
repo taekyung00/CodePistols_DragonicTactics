@@ -129,8 +129,8 @@ void MainMenu::Load()
 void MainMenu::Update([[maybe_unused]] double dt)
 {
 	CS230::Input&		  input		  = Engine::GetInput();
-	Math::vec2			  mouse_pos	  = input.GetMousePos();
-	[[maybe_unused]] auto window_size = Engine::GetWindow().GetSize();
+	auto				  window_size = Engine::GetWindow().GetSize();
+	Math::vec2			  mouse_pos	  = TacticalCamera::ScreenToVirtual(input.GetMousePos(), window_size);
 
 	if (input.KeyJustReleased(CS230::Input::Keys::Up))
 	{
