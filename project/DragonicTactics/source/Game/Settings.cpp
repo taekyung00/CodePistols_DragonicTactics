@@ -18,13 +18,47 @@ Project:    CS230 Engine
 #include "Engine/TextManager.h"
 #include "Engine/Window.h"
 #include "Game/DragonicTactics/States/GamePlay.h"
+#include "Game/DragonicTactics/External/json.hpp"
 #include "MainMenu.h"
 #include "Settings.h"
 #include "OpenGL/Environment.h"
 #include "States.h"
+#include <fstream>
 
-bool Settings::s_bgm_enabled	= true;
-int	 Settings::s_bgm_volume_pct = 100;
+bool        Settings::s_bgm_enabled    = true;
+int         Settings::s_bgm_volume_pct = 100;
+Math::ivec2 Settings::s_window_size    = { 1600, 900 };
+
+void Settings::LoadUserSettings()
+{
+    try
+    {
+        std::ifstream f("user_settings.json");
+        if (!f.is_open()) return;
+        auto j           = nlohmann::json::parse(f);
+        s_window_size.x  = j.value("window_width",   1600);
+        s_window_size.y  = j.value("window_height",  900);
+        s_bgm_enabled    = j.value("bgm_enabled",    true);
+        s_bgm_volume_pct = j.value("bgm_volume_pct", 100);
+        ApplyBGMSettings();
+    }
+    catch (...) {}
+}
+
+void Settings::SaveUserSettings()
+{
+    try
+    {
+        nlohmann::json j;
+        j["window_width"]   = s_window_size.x;
+        j["window_height"]  = s_window_size.y;
+        j["bgm_enabled"]    = s_bgm_enabled;
+        j["bgm_volume_pct"] = s_bgm_volume_pct;
+        std::ofstream f("user_settings.json");
+        f << j.dump(2);
+    }
+    catch (...) {}
+}
 
 namespace
 {
@@ -80,6 +114,7 @@ void Settings::SelectOption()
 		case Option::BGMToggle:
 			s_bgm_enabled = !s_bgm_enabled;
 			ApplyBGMSettings();
+			SaveUserSettings();
 			break;
 
 		case Option::BGMVolume:
@@ -168,12 +203,14 @@ void Settings::Update([[maybe_unused]] double dt)
 			s_bgm_volume_pct -= 10;
 			if (s_bgm_volume_pct < 10) s_bgm_volume_pct = 100;
 			ApplyBGMSettings();
+			SaveUserSettings();
 		}
 		else if (input.KeyJustReleased(CS230::Input::Keys::Right))
 		{
 			s_bgm_volume_pct += 10;
 			if (s_bgm_volume_pct > 100) s_bgm_volume_pct = 10;
 			ApplyBGMSettings();
+			SaveUserSettings();
 		}
 	}
 

@@ -145,10 +145,10 @@ GamePlay::~GamePlay() = default; // Must be defined here where unique_ptr member
 
 void GamePlay::Load()
 {
-  if (!OpenGL::IsWebGL)
-  {
-	Engine::GetWindow().SetWindowPosition(SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-  }
+  // if (!OpenGL::IsWebGL)
+  // {
+	// Engine::GetWindow().SetWindowPosition(SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+  // }
   m_input_handler = std::make_unique<PlayerInputHandler>();
   m_ui_manager	  = std::make_unique<GamePlayUIManager>();
   m_orchestrator  = std::make_unique<BattleOrchestrator>();

@@ -35,8 +35,12 @@ class Settings : public CS230::GameState
   static constexpr CS200::RGBA hover_color		  = 0x3ADF00FF;
   static constexpr CS200::RGBA active_color		  = 0x00CFFFFF;
 
-  static bool s_bgm_enabled;
-  static int  s_bgm_volume_pct; // 10..100, multiples of 10
+  static bool        s_bgm_enabled;
+  static int         s_bgm_volume_pct; // 10..100, multiples of 10
+  static Math::ivec2 s_window_size;    // default { 1600, 900 }
+
+  static void LoadUserSettings();
+  static void SaveUserSettings();
 
   private:
   enum class Option

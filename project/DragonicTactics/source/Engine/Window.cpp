@@ -132,6 +132,7 @@ namespace CS230
 		case SDL_WINDOWEVENT_SIZE_CHANGED:
 		  SDL_GL_GetDrawableSize(sdl_window, &window_size.x, &window_size.y);
 		  GL::Viewport(0, 0, window_size.x, window_size.y);
+		  if (m_resize_callback) m_resize_callback({ window_size.x, window_size.y });
 		  break;
 		  break;
 		default: break;
@@ -176,6 +177,11 @@ namespace CS230
   void Window::SetEventCallback(WindowEventCallback callback)
   {
 	eventCallback = std::move(callback);
+  }
+
+  void Window::SetResizeCallback(ResizeCallback callback)
+  {
+	m_resize_callback = std::move(callback);
   }
 
   float Window::background_r = 0.0f;

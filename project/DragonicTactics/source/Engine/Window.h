@@ -50,6 +50,9 @@ public:
 	using WindowEventCallback = std::function<void(const SDL_Event&)>;
 	void SetEventCallback(WindowEventCallback callback);
 
+	using ResizeCallback = std::function<void(Math::ivec2)>;
+	void SetResizeCallback(ResizeCallback callback);
+
 	static void SetBackgroundColor(float r, float g, float b) noexcept;
 
 	// Math::ivec2 GetWindowSize() const;
@@ -72,6 +75,7 @@ private:
 	// Math::ivec2               size       = { 800, 600 };
 
 	WindowEventCallback eventCallback;
+	ResizeCallback      m_resize_callback;
 
 	std::function<void(SDL_Event)> func_event_callback;
 	static float				   background_r;
