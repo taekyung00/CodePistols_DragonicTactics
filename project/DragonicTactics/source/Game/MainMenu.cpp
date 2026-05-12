@@ -26,7 +26,7 @@ void MainMenu::SelecetOption()
     switch (current_option)
     {
         case Option::DragonicTactics: Engine::GetGameStateManager().PopState(); Engine::GetGameStateManager().PushState<GamePlay>(); break;
-        case Option::Settings:        Engine::GetGameStateManager().PopState(); Engine::GetGameStateManager().PushState<Settings>(); break;
+        case Option::Settings:                                                  Engine::GetGameStateManager().PushState<Settings>(); break;
         case Option::Exit:            Engine::GetGameStateManager().PopState(); break;
 #if defined(DEVELOPER_VERSION)
         case Option::ConsoleTest:     Engine::GetGameStateManager().PopState(); Engine::GetGameStateManager().PushState<ConsoleTest>(); break;
@@ -98,7 +98,7 @@ void MainMenu::Update(double dt)
         int count = static_cast<int>(Option::COUNT);
         current_option = static_cast<Option>((static_cast<int>(current_option) + 1) % count);
     }
-    else if (input.KeyJustReleased(CS230::Input::Keys::Enter) || input.KeyJustReleased(CS230::Input::Keys::Space))
+    else if (input.KeyJustReleased(CS230::Input::Keys::Enter) || input.KeyJustReleased(CS230::Input::Keys::Space) || input.KeyJustReleased(CS230::Input::Keys::Z))
     {
         SelecetOption();
     }
