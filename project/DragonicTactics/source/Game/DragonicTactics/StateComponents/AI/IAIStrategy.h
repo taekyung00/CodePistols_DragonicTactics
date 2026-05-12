@@ -32,6 +32,7 @@ struct AIDecision
   std::string	 abilityName  = "";			// 스킬명
   std::string	 reasoning	  = "";			// 디버그용 메모
   int			 lava_penalty = 0;			// 이동 시 용암 타일 회피 가중치 (0 = 무시)
+  int			 upcast_level = 0;			// 스펠 업캐스트 레벨 (0 = 최소 레벨 자동 사용)
 };
 
 // 3. 전략 인터페이스

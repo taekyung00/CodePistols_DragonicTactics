@@ -63,14 +63,18 @@ AIDecision ClericStrategy::MakeDecision(Character* actor)
   }
 
   // ── [2순위] 치유의 손길(Healing Touch) — 파이터>로그>위자드 우선 ─
+  // 업캐스트 가능(TRUE) → Lv1 없으면 가용한 최소 슬롯으로 업캐스트
   Character* healTarget = FindAllyNeedingHeal(HEAL_THRESHOLD);
-  if (healTarget != nullptr && HasSpellSlot(actor, 1))
+  int        healSlot   = FindLowestAvailableSlot(actor, 1);
+  if (healTarget != nullptr && healSlot > 0)
   {
     int dist = grid->ManhattanDistance(actor->GetGridPosition()->Get(),
                                         healTarget->GetGridPosition()->Get());
     if (dist <= HEAL_RANGE)
     {
-      return { AIDecisionType::UseAbility, healTarget, {}, "S_ENH_030", "Heal: Healing Touch on " + healTarget->TypeName() };
+      return { AIDecisionType::UseAbility, healTarget, {}, "S_ENH_030",
+               "Heal: Healing Touch Lv" + std::to_string(healSlot) + " on " + healTarget->TypeName(),
+               0, healSlot };
     }
     // out of range -> move toward heal target (용암 무시, 부상 동료 우선)
     if (actor->GetMovementRange() > 0)
@@ -91,7 +95,8 @@ AIDecision ClericStrategy::MakeDecision(Character* actor)
   }
 
   // ── 버프/디버프 지원 ──────────────────────────────────────
-  if (HasSpellSlot(actor, 1))
+  // Divine Shield / Curse는 업캐스트 불가(FALSE) → Lv1 슬롯 있을 때만 진입
+  if (actor->GetAvailableSpellSlots(1) > 0)
   {
     return MakeSupportDecision(actor, dragon, grid);
   }
@@ -147,9 +152,8 @@ AIDecision ClericStrategy::MakeSupportDecision(Character* actor, Character* drag
                                                 dragon->GetGridPosition()->Get());
 
   // [3순위] 성스러운 가호(Divine Shield) — 파이터>로그>위자드 우선순위로 사거리 체크
-  // Critical-2: 사거리 내 후보를 우선순위 순서대로 탐색 (Fighter 범위 밖이어도 Wizard 체크)
-  // Major-3: 사거리 내 후보 없으면 최우선 후보에게 이동
-  if (HasSpellSlot(actor, 1))
+  // 업캐스트 불가(FALSE) → Lv1 슬롯 정확히 체크
+  if (actor->GetAvailableSpellSlots(1) > 0)
   {
     static const CharacterTypes buffPriority[] = {
       CharacterTypes::Fighter, CharacterTypes::Rogue, CharacterTypes::Wizard
@@ -183,8 +187,8 @@ AIDecision ClericStrategy::MakeSupportDecision(Character* actor, Character* drag
     }
   }
 
-  // [4순위] 고통의 저주(Curse of Suffering)
-  if (!IsCurseActive(dragon) && HasSpellSlot(actor, 1) && dist_to_dragon <= CURSE_RANGE)
+  // [4순위] 고통의 저주(Curse of Suffering) — 업캐스트 불가(FALSE) → Lv1 슬롯만
+  if (!IsCurseActive(dragon) && actor->GetAvailableSpellSlots(1) > 0 && dist_to_dragon <= CURSE_RANGE)
   {
     return { AIDecisionType::UseAbility, dragon, {}, "S_DEB_010", "Support: Curse of Suffering on Dragon" };
   }
@@ -318,6 +322,14 @@ bool ClericStrategy::HasSpellSlot(Character* actor, int level) const
     if (actor->HasSpellSlot(lv))
       return true;
   return false;
+}
+
+int ClericStrategy::FindLowestAvailableSlot(Character* actor, int min_level) const
+{
+  for (int lv = min_level; lv <= 9; ++lv)
+    if (actor->GetAvailableSpellSlots(lv) > 0)
+      return lv;
+  return 0;
 }
 
 bool ClericStrategy::CanReachThisTurn(Character* actor, Character* target, GridSystem* grid) const

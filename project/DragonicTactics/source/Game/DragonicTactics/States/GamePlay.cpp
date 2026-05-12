@@ -312,7 +312,7 @@ void GamePlay::Load()
 
 		this->CheckGameEnd(event);
 		if (event.character)
-		  m_ui_manager->AddBattleLogEntry(event.character->TypeName() + " died!");
+		  m_ui_manager->AddBattleLogEntry(event.character->TypeName() + " retired!");
 	  });
 
   GetGSComponent<EventBus>()->Subscribe<CharacterHealedEvent>(

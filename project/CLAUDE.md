@@ -112,7 +112,7 @@ CS230::ParticleManager<Particles::Hit>
 
 - `DiceManager` — `Roll("2d6")`, `Roll("1d20+5")` 형식으로 주사위 굴림
 - `CombatSystem` — 공격/방어 주사위 굴림 + 최종 데미지 계산 (StatusEffectHandler 훅 연동)
-- `util::Timer` — 엔진 제공 타이머 (`Engine/Timer.h`). `GetElapsedSeconds()` / `Reset()`으로 AI 재호출 간격 측정에 사용
+- `util::Timer` — 엔진 제공 타이머 (`Engine/Timer.h`). BattleOrchestrator는 이를 사용하지 않음 — AI 대기는 `m_wait_timer` (double, dt 카운트다운)로 처리
 
 **GameObject 컴포넌트**: `GridPosition`, `ActionPoints`, `StatsComponent`, `SpellSlots`, `MovementComponent`, `StatusEffectComponent`, `ShakeComponent`
 
@@ -175,7 +175,7 @@ Engine::GetGameStateManager().GetGSComponent<EventBus>()->Publish(
    m_strategies[CharacterTypes::X] = new XStrategy();
    ```
 
-`AIDecision` 구조체: `type`(Move/Attack/UseAbility/EndTurn/None), `target`, `destination`, `abilityName`, `reasoning`, `lava_penalty`(이동 시 용암 타일 회피 가중치, 0 = 무시)
+`AIDecision` 구조체: `type`(Move/Attack/UseAbility/EndTurn/None), `target`, `destination`, `abilityName`, `reasoning`, `lava_penalty`(이동 시 용암 타일 회피 가중치, 0 = 무시), `upcast_level`(스펠 업캐스트 레벨, 0 = 최소 레벨 자동 사용)
 
 **AI 이동 로직 주의사항** (FighterStrategy/ClericStrategy 공통):
 - `LAVA_TILE_PENALTY = 2` — 용암 경로를 비선호하나 가능하면 감수
@@ -424,10 +424,12 @@ GamePlay (GameState)
 ```
 매 Update 프레임:
   1. MovementComponent::IsMoving() → true면 즉시 return (이동 애니메이션 완료 대기)
-  2. timer 0.6s 바쁜 대기 (SpellDelayObject 0.5s 보장 + 여유)
+  2. m_wait_timer > 0 → dt 감산 후 return (비차단 대기)
   3. AISystem::MakeDecision() → AIDecision 획득
-  4. EndTurn → TurnManager::EndCurrentTurn()
-     그 외  → AISystem::ExecuteDecision() 후 return
+  4. EndTurn → TurnManager::EndCurrentTurn() (대기 없음)
+     그 외  → AISystem::ExecuteDecision() 후 m_wait_timer 설정:
+              UseAbility → 0.6s (SpellDelayObject 0.5s 보장 + 여유)
+              Move/Attack → 0.3s (시각적 피드백 간격)
   5. 다음 프레임에 다시 HandleAITurn 진입 → 또 MakeDecision 반복
 ```
 
@@ -473,13 +475,7 @@ UpdateGSComponents(scaledDt); // 한 번만 호출
 
 **⚠️ SpellDelayObject 타이밍 주의** (`States/BattleOrchestrator.cpp`):
 
-`SpellSystem::CastSpell`은 효과를 **0.5초 딜레이** 후 적용(`SpellDelayObject`). AI 재호출 간격이 이보다 짧으면 상태 반영 전에 MakeDecision이 재호출되어 같은 스펠을 중복 시전한다.
-
-```cpp
-// BattleOrchestrator::HandleAITurn 실제 구현 — 메인 스레드를 0.6s 블로킹
-timer->ResetTimeStamp();
-while (timer->GetElapsedSeconds() < 0.6) {}  // busy-wait (0.5s SpellDelay 보장)
-```
+`SpellSystem::CastSpell`은 효과를 **0.5초 딜레이** 후 적용(`SpellDelayObject`). `UseAbility` 결정 실행 후 `m_wait_timer = 0.6`으로 설정하면 SpellDelayObject가 완료된 뒤에 MakeDecision이 재호출된다. 이 대기가 없으면 상태 반영 전에 동일 스펠을 중복 시전한다.
 
 ---
 
@@ -526,8 +522,10 @@ Applies "Blessing" status for 2 turns.             ← 피격 대상들에게 �
 
 ```
 CastSpell → CanCast(클래스/슬롯/Geometry/Range/AP 체크) → ConsumeSpell → AP.Consume(1) → ApplySpellEffect
-  ApplySpellEffect → targets 결정(Geometry) → 피해 → 상태효과(targets) → 시전자 자신 효과 → ApplyMoveEffect → ApplySpecialEffect
+  ApplySpellEffect → targets 결정(Geometry) → 피해 → OnAfterAttack(Lifesteal/Frenzy/Stealth 훅) → 상태효과(targets) → 시전자 자신 효과 → ApplyMoveEffect → ApplySpecialEffect
 ```
+
+**⚠️ `OnAfterAttack` 호출 위치**: `StatusEffectHandler::OnAfterAttack`은 `CombatSystem::ExecuteAttack`(기본 공격)과 `SpellSystem::ApplySpellEffect`(데미지 스펠) **양쪽에서** 호출된다. Lifesteal은 Smite 같은 데미지 스펠에도 정상 발동된다.
 
 **넉백 시 용암 착지 → 즉시 정지 + 피해**: `ApplyMoveEffect`의 knockback 루프는 `TileType::Lava` 타일에 닿는 순간 멈추고 (`break`), 이후 `GetLavaDamageAt()`으로 피해를 즉시 적용한다. 벽(Wall)은 착지 불가, 그 앞에서 멈춤. 빈 타일은 계속 미끄러짐.
 
@@ -556,7 +554,7 @@ CastSpell → CanCast(클래스/슬롯/Geometry/Range/AP 체크) → ConsumeSpel
 | `OnRemoved(target, name)` | 효과 만료/Purify 시 | Fear→base speed+1, Haste→-1 복원                 |
 | `ModifyDamageDealt`       | 피해 계산          | Blessing+3, Fear-3, Curse-3, Stealth×2         |
 | `ModifyDamageTaken`       | 피해 계산          | Blessing-3, Curse+3                            |
-| `OnAfterAttack`           | ApplyDamage 직후 | Stealth 소모, Lifesteal 회복, Frenzy 발동            |
+| `OnAfterAttack`           | ApplyDamage 직후 (기본 공격 및 데미지 스펠 공통) | Stealth 소모, Lifesteal 회복, Frenzy 발동 |
 | `OnTurnStart`             | 턴 시작           | Exhaustion→AP/Speed 0, Haste→AP+1              |
 
 **⚠️ base speed 수정 주의**:
@@ -727,7 +725,7 @@ tex->Draw(Math::TranslationMatrix(Math::ivec2{screen_x - TILE_SIZE, screen_y - T
 
 ### 배틀 로그 (`States/GamePlayUIManager`)
 
-`TurnEntry` 구조체(`turn_number`, `actor_name`, `is_player`, `lines`)를 `std::deque<TurnEntry> turn_history_`로 관리 (최대 `MAX_LOG_TURNS = 15`).
+`TurnEntry` 구조체(`round_number`, `turn_number`, `actor_name`, `is_player`, `lines`)를 `std::deque<TurnEntry> turn_history_`로 관리 (최대 `MAX_LOG_ROUNDS = 5` 라운드 보관). 로그는 최신이 아래로 추가되고(`push_back`), 새 턴 시작 시 자동 하단 스크롤 (단, 마우스가 패널 위에 있고 최하단이 아니면 스크롤 유지). 라운드 헤더(`─── Round N ───`)와 사이드 헤더(`▷ Player Turn` / `▷ Enemy Turn`)가 라운드/진영 전환 시 삽입된다.
 
 - **이벤트 타이밍 제약** (`TurnManager.cpp`): `PublishTurnStartEvent()`를 반드시 용암 피해 `ApplyDamage` **전에** 호출해야 함 — 배틀 로그가 `TurnStartedEvent`를 받아 새 턴 섹션을 열기 때문. 순서가 바뀌면 피해 항목이 이전 캐릭터의 섹션에 들어간다.
 - **패널 레이아웃 상수**: `GamePlayUIManager.h`의 `LOG_PANEL_X/Y/W/H`, `LOG_TITLE_H`, `LOG_LINE_H`, `LOG_INDENT`, `LOG_SB_W/X`에 집중 관리됨 — 패널 위치·크기 변경 시 이 상수들만 수정.

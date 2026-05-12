@@ -92,7 +92,7 @@ void CombatSystem::ApplyDamage(Character* attacker, Character* defender, int dam
   // Check if defender died
   if (!defender->IsAlive())
   {
-	Engine::GetLogger().LogEvent("CombatSystem: " + defender->TypeName() + " died!");
+	Engine::GetLogger().LogEvent("CombatSystem: " + defender->TypeName() + " retired!");
 	auto* eventBus2 = Engine::GetGameStateManager().GetGSComponent<EventBus>();
 	if (eventBus2)
 	{

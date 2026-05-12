@@ -467,6 +467,11 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
 				// 기존 데미지 적용 코드
 				combat->ApplyDamage(caster, tgt, damage);
 
+				// Lifesteal/Frenzy/Stealth 후처리 훅 (CombatSystem::ExecuteAttack과 동일)
+				auto* seh = Engine::GetGameStateManager().GetGSComponent<StatusEffectHandler>();
+				if (seh && caster)
+					seh->OnAfterAttack(caster, tgt, damage);
+
 				// [추가] 피격당한 타겟이 드래곤이 아닐 경우 파티클 발생
 				// if (tgt != nullptr && tgt->GetCharacterType() != CharacterTypes::Dragon)
 				//{

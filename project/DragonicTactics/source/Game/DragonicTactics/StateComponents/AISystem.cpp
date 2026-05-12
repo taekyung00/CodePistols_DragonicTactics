@@ -105,7 +105,7 @@ void AISystem::ExecuteDecision(Character* actor, const AIDecision& decision)
 	case AIDecisionType::UseAbility:
 	  if (spell_system)
 	  {
-		spell_system->CastSpell(actor, decision.abilityName, decision.target->GetGridPosition()->Get());
+		spell_system->CastSpell(actor, decision.abilityName, decision.target->GetGridPosition()->Get(), decision.upcast_level);
 		actionExecuted = true;
 	  }
 	  break;

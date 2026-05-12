@@ -23,6 +23,7 @@ class ClericStrategy : public IAIStrategy
   bool IsBlessingActive(Character* target) const;
   bool IsCurseActive(Character* target) const;
   bool HasSpellSlot(Character* actor, int level) const;
+  int  FindLowestAvailableSlot(Character* actor, int min_level) const; // min_level 이상 슬롯 중 가장 낮은 가용 레벨 반환 (없으면 0)
   bool CanReachThisTurn(Character* actor, Character* target, GridSystem* grid) const;
   bool CanKillDragonThisTurn(Character* actor, Character* dragon, GridSystem* grid) const;
 

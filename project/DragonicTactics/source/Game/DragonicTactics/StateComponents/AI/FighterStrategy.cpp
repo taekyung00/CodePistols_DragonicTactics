@@ -121,7 +121,7 @@ AIDecision FighterStrategy::MakeKillLoopDecision(Character* actor, Character* dr
   if (bestSlot > 0)
   {
     std::string reason = "Kill: Smite lv" + std::to_string(bestSlot);
-    return { AIDecisionType::UseAbility, dragon, {}, "S_ATK_050", reason };
+    return { AIDecisionType::UseAbility, dragon, {}, "S_ATK_050", reason, 0, bestSlot };
   }
 
   return { AIDecisionType::Attack, dragon, {}, "", "Kill: Basic attack" };
@@ -189,7 +189,7 @@ AIDecision FighterStrategy::MakeSurvivalDecision(Character* actor, Character* dr
     int bestSlot = FindHighestSmiteSlot(actor);
     if (bestSlot > 0 && distance <= 1)
     {
-      return { AIDecisionType::UseAbility, dragon, {}, "S_ATK_050", "Survival: Smite lv" + std::to_string(bestSlot) };
+      return { AIDecisionType::UseAbility, dragon, {}, "S_ATK_050", "Survival: Smite lv" + std::to_string(bestSlot), 0, bestSlot };
     }
     return { AIDecisionType::Attack, dragon, {}, "", "Survival: Basic attack" };
   }
@@ -211,7 +211,7 @@ AIDecision FighterStrategy::MakeNormalCombatDecision(Character* actor, Character
     int slot = FindHighestSmiteSlot(actor);
     if (slot > 0 && distance <= 1)
     {
-      return { AIDecisionType::UseAbility, dragon, {}, "S_ATK_050", "Normal: Smite lv" + std::to_string(slot) };
+      return { AIDecisionType::UseAbility, dragon, {}, "S_ATK_050", "Normal: Smite lv" + std::to_string(slot), 0, slot };
     }
     return { AIDecisionType::Attack, dragon, {}, "", "Normal: Basic attack" };
   };
