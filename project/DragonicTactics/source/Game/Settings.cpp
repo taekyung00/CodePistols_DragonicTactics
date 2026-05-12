@@ -212,7 +212,10 @@ void Settings::Draw()
 {
 	CS200::RenderingAPI::Clear();
 	auto renderer_2d = Engine::GetTextureManager().GetRenderer2D();
-	renderer_2d->BeginScene(CS200::build_ndc_matrix(Engine::GetWindow().GetSize()));
+	auto win = Engine::GetWindow().GetSize();
+	Math::TransformationMatrix ui_ndc = TacticalCamera::BuildVirtualNdc(win);
+	Engine::GetTextureManager().SaveCurrentScene(ui_ndc);
+	renderer_2d->BeginScene(ui_ndc);
 
 	auto& text_manager = Engine::GetTextManager();
 
