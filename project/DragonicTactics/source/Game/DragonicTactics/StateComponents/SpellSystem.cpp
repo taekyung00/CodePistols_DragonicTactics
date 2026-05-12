@@ -622,7 +622,7 @@ bool SpellSystem::CastSpell(Character* caster, const std::string& spell_id, Math
 	auto& gs = Engine::GetGameStateManager();
 	if (auto* eventBus = gs.GetGSComponent<EventBus>())
 	{
-		eventBus->Publish(SpellCastEvent{ caster, spell.spell_name, upcast_level, target_tile, consume_level });
+		eventBus->Publish(SpellCastEvent{ caster, spell.spell_name, consume_level, target_tile, consume_level });
 	}
 
 	return true;

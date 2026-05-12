@@ -343,6 +343,21 @@ character->GetStatsComponent()        // → StatsComponent*
 character->GetSpellSlots()            // → SpellSlots*
 ```
 
+### MovementComponent API
+
+`BattleOrchestrator`가 AI 행동 전 `IsMoving()` 체크로 애니메이션 완료를 대기한다:
+
+```cpp
+component->SetPath(vector<Math::ivec2>)  // A* 결과를 큐에 등록
+component->IsMoving() const              // 이동 애니메이션 진행 중 여부
+component->ClearPath()                   // 경로 강제 중단
+component->SetGridSystem(GridSystem*)    // 초기화 시 주입
+
+static constexpr double MOVE_TIME_PER_TILE = 0.2;  // 타일당 이동 시간(초)
+```
+
+`SetPath()` 호출 후 `IsMoving()`이 false로 돌아올 때까지 BattleOrchestrator는 MakeDecision을 호출하지 않는다.
+
 ### ⚠️ ActionPoints vs MovementRange (혼동 주의)
 
 ```cpp
@@ -435,12 +450,12 @@ std::vector<Character*> enemys {};        // 모든 AI 캐릭터 (Fighter, Cleri
 ```
 None ──[Dragon 타일 클릭]──→ SelectingMove → Moving
      ──[slot_attack 클릭]──→ TargetingForAttack
-     ──[스펠 슬롯 클릭]────→ TargetingForSpell
-                           → WallPlacementMulti
-                           → LavaPlacementMulti
+     ──[스펠 슬롯 클릭]────→ SelectingSpell → TargetingForSpell
+                                            → WallPlacementMulti
+                                            → LavaPlacementMulti
 ```
 
-`SelectingAction` 상태는 폐지됨. Dragon 타일 클릭으로 이동 선택 진입 (Move 버튼 없음).
+`SelectingAction` 상태는 enum에 남아있지만 실제로는 미사용. Dragon 타일 클릭으로 이동 선택 진입 (Move 버튼 없음).
 Dragon(플레이어) 턴에서만 동작. AI(Fighter) 턴은 `BattleOrchestrator`가 처리.
 
 **⚠️ GS 컴포넌트 Update 중복 호출 금지** (`States/GamePlay.cpp`):
@@ -606,7 +621,7 @@ CastSpell → CanCast(클래스/슬롯/Geometry/Range/AP 체크) → ConsumeSpel
 - `Assets/Data/spell_table.csv` — 스펠 정의 (`SpellData`: Targeting + Effect 템플릿)
 - `Assets/Data/status_effect.csv` — 상태 이상 설정
 
-**맵 전환**: `GamePlay::s_next_map_source`와 `GamePlay::s_next_map_index` 정적 필드를 GamePlay 전환 전에 설정해 어떤 맵을 로드할지 지정한다 (`MapSource::First` = 하드코딩 맵, `MapSource::JSON` = maps.json 선택).
+**맵 전환**: `GamePlay::s_next_map_id` (string, 기본값 `"first_map"`)와 `GamePlay::s_should_restart` (bool) 정적 필드를 GamePlay 전환 전에 설정해 어떤 맵을 로드할지 지정한다. `s_next_map_id`는 `maps.json`의 맵 ID 문자열이며, 없으면 첫 번째 맵으로 fallback한다.
 
 ---
 

@@ -600,19 +600,53 @@ ButtonManager& GamePlayUIManager::GetButtons()
   return button_manager_;
 }
 
-void GamePlayUIManager::OnTurnStarted(const std::string& actor_name, int turn_number, bool is_player)
+void GamePlayUIManager::OnTurnStarted(const std::string& actor_name, int turn_number, bool is_player, int round_number)
 {
-  turn_history_.push_back({ turn_number, actor_name, is_player, {} });
-  if (static_cast<int>(turn_history_.size()) > MAX_LOG_TURNS)
+  // 새 항목 추가 전에 "최신 로그를 보고 있었는가" 판정
+  double visible_h      = LOG_PANEL_H - LOG_TITLE_H;
+  double old_max_scroll = std::max(0.0, ComputeLogContentHeight() - visible_h);
+  bool   was_at_bottom  = (log_scroll_offset_ >= old_max_scroll - LOG_LINE_H);
+
+  turn_history_.push_back({ round_number, turn_number, actor_name, is_player, {} });
+
+  // 5라운드 초과분 제거
+  int oldest_allowed = round_number - MAX_LOG_ROUNDS + 1;
+  while (!turn_history_.empty() && turn_history_.front().round_number < oldest_allowed)
     turn_history_.pop_front();
-  log_scroll_offset_ = 0.0;
+
+  // 마우스가 패널 위에 있고 이전 로그를 탐색 중이면 자동 스크롤 안 함
+  if (IsMouseOverLogPanel() && !was_at_bottom)
+    return;
+
+  double new_max_scroll = std::max(0.0, ComputeLogContentHeight() - visible_h);
+  log_scroll_offset_    = new_max_scroll;
 }
 
 double GamePlayUIManager::ComputeLogContentHeight() const
 {
-  double h = 0.0;
+  double h              = 0.0;
+  int    prev_round     = -1;
+  bool   prev_player    = true;
+  bool   first_in_round = true;
+
   for (const auto& entry : turn_history_)
-    h += LOG_LINE_H + static_cast<double>(entry.lines.size()) * LOG_LINE_H + 4.0;
+  {
+    if (entry.round_number != prev_round)
+    {
+      h += LOG_LINE_H;  // ─── Round N ─── 헤더
+      prev_round     = entry.round_number;
+      first_in_round = true;
+    }
+    if (first_in_round || entry.is_player != prev_player)
+    {
+      h += LOG_LINE_H;  // ▷ Player Turn / ▷ Enemy Turn 헤더
+      prev_player    = entry.is_player;
+      first_in_round = false;
+    }
+    h += LOG_LINE_H;   // 캐릭터 이름
+    h += static_cast<double>(entry.lines.size()) * LOG_LINE_H;
+    h += 4.0;           // 캐릭터 간 여백
+  }
   return h;
 }
 
@@ -987,30 +1021,59 @@ void GamePlayUIManager::DrawBattleLog()
   const double visible_h   = LOG_PANEL_H - LOG_TITLE_H;
   const double total_h     = ComputeLogContentHeight();
 
-  // newest-first 렌더링 (스크롤 오프셋 적용)
-  double cur_y = clip_top + log_scroll_offset_;
-  for (auto it = turn_history_.rbegin(); it != turn_history_.rend(); ++it)
+  // 순방향 렌더링: oldest → newest (위→아래), 라운드/사이드 헤더 삽입
+  double cur_y        = clip_top + log_scroll_offset_;
+  int    prev_round   = -1;
+  bool   prev_player  = true;
+  bool   first_in_round = true;
+
+  for (const auto& entry : turn_history_)
   {
-    double section_h = LOG_LINE_H + static_cast<double>(it->lines.size()) * LOG_LINE_H + 4.0;
-    if (cur_y - section_h > clip_top) { cur_y -= section_h; continue; }
-    if (cur_y <= clip_bottom)         break;
+    if (cur_y <= clip_bottom) break;
 
-    // 헤더 색: Player=하늘색, Enemy=주황색
-    uint32_t    header_color = it->is_player ? 0x88ccffff : 0xff8844ff;
-    std::string header = (it->is_player ? "Player" : "Enemy")
-                         + std::string(" Turn ") + std::to_string(it->turn_number)
-                         + ": " + it->actor_name;
+    // ─── Round N ─── 헤더
+    if (entry.round_number != prev_round)
+    {
+      if (cur_y <= clip_top && cur_y > clip_bottom)
+        text_mgr.DrawText("--- Round " + std::to_string(entry.round_number) + " ---",
+                          Math::vec2{ LOG_PANEL_X + 8.0, cur_y },
+                          Fonts::Kings, TS, 0xaaaaaaff, DrawDepth::UI - 0.02f);
+      cur_y        -= LOG_LINE_H;
+      prev_round    = entry.round_number;
+      first_in_round = true;
+    }
 
+    // ▷ Player Turn / ▷ Enemy Turn 헤더 (사이드 변경 시)
+    if (first_in_round || entry.is_player != prev_player)
+    {
+      if (cur_y <= clip_top && cur_y > clip_bottom)
+      {
+        uint32_t    sc = entry.is_player ? 0x88ccffff : 0xff8844ff;
+        std::string sh = entry.is_player ? "> Player Turn" : "> Enemy Turn";
+        text_mgr.DrawText(sh, Math::vec2{ LOG_PANEL_X + 8.0, cur_y },
+                          Fonts::Kings, TS, sc, DrawDepth::UI - 0.02f);
+      }
+      cur_y        -= LOG_LINE_H;
+      prev_player   = entry.is_player;
+      first_in_round = false;
+    }
+
+    // 캐릭터 이름
     if (cur_y <= clip_top && cur_y > clip_bottom)
-      text_mgr.DrawText(header, Math::vec2{ LOG_PANEL_X + 8.0, cur_y },
-                        Fonts::Kings, TS, header_color, DrawDepth::UI - 0.02f);
+    {
+      uint32_t nc = entry.is_player ? 0x88ccffff : 0xff8844ff;
+      text_mgr.DrawText(entry.actor_name,
+                        Math::vec2{ LOG_PANEL_X + 8.0 + LOG_INDENT, cur_y },
+                        Fonts::Kings, TS, nc, DrawDepth::UI - 0.02f);
+    }
     cur_y -= LOG_LINE_H;
 
-    for (const auto& line : it->lines)
+    // 행동 로그 줄
+    for (const auto& line : entry.lines)
     {
       if (cur_y <= clip_bottom) break;
       if (cur_y <= clip_top)
-        text_mgr.DrawText(line, Math::vec2{ LOG_PANEL_X + 8.0 + LOG_INDENT, cur_y },
+        text_mgr.DrawText(line, Math::vec2{ LOG_PANEL_X + 8.0 + LOG_INDENT * 2, cur_y },
                           Fonts::Kings, TS, CS200::WHITE, DrawDepth::UI - 0.02f);
       cur_y -= LOG_LINE_H;
     }

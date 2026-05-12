@@ -38,7 +38,7 @@ class GamePlayUIManager
   void SetCamera(const TacticalCamera* camera);
   ButtonManager& GetButtons();
 
-  void OnTurnStarted(const std::string& actor_name, int turn_number, bool is_player);
+  void OnTurnStarted(const std::string& actor_name, int turn_number, bool is_player, int round_number);
   void AddBattleLogEntry(const std::string& line);
   bool IsMouseOverLogPanel() const;
 
@@ -86,13 +86,14 @@ class GamePlayUIManager
   // === Battle Log ===
   struct TurnEntry
   {
+    int                      round_number;
     int                      turn_number;
     std::string              actor_name;
     bool                     is_player;
     std::vector<std::string> lines;
   };
 
-  static constexpr int    MAX_LOG_TURNS  = 15;
+  static constexpr int    MAX_LOG_ROUNDS = 5;
   static constexpr double LOG_PANEL_W    = 320.0;
   static constexpr double LOG_PANEL_H    = 512.0;
   static constexpr double LOG_PANEL_X    = 1600.0 - 64.0 - 10.0 - LOG_PANEL_W - 2.0;

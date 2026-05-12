@@ -243,8 +243,13 @@ void GamePlay::Load()
 	  [this](const TurnStartedEvent& e)
 	  {
 		if (e.character)
+		{
+		  int round = 1;
+		  if (auto* tm = GetGSComponent<TurnManager>())
+			round = tm->GetRoundNumber();
 		  m_ui_manager->OnTurnStarted(e.character->TypeName(), e.turnNumber,
-		                               !e.character->IsAIControlled());
+		                               !e.character->IsAIControlled(), round);
+		}
 	  });
 
   GetGSComponent<EventBus>()->Subscribe<CharacterDamagedEvent>(

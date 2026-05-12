@@ -11,7 +11,6 @@ Created:    November 24, 2025
 #include "BattleOrchestrator.h"
 #include "./CS200/IRenderer2D.h"
 #include "./CS200/NDC.h"
-#include "Engine/Timer.h"
 #include "GamePlay.h"
 #include "pch.h"
 
@@ -35,7 +34,7 @@ Created:    November 24, 2025
 #include "Game/DragonicTactics/Objects/Fighter.h"
 #include "Game/DragonicTactics/StateComponents/SpellSystem.h"
 
-void BattleOrchestrator::Update([[maybe_unused]] double dt, TurnManager* turn_manager, AISystem* ai_system)
+void BattleOrchestrator::Update(double dt, TurnManager* turn_manager, AISystem* ai_system)
 {
   if (!turn_manager->IsCombatActive())
 	return;
@@ -49,7 +48,7 @@ void BattleOrchestrator::Update([[maybe_unused]] double dt, TurnManager* turn_ma
 
   if (current->GetCharacterType() != CharacterTypes::Dragon)
   {
-	HandleAITurn(current, turn_manager, ai_system);
+	HandleAITurn(current, turn_manager, ai_system, dt);
   }
 }
 
@@ -78,38 +77,40 @@ void BattleOrchestrator::Update([[maybe_unused]] double dt, TurnManager* turn_ma
 // }
 
 
-void BattleOrchestrator::HandleAITurn(Character* ai_character, TurnManager* turn_manager, AISystem* ai_system)
+void BattleOrchestrator::HandleAITurn(Character* ai_character, TurnManager* turn_manager, AISystem* ai_system, double dt)
 {
-  // 1. 캐릭터가 이동 중이거나 애니메이션 중이라면 대기 (기존 유지)
+  // 1. 이동 애니메이션 완료 대기
   MovementComponent* move_comp = ai_character->GetGOComponent<MovementComponent>();
   if (move_comp && move_comp->IsMoving())
+	return;
+
+  // 2. 행동 후 비차단 대기 (busy-wait 대체 — 게임 루프를 멈추지 않음)
+  if (m_wait_timer > 0.0)
   {
+	m_wait_timer -= dt;
 	return;
   }
 
-  auto timer = Engine::GetGameStateManager().GetGSComponent<util::Timer>();
-  timer->ResetTimeStamp();
-  while (timer->GetElapsedSeconds() < 0.6)
-  {
-  }
-
-  // 2. AISystem에게 "지금 뭐 할래?"라고 물어봅니다. (전략 패턴 활용)
-  // 기존의 fighter->Action() 대신 시스템을 직접 이용합니다.
+  // 3. AI 결정
   AIDecision decision = ai_system->MakeDecision(ai_character);
 
-  // 3. 결정에 따른 분기 처리
+  // 4. 결정에 따른 분기 처리
   if (decision.type == AIDecisionType::EndTurn)
   {
-	// AI가 "턴 종료"를 선언했으면 턴을 넘깁니다.
 	Engine::GetLogger().LogEvent(ai_character->TypeName() + " ends turn. Reason: " + decision.reasoning);
 	turn_manager->EndCurrentTurn();
   }
   else
   {
-	// 이동, 공격, 스킬 등의 행동을 실행합니다.
-	// 실행 후에는 함수를 빠져나가고, 다음 Update 프레임에 다시 들어와서
-	// AI가 또 다른 행동(예: 이동 후 공격)을 할지 다시 MakeDecision을 통해 확인하게 됩니다.
+	// 실행 후 다음 프레임에 다시 HandleAITurn 진입 → MakeDecision 반복
 	ai_system->ExecuteDecision(ai_character, decision);
+
+	// 스펠은 SpellDelayObject가 0.5s 후 효과 적용 → 0.6s 대기로 상태 반영 보장
+	// 이동·공격은 시각적 간격 0.3s
+	if (decision.type == AIDecisionType::UseAbility)
+	  m_wait_timer = 0.6;
+	else
+	  m_wait_timer = 0.3;
   }
 }
 
