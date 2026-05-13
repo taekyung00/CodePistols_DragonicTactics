@@ -8,7 +8,6 @@
 #include "Engine/Engine.h"
 #include "Engine/GameStateManager.h"
 #include "Engine/Window.h"
-#include "Game/Settings.h"
 #include "Game/Splash.h"
 
 namespace
@@ -65,13 +64,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
 {
   Engine& engine = Engine::Instance();
   engine.Start("Dragonic Tactics");
-
-  Settings::LoadUserSettings();
-  Engine::GetWindow().ForceResize(Settings::s_window_size.x, Settings::s_window_size.y);
-  Engine::GetWindow().SetResizeCallback([](Math::ivec2 new_size) {
-    Settings::s_window_size = new_size;
-    Settings::SaveUserSettings();
-  });
 
   engine.GetGameStateManager().PushState<Splash>();
 
