@@ -64,6 +64,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
 {
   Engine& engine = Engine::Instance();
   engine.Start("Dragonic Tactics");
+
   engine.GetGameStateManager().PushState<Splash>();
 
 

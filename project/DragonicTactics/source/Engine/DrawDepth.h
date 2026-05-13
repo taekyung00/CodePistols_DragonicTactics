@@ -1,3 +1,7 @@
+/**
+ * \date 2026 Spring
+ * \copyright DigiPen Institute of Technology
+ */
 #pragma once
 
 namespace DrawDepth {

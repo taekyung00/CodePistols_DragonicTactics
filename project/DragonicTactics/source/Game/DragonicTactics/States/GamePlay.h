@@ -29,6 +29,8 @@ struct TacticalCamera {
 
     // Build letterboxed virtual-resolution NDC matrix for UI pass
     static Math::TransformationMatrix BuildVirtualNdc(Math::ivec2 win);
+    // Convert actual screen pixel → virtual 1600×900 coordinate (for UI hit detection)
+    static Math::vec2 ScreenToVirtual(Math::vec2 screen, Math::ivec2 win);
 };
 
 class PlayerInputHandler;

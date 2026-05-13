@@ -1,3 +1,7 @@
+/**
+ * \date 2026 Spring
+ * \copyright DigiPen Institute of Technology
+ */
 #include "pch.h"
 #include "ButtonManager.h"
 #include "CS200/IRenderer2D.h"
