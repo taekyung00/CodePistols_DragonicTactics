@@ -1,2 +1,3 @@
 # 릴리즈 ZIP (make_release.py 출력물)
 *.zip
+*playtest/
