@@ -16,6 +16,7 @@ Created:    May 6, 2025
 #include "Engine/GameStateManager.h"
 #include "Engine/Input.h"
 #include "Engine/Matrix.h"
+#include "Engine/SoundManager.h"
 #include "Engine/TextManager.h"
 #include "Engine/Window.h"
 #include "Game/DragonicTactics/States/GamePlay.h"
@@ -112,6 +113,8 @@ void MainMenu::Load()
 
     flames.resize(100);
     for (auto& f : flames) InitFlame(f, true);
+
+    Engine::GetSoundManager().PlayBGM(SoundManager::BGM_MAIN_MENU);
 }
 
 void MainMenu::Update(double dt)
@@ -268,6 +271,7 @@ void MainMenu::DrawFlames(double time)
 
 void MainMenu::Unload()
 {
+    Engine::GetSoundManager().StopBGM();
 }
 
 gsl::czstring MainMenu::GetName() const
