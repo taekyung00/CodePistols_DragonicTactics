@@ -1,3 +1,7 @@
+/**
+ * \date 2026 Spring
+ * \copyright DigiPen Institute of Technology
+ */
 #include "StatusEffectHandler.h"
 #include "../Objects/Character.h"
 #include "../Objects/Components/StatsComponent.h"
