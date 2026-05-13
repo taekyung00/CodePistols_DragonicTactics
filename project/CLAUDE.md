@@ -236,6 +236,22 @@ MakeDecision
 
 **Cleric 스탯** (`Assets/Data/characters.json`): HP 90, Speed 2, AP 1, 1d6 공격, 슬롯 Lv1×3 / Lv2×2
 
+**Dragon 스탯** (`Assets/Data/characters.json`): HP 140, Speed 5, AP 2, 3d6 공격/2d8 방어, 공격 범위 3, 슬롯 Lv1×4 / Lv2×3 / Lv3×2 / Lv4×2 / Lv5×1
+
+**Dragon 스펠 ID** (`Assets/Data/spell_table.csv` 기준):
+
+| 스펠 | ID | 레벨 | 타겟팅 | 비고 |
+|---|---|---|---|---|
+| Fire Bolt | `S_ATK_010` | 1 | Enemy:Single:4 | 2d8 피해, 업캐스트: +1d6/레벨 (Wizard 공유) |
+| Fearful Cry | `S_DEB_020` | 1 | Enemy:Around:3 | Fear 3턴 (Fighter 공유) |
+| Tail Swipe | `S_ATK_020` | 2 | Enemy:Around:2 | 1d8 피해 + knockback:2 |
+| Dragon's Fury | `S_ATK_030` | 3 | Enemy:Line:4 | 4d6 피해, 업캐스트: +2d6/레벨 |
+| Meteor | `S_ATK_040` | 3 | Any:OddEven:-1 | 3d20 피해 전체맵, **자신 Exhaustion 1턴**, 업캐스트: +1d20/레벨 |
+| Mana Conversion | `S_ENH_040` | 0 | Self:Single:0 | 자신 HP 소모 → 슬롯 회복, 업캐스트: 회수 슬롯 레벨↑ (Wizard 공유) |
+| Purify | `S_ENH_050` | 1 | Self:Single:0 | 자신 모든 상태 효과 제거 |
+| Magma Blast | `S_GEO_010` | 2 | Empty:Point:6 | 빈 타일 → Lava + 3d6 피해, 업캐스트: +1d4/레벨 |
+| Wall Creation | `S_GEO_020` | 1 | Empty:Point:5 | 빈 타일 → Wall, 업캐스팅 가능 |
+
 **⚠️ Cleric 스펠은 자신에게 사용 불가** — Divine Shield 포함 모든 스펠이 타 아군/적 대상. `FindAllyNeedingBuff()`는 actor 제외, 파이터>로그>위자드 순으로만 반환.
 
 **⚠️ Cleric 무한루프 방지 (기구현됨)**: Curse/Divine Shield(Single geometry) → CanCast 실패 시 AP 미소모 → 무한루프 위험. `MakeSupportDecision`에서 `dist <= SPELL_RANGE` 직접 체크 후 범위 밖이면 `MakeMeleePhaseDecision`(이동)으로 fall-through.
@@ -722,6 +738,17 @@ tex->Draw(Math::TranslationMatrix(Math::ivec2{screen_x - TILE_SIZE, screen_y - T
 ```
 
 ⚠️ 모든 타일(Wall, Lava, Difficult, Empty)은 `DrawDepth::TILE`을 명시적으로 전달해야 한다. `DrawRectangle`의 기본 depth는 `DrawDepth::CHARACTER`(0.5f)로 캐릭터와 겹친다.
+
+**DrawDepth 전체 값** (`Engine/DrawDepth.h`, 값이 작을수록 앞에 렌더링):
+
+| 상수 | 값 | 용도 |
+|---|---|---|
+| `DrawDepth::UI` | 0.01f | UI 텍스트·아이콘 |
+| `DrawDepth::PARTICLE` | 0.3f | 파티클 효과 |
+| `DrawDepth::CHARACTER` | 0.5f | 캐릭터·기본 오브젝트 |
+| `DrawDepth::PATH` | 0.7f | 경로 하이라이트 |
+| `DrawDepth::OVERLAY` | 0.8f | 이동/스펠 범위 오버레이 |
+| `DrawDepth::TILE` | 0.9f | 그리드 배경 타일 |
 
 ### 배틀 로그 (`States/GamePlayUIManager`)
 
