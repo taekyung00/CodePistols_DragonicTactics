@@ -5,7 +5,9 @@
 #pragma once
 #include "CS200/RGBA.h"
 #include "Engine/Vec2.h"
+#include "Engine/Texture.h"
 #include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 #include <map>
@@ -39,6 +41,9 @@ struct Button
     CS200::RGBA color_disabled = 0x2a2a2aff;  // 비활성화 (회색)
     CS200::RGBA color_pressed  = 0x7a7aacff;  // 클릭 순간 (더 밝은)
     CS200::RGBA text_color     = 0xffffffff;  // 텍스트 흰색
+
+    // 이미지 (비어있으면 색상 배경 사용)
+    std::string image_path;
 };
 
 /// @brief 버튼 집합 관리 클래스
@@ -86,6 +91,7 @@ public:
 
 private:
     std::vector<Button> buttons_;  // 등록 순서 유지
+    mutable std::map<std::string, std::shared_ptr<CS230::Texture>> texture_cache_;
 
     Button*       FindButton(const std::string& id);
     const Button* FindButton(const std::string& id) const;

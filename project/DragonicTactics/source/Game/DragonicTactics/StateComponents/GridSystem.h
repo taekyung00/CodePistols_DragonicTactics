@@ -65,6 +65,11 @@ std::vector<Math::ivec2> GetLineTiles(Math::ivec2 center, int reach) const;
   /// @brief 스펠 타겟팅 모드 해제 (시각화 데이터 초기화)
   void DisableSpellTargetingMode();
 
+  /// @brief 공격 범위 하이라이트 활성화 (주황색, 맨해튼 거리 기반)
+  void EnableAttackRangeMode(Math::ivec2 character_pos, int attack_range);
+  /// @brief 공격 범위 하이라이트 해제
+  void DisableAttackRangeMode();
+
   /// @brief 벽 배치 미리보기 타일 갱신
   void SetWallPreviewTiles(const std::vector<Math::ivec2>& tiles);
   /// @brief 벽 배치 미리보기 초기화
@@ -88,10 +93,12 @@ std::vector<Math::ivec2> GetLineTiles(Math::ivec2 center, int reach) const;
 
   
   private:
-  static const int MAP_WIDTH  = 8;
-  static const int MAP_HEIGHT = 8;
-  TileType		   tile_grid[MAP_HEIGHT][MAP_WIDTH];
-  Character*	   character_grid[MAP_HEIGHT][MAP_WIDTH]; // instead of std::map<Math::vec2, Character*> occupiedTiles;
+  int map_width_  = 8;
+  int map_height_ = 8;
+  std::vector<std::vector<TileType>>   tile_grid_;
+  std::vector<std::vector<Character*>> character_grid_;
+
+  void ResizeGrid(int w, int h);
 
   // A* pathfinding node
   struct Node
@@ -129,17 +136,28 @@ std::vector<Math::ivec2> GetLineTiles(Math::ivec2 center, int reach) const;
   bool					spell_targeting_mode_active_ = false;
   std::set<Math::ivec2> spell_targetable_tiles_;
 
+  // ─ 공격 범위 시각화 ─
+  bool                  attack_range_mode_active_ = false;
+  std::set<Math::ivec2> attack_range_tiles_;
+
   // ─ 벽 배치 미리보기 시각화 ─
   std::vector<Math::ivec2> wall_preview_tiles_;
 
   //tile texture
   std::shared_ptr<CS230::Texture> stone_tile_bright;
   std::shared_ptr<CS230::Texture> stone_tile_dark;
+  std::shared_ptr<CS230::Texture> lava_tile;
+  std::shared_ptr<CS230::Texture> wall_tile;
 
 
 
   public:
-  static const int TILE_SIZE = MAP_WIDTH * MAP_HEIGHT;
+  // 타일 당 픽셀 크기. 맵 크기와 무관한 렌더링 상수.
+  static const int TILE_SIZE = 64;
+
+  // 그리드 크기 조회 (런타임 가변)
+  int GetWidth()  const { return map_width_; }
+  int GetHeight() const { return map_height_; }
 
   GridSystem();
 

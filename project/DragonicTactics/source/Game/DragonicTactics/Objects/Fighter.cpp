@@ -122,15 +122,3 @@ void Fighter::TakeDamage(int damage, Character* attacker)
 //     }
 // }
 
-// Ginam
-AbilityResult Fighter::PerformMeleeAttack(Character* target)
-{
-  // using basic melee attack ability
-  return meleeAttack.Use(this, target);
-}
-
-AbilityResult Fighter::PerformShieldBash(Character* target)
-{
-  // using shield bash ability with knockback
-  return shieldBash.Use(this, target);
-}

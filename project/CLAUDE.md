@@ -11,10 +11,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | ----------------------- | -------------------------------------------------------------------- |
 | `GamePlay::Load()`      | 모든 GS 컴포넌트 등록 + CSV/JSON 데이터 로드 + 캐릭터 스폰                             |
 | `GamePlay::Update()`    | `PlayerInputHandler` / `BattleOrchestrator` / `GameObjectManager` 구동 |
-| `GamePlay::DrawImGui()` | Player Actions / Action List / Spell List / Map Selection 패널         |
-| `GamePlay::Draw()`      | `GridSystem::Draw()` + `GameObjectManager::DrawAll()`                |
+| `GamePlay::DrawImGui()` | Map Selection / Combat Status 개발자 패널                                 |
+| `GamePlay::Draw()`      | **2-패스 렌더링**: Pass 1 = 월드 공간(TacticalCamera), Pass 2 = UI 공간(가상 1600×900) |
 
-**현재 맵 구성**: Dragon = 플레이어(좌측 하단 `'d'`), Fighter = AI 적(좌측 상단 `'f'`).
+**현재 맵 구성**: Dragon = 플레이어, Fighter + Cleric = AI 적 (`maps.json` spawn_points 기준, `enemys` 벡터로 관리).
 
 ---
 
@@ -25,7 +25,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **폐기됨**: `Abilities/` 디렉토리 전체 (AbilityBase, MeleeAttack, ShieldBash) — `Objects/Actions/ActionAttack`만 사용
 - **구현 완료**: SpellSystem (CSV 파싱 + 시전 + UI), StatusEffectHandler (9가지 효과 + OnApplied/OnRemoved), TurnManager, GridSystem, SoundManager (BGM/SFX)
 - **구현 완료**: FighterStrategy (`fighter.mmd` 플로우차트 완전 반영 — 킬루프/생존/일반교전/원거리 분기)
-- **진행 중**: ClericStrategy, WizardStrategy, RogueStrategy (`FighterStrategy`가 참조 구현)
+- **구현 완료**: ClericStrategy (`cleric.mmd` 플로우차트 완전 반영 — 킬루프/힐/버프·디버프/근접 분기) + Cleric 캐릭터 클래스
+- **미구현**: WizardStrategy, RogueStrategy — 캐릭터 클래스 및 characters.json 스탯도 없음 (`FighterStrategy`/`ClericStrategy`가 참조 구현)
+  - 스프라이트 이미지(`wizard_p.png`, `rogue_p.png`)와 오디오 SFX 파일(`wizard_action.wav`, `wizard_hurt.wav`, `rouge_action.wav`, `rouge_hurt.wav`)은 Assets에 이미 존재 — 구현 시 에셋 생성 불필요
+  - `SoundManager.h` SFX 상수는 미등록 — Wizard/Rogue 구현 시 상수 추가 필요 (⚠️ 파일명 오타 주의: Rogue SFX 파일은 `rouge_*.wav`)
+  - `CharacterTypes` 열거 순서: `None, Dragon, Fighter, Rogue, Cleric, Wizard, Count`
+  - AI 플로우차트 참조: `architecture/character_flowchart/wizard.mmd`, `architecture/character_flowchart/rouge.mmd`
 
 ---
 
@@ -44,15 +49,54 @@ build/windows-debug/dragonic_tactics.exe  # 실행 (반드시 DragonicTactics/�
 
 캐시 초기화: `rm -rf build/ && cmake --preset windows-debug`
 
-모든 설정 일괄 빌드 (필터 옵션 있음):
+모든 설정 일괄 빌드 (필터 옵션 있음) — 스크립트는 `DragonicTactics/scripts/` 아래:
 ```bash
-python3 scripts/scan_build_project.py
+python3 scripts/scan_build_project.py          # DragonicTactics/ 에서 실행
 python3 scripts/scan_build_project.py --help
+```
+
+### 플레이테스트 릴리즈 자동화
+
+`DragonicTactics/scripts/make_release.py` (또는 동일 위치의 `make_release.exe`) — 릴리즈 빌드 → ZIP 패키징 → GitHub Release 업로드를 자동화한다.
+
+```bash
+cd DragonicTactics
+
+# ZIP 생성 (windows-release 빌드 포함)
+python scripts/make_release.py --version v0.3.0
+
+# 이미 빌드된 경우 빌드 생략
+python scripts/make_release.py --version v0.3.0 --skip-build
+
+# ZIP 생성 + GitHub Release 업로드
+python scripts/make_release.py --version v0.3.0 --upload
+```
+
+더블클릭(`make_release.exe`) 실행 시 버전·옵션을 프롬프트로 입력받는다.
+사전 점검 로직 내장: `cmake` / `gh` CLI 미설치 시 winget으로 자동 설치, `gh` 미로그인 시 `gh auth login` 자동 실행.
+
+ZIP 출력 위치: 프로젝트 루트(`project/DragonicTactics_vX.Y.Z_playtest.zip`) — 루트 `.gitignore`의 `*.zip` 규칙으로 자동 무시됨.
+
+ZIP 내부 구조:
+```
+CODEPISTOLS_DRAGONICTACTICS/
+├── dragonic_tactics.exe
+├── OpenAL32.dll / SDL2.dll / soft_oal.dll
+├── README.md / README(KOR).md
+└── Assets/
+```
+
+릴리즈 노트는 `make_release.py` 상단 `RELEASE_NOTES` 상수에 하드코딩 — 변경 시 상수 수정 후 exe 재빌드 필요:
+```bash
+cd DragonicTactics
+python -m PyInstaller --onefile --console --name make_release --distpath scripts scripts/make_release.py
 ```
 
 ---
 
 ## 핵심 아키텍처 원칙
+
+> 전체 원칙은 [architecture/game_architecture_rules.md](architecture/game_architecture_rules.md) 참고.
 
 ### 두 가지 컴포넌트 시스템 (혼용 금지)
 
@@ -65,15 +109,16 @@ python3 scripts/scan_build_project.py --help
 
 ```
 EventBus, DiceManager, AISystem, CombatSystem, GameObjectManager, GridSystem,
-TurnManager, DebugManager, CharacterFactory, DataRegistry, Timer,
+TurnManager, DebugManager, CharacterFactory, DataRegistry, util::Timer,
 MapDataRegistry, SpellSystem, StatusEffectHandler,
 CS230::ParticleManager<Particles::Hit>
 ```
 
 - `DiceManager` — `Roll("2d6")`, `Roll("1d20+5")` 형식으로 주사위 굴림
 - `CombatSystem` — 공격/방어 주사위 굴림 + 최종 데미지 계산 (StatusEffectHandler 훅 연동)
+- `util::Timer` — 엔진 제공 타이머 (`Engine/Timer.h`). BattleOrchestrator는 이를 사용하지 않음 — AI 대기는 `m_wait_timer` (double, dt 카운트다운)로 처리
 
-**GameObject 컴포넌트**: `GridPosition`, `ActionPoints`, `StatsComponent`, `SpellSlots`, `MovementComponent`, `StatusEffectComponent`
+**GameObject 컴포넌트**: `GridPosition`, `ActionPoints`, `StatsComponent`, `SpellSlots`, `MovementComponent`, `StatusEffectComponent`, `ShakeComponent`
 
 ### GS 컴포넌트 접근 패턴
 
@@ -102,7 +147,21 @@ Engine::GetGameStateManager().GetGSComponent<EventBus>()->Publish(
     CharacterDamagedEvent{target, damage});
 ```
 
-`Events.h`에 전투·피해·이동·스펠·상태·턴·UI 카테고리로 27개+ 이벤트 정의됨.
+`Events.h`에 전투·피해·이동·스펠·상태·턴·UI 카테고리로 27개+ 이벤트 정의됨. 자주 쓰는 것:
+
+| 이벤트 | 주요 필드 |
+|---|---|
+| `TurnStartedEvent` | character, turnNumber, actionPoints |
+| `TurnEndedEvent` | character, actionsUsed |
+| `CharacterDamagedEvent` | target, damageAmount, remainingHP, attacker, wasCritical |
+| `CharacterHealedEvent` | target, healAmount, currentHP, healer |
+| `CharacterDeathEvent` | character, killer |
+| `CharacterMovedEvent` | character, fromGrid, toGrid |
+| `SpellCastEvent` | caster, spellName, spellLevel, targetGrid |
+| `StatusEffectAddedEvent` | target, effectName, duration, magnitude |
+| `StatusEffectRemovedEvent` | target, effectName, reason |
+| `AIDecisionEvent` | actor, decision_type, decision_target, destination |
+| `BattleEndedEvent` | playerVictory, turnsElapsed |
 
 ### AI Strategy 패턴
 
@@ -120,7 +179,18 @@ Engine::GetGameStateManager().GetGSComponent<EventBus>()->Publish(
    m_strategies[CharacterTypes::X] = new XStrategy();
    ```
 
-`AIDecision` 구조체: `type`(Move/Attack/UseAbility/EndTurn/None), `target`, `destination`, `abilityName`, `reasoning`, `lava_penalty`(이동 시 용암 타일 회피 가중치, 0 = 무시)
+`AIDecision` 구조체: `type`(Move/Attack/UseAbility/EndTurn/None), `target`, `destination`, `abilityName`, `reasoning`, `lava_penalty`(이동 시 용암 타일 회피 가중치, 0 = 무시), `upcast_level`(스펠 업캐스트 레벨, 0 = 최소 레벨 자동 사용)
+
+**AI 이동 로직 주의사항** (FighterStrategy/ClericStrategy 공통):
+- `LAVA_TILE_PENALTY = 2` — 용암 경로를 비선호하나 가능하면 감수
+- `FindNextMovePos()` — Dragon/target 인접 타일로 A* 탐색. **Empty + Lava** 모두 공격 위치로 허용
+- `FindClosestReachableTile()` — `FindNextMovePos()`가 현재 위치를 반환(경로 차단)할 때 호출. BFS로 도달 가능 타일 중 Dragon에 최근접 타일 반환 (AI stuck 방지)
+- Cleric 힐 이동 시 `FindNextMovePos(actor, target, grid, 0)` — lava_penalty=0으로 호출해 용암 완전 무시
+- **공격 위치 유효성 체크 패턴** (전략 코드 내부): `IsWalkable()` 대신 명시적 타입 체크 사용
+  ```cpp
+  TileType t = grid->GetTileType(pos);
+  bool ok = (t == TileType::Empty || t == TileType::Lava) && !grid->IsOccupied(pos);
+  ```
 
 **FighterStrategy 의사결정 구조** (`StateComponents/AI/FighterStrategy.cpp`):
 
@@ -139,21 +209,114 @@ MakeDecision
 |---|---|---|---|
 | Smite | `S_ATK_050` | 1 | Enemy:Single:1 (인접 필수) |
 | Bloodlust | `S_ENH_010` | 2 | Self:Single:0 |
-| Frenzy | `S_ENH_020` | **0** (슬롯 불필요) | Self:Single:0 |
+| Frenzy | `S_ENH_020` | 2 | Self:Single:0 |
 | Fearful Cry | `S_DEB_020` | 1 | Enemy:Around:3 |
+
+**ClericStrategy 의사결정 구조** (`StateComponents/AI/ClericStrategy.cpp`):
+
+```
+MakeDecision
+  ├── CanReachThisTurn && CanKillDragonThisTurn → MakeKillLoopDecision (기본 공격, 공격 스펠 없음)
+  └── Phase_Decision
+        ├── AP = 0 & MP > 0 → TacticalMove → EndTurn
+        ├── AP = 0 & MP = 0 → EndTurn
+        ├── [2순위] 힐 대상 HP < 30% + 슬롯 + 거리 ≤ 5 → S_ENH_030 Healing Touch (범위 밖이면 아군에게 이동)
+        ├── 슬롯 있음 → MakeSupportDecision
+        │     ├── !Cursed && 거리 ≤ 5 → S_DEB_010 Curse
+        │     ├── !Blessed 아군(파이터>로그>위자드) && 거리 ≤ 4 → S_BUF_010 Divine Shield (자신 제외)
+        │     └── 지원 불필요 → MakeMeleePhaseDecision
+        └── 슬롯 없음 → MakeMeleePhaseDecision
+              ├── 인접 → 기본 공격
+              └── 비인접 & MP > 0 → 이동
+```
+
+**Cleric 스펠 ID** (`Assets/Data/spell_table.csv` 기준):
+
+| 스펠 | ID | 레벨 | 타겟팅 | 전략 상수 |
+|---|---|---|---|---|
+| Healing Touch | `S_ENH_030` | 1 | Ally:Single:**5** | `HEAL_RANGE=5` |
+| Divine Shield | `S_BUF_010` | 1 | Ally:Single:**4** | 파이터>로그>위자드, 자신 제외, `BLESSING_RANGE=4` |
+| Curse of Suffering | `S_DEB_010` | 1 | Enemy:Single:**5** | `CURSE_RANGE=5` |
+
+**Cleric 스탯** (`Assets/Data/characters.json`): HP 90, Speed 2, AP 1, 1d6 공격, 슬롯 Lv1×3 / Lv2×2
+
+**Dragon 스탯** (`Assets/Data/characters.json`): HP 140, Speed 5, AP 2, 3d6 공격/2d8 방어, 공격 범위 3, 슬롯 Lv1×4 / Lv2×3 / Lv3×2 / Lv4×2 / Lv5×1
+
+**Dragon 스펠 ID** (`Assets/Data/spell_table.csv` 기준):
+
+| 스펠 | ID | 레벨 | 타겟팅 | 비고 |
+|---|---|---|---|---|
+| Fire Bolt | `S_ATK_010` | 1 | Enemy:Single:4 | 2d8 피해, 업캐스트: +1d6/레벨 (Wizard 공유) |
+| Fearful Cry | `S_DEB_020` | 1 | Enemy:Around:3 | Fear 3턴 (Fighter 공유) |
+| Tail Swipe | `S_ATK_020` | 2 | Enemy:Around:2 | 1d8 피해 + knockback:2 |
+| Dragon's Fury | `S_ATK_030` | 3 | Enemy:Line:4 | 4d6 피해, 업캐스트: +2d6/레벨 |
+| Meteor | `S_ATK_040` | 3 | Any:OddEven:-1 | 3d20 피해 전체맵, **자신 Exhaustion 1턴**, 업캐스트: +1d20/레벨 |
+| Mana Conversion | `S_ENH_040` | 0 | Self:Single:0 | 자신 HP 소모 → 슬롯 회복, 업캐스트: 회수 슬롯 레벨↑ (Wizard 공유) |
+| Purify | `S_ENH_050` | 1 | Self:Single:0 | 자신 모든 상태 효과 제거 |
+| Magma Blast | `S_GEO_010` | 2 | Empty:Point:6 | 빈 타일 → Lava + 3d6 피해, 업캐스트: +1d4/레벨 |
+| Wall Creation | `S_GEO_020` | 1 | Empty:Point:5 | 빈 타일 → Wall, 업캐스팅 가능 |
+
+**⚠️ Cleric 스펠은 자신에게 사용 불가** — Divine Shield 포함 모든 스펠이 타 아군/적 대상. `FindAllyNeedingBuff()`는 actor 제외, 파이터>로그>위자드 순으로만 반환.
+
+**⚠️ Cleric 무한루프 방지 (기구현됨)**: Curse/Divine Shield(Single geometry) → CanCast 실패 시 AP 미소모 → 무한루프 위험. `MakeSupportDecision`에서 `dist <= SPELL_RANGE` 직접 체크 후 범위 밖이면 `MakeMeleePhaseDecision`(이동)으로 fall-through.
+
+**FighterStrategy 미구현 분기** (`FighterStrategy.cpp` 상단 주석 블록):
+- **보물 탈출**: `actor->HasTreasure()` → Exit 타일로 이동 (`grid->HasExit()`, `grid->GetExitPosition()` 필요) — 보물 시스템 구현 후 활성화 (주석 처리 중)
+- **클레릭 추적**: 미구현 — fighter.mmd에 해당 분기 없음. Fighter는 위험 시 Survival 시퀀스(Bloodlust→FearCry→공격)만 실행. 클레릭이 Fighter에게 이동하는 방식이 맞음.
 
 **⚠️ UseAbility AIDecision 작성 시 주의**:
 - `AISystem::ExecuteDecision`은 `decision.target->GetGridPosition()->Get()`을 target_tile로 `CastSpell`에 전달 (`destination` 필드 무시됨)
 - `Around` geometry 스펠(Fearful Cry): caster 중심 AoE → `CanCast` 범위 체크가 `caster→target_tile` 거리로 계산 → **`target = actor(자신)`** 으로 설정해야 거리=0으로 항상 통과
-- `Single` geometry 스펠(Smite): range=1 → CanCast 실패 시 AP 미소모 → 다음 프레임에 동일 결정 반복 → **무한루프** — Strategy에서 `distance <= 1`을 직접 보장해야 함
+- `Single` geometry 스펠: CanCast 실패(사거리 초과) 시 AP 미소모 → 다음 프레임에 동일 결정 반복 → **무한루프** — **Strategy에서 반드시 `distance <= SPELL_RANGE`를 직접 체크**해야 함. 범위 밖이면 UseAbility 반환 금지, `MakeMeleePhaseDecision`(이동)으로 fall-through.
 
-### GridSystem::TileType
+### GridSystem API
 
 ```cpp
 enum class TileType { Empty, Wall, Lava, Difficult, Exit, Invalid };
-grid->GetTileType(pos)   // 타일 종류 조회
-grid->IsOccupied(pos)    // 캐릭터 점유 여부
+
+// 타일 조회
+grid->GetTileType(pos)            // 타일 종류
+grid->IsOccupied(pos)             // 캐릭터 점유 여부
+grid->IsWalkable(pos)             // 이동 가능 여부
+grid->IsValidTile(pos)            // 범위 내 유효 타일 여부
+grid->ManhattanDistance(a, b)     // 맨해튼 거리
+grid->GetWidth() / GetHeight()    // 맵 크기
+
+// 경로 탐색
+grid->FindPath(start, goal, lava_penalty)        // A* 경로 반환 (lava_penalty=0이면 용암 무시)
+grid->GetReachableTiles(start, max_distance)     // BFS 기반 이동 가능 타일 목록
+
+// 캐릭터 배치 관리
+grid->AddCharacter(character, pos)
+grid->RemoveCharacter(pos)
+grid->MoveCharacter(old_pos, new_pos)
+grid->GetCharacterAt(pos)         // → Character* (없으면 nullptr)
+grid->GetAllCharacters()          // → std::vector<Character*>
+
+// 출구 관리 (보물 탈출 시스템)
+grid->HasExit()
+grid->GetExitPosition()
+grid->SetExitPosition(pos)
+
+// 타일 하이라이트 시각화 (PlayerInputHandler가 제어, GridSystem::Draw()에서 렌더)
+grid->EnableMovementMode(pos, range)      // 초록 펄스 — BFS 이동 가능 타일
+grid->DisableMovementMode()
+grid->EnableSpellTargetingMode(pos, geometry, range)  // 빨간 펄스 — 스펠 타겟 타일
+grid->DisableSpellTargetingMode()
+grid->EnableAttackRangeMode(pos, range)   // 주황 펄스 — 공격 범위 타일 (Wall 제외, 맨해튼 거리)
+grid->DisableAttackRangeMode()
+grid->SetWallPreviewTiles(tiles)          // 반투명 미리보기 (WallPlacement 모드)
+grid->ClearWallPreviewTiles()
+grid->SetHoveredTile(tile)               // 경로 시각화
+grid->ClearHoveredTile()
+grid->IsMovementModeActive()             // 이동 모드 활성화 여부
+grid->IsReachable(tile)                  // 특정 타일이 이동 가능한지
 ```
+
+오버레이 색상 기준 (알파 80+40×sin 펄스):
+- 이동 범위: 초록 `(0.0f, 0.8f, 0.0f)`
+- 스펠 타겟: 빨강 `(0.8f, 0.0f, 0.0f)`
+- 공격 범위: 주황 `(1.0f, 0.647f, 0.0f)`
 
 이동 목적지 유효성 검사 패턴 (`AISystem::ExecuteDecision` 참고):
 ```cpp
@@ -161,12 +324,99 @@ TileType dt = grid->GetTileType(destination);
 bool dest_ok = (dt == TileType::Empty || dt == TileType::Lava) && !grid->IsOccupied(destination);
 ```
 
+### Character 주요 API
+
+Strategy와 시스템에서 자주 쓰는 `Character` 메서드:
+
+```cpp
+// 상태 쿼리 (Fact)
+character->IsAlive()
+character->GetHP() / GetMaxHP()
+character->GetHPPercentage()          // 0.0 ~ 1.0
+character->GetMovementRange()         // 남은 이동 타일 수
+character->GetActionPoints()          // 남은 행동 포인트
+character->GetAttackRange()
+character->GetCharacterType()         // CharacterTypes enum
+character->IsAIControlled()           // Dragon=false, Fighter/Cleric=true
+character->HasAnySpellSlot()
+character->GetAvailableSpellSlots(level)
+character->HasAttackedThisTurn()
+character->HasTreasure()
+
+// 상태 효과
+character->Has("Blessed")             // 특정 효과 보유 여부
+character->AddEffect(name, duration, magnitude)
+character->RemoveEffect(name)
+character->RemoveAllEffects()         // 전체 제거 (Purify 등에서 사용)
+character->GetActiveEffects()         // → const std::vector<ActiveEffect>&
+
+// 가상 훅 (서브클래스 override 가능, TurnManager가 호출)
+character->OnTurnStart()
+character->OnTurnEnd()
+character->TakeDamage(damage, attacker)
+character->ReceiveHeal(amount)
+character->PerformAction(action, target, tile_position)
+
+// 컴포넌트 직접 접근
+character->GetGridPosition()          // → GridPosition*
+character->GetStatsComponent()        // → StatsComponent*
+character->GetSpellSlots()            // → SpellSlots*
+```
+
+### MovementComponent API
+
+`BattleOrchestrator`가 AI 행동 전 `IsMoving()` 체크로 애니메이션 완료를 대기한다:
+
+```cpp
+component->SetPath(vector<Math::ivec2>)  // A* 결과를 큐에 등록
+component->IsMoving() const              // 이동 애니메이션 진행 중 여부
+component->ClearPath()                   // 경로 강제 중단
+component->SetGridSystem(GridSystem*)    // 초기화 시 주입
+
+static constexpr double MOVE_TIME_PER_TILE = 0.2;  // 타일당 이동 시간(초)
+```
+
+`SetPath()` 호출 후 `IsMoving()`이 false로 돌아올 때까지 BattleOrchestrator는 MakeDecision을 호출하지 않는다.
+
 ### ⚠️ ActionPoints vs MovementRange (혼동 주의)
 
 ```cpp
 if (actor->GetMovementRange() > 0) { /* 이동 로직 */ }  // ✅ 이동 가능 타일 수
 if (actor->GetActionPoints() > 0)  { /* 공격 로직 */ }  // ✅ 턴당 행동 횟수
 ```
+
+### TurnManager API
+
+```cpp
+// 전투 시작/종료
+turn_manager->StartCombat()
+turn_manager->EndCombat()
+turn_manager->Reset()
+
+// 턴 순서 초기화
+turn_manager->InitializeTurnOrder(characters)   // 일반 / 목 캐릭터 오버로드
+turn_manager->RollInitiative(characters)        // 이니셔티브 굴림 후 정렬
+turn_manager->ResetInitiative()
+
+// 이니셔티브 모드 설정
+turn_manager->SetInitiativeMode(InitiativeMode::RollOnce)     // 전투 시작 시 한 번만 굴림 (D&D 기본)
+turn_manager->SetInitiativeMode(InitiativeMode::RollEachRound)// 매 라운드 재굴림
+
+// 현재 턴 상태
+turn_manager->GetCurrentCharacter()            // → Character*
+turn_manager->GetCurrentTurnNumber()
+turn_manager->GetRoundNumber()
+turn_manager->IsCombatActive()
+
+// 턴 제어
+turn_manager->StartNextTurn()
+turn_manager->EndCurrentTurn()                 // BattleOrchestrator에서 AI EndTurn 시 호출
+
+// 의존성 주입 (테스트용)
+turn_manager->SetEventBus(bus)
+```
+
+`InitiativeEntry` 구조체 (`TurnManager.h`): `Character*`, `MockCharacter*`(테스트용), `int speed`
 
 ### Action 시스템 (`Abilities/` 대체)
 
@@ -189,26 +439,63 @@ GamePlay (GameState)
   └── TurnManager → AISystem → Strategy::MakeDecision()
 ```
 
+**BattleOrchestrator::HandleAITurn 프레임 단위 실행 패턴**:
+
+```
+매 Update 프레임:
+  1. MovementComponent::IsMoving() → true면 즉시 return (이동 애니메이션 완료 대기)
+  2. m_wait_timer > 0 → dt 감산 후 return (비차단 대기)
+  3. AISystem::MakeDecision() → AIDecision 획득
+  4. EndTurn → TurnManager::EndCurrentTurn() (대기 없음)
+     그 외  → AISystem::ExecuteDecision() 후 m_wait_timer 설정:
+              UseAbility → 0.6s (SpellDelayObject 0.5s 보장 + 여유)
+              Move/Attack → 0.3s (시각적 피드백 간격)
+  5. 다음 프레임에 다시 HandleAITurn 진입 → 또 MakeDecision 반복
+```
+
+⚠️ AI는 **한 Update 프레임에 행동 1회**만 실행 후 반환 — 이동·공격·스펠 각각 별도 프레임에서 처리됨.
+
+**GamePlay AI 캐릭터 관리** (`States/GamePlay.h`):
+
+```cpp
+Character* player = nullptr;              // Dragon (플레이어)
+std::vector<Character*> enemys {};        // 모든 AI 캐릭터 (Fighter, Cleric, ...)
+```
+
+- 스폰 시 `enemys.push_back(raw_ptr)` — Fighter·Cleric 모두 동일
+- `InitializeTurnOrder({ player } + enemys)` — 새 AI 추가 시 자동 반영
+- `CheckGameEnd`: `std::all_of(enemys, IsAlive==false)` → 전원 사망 시 Player Win
+- ⚠️ `LoadJSONMap`은 `maps.json`의 `spawn_points` 키(`"fighter"`, `"cleric"`, ...)를 찾아 스폰 — 새 캐릭터는 maps.json에 spawn_point 추가 필요
+
 **PlayerInputHandler.ActionState** (입력 상태 머신):
 
 ```
-None → SelectingMove → Moving
-     → SelectingAction → TargetingForAttack
-                       → SelectingSpell → TargetingForSpell
-                                        → WallPlacementMulti
-                                        → LavaPlacementMulti
+None ──[Dragon 타일 클릭]──→ SelectingMove → Moving
+     ──[slot_attack 클릭]──→ TargetingForAttack
+     ──[스펠 슬롯 클릭]────→ SelectingSpell → TargetingForSpell
+                                            → WallPlacementMulti
+                                            → LavaPlacementMulti
 ```
 
+`SelectingAction` 상태는 enum에 남아있지만 실제로는 미사용. Dragon 타일 클릭으로 이동 선택 진입 (Move 버튼 없음).
 Dragon(플레이어) 턴에서만 동작. AI(Fighter) 턴은 `BattleOrchestrator`가 처리.
+
+**⚠️ GS 컴포넌트 Update 중복 호출 금지** (`States/GamePlay.cpp`):
+
+`UpdateGSComponents(dt)`가 등록된 모든 GS 컴포넌트(`DebugManager` 포함)의 `Update()`를 자동 호출한다. 특정 컴포넌트를 추가로 명시 호출하면 같은 프레임에 `ProcessInput()`이 두 번 실행되어 `KeyJustPressed`가 두 번 true → 토글이 ON→OFF로 즉시 복귀하는 버그 발생.
+
+```cpp
+// ❌ 잘못된 패턴 — debugMgr->Update(dt)를 명시 호출 후 UpdateGSComponents도 호출
+debugMgr->Update(dt);        // 1번째 ProcessInput
+UpdateGSComponents(scaledDt); // 2번째 ProcessInput → F1 두 번 처리
+
+// ✅ 올바른 패턴
+UpdateGSComponents(scaledDt); // 한 번만 호출
+```
 
 **⚠️ SpellDelayObject 타이밍 주의** (`States/BattleOrchestrator.cpp`):
 
-`SpellSystem::CastSpell`은 효과를 **0.5초 딜레이** 후 적용(`SpellDelayObject`). AI 재호출 간격이 이보다 짧으면 상태 반영 전에 MakeDecision이 재호출되어 같은 스펠을 중복 시전한다.
-
-```cpp
-// AI 재호출 간격은 반드시 SpellDelayObject 딜레이(0.5s)보다 길게 유지
-while (timer->GetElapsedSeconds() < 0.6) {}  // 현재 0.6s
-```
+`SpellSystem::CastSpell`은 효과를 **0.5초 딜레이** 후 적용(`SpellDelayObject`). `UseAbility` 결정 실행 후 `m_wait_timer = 0.6`으로 설정하면 SpellDelayObject가 완료된 뒤에 MakeDecision이 재호출된다. 이 대기가 없으면 상태 반영 전에 동일 스펠을 중복 시전한다.
 
 ---
 
@@ -235,19 +522,32 @@ ID, Name, Category, Classes, Required Slot Level, Targeting, Upcasting Effect, E
 
 ```
 Deals {formula} damage.
-Applies "{STATUS}" status for {N} turns.
+Applies "{STATUS}" status for {N} turns [to self].
 Move to {mover:move_type:distance}.
 Summons {entity} at {location}.
 ```
 
 Move 값: `self:stay:0` (이동 없음) | `target:knockback:N` (밀쳐냄) | `self:teleport:selected` (순간이동)
 
+**`to self` 접미사** — Applies 줄에 `to self`를 붙이면 시전자(caster) 자신에게 효과 적용. 없으면 targets에 적용 (기본):
+
+```csv
+Applies "Exhaustion" status for 1 turn to self.   ← Dragon이 Meteor 시전 후 자신이 탈진
+Applies "Blessing" status for 2 turns.             ← 피격 대상들에게 적용 (기존 방식)
+```
+
+`SpellData` 파싱 결과: `caster_effect_status` / `caster_effect_duration` 필드 (`SpellSystem.h`).
+
 **시전 흐름**:
 
 ```
 CastSpell → CanCast(클래스/슬롯/Geometry/Range/AP 체크) → ConsumeSpell → AP.Consume(1) → ApplySpellEffect
-  ApplySpellEffect → targets 결정(Geometry) → 피해 → 상태효과 → ApplyMoveEffect → ApplySpecialEffect
+  ApplySpellEffect → targets 결정(Geometry) → 피해 → OnAfterAttack(Lifesteal/Frenzy/Stealth 훅) → 상태효과(targets) → 시전자 자신 효과 → ApplyMoveEffect → ApplySpecialEffect
 ```
+
+**⚠️ `OnAfterAttack` 호출 위치**: `StatusEffectHandler::OnAfterAttack`은 `CombatSystem::ExecuteAttack`(기본 공격)과 `SpellSystem::ApplySpellEffect`(데미지 스펠) **양쪽에서** 호출된다. Lifesteal은 Smite 같은 데미지 스펠에도 정상 발동된다.
+
+**넉백 시 용암 착지 → 즉시 정지 + 피해**: `ApplyMoveEffect`의 knockback 루프는 `TileType::Lava` 타일에 닿는 순간 멈추고 (`break`), 이후 `GetLavaDamageAt()`으로 피해를 즉시 적용한다. 벽(Wall)은 착지 불가, 그 앞에서 멈춤. 빈 타일은 계속 미끄러짐.
 
 ---
 
@@ -274,7 +574,7 @@ CastSpell → CanCast(클래스/슬롯/Geometry/Range/AP 체크) → ConsumeSpel
 | `OnRemoved(target, name)` | 효과 만료/Purify 시 | Fear→base speed+1, Haste→-1 복원                 |
 | `ModifyDamageDealt`       | 피해 계산          | Blessing+3, Fear-3, Curse-3, Stealth×2         |
 | `ModifyDamageTaken`       | 피해 계산          | Blessing-3, Curse+3                            |
-| `OnAfterAttack`           | ApplyDamage 직후 | Stealth 소모, Lifesteal 회복, Frenzy 발동            |
+| `OnAfterAttack`           | ApplyDamage 직후 (기본 공격 및 데미지 스펠 공통) | Stealth 소모, Lifesteal 회복, Frenzy 발동 |
 | `OnTurnStart`             | 턴 시작           | Exhaustion→AP/Speed 0, Haste→AP+1              |
 
 **⚠️ base speed 수정 주의**:
@@ -291,6 +591,24 @@ CastSpell → CanCast(클래스/슬롯/Geometry/Range/AP 체크) → ConsumeSpel
 3. CMake가 GLOB_RECURSE로 자동 감지 → CMakeLists.txt 수동 편집 불필요
 4. 새 파일 추가 후 `cmake --preset windows-debug` 재실행
 5. 캐릭터 생성: `new Dragon()` 대신 `CharacterFactory::Create()` 사용
+6. JSON 파싱: `External/json.hpp` (nlohmann/json) 사용 — `#include "Game/DragonicTactics/External/json.hpp"`
+
+**새 AI 캐릭터 추가 체크리스트** (Cleric 추가 패턴 기준):
+```
+□ Objects/X.h + X.cpp            — Character 상속, IsAIControlled()=true, Action()→AISystem 위임
+□ StateComponents/AI/XStrategy.h/.cpp — IAIStrategy 구현, Single 스펠에 range 상수 + 거리 체크 필수
+□ StateComponents/AISystem.cpp   — m_strategies[CharacterTypes::X] = new XStrategy()
+□ Factories/CharacterFactory.h   — class X; + CreateX() 선언
+□ Factories/CharacterFactory.cpp — #include X.h + Create() switch case + CreateX() 구현
+□ Assets/Data/characters.json    — "X": { hp, speed, ap, attack_dice, spell_slots, ... }
+□ Assets/Data/maps.json          — 각 맵 spawn_points에 "x": {"x":N, "y":N} 추가
+□ States/GamePlay.cpp            — LoadJSONMap에 spawn_points.find("x") + enemys.push_back()
+□ Engine/SoundManager.h          — SFX_X_ACTION / SFX_X_HURT 상수 추가
+```
+
+**Wizard/Rogue 한정**: 스프라이트(`wizard_p.png`, `rogue_p.png`)와 SFX 파일(`wizard_action/hurt.wav`, `rouge_action/hurt.wav`)은 Assets에 이미 존재 — 에셋 생성 단계 생략 가능. SoundManager.h 상수만 추가하면 됨.
+
+**캐릭터 클래스 계층**: `CS230::GameObject` ← `Character` ← `Dragon` / `Fighter` / `Cleric` / `Wizard` / `Rogue`
 
 ---
 
@@ -324,7 +642,7 @@ CastSpell → CanCast(클래스/슬롯/Geometry/Range/AP 체크) → ConsumeSpel
 - `Assets/Data/spell_table.csv` — 스펠 정의 (`SpellData`: Targeting + Effect 템플릿)
 - `Assets/Data/status_effect.csv` — 상태 이상 설정
 
-**맵 전환**: `GamePlay::s_next_map_source`와 `GamePlay::s_next_map_index` 정적 필드를 GamePlay 전환 전에 설정해 어떤 맵을 로드할지 지정한다 (`MapSource::First` = 하드코딩 맵, `MapSource::JSON` = maps.json 선택).
+**맵 전환**: `GamePlay::s_next_map_id` (string, 기본값 `"first_map"`)와 `GamePlay::s_should_restart` (bool) 정적 필드를 GamePlay 전환 전에 설정해 어떤 맵을 로드할지 지정한다. `s_next_map_id`는 `maps.json`의 맵 ID 문자열이며, 없으면 첫 번째 맵으로 fallback한다.
 
 ---
 
@@ -335,7 +653,7 @@ GameState 컴포넌트가 아닌 **엔진 레벨 서비스**. `Engine::GetSoundM
 - **BGM**: OGG 파일 (`Assets/Audio/BGM/`) → 루프 재생
 - **SFX**: WAV 파일 (`Assets/Audio/SFX/`) → 단발, 8채널 소스 풀
 
-상수 경로가 헤더에 정의되어 있음: `SoundManager::BGM_MAIN_MENU`, `SoundManager::BGM_BATTLE`, `SoundManager::SFX_HIT`
+상수 경로가 헤더에 정의되어 있음: `SoundManager::BGM_MAIN_MENU`, `SoundManager::BGM_BATTLE`, `SFX_DRAGON_ACTION`, `SFX_DRAGON_HURT`, `SFX_DRAGON_WALK`, `SFX_FIGHTER_ACTION`, `SFX_FIGHTER_HURT`, `SFX_CLERIC_ACTION`, `SFX_CLERIC_HURT`, `SFX_HUMAN_WALK`
 
 ```cpp
 Engine::GetSoundManager().PlayBGM(SoundManager::BGM_BATTLE);   // 루프 BGM 시작
@@ -345,6 +663,138 @@ Engine::GetSoundManager().SetBGMVolume(0.7f);                  // 0.0 ~ 1.0
 ```
 
 `GamePlay::Load()`에서 `PlayBGM`, `GamePlay::Unload()`에서 `StopBGM` 호출 패턴을 따른다.
+
+**SFX 재생 순서** (`States/GamePlay.cpp` EventBus 구독, `StateComponents/CombatSystem.cpp`):
+
+| 순서 | 이벤트 | SFX |
+|---|---|---|
+| 1 | `CharacterAttackedEvent` | 공격자 action SFX (`SfxActionFor`) |
+| 2 | `CharacterDamagedEvent` | 피격자 hurt SFX (`SfxHurtFor`) |
+
+`CombatSystem::ExecuteAttack`에서 `CharacterAttackedEvent`를 `ApplyDamage` **전에** 발행해 순서 보장 (구현 완료). 이 순서를 바꾸면 hurt SFX가 먼저 재생되므로 변경 금지.
+
+---
+
+## 렌더링 패턴
+
+### 2-패스 렌더링 (`States/GamePlay.cpp::Draw()`)
+
+```cpp
+auto win          = Engine::GetWindow().GetSize();
+auto* renderer_2d = CS230::TextureManager::GetRenderer2D();
+
+// Pass 1: 월드 공간 — TacticalCamera 적용 (줌·패닝)
+Math::TransformationMatrix world_ndc = m_camera.GetWorldMatrix(win);
+renderer_2d->BeginScene(world_ndc);
+GetGSComponent<GridSystem>()->Draw();
+GetGSComponent<GameObjectManager>()->DrawAll(world_ndc);
+renderer_2d->EndScene();
+
+// Pass 2: UI 공간 — 가상 1600×900 좌표, 레터박스 적용
+Math::TransformationMatrix ui_ndc = TacticalCamera::BuildVirtualNdc(win);
+Engine::GetTextureManager().SaveCurrentScene(ui_ndc);  // 폰트 캐시 미스 복원용
+renderer_2d->BeginScene(ui_ndc);
+m_ui_manager->Draw(ui_ndc);
+renderer_2d->EndScene();
+```
+
+**TacticalCamera** (`States/GamePlay.h`):
+
+```cpp
+struct TacticalCamera {
+    Math::vec2 target = { 0.0, 0.0 };
+    double zoom = 1.0;
+    static constexpr int VIRTUAL_W = 1600;
+    static constexpr int VIRTUAL_H = 900;
+    Math::TransformationMatrix GetWorldMatrix(Math::ivec2 win) const;
+    Math::vec2 ScreenToWorld(Math::vec2 screen, Math::ivec2 win) const;
+    Math::vec2 WorldToScreen(Math::vec2 world, Math::ivec2 win) const;
+    static Math::TransformationMatrix BuildVirtualNdc(Math::ivec2 win);  // 레터박스 UI NDC
+};
+```
+
+**`SaveCurrentScene` 패턴** (`Engine/TextureManager.h/cpp`) — 폰트 캐시 미스 버그 대응:
+- 문제: `Font::PrintToTexture()` 캐시 미스 시 `EndRenderTextureMode()`가 잘못된 NDC 행렬로 씬을 복원 → UI 깜빡임
+- 해결: UI Pass 시작 직전 `SaveCurrentScene(ui_ndc)` 호출 → `EndRenderTextureMode` 내부에서 저장된 행렬로 정확히 복원
+
+```cpp
+// TextureManager.h - RenderInfo 구조체에 추가
+Math::TransformationMatrix SavedCameraMatrix{};
+static void SaveCurrentScene(const Math::TransformationMatrix& m);
+
+// TextureManager.cpp - EndRenderTextureMode 수정
+renderer_2d->BeginScene(render_info.SavedCameraMatrix);  // 저장된 ui_ndc 복원
+```
+
+⚠️ **CS200 소스 파일은 수정하지 않는다** — 렌더러 버그 대응은 `Engine/TextureManager.h/cpp`에서만 처리.
+
+### 타일 텍스처 (`StateComponents/GridSystem.cpp`)
+
+타일 텍스처는 GridSystem 생성자에서 `Engine::GetTextureManager().Load()`로 로드, `Draw()`에서 stone_tile 패턴과 동일하게 사용:
+
+```cpp
+// GridSystem.h private:
+std::shared_ptr<CS230::Texture> stone_tile_bright;
+std::shared_ptr<CS230::Texture> stone_tile_dark;
+std::shared_ptr<CS230::Texture> lava_tile;   // Assets/images/lava.png
+std::shared_ptr<CS230::Texture> wall_tile;   // Assets/images/Wall.png
+
+// Draw() 패턴 — tile_scale = TILE_SIZE / tex->GetSize().x
+tex->Draw(Math::TranslationMatrix(Math::ivec2{screen_x - TILE_SIZE, screen_y - TILE_SIZE})
+          * Math::ScaleMatrix(tile_scale), 0xFFFFFFFF, DrawDepth::TILE);
+```
+
+⚠️ 모든 타일(Wall, Lava, Difficult, Empty)은 `DrawDepth::TILE`을 명시적으로 전달해야 한다. `DrawRectangle`의 기본 depth는 `DrawDepth::CHARACTER`(0.5f)로 캐릭터와 겹친다.
+
+**DrawDepth 전체 값** (`Engine/DrawDepth.h`, 값이 작을수록 앞에 렌더링):
+
+| 상수 | 값 | 용도 |
+|---|---|---|
+| `DrawDepth::UI` | 0.01f | UI 텍스트·아이콘 |
+| `DrawDepth::PARTICLE` | 0.3f | 파티클 효과 |
+| `DrawDepth::CHARACTER` | 0.5f | 캐릭터·기본 오브젝트 |
+| `DrawDepth::PATH` | 0.7f | 경로 하이라이트 |
+| `DrawDepth::OVERLAY` | 0.8f | 이동/스펠 범위 오버레이 |
+| `DrawDepth::TILE` | 0.9f | 그리드 배경 타일 |
+
+### 배틀 로그 (`States/GamePlayUIManager`)
+
+`TurnEntry` 구조체(`round_number`, `turn_number`, `actor_name`, `is_player`, `lines`)를 `std::deque<TurnEntry> turn_history_`로 관리 (최대 `MAX_LOG_ROUNDS = 5` 라운드 보관). 로그는 최신이 아래로 추가되고(`push_back`), 새 턴 시작 시 자동 하단 스크롤 (단, 마우스가 패널 위에 있고 최하단이 아니면 스크롤 유지). 라운드 헤더(`─── Round N ───`)와 사이드 헤더(`▷ Player Turn` / `▷ Enemy Turn`)가 라운드/진영 전환 시 삽입된다.
+
+- **이벤트 타이밍 제약** (`TurnManager.cpp`): `PublishTurnStartEvent()`를 반드시 용암 피해 `ApplyDamage` **전에** 호출해야 함 — 배틀 로그가 `TurnStartedEvent`를 받아 새 턴 섹션을 열기 때문. 순서가 바뀌면 피해 항목이 이전 캐릭터의 섹션에 들어간다.
+- **패널 레이아웃 상수**: `GamePlayUIManager.h`의 `LOG_PANEL_X/Y/W/H`, `LOG_TITLE_H`, `LOG_LINE_H`, `LOG_INDENT`, `LOG_SB_W/X`에 집중 관리됨 — 패널 위치·크기 변경 시 이 상수들만 수정.
+- **스크롤**: 패널 위 마우스 휠(`GetMouseScroll()`) + 스크롤바 드래그. 패널 위에서는 카메라 줌 차단 (`IsMouseOverLogPanel()`).
+- **헤더 색상**: Player 턴 = 하늘색 `0x88ccffff`, Enemy 턴 = 주황색 `0xff8844ff`.
+
+### 슬롯 바 아이콘 (`States/GamePlayUIManager`)
+
+슬롯 아이콘은 `slot_icons_[]`(크기 11)에 로드되고 `DrawSlotBar()`에서 오버레이된다. 인덱스 0-9는 스펠 슬롯, 인덱스 10은 End Turn 버튼:
+
+```cpp
+// InitButtons() — 아이콘 로드
+slot_icons_.resize(11, nullptr);
+for (int i = 0; i < 10; ++i)
+    slot_icons_[i] = Engine::GetTextureManager().Load(ICON_PATHS[i]);
+slot_icons_[10] = Engine::GetTextureManager().Load("Assets/images/turn_end.png");
+
+// DrawSlotBar() — 아이콘 렌더링 (버튼 배경 위에 오버레이)
+for (int i = 0; i < static_cast<int>(slot_icons_.size()); ++i)
+    slot_icons_[i]->Draw(
+        Math::TranslationMatrix(Math::vec2{ slot_bar_x_[i], slot_bar_center_y_ - 32.0 }),
+        0xFFFFFFFF, DrawDepth::UI - 0.005f);
+```
+
+ButtonManager는 배경 사각형(`DrawRectangle`)만 담당하고, 아이콘은 항상 `DrawSlotBar()`가 그린다. `Button::image_path` 필드는 ButtonManager에 존재하지만 현재 슬롯 버튼에는 사용하지 않는다.
+
+### 폰트 (`Engine/TextManager`, `Engine/Fonts.h`)
+
+| 상수 | 파일 | 사용처 |
+|---|---|---|
+| `Fonts::Simple` (0) | Font_Simple.png | 미사용 |
+| `Fonts::Outlined` (1) | Font_Outlined.png | 미사용 |
+| `Fonts::Kings` (2) | Font_Kings.png | MainMenu + **게임플레이 전체 UI** |
+
+**⚠️ `Fonts::Kings`가 유일한 프로젝트 표준** — GamePlayUIManager, ButtonManager 모두 Kings 사용. `Fonts::Outlined`은 레거시 코드에서 이미 교체됨. 새 UI 텍스트는 반드시 `Fonts::Kings` 사용.
 
 ---
 
@@ -361,7 +811,9 @@ Engine::GetSoundManager().SetBGMVolume(0.7f);                  // 0.0 ~ 1.0
 
 - **게임 시스템**: `source/Game/DragonicTactics/StateComponents/`
 - **AI 전략**: `StateComponents/AI/` (IAIStrategy 인터페이스 + 캐릭터별 전략)
+- **게임 상태 파일**: `source/Game/DragonicTactics/States/` (GamePlay, BattleOrchestrator, PlayerInputHandler, GamePlayUIManager, ButtonManager)
 - **캐릭터 엔티티**: `source/Game/DragonicTactics/Objects/`
+- **캐릭터 팩토리**: `source/Game/DragonicTactics/Factories/` (CharacterFactory)
 - **Actions**: `Objects/Actions/` (Action.h, ActionAttack.h)
 - **타입 정의**: `source/Game/DragonicTactics/Types/` (CharacterTypes.h, GameTypes.h, Events.h)
 - **SpellData 구조체**: `StateComponents/SpellSystem.h` (SpellData, SpellTargeting, SpellMove)
@@ -369,7 +821,7 @@ Engine::GetSoundManager().SetBGMVolume(0.7f);                  // 0.0 ~ 1.0
 - **경로 탐색**: `StateComponents/AStar.cpp` (GridSystem::FindPath에서 내부 사용)
 - **디버그 서브시스템**: `source/Game/DragonicTactics/Debugger/` (DebugConsole, DebugManager, DebugVisualizer)
 - **JSON 데이터**: `DragonicTactics/Assets/Data/`
-- **AI 플로우차트**: `architecture/character_flowchart/` (Mermaid .mmd — fighter.mmd, cleric.mmd, wizard.mmd, rouge.mmd 존재)
+- **AI 플로우차트**: `architecture/character_flowchart/` (Mermaid .mmd — fighter.mmd, cleric.mmd, rouge.mmd, wizard.mmd 존재 / rouge.jpg, wizard.jpg 이미지도 있음)
 
 엔진 접근: `Engine::GetLogger()`, `Engine::GetInput()`, `Engine::GetWindow()`, `Engine::GetGameStateManager()`
 
@@ -382,5 +834,17 @@ Engine::GetSoundManager().SetBGMVolume(0.7f);                  // 0.0 ~ 1.0
 - [docs/implementation-plan.md](docs/implementation-plan.md) — 26주 구현 계획 (우선순위 기반)
 - [docs/Detailed Implementations/weeks/](docs/Detailed%20Implementations/weeks/) — 주차별 상세 가이드 (한글)
 - [docs/Detailed Implementations/features/spell_system.md](docs/Detailed%20Implementations/features/spell_system.md) — SpellSystem 전체 구현 가이드 (Targeting 템플릿, Effect 파싱, 업캐스팅, Move 템플릿)
+- [docs/Detailed Implementations/features/status_effect_system.md](docs/Detailed%20Implementations/features/status_effect_system.md) — StatusEffect 두 레이어 구현 가이드
+- [docs/Detailed Implementations/features/terrain_spells.md](docs/Detailed%20Implementations/features/terrain_spells.md) — 지형 변환 스펠(Wall/Lava 배치) 구현 가이드
+- [docs/Detailed Implementations/features/map_loading.md](docs/Detailed%20Implementations/features/map_loading.md) — maps.json 로딩 및 맵 전환 구현 가이드
+- [docs/Detailed Implementations/features/button_manager.md](docs/Detailed%20Implementations/features/button_manager.md) — ButtonManager(슬롯 바 버튼 패널) 구현 가이드
+- [docs/Detailed Implementations/features/UI 개선 구현점.md](docs/Detailed%20Implementations/features/UI%20개선%20구현점.md) — UI 리팩토링 실제 변경점 (bb7e32fa 커밋 대비, TacticalCamera/2-패스/슬롯바/배틀로그 플리커 수정 포함)
+- [docs/Detailed Implementations/features/character_death_crash_fix.md](docs/Detailed%20Implementations/features/character_death_crash_fix.md) — 캐릭터 사망 시 비결정적 크래시 수정 (use-after-free, m_confirmed_dead_ 패턴, RemoveFromTurnOrder)
 - [architecture/game_architecture_rules.md](architecture/game_architecture_rules.md) — 아키텍처 원칙
 - [architecture/Implementation_Checklist.md](architecture/Implementation_Checklist.md) — 진행 체크리스트
+- [docs/Detailed Implementations/features/fighter_strategy.md](docs/Detailed%20Implementations/features/fighter_strategy.md) — FighterStrategy 구현 상세 가이드
+- [docs/Detailed Implementations/features/rogue_strategy.md](docs/Detailed%20Implementations/features/rogue_strategy.md) — RogueStrategy 구현 가이드 (참조용)
+- [docs/Detailed Implementations/weeks/cleric_implementation.md](docs/Detailed%20Implementations/weeks/cleric_implementation.md) — Cleric 구현 가이드
+- [docs/debug/commands.md](docs/debug/commands.md) — 디버그 콘솔 명령어 목록
+- [docs/systems/](docs/systems/) — 시스템별 상세 문서 (EventBus, Characters, Components 등)
+- [DragonicTactics/README.md](DragonicTactics/README.md) — 빌드 셋업 (영문/한글)

@@ -12,6 +12,7 @@ Created:    Nov 16, 2025
 
 #include "Engine/GameObject.h"								 // GetGOComponent, SetPosition
 #include "Engine/Logger.h"									 // Engine::GetLogger
+#include "Engine/SoundManager.h"
 #include "./Engine/Engine.h"
 #include "./Engine/GameStateManager.h"
 #include "Game/DragonicTactics/StateComponents/GridSystem.h" // TILE_SIZE, IsWalkable, MoveCharacter
@@ -121,6 +122,14 @@ void MovementComponent::Update(double dt)
 	  m_owner->SetPosition({ static_cast<double>(next_pos.x * GridSystem::TILE_SIZE), static_cast<double>(next_pos.y * GridSystem::TILE_SIZE) });
 
 	  m_stats->ReduceSpeed();
+
+	  if (auto* character = dynamic_cast<Character*>(m_owner))
+	  {
+	    const char* walk_sfx = (character->GetCharacterType() == CharacterTypes::Dragon)
+	                           ? SoundManager::SFX_DRAGON_WALK
+	                           : SoundManager::SFX_HUMAN_WALK;
+	    Engine::GetSoundManager().PlaySFX(walk_sfx);
+	  }
 
 	  Engine::GetLogger().LogEvent(m_owner->TypeName() + " moved. Speed remaining: " + std::to_string(m_stats->GetSpeed()));
 

@@ -1,3 +1,7 @@
+/**
+ * \date 2026 Spring
+ * \copyright DigiPen Institute of Technology
+ */
 #include "pch.h"
 #include "SoundManager.h"
 
@@ -165,6 +169,9 @@ void SoundManager::PlaySFX(const std::string& wav_path)
     alSourcei(source, AL_LOOPING, AL_FALSE);
     alSourcef(source, AL_GAIN, sfx_volume_);
     alSourcePlay(source);
+
+    if (sfx_callback_)
+        sfx_callback_(wav_path);
 }
 
 void SoundManager::StopAllSFX()

@@ -12,3 +12,5 @@ DragonicTactics/build/
 project/DragonicTactics/source/CS200/taekyung.ho_milestone4_loc.csv
 project/DragonicTactics/source/Engine/taekyung.ho_milestone4_loc.csv
 project/DragonicTactics/source/Game/DragonicTactics/Test/taekyung.ho_milestone4_loc.csv
+*.zip
+/project/DragonicTactics_v0.1.1-test_playtest

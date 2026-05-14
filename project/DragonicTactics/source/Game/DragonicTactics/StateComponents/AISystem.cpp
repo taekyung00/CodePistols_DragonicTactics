@@ -10,6 +10,7 @@
 
 /* have to include characters IA */
 
+#include "AI/ClericStrategy.h"
 #include "AI/FighterStrategy.h"
 // #include "AI/WizardStrategy.h" (TODO)
 
@@ -40,10 +41,10 @@ void AISystem::Init()
 {
   // [핵심] 캐릭터 타입에 맞는 두뇌를 갈아끼우는 곳
   m_strategies[CharacterTypes::Fighter] = new FighterStrategy();
+  m_strategies[CharacterTypes::Cleric]  = new ClericStrategy();
 
   // 나중에 이렇게 추가하면 됩니다:
   // m_strategies[CharacterTypes::Wizard] = new WizardStrategy();
-  // m_strategies[CharacterTypes::Cleric] = new ClericStrategy();
 }
 
 AIDecision AISystem::MakeDecision(Character* actor)
@@ -104,7 +105,7 @@ void AISystem::ExecuteDecision(Character* actor, const AIDecision& decision)
 	case AIDecisionType::UseAbility:
 	  if (spell_system)
 	  {
-		spell_system->CastSpell(actor, decision.abilityName, decision.target->GetGridPosition()->Get());
+		spell_system->CastSpell(actor, decision.abilityName, decision.target->GetGridPosition()->Get(), decision.upcast_level);
 		actionExecuted = true;
 	  }
 	  break;
@@ -115,6 +116,7 @@ void AISystem::ExecuteDecision(Character* actor, const AIDecision& decision)
 
   if (auto* eventbus = gs.GetGSComponent<EventBus>())
   {
-	eventbus->Publish(AIDecisionEvent{ actor, decision.type, decision.target, decision.reasoning });
+	Math::ivec2 dest = (decision.type == AIDecisionType::Move) ? decision.destination : Math::ivec2{ -1, -1 };
+	eventbus->Publish(AIDecisionEvent{ actor, decision.type, decision.target, decision.reasoning, dest });
   }
 }

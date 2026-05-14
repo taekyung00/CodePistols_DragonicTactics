@@ -20,9 +20,10 @@ void DebugConsole::ToggleConsole()
 {
   open_ = !open_;
 
-  if (open_ && commands_.empty())
+  if (open_ && !defaults_registered_)
   {
 	RegisterDefaultCommands();
+	defaults_registered_ = true;
 	std::memset(input_buffer_, 0, sizeof(input_buffer_));
   }
 
@@ -106,6 +107,16 @@ void DebugConsole::ClearHistory()
   history_index_ = -1;
 }
 
+void DebugConsole::Print(const std::string& msg)
+{
+  output_log_.push_back(msg);
+  scroll_to_bottom_ = true;
+  while (output_log_.size() > max_output_)
+  {
+	output_log_.pop_front();
+  }
+}
+
 void DebugConsole::RegisterDefaultCommands()
 {
   // Help command
@@ -166,7 +177,7 @@ void DebugConsole::DrawImGui()
   }
 
   ImGui::SetNextWindowSize(ImVec2(500, 300), ImGuiCond_FirstUseEver);
-  ImGui::SetNextWindowPos(ImVec2(660, 520), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
 
   if (!ImGui::Begin("Console", &open_, ImGuiWindowFlags_None))
   {

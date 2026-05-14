@@ -33,5 +33,21 @@
     },
     "known_spells": [],
     "known_abilities": ["MeleeAttack", "ShieldBash"]
+  },
+  "Cleric": {
+    "max_hp": 90,
+    "speed": 2,
+    "max_action_points": 1,
+    "base_attack_power": 4,
+    "attack_dice": "1d6",
+    "base_defense_power": 2,
+    "defense_dice": "1d8",
+    "attack_range": 1,
+    "spell_slots": {
+      "1": 3,
+      "2": 2
+    },
+    "known_spells": [],
+    "known_abilities": []
   }
 }

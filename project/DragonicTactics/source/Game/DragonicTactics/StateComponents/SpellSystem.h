@@ -55,8 +55,10 @@ struct SpellData
 
   // ── Effect 템플릿 파싱 결과 (col[8] → ParseEffectField) ──
   std::string damage_formula;  // "3d8", "0", "-(1d10)", "8 * (Spell Level + 1 - ...)"
-  std::string effect_status;   // status_effect.csv의 NAME. "Basic" = 상태 없음
-  int		  effect_duration; // 상태 지속 턴 ("Basic"이면 0)
+  std::string effect_status;        // targets에 적용. "Basic" = 없음
+  int         effect_duration;      // 지속 턴
+  std::string caster_effect_status; // 시전자 자신에게 적용. "Basic" = 없음 (CSV: "to self" 접미사)
+  int         caster_effect_duration;
   SpellMove	  move;			   // ← move_type 문자열 대신 파싱된 구조체
 							   //   std::string move_type;	   // "current location", "furthest position from the Dragon..."
   std::string summon_type;	   // "NULL", "Lava Zone", "Wall"

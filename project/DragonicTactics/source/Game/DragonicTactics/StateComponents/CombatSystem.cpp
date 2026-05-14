@@ -16,6 +16,7 @@
 #include "./Game/DragonicTactics/Objects/Components/GridPosition.h"
 #include "./Game/DragonicTactics/Objects/Components/StatsComponent.h"
 #include "./Game/DragonicTactics/StateComponents/GridSystem.h"
+#include "Game/DragonicTactics/Debugger/DebugManager.h"
 #include "Game/DragonicTactics/StateComponents/StatusEffectHandler.h"
 #include "CombatSystem.h"
 
@@ -55,7 +56,16 @@ void CombatSystem::ApplyDamage(Character* attacker, Character* defender, int dam
 {
   if (defender == nullptr)
   {
-	Engine::GetLogger().LogError("CombatSystem: Null " + defender->TypeName());
+	Engine::GetLogger().LogError("CombatSystem: Null defender in ApplyDamage");
+	return;
+  }
+
+  // God Mode: Dragon은 데미지 무효
+  auto* debug_mgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
+  if (debug_mgr && debug_mgr->IsGodModeEnabled()
+	  && defender->GetCharacterType() == CharacterTypes::Dragon)
+  {
+	Engine::GetLogger().LogDebug("[GodMode] Damage blocked for Dragon");
 	return;
   }
 
@@ -82,7 +92,7 @@ void CombatSystem::ApplyDamage(Character* attacker, Character* defender, int dam
   // Check if defender died
   if (!defender->IsAlive())
   {
-	Engine::GetLogger().LogEvent("CombatSystem: " + defender->TypeName() + " died!");
+	Engine::GetLogger().LogEvent("CombatSystem: " + defender->TypeName() + " retired!");
 	auto* eventBus2 = Engine::GetGameStateManager().GetGSComponent<EventBus>();
 	if (eventBus2)
 	{
@@ -140,6 +150,13 @@ bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender)
         damage = handler->ModifyDamageDealt(attacker, damage);
         damage = handler->ModifyDamageTaken(defender, damage);
     }
+  // 공격 SFX 먼저 발행 (action SFX → hurt SFX 순서 보장)
+  auto* eventBus = Engine::GetGameStateManager().GetGSComponent<EventBus>();
+  if (eventBus)
+  {
+	eventBus->Publish(CharacterAttackedEvent{ attacker, defender, damage });
+  }
+
   ApplyDamage(attacker, defender, damage);
 
   if (handler)
@@ -147,15 +164,10 @@ bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender)
 
   attacker->SetHasAttackedThisTurn(true);
 
-  // Consume AP
-  attacker->GetActionPointsComponent()->Consume(attackCost);
-
-  // Publish attack event
-  auto* eventBus = Engine::GetGameStateManager().GetGSComponent<EventBus>();
-  if (eventBus)
-  {
-	eventBus->Publish(CharacterAttackedEvent{ attacker, defender, damage });
-  }
+  // Consume AP (갓모드 Dragon은 AP 소모 없음)
+  auto* debug_mgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
+  if (!(debug_mgr && debug_mgr->IsGodModeEnabled() && attacker->GetCharacterType() == CharacterTypes::Dragon))
+    attacker->GetActionPointsComponent()->Consume(attackCost);
 
   return true;
 }

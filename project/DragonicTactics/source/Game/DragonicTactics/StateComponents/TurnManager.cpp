@@ -79,86 +79,85 @@ void TurnManager::StartCombat()
 
 void TurnManager::StartNextTurn()
 {
-  // Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - BEGIN");
-  if (!combatActive)
-  {
-	Engine::GetLogger().LogError("TurnManager: Combat not active");
-	return;
-  }
+    // Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - BEGIN");
+    if (!combatActive)
+    {
+        Engine::GetLogger().LogError("TurnManager: Combat not active");
+        return;
+    }
 
-  if (turnOrder.empty())
-  {
-	Engine::GetLogger().LogError("TurnManager: No characters in turn order");
-	return;
-  }
+    /*======================================================================================*/
+    // 1. 크래시 방지: 이미 파괴되었거나 죽은 캐릭터를 턴 대기열에서 안전하게 제거합니다.
+    /*======================================================================================*/
+    turnOrder.erase(
+        std::remove_if(turnOrder.begin(), turnOrder.end(),
+            [](Character* c) {
+                // 포인터가 유효하지 않거나 이미 죽은 캐릭터라면 목록에서 제거 대상으로 분류합니다.
+                return c == nullptr || !c->IsAlive();
+            }),
+        turnOrder.end()
+    );
 
-  // Get current character
-  Character* currentChar = turnOrder[static_cast<std::size_t>(currentTurnIndex)];
-  Engine::GetLogger().LogEvent("TurnManager: Turn " + std::to_string(turnNumber) + " - " + currentChar->TypeName() + "'s turn");
+    // 2. 캐릭터가 모두 죽어서 목록이 비었다면 전투를 즉시 종료합니다.
+    if (turnOrder.empty())
+    {
+        Engine::GetLogger().LogEvent("TurnManager: All characters dead, ending combat");
+        EndCombat();
+        return;
+    }
 
-  // Skip dead characters
-  while (!currentChar->IsAlive())
-  {
-	currentTurnIndex = static_cast<int>((static_cast<std::size_t>(currentTurnIndex) + 1) % turnOrder.size());
-	currentChar		 = turnOrder[static_cast<std::size_t>(currentTurnIndex)];
+    // 3. 인덱스 보정: 캐릭터 삭제로 인해 리스트가 짧아졌을 경우 인덱스 초과 에러를 방지합니다.
+    if (static_cast<std::size_t>(currentTurnIndex) >= turnOrder.size())
+    {
+        currentTurnIndex = 0;
+    }
 
-	// Check if we've cycled through all characters (all dead)
-	if (currentTurnIndex == 0)
-	{
-	  Engine::GetLogger().LogEvent("TurnManager: All characters dead, ending combat");
-	  EndCombat();
-	  return;
-	}
-  }
+    /*======================================================================================*/
+    // 정상적인 턴 시작 로직 진행
+    /*======================================================================================*/
+    
+    // 안전하게 현재 캐릭터 가져오기
+    Character* currentChar = turnOrder[static_cast<std::size_t>(currentTurnIndex)];
+    Engine::GetLogger().LogEvent("TurnManager: Turn " + std::to_string(turnNumber) + " - " + currentChar->TypeName() + "'s turn");
 
-  // Refresh character's action points
-  // currentChar->RefreshActionPoints();
-  // StatsComponent* stats = currentChar->GetStatsComponent();
-  // if (stats)
-  // {
-  // stats->RefreshSpeed();
-  // }
+    // [수정 후 순서 적용 완료]
+    // 1. AP/Speed 리프레시
+    currentChar->OnTurnStart();
 
-  /*======================================================================================*/
-  // 수정 후 순서
+    // 2. 효과 적용 (Exhaustion이 아직 존재함, duration=1)
+    auto* handler = Engine::GetGameStateManager().GetGSComponent<StatusEffectHandler>();
+    if (handler)
+        handler->OnTurnStart(currentChar);
 
-  // 1. AP/Speed 리프레시
-  currentChar->OnTurnStart();
+    // 3. 그 다음 duration 감소 (1 → 0 → 제거)
+    auto* se = currentChar->GetGOComponent<StatusEffectComponent>();
+    if (se)
+        se->TickDown(currentChar, eventBus);
 
-  // 2. 효과 적용 (Exhaustion이 아직 존재함, duration=1)
-  auto* handler = Engine::GetGameStateManager().GetGSComponent<StatusEffectHandler>();
-  if (handler)
-	handler->OnTurnStart(currentChar);
+    // Publish turn start event — 반드시 용암 피해보다 먼저: 배틀 로그가 이 이벤트로 새 턴 섹션을 열기 때문
+    PublishTurnStartEvent();
 
-  // 3. 그 다음 duration 감소 (1 → 0 → 제거)
-  auto* se = currentChar->GetGOComponent<StatusEffectComponent>();
-  if (se)
-	se->TickDown(currentChar, eventBus);
-  /*======================================================================================*/
+    // 용암 턴 시작 피해 — TurnStartedEvent 이후에 적용해야 배틀 로그의 올바른 턴 섹션에 기록됨
+    {
+        auto* spell_system = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
+        auto* combat       = Engine::GetGameStateManager().GetGSComponent<CombatSystem>();
 
-  // 용암 턴 시작 피해 — 현재 캐릭터가 용암 위에 있으면 피해
-  {
-	auto* spell_system = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
-	auto* combat	   = Engine::GetGameStateManager().GetGSComponent<CombatSystem>();
-	if (spell_system && combat && currentChar->IsAlive())
-	{
-	  GridPosition* gp = currentChar->GetGOComponent<GridPosition>();
-	  if (gp)
-	  {
-		int dmg = spell_system->GetLavaDamageAt(gp->Get());
-		if (dmg > 0)
-		{
-		  Engine::GetLogger().LogEvent(currentChar->TypeName() + " takes " + std::to_string(dmg) + " lava damage at turn start");
-		  combat->ApplyDamage(nullptr, currentChar, dmg);
-		}
-	  }
-	}
-  }
+        if (spell_system && combat && currentChar->IsAlive())
+        {
+            GridPosition* gp = currentChar->GetGOComponent<GridPosition>();
+            if (gp)
+            {
+                int dmg = spell_system->GetLavaDamageAt(gp->Get());
+                if (dmg > 0)
+                {
+                    Engine::GetLogger().LogEvent(currentChar->TypeName() + " takes " + std::to_string(dmg) + " lava damage at turn start");
+                    combat->ApplyDamage(nullptr, currentChar, dmg);
+                }
+            }
+        }
+    }
 
-  // Publish turn start event
-  PublishTurnStartEvent();
-
-  // Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - END");
+    // Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - END");
 }
 
 void TurnManager::EndCurrentTurn()
@@ -230,6 +229,36 @@ void TurnManager::EndCurrentTurn()
   StartNextTurn();
 
   // Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - END");
+}
+
+void TurnManager::RemoveFromTurnOrder(Character* character)
+{
+  if (!character) return;
+
+  // initiativeOrder에서도 제거
+  initiativeOrder.erase(
+      std::remove_if(initiativeOrder.begin(), initiativeOrder.end(),
+          [character](const InitiativeEntry& e) { return e.character == character; }),
+      initiativeOrder.end()
+  );
+
+  // turnOrder에서 위치 탐색
+  auto it = std::find(turnOrder.begin(), turnOrder.end(), character);
+  if (it == turnOrder.end()) return;
+
+  int removed_index = static_cast<int>(std::distance(turnOrder.begin(), it));
+  turnOrder.erase(it);
+
+  if (turnOrder.empty()) return; // StartNextTurn에서 EndCombat 처리
+
+  // currentTurnIndex 보정: 제거된 위치가 현재 인덱스보다 앞이면 한 칸 당김
+  if (removed_index < currentTurnIndex)
+    --currentTurnIndex;
+  else if (currentTurnIndex >= static_cast<int>(turnOrder.size()))
+    currentTurnIndex = 0;
+
+  Engine::GetLogger().LogEvent("[TurnManager] Removed " + character->TypeName()
+      + " from turnOrder on death. Remaining: " + std::to_string(turnOrder.size()));
 }
 
 void TurnManager::EndCombat()

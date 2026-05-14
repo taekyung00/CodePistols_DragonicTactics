@@ -36,11 +36,13 @@ void MockTreasureBox::Update(double dt)
   }
 }
 
-void MockTreasureBox::Draw(Math::TransformationMatrix camera_matrix)
+void MockTreasureBox::Draw(Math::TransformationMatrix camera_matrix, unsigned int color, float depth)
 {
   // Mock implementation - just log for now
   // Full implementation should draw sprite based on state
   (void)camera_matrix; // Suppress unused warning
+  (void)color;         // Suppress unused warning
+  (void)depth;         // Suppress unused warning
 }
 
 bool MockTreasureBox::CanBeOpened() const

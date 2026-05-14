@@ -25,6 +25,7 @@ class BattleOrchestrator
   bool CheckVictoryCondition();
 
   private:
-  void HandleAITurn(Character* ai_character, TurnManager* turn_manager, AISystem* ai_system);
-  int  m_previous_round = 0;
+  void HandleAITurn(Character* ai_character, TurnManager* turn_manager, AISystem* ai_system, double dt);
+  int    m_previous_round = 0;
+  double m_wait_timer     = 0.0;
 };

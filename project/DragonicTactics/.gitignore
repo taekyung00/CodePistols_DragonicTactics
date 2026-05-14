@@ -52,5 +52,8 @@ Thumbs.db
 #cloc
 cloc-1.64.exe
 *.exe
+!scripts/make_release.exe
+
+*.zip
 
 !CMakeLists.txt

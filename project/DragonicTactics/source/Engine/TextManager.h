@@ -7,6 +7,7 @@
  */
 #include "Font.h"
 #include "Fonts.h"
+#include "DrawDepth.h"
 #include <memory>
 #include <vector>
 
@@ -15,7 +16,8 @@ class TextManager
   public:
   TextManager() = default;
   void Init();
-  void DrawText(const std::string& text, const Math::vec2& position, Fonts font, const Math::vec2& scale = { 1.0, 1.0 }, CS200::RGBA color = CS200::WHITE) const;
+  void DrawText(const std::string& text, const Math::vec2& position, Fonts font, const Math::vec2& scale = { 1.0, 1.0 }, CS200::RGBA color = CS200::WHITE, float depth = DrawDepth::UI) const;
+  Math::ivec2 CalculateTextSize(const std::string& text, Fonts font) const;
 
   private:
   // static CS230::Font* get_font(size_t);

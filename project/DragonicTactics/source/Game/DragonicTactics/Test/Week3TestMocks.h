@@ -62,7 +62,7 @@ class MockTreasureBox : public CS230::GameObject
   }
 
   void Update(double dt) override;
-  void Draw(Math::TransformationMatrix camera_matrix) override;
+  void Draw(Math::TransformationMatrix camera_matrix , unsigned int color = 0xFFFFFFFF, float depth = 0.5f) override;
 
   // TreasureBox specific methods
   bool		   CanBeOpened() const;

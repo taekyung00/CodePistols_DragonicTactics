@@ -36,6 +36,8 @@ struct MapData {
     std::vector<std::string> tiles;
     std::map<char, std::string> legend;
     std::map<std::string, Math::ivec2> spawn_points;
+    bool has_exit = false;
+    Math::ivec2 exit_position{0, 0};
 };
 
 class MapDataRegistry : public CS230::Component {

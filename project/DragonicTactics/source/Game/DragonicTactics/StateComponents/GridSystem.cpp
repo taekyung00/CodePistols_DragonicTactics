@@ -10,6 +10,7 @@
 #include "./Engine/Engine.h"
 #include "./Engine/Logger.h"
 #include "./Game/DragonicTactics/Objects/Character.h"
+#include "Engine/DrawDepth.h"
 #include "GridSystem.h"
 #include <algorithm>
 #include <cassert>
@@ -33,19 +34,30 @@ bool GridSystem::HasExit() const
 
 GridSystem::GridSystem()
 {
+	ResizeGrid(8, 8);
 	Reset();
 	stone_tile_bright = Engine::GetTextureManager().Load("Assets/images/stone_tile_bright.png");
-	stone_tile_dark	 = Engine::GetTextureManager().Load("Assets/images/stone_tile_dark.png");
+	stone_tile_dark	  = Engine::GetTextureManager().Load("Assets/images/stone_tile_dark.png");
+	lava_tile         = Engine::GetTextureManager().Load("Assets/images/lava.png");
+	wall_tile         = Engine::GetTextureManager().Load("Assets/images/Wall.png");
+}
+
+void GridSystem::ResizeGrid(int w, int h)
+{
+	map_width_  = w;
+	map_height_ = h;
+	tile_grid_.assign(static_cast<std::size_t>(h), std::vector<TileType>(static_cast<std::size_t>(w), TileType::Empty));
+	character_grid_.assign(static_cast<std::size_t>(h), std::vector<Character*>(static_cast<std::size_t>(w), nullptr));
 }
 
 void GridSystem::Reset()
 {
-	for (int y = 0; y < MAP_HEIGHT; ++y)
+	for (int y = 0; y < map_height_; ++y)
 	{
-		for (int x = 0; x < MAP_WIDTH; ++x)
+		for (int x = 0; x < map_width_; ++x)
 		{
-			tile_grid[y][x]		 = TileType::Empty;
-			character_grid[y][x] = nullptr;
+			tile_grid_[static_cast<std::size_t>(y)][static_cast<std::size_t>(x)]	  = TileType::Empty;
+			character_grid_[static_cast<std::size_t>(y)][static_cast<std::size_t>(x)] = nullptr;
 		}
 	}
 	exit_position_ = { -1, -1 };
@@ -53,7 +65,7 @@ void GridSystem::Reset()
 
 bool GridSystem::IsValidTile(Math::ivec2 pos) const
 {
-	return pos.x >= 0 && pos.x < MAP_WIDTH && pos.y >= 0 && pos.y < MAP_HEIGHT;
+	return pos.x >= 0 && pos.x < map_width_ && pos.y >= 0 && pos.y < map_height_;
 }
 
 void GridSystem::SetTileType(Math::ivec2 pos, TileType type)
@@ -63,7 +75,7 @@ void GridSystem::SetTileType(Math::ivec2 pos, TileType type)
 		Engine::GetLogger().LogError("SetTileType: Invalid tile position.");
 		return;
 	}
-	tile_grid[pos.y][pos.x] = type;
+	tile_grid_[static_cast<std::size_t>(pos.y)][static_cast<std::size_t>(pos.x)] = type;
 }
 
 GridSystem::TileType GridSystem::GetTileType(Math::ivec2 pos) const
@@ -72,7 +84,7 @@ GridSystem::TileType GridSystem::GetTileType(Math::ivec2 pos) const
 	{
 		return TileType::Invalid;
 	}
-	return tile_grid[pos.y][pos.x];
+	return tile_grid_[static_cast<std::size_t>(pos.y)][static_cast<std::size_t>(pos.x)];
 }
 
 bool GridSystem::IsOccupied(Math::ivec2 pos) const
@@ -81,7 +93,7 @@ bool GridSystem::IsOccupied(Math::ivec2 pos) const
 	{
 		return true;
 	}
-	return character_grid[pos.y][pos.x] != nullptr;
+	return character_grid_[static_cast<std::size_t>(pos.y)][static_cast<std::size_t>(pos.x)] != nullptr;
 }
 
 void GridSystem::Draw() const
@@ -90,33 +102,49 @@ void GridSystem::Draw() const
 
 
 	double tile_scale = static_cast<double>(TILE_SIZE) / static_cast<double>(stone_tile_bright->GetSize().x);
-	for (int y = 0; y < MAP_HEIGHT; ++y)
+	for (int y = 0; y < map_height_; ++y)
 	{
-		for (int x = 0; x < MAP_WIDTH; ++x)
+		for (int x = 0; x < map_width_; ++x)
 		{
 			int screen_x = x * TILE_SIZE + TILE_SIZE;
 			int screen_y = y * TILE_SIZE + TILE_SIZE;
 
-			switch (tile_grid[y][x])
+			switch (tile_grid_[static_cast<std::size_t>(y)][static_cast<std::size_t>(x)])
 			{
 				case TileType::Wall:
-					renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), CS200::DARKGRAY, 0U);
-					// renderer_2d.DrawRectangle(, TILE_SIZE, TILE_SIZE, BROWN);
+					if (wall_tile)
+					{
+						double wall_scale = static_cast<double>(TILE_SIZE) / static_cast<double>(wall_tile->GetSize().x);
+						wall_tile->Draw(Math::TranslationMatrix(Math::ivec2{ screen_x - TILE_SIZE, screen_y - TILE_SIZE }) * Math::ScaleMatrix(wall_scale), 0xFFFFFFFF, DrawDepth::TILE);
+					}
+					else
+					{
+						renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), CS200::DARKGRAY, 0U, 0.0, DrawDepth::TILE);
+					}
 					break;
 				case TileType::Exit:
 					// renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), CS200::GREEN, 0U);
 					break;
 				case TileType::Lava:
-					renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), 0xFF8000FF, 0U);
+					if (lava_tile)
+					{
+						double lava_scale = static_cast<double>(TILE_SIZE) / static_cast<double>(lava_tile->GetSize().x);
+						lava_tile->Draw(Math::TranslationMatrix(Math::ivec2{ screen_x - TILE_SIZE, screen_y - TILE_SIZE }) * Math::ScaleMatrix(lava_scale), 0xFFFFFFFF, DrawDepth::TILE);
+					}
+					else
+					{
+						renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), 0xFF8000FF, 0U, 0.0, DrawDepth::TILE);
+					}
 					break;
 				case TileType::Difficult:
-					renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), 0x4080FFFF, 0U);
+					renderer_2d->DrawRectangle(Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE), 0x4080FFFF, 0U, 0.0, DrawDepth::TILE);
 					break;
 				case TileType::Empty:
-        if((x + y) % 2 == 0)//체커보드 패턴
-          stone_tile_dark->Draw(Math::TranslationMatrix(Math::ivec2{ screen_x - TILE_SIZE, screen_y - TILE_SIZE }) * Math::ScaleMatrix(tile_scale));
-        else 
-          stone_tile_bright->Draw(Math::TranslationMatrix(Math::ivec2{ screen_x - TILE_SIZE, screen_y - TILE_SIZE }) * Math::ScaleMatrix(tile_scale)); break;
+					if ((x + y) % 2 == 0) // 체커보드 패턴
+						stone_tile_dark->Draw(Math::TranslationMatrix(Math::ivec2{ screen_x - TILE_SIZE, screen_y - TILE_SIZE }) * Math::ScaleMatrix(tile_scale),0xFFFFFFFF, DrawDepth::TILE);
+					else
+						stone_tile_bright->Draw(Math::TranslationMatrix(Math::ivec2{ screen_x - TILE_SIZE, screen_y - TILE_SIZE }) * Math::ScaleMatrix(tile_scale),0xFFFFFFFF, DrawDepth::TILE);
+					break;
 				default: break;
 			}
 			/*====================================================character drawing=================================*/
@@ -154,7 +182,7 @@ void GridSystem::Draw() const
 				CS200::pack_color({ 0 / 255.0f, 255 / 255.0f, 0 / 255.0f, alpha / 255.0f }), // 낮은 알파 초록색 (fill_color)
 				0U,																			 // line_color: 없음
 				0.0,																		 // line_width
-				0.2f																		 // depth
+				DrawDepth::OVERLAY																		 // depth
 			);
 		}
 	}
@@ -175,7 +203,7 @@ void GridSystem::Draw() const
 				CS200::pack_color({ 0 / 255.0f, 200 / 255.0f, 0 / 255.0f, 150 / 255.0f }), // 진한 초록색 (fill_color)
 				CS200::pack_color({ 0 / 255.0f, 255 / 255.0f, 0 / 255.0f, 255 / 255.0f }), // 밝은 초록색 테두리 (line_color)
 				2.0,																	   // line_width
-				0.1f																	   // depth (경로가 이동 가능 타일보다 위에 그려지도록)
+				DrawDepth::PATH																	   // depth (경로가 이동 가능 타일보다 위에 그려지도록)
 			);
 		}
 	}
@@ -189,11 +217,28 @@ void GridSystem::Draw() const
 		int screen_y = tile.y * TILE_SIZE + TILE_SIZE;
 		renderer_2d->DrawRectangle(
 			Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE),
-			CS200::pack_color({ 160 / 255.0f, 32 / 255.0f, 240 / 255.0f, 180 / 255.0f }), 0U, 0.0, 0.15f);
+			CS200::pack_color({ 160 / 255.0f, 32 / 255.0f, 240 / 255.0f, 180 / 255.0f }), 0U, 0.0, DrawDepth::OVERLAY);
 	}
 
 	// ========================================
-	// 4. 스펠 타겟팅 가능 타일 시각화 (빨간색)
+	// 4. 공격 범위 타일 시각화 (주황색)
+	// ========================================
+	if (attack_range_mode_active_)
+	{
+		int alpha = static_cast<int>(80 + 40 * std::sin(pulse_timer_ * 3.0));
+		for (const auto& tile : attack_range_tiles_)
+		{
+			int screen_x = tile.x * TILE_SIZE + TILE_SIZE;
+			int screen_y = tile.y * TILE_SIZE + TILE_SIZE;
+			renderer_2d->DrawRectangle(
+				Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE),
+				CS200::pack_color({ 255 / 255.0f, 0 / 255.0f, 0 / 255.0f, alpha / 255.0f }),
+				0U, 0.0, DrawDepth::OVERLAY);
+		}
+	}
+
+	// ========================================
+	// 5. 스펠 타겟팅 가능 타일 시각화 (빨간색)
 	// ========================================
 	if (spell_targeting_mode_active_)
 	{
@@ -205,7 +250,10 @@ void GridSystem::Draw() const
 			renderer_2d->DrawRectangle(
 				Math::TranslationMatrix(Math::ivec2{ screen_x - (TILE_SIZE / 2), screen_y - (TILE_SIZE / 2) }) * Math::ScaleMatrix(TILE_SIZE),
 				CS200::pack_color({ 255 / 255.0f, 0 / 255.0f, 0 / 255.0f, alpha / 255.0f }), // 빨간색
-				0U);
+				0U,																			 // line_color: 없음
+				0.0,																		 // line_width
+				DrawDepth::OVERLAY																		 // depth
+			);
 		}
 	}
 }
@@ -221,26 +269,29 @@ void GridSystem::EnableSpellTargetingMode(Math::ivec2 center, const std::string&
 	}
 	else if (geometry == "Line")
 	{
-		for (const auto& tile : GetLineTiles(center, (range < 0 ? MAP_HEIGHT : range)))
+		for (const auto& tile : GetLineTiles(center, (range < 0 ? map_height_ : range)))
+		if (GetTileType(tile) != TileType::Wall)
 			spell_targetable_tiles_.insert(tile);
 	}
 	else if (geometry == "OddEven")
 	{
 		// 전체 타일 표시
-		for (int y = 0; y < MAP_HEIGHT; ++y)
-			for (int x = 0; x < MAP_WIDTH; ++x)
+		for (int y = 0; y < map_height_; ++y)
+			for (int x = 0; x < map_width_; ++x)
+			if (GetTileType({x,y}) != TileType::Wall)
 				spell_targetable_tiles_.insert({ x, y });
 	}
 	else
 	{
 		// Single / Around / Point — 맨해튼 거리 이내 모든 타일
-		int r = (range < 0) ? MAP_HEIGHT + MAP_WIDTH : range;
-		for (int y = 0; y < MAP_HEIGHT; ++y)
+		int r = (range < 0) ? map_height_ + map_width_ : range;
+		for (int y = 0; y < map_height_; ++y)
 		{
-			for (int x = 0; x < MAP_WIDTH; ++x)
+			for (int x = 0; x < map_width_; ++x)
 			{
 				Math::ivec2 tile{ x, y };
-				if (IsValidTile(tile) && ManhattanDistance(center, tile) <= r)
+				// 수정 — Wall 제외
+				if (IsValidTile(tile) && GetTileType(tile) != TileType::Wall && ManhattanDistance(center, tile) <= r)
 					spell_targetable_tiles_.insert(tile);
 			}
 		}
@@ -277,6 +328,26 @@ void GridSystem::DisableSpellTargetingMode()
 	spell_targetable_tiles_.clear();
 }
 
+void GridSystem::EnableAttackRangeMode(Math::ivec2 pos, int range)
+{
+	attack_range_mode_active_ = true;
+	attack_range_tiles_.clear();
+	for (int y = 0; y < map_height_; ++y)
+		for (int x = 0; x < map_width_; ++x)
+		{
+			Math::ivec2 t{ x, y };
+			if (IsValidTile(t) && GetTileType(t) != TileType::Wall
+				&& ManhattanDistance(pos, t) <= range)
+				attack_range_tiles_.insert(t);
+		}
+}
+
+void GridSystem::DisableAttackRangeMode()
+{
+	attack_range_mode_active_ = false;
+	attack_range_tiles_.clear();
+}
+
 void GridSystem::SetWallPreviewTiles(const std::vector<Math::ivec2>& tiles)
 {
 	wall_preview_tiles_ = tiles;
@@ -304,14 +375,14 @@ void GridSystem::AddCharacter(Character* character, Math::ivec2 pos)
 		Engine::GetLogger().LogError("AddCharacter: Tile is already occupied.");
 		return;
 	}
-	character_grid[pos.y][pos.x] = character;
+	character_grid_[static_cast<std::size_t>(pos.y)][static_cast<std::size_t>(pos.x)] = character;
 }
 
 void GridSystem::RemoveCharacter(Math::ivec2 pos)
 {
 	if (!IsValidTile(pos))
 		return;
-	character_grid[pos.y][pos.x] = nullptr;
+	character_grid_[static_cast<std::size_t>(pos.y)][static_cast<std::size_t>(pos.x)] = nullptr;
 }
 
 Character* GridSystem::GetCharacterAt(Math::ivec2 pos) const
@@ -320,7 +391,7 @@ Character* GridSystem::GetCharacterAt(Math::ivec2 pos) const
 	{
 		return nullptr;
 	}
-	return character_grid[pos.y][pos.x];
+	return character_grid_[static_cast<std::size_t>(pos.y)][static_cast<std::size_t>(pos.x)];
 }
 
 void GridSystem::MoveCharacter(Math::ivec2 old_pos, Math::ivec2 new_pos)
@@ -330,13 +401,13 @@ void GridSystem::MoveCharacter(Math::ivec2 old_pos, Math::ivec2 new_pos)
 		Engine::GetLogger().LogError("MoveCharacter: Invalid tile position.");
 		return;
 	}
-	character_grid[new_pos.y][new_pos.x] = character_grid[old_pos.y][old_pos.x];
-	character_grid[old_pos.y][old_pos.x] = nullptr;
+	character_grid_[static_cast<std::size_t>(new_pos.y)][static_cast<std::size_t>(new_pos.x)] = character_grid_[static_cast<std::size_t>(old_pos.y)][static_cast<std::size_t>(old_pos.x)];
+	character_grid_[static_cast<std::size_t>(old_pos.y)][static_cast<std::size_t>(old_pos.x)] = nullptr;
 }
 
 void GridSystem::Update([[maybe_unused]] double dt)
 {
-	if (movement_mode_active_ || spell_targeting_mode_active_)
+	if (movement_mode_active_ || spell_targeting_mode_active_ || attack_range_mode_active_)
 	{
 		pulse_timer_ += dt;
 	}
@@ -350,11 +421,11 @@ void GridSystem::Update([[maybe_unused]] double dt)
 std::vector<Character*> GridSystem::GetAllCharacters()
 {
 	std::vector<Character*> result;
-	for (int y = 0; y < MAP_HEIGHT; ++y)
+	for (int y = 0; y < map_height_; ++y)
 	{
-		for (int x = 0; x < MAP_WIDTH; ++x)
+		for (int x = 0; x < map_width_; ++x)
 		{
-			result.push_back(character_grid[y][x]);
+			result.push_back(character_grid_[static_cast<std::size_t>(y)][static_cast<std::size_t>(x)]);
 		}
 	}
 	return result;
@@ -501,6 +572,7 @@ void GridSystem::LoadMap(const MapData& map_data)
 {
 	Engine::GetLogger().LogEvent("GridSystem::LoadMap - Loading map: " + map_data.id);
 
+	ResizeGrid(map_data.width, map_data.height);
 	Reset();
 
 	for (int y = 0; y < map_data.height; ++y)

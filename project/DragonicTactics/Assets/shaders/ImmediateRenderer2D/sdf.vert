@@ -1,5 +1,4 @@
 #version 300 es
-
 /**
  * \file
  * \author Taekyung Ho
@@ -7,7 +6,6 @@
  * \par CS200 Computer Graphics I
  * \copyright DigiPen Institute of Technology
  */
-
 
 layout(location = 0) in vec2 aVertexPosition;
 

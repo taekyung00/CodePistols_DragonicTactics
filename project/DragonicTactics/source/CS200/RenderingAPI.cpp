@@ -78,8 +78,9 @@ namespace CS200::RenderingAPI
 
 	GL::Enable(GL_BLEND);
 	GL::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	GL::Disable(GL_DEPTH_TEST);
-
+	// GL::Disable(GL_DEPTH_TEST);
+	GL::Enable(GL_DEPTH_TEST);
+	
 	// GL_MAX_TEXTURE_IMAGE_UNITS, GL_MAX_TEXTURE_SIZE, GL_MAX_VIEWPORT_DIMS
 	Engine::GetLogger().LogDebug("VENDOR : " + std::to_string(GL_VENDOR));
 	Engine::GetLogger().LogDebug("RENDERER : " + std::to_string(GL_RENDERER));
@@ -102,7 +103,8 @@ namespace CS200::RenderingAPI
 
   void Clear() noexcept
   {
-	GL::Clear(GL_COLOR_BUFFER_BIT);
+	// GL::Clear(GL_COLOR_BUFFER_BIT);
+	GL::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   }
 
   void SetViewport(Math::ivec2 size, Math::ivec2 anchor_left_bottom) noexcept

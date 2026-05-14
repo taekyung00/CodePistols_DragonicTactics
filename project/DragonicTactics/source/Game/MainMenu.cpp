@@ -16,30 +16,19 @@ Created:    May 6, 2025
 #include "Engine/GameStateManager.h"
 #include "Engine/Input.h"
 #include "Engine/Matrix.h"
+#include "Engine/SoundManager.h"
 #include "Engine/TextManager.h"
 #include "Engine/Window.h"
 #include "Game/DragonicTactics/States/GamePlay.h"
 #include "MainMenu.h"
-// #include "./Game/DragonicTactics/States/Test.h"
+#include "Settings.h"
+#if defined(DEVELOPER_VERSION)
 #include "Game/DragonicTactics/States/ConsoleTest.h"
 #include "Game/DragonicTactics/States/RenderingTest.h"
+#endif
 #include "OpenGL/Environment.h"
 #include "States.h"
-
-// (0.0 = 0%, 1.0 = 100%)
-namespace
-{
-  // --- Menu UI Ratio ---
-  const double TITLE_X_RATIO			 = 0.25;
-  const double TITLE_Y_RATIO_FROM_BOTTOM = 0.8;
-  const double TITLE_SCALE_VAL			 = 1.5;
-
-  const double MENU_CENTER_X_RATIO	   = 0.5;
-  const double MENU_WIDTH_RATIO		   = 0.4;
-  const double MENU_ITEM_HEIGHT_RATIO  = 0.05;
-  const double MENU_ITEM_SPACING_RATIO = 0.03;
-  const double MENU_START_Y_RATIO	   = 0.4;
-}
+#include <cmath>
 
 MainMenu::MainMenu() : current_option(Option::DragonicTactics)
 {
@@ -47,175 +36,245 @@ MainMenu::MainMenu() : current_option(Option::DragonicTactics)
 
 void MainMenu::DrawImGui()
 {
-#if defined(DEVELOPER_VERSION)
-    // ... ImGui 코드
-#endif
 }
 
 void MainMenu::SelecetOption()
 {
-  switch (current_option)
-  {
-	case MainMenu::Option::DragonicTactics:
-	  Engine::GetGameStateManager().PopState();
-	  Engine::GetGameStateManager().PushState<GamePlay>();
-	  break;
-	case MainMenu::Option::COUNT:
-	  // COUNT is not a selectable option, just a marker for enum size
-	  break;
+    switch (current_option)
+    {
+        case Option::DragonicTactics:
+            Engine::GetGameStateManager().PopState();
+            Engine::GetGameStateManager().PushState<GamePlay>();
+            break;
 
-	case MainMenu::Option::ConsoleTest:
-	  Engine::GetGameStateManager().PopState();
-	  Engine::GetGameStateManager().PushState<ConsoleTest>();
-	  break;
+        case Option::Settings:
+            Engine::GetGameStateManager().PushState<Settings>();
+            break;
 
-	case MainMenu::Option::RenderingTest:
-	  Engine::GetGameStateManager().PopState();
-	  Engine::GetGameStateManager().PushState<RenderingTest>();
-	  break;
+        case Option::Exit:
+            Engine::GetGameStateManager().PopState();
+            break;
 
-	case MainMenu::Option::Exit: Engine::GetGameStateManager().PopState(); break;
-  }
+#if defined(DEVELOPER_VERSION)
+        case Option::ConsoleTest:
+            Engine::GetGameStateManager().PopState();
+            Engine::GetGameStateManager().PushState<ConsoleTest>();
+            break;
+
+        case Option::RenderingTest:
+            Engine::GetGameStateManager().PopState();
+            Engine::GetGameStateManager().PushState<RenderingTest>();
+            break;
+#endif
+
+        default:
+            break;
+    }
+}
+
+void MainMenu::InitFlame(Flame& f, bool random_y)
+{
+    f.pos.x        = static_cast<double>(rand() % default_window_size.x);
+    f.pos.y        = random_y ? static_cast<double>(rand() % default_window_size.y) : (-50.0 - (rand() % 150));
+    f.size         = 2.0 + (rand() % 4);
+    f.speed_y      = 1.0 + ((rand() % 40) / 10.0);
+    f.speed_x      = ((rand() % 100) - 50) / 100.0;
+    f.flicker_offset = (rand() % 1000) / 10.0;
+
+    int color_pick = rand() % 3;
+    if      (color_pick == 0) f.color = 0xFFD20000;
+    else if (color_pick == 1) f.color = 0xFF640000;
+    else                      f.color = 0xFF190000;
 }
 
 void MainMenu::Load()
 {
-  CS200::RenderingAPI::SetClearColor(0x000000FF);
-  if (!OpenGL::IsWebGL)
-  {
-	Engine::GetWindow().ForceResize(default_window_size.x, default_window_size.y);
-	Engine::GetWindow().SetWindowPosition(SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-  }
+    CS200::RenderingAPI::SetClearColor(0x0F0F0FFF);
+    if (!OpenGL::IsWebGL)
+    {
+        Engine::GetWindow().ForceResize(default_window_size.x, default_window_size.y);
+        Engine::GetWindow().SetWindowPosition(SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+    }
 
-  menu_items.push_back({ "Dragonic Tactics", Option::DragonicTactics });
-  menu_items.push_back({ "Console test", Option::ConsoleTest });
-  menu_items.push_back({ "Rendering test", Option::RenderingTest });
-  menu_items.push_back({ "Exit", Option::Exit });
+    main_menu_items.push_back({ "SETTINGS",   Option::Settings });
+    main_menu_items.push_back({ "GAME START", Option::DragonicTactics });
+    main_menu_items.push_back({ "QUIT",       Option::Exit });
 
+#if defined(DEVELOPER_VERSION)
+    dev_menu_items.push_back({ "Console test",   Option::ConsoleTest });
+    dev_menu_items.push_back({ "Rendering test", Option::RenderingTest });
+#endif
 
-  const auto window_size = default_window_size;
+    title_pos          = Math::vec2{ default_window_size.x * 0.5, default_window_size.y * 0.75 };
+    title_scale        = Math::vec2{ 1.5, 1.5 };
+    menu_center_pos    = Math::vec2{ default_window_size.x * 0.5, default_window_size.y * 0.33 };
+    menu_item_spacing  = 400.0;
+    menu_item_size     = Math::vec2{ 320.0, 80.0 };
 
-  title_pos.x = window_size.x * TITLE_X_RATIO;
-  title_pos.y = window_size.y * TITLE_Y_RATIO_FROM_BOTTOM;
-  title_scale = Math::vec2{ TITLE_SCALE_VAL, TITLE_SCALE_VAL };
+    flames.resize(100);
+    for (auto& f : flames) InitFlame(f, true);
 
-  const double text_width		= window_size.x * MENU_WIDTH_RATIO;
-  const double text_x			= (window_size.x * MENU_CENTER_X_RATIO) - (text_width / 2.0);
-  const double text_height		= window_size.y * MENU_ITEM_HEIGHT_RATIO;
-  const double start_y_from_top = window_size.y * MENU_START_Y_RATIO;
-
-  const double item_bottom_y_from_top	 = start_y_from_top + text_height;
-  const double item_bottom_y_from_bottom = window_size.y - item_bottom_y_from_top;
-
-  menu_start_pos_bl		 = Math::vec2{ text_x, item_bottom_y_from_bottom };
-  menu_item_size		 = Math::vec2{ text_width, text_height };
-  menu_item_total_height = text_height + (window_size.y * MENU_ITEM_SPACING_RATIO);
+    Engine::GetSoundManager().PlayBGM(SoundManager::BGM_MAIN_MENU);
 }
 
-void MainMenu::Update([[maybe_unused]] double dt)
+void MainMenu::Update(double dt)
 {
-  CS230::Input& input		= Engine::GetInput();
-  Math::vec2	mouse_pos	= input.GetMousePos();
-  [[maybe_unused]] auto window_size = Engine::GetWindow().GetSize();
+    run_time += dt;
 
-  if (input.KeyJustReleased(CS230::Input::Keys::Up))
-  {
-	int current_index = static_cast<int>(current_option);
-	int total_options = static_cast<int>(Option::COUNT);
-	current_index	  = (current_index - 1 + total_options) % total_options;
-	current_option	  = static_cast<Option>(current_index);
-  }
-  else if (input.KeyJustReleased(CS230::Input::Keys::Down))
-  {
-	int current_index = static_cast<int>(current_option);
-	int total_options = static_cast<int>(Option::COUNT);
-	current_index	  = (current_index + 1) % total_options;
-	current_option	  = static_cast<Option>(current_index);
-  }
-  else if (input.KeyJustReleased(CS230::Input::Keys::Enter))
-  {
-	SelecetOption();
-  }
+    CS230::Input& input       = Engine::GetInput();
+    auto          window_size = Engine::GetWindow().GetSize();
+    Math::vec2    mouse_pos   = TacticalCamera::ScreenToVirtual(input.GetMousePos(), window_size);
 
+    if (input.KeyJustReleased(CS230::Input::Keys::Left)  || input.KeyJustReleased(CS230::Input::Keys::A) ||
+        input.KeyJustReleased(CS230::Input::Keys::Up)    || input.KeyJustReleased(CS230::Input::Keys::W))
+    {
+        int count      = static_cast<int>(Option::COUNT);
+        current_option = static_cast<Option>((static_cast<int>(current_option) - 1 + count) % count);
+    }
+    else if (input.KeyJustReleased(CS230::Input::Keys::Right) || input.KeyJustReleased(CS230::Input::Keys::D) ||
+             input.KeyJustReleased(CS230::Input::Keys::Down)  || input.KeyJustReleased(CS230::Input::Keys::S))
+    {
+        int count      = static_cast<int>(Option::COUNT);
+        current_option = static_cast<Option>((static_cast<int>(current_option) + 1) % count);
+    }
+    else if (input.KeyJustReleased(CS230::Input::Keys::Enter) ||
+             input.KeyJustReleased(CS230::Input::Keys::Space) ||
+             input.KeyJustReleased(CS230::Input::Keys::Z))
+    {
+        SelecetOption();
+    }
 
-  bool mouse_is_hovering = false;
-  int  total_options	 = static_cast<int>(Option::COUNT);
-  for (int i = 0; i < total_options; ++i)
-  {
-	double item_bottom_y = menu_start_pos_bl.y - (i * menu_item_total_height);
+    bool mouse_is_hovering = false;
+    auto check_hover = [&](const std::vector<MenuItem>& items, double base_y)
+    {
+        double offset_start = -(static_cast<double>(items.size()) - 1.0) / 2.0;
+        for (size_t i = 0; i < items.size(); ++i)
+        {
+            double     item_x   = menu_center_pos.x + ((offset_start + static_cast<double>(i)) * menu_item_spacing);
+            Math::vec2 rect_bl  = { item_x - (menu_item_size.x / 2.0), base_y - (menu_item_size.y / 2.0) };
+            if (mouse_pos.x >= rect_bl.x && mouse_pos.x <= rect_bl.x + menu_item_size.x &&
+                mouse_pos.y >= rect_bl.y && mouse_pos.y <= rect_bl.y + menu_item_size.y)
+            {
+                current_option    = items[i].option;
+                mouse_is_hovering = true;
+            }
+        }
+    };
 
-	Math::vec2 rect_pos{ menu_start_pos_bl.x, item_bottom_y };
-	Math::vec2 rect_size = menu_item_size;
+    check_hover(main_menu_items, menu_center_pos.y);
+#if defined(DEVELOPER_VERSION)
+    check_hover(dev_menu_items, menu_center_pos.y - 120.0);
+#endif
 
-	if (IsPointInRect(mouse_pos, rect_pos, rect_size))
-	{
-	  current_option	= static_cast<Option>(i);
-	  mouse_is_hovering = true;
-	  break;
-	}
-  }
-
-  if (input.MouseJustPressed(0) && mouse_is_hovering)
-  {
-	SelecetOption();
-  }
-}
-
-void MainMenu::Unload()
-{
+    if (input.MouseJustPressed(0) && mouse_is_hovering)
+    {
+        SelecetOption();
+    }
 }
 
 void MainMenu::Draw()
 {
-  CS200::RenderingAPI::Clear();
-  auto renderer_2d = Engine::GetTextureManager().GetRenderer2D();
-  renderer_2d->BeginScene(CS200::build_ndc_matrix(Engine::GetWindow().GetSize()));
+    CS200::RenderingAPI::Clear();
+    auto renderer_2d = Engine::GetTextureManager().GetRenderer2D();
+    auto win         = Engine::GetWindow().GetSize();
 
-  auto& text_manager = Engine::GetTextManager();
+    Math::TransformationMatrix ui_ndc = TacticalCamera::BuildVirtualNdc(win);
+    Engine::GetTextureManager().SaveCurrentScene(ui_ndc);
+    renderer_2d->BeginScene(ui_ndc);
 
-  text_manager.DrawText("Dragonic Tactics", title_pos, Fonts::Outlined, title_scale, title_color);
+    DrawFlames(run_time);
 
-  [[maybe_unused]] static constexpr CS200::RGBA DEBUG_FILL_COLOR = 0xFFFF0030;
-  [[maybe_unused]] static constexpr CS200::RGBA DEBUG_LINE_COLOR = 0xFFFF00FF;
-  [[maybe_unused]] static constexpr double	   DEBUG_LINE_WIDTH = 1.5;
+    auto& text_manager = Engine::GetTextManager();
 
-  for (size_t i = 0; i < menu_items.size(); ++i)
-  {
-	const auto& item = menu_items[i];
+    // 타이틀 (그림자 + 본체)
+    Math::vec2  shadow_offset = { 5.0, -5.0 };
+    Math::ivec2 title_size    = text_manager.CalculateTextSize("DRAGONIC TACTICS", Fonts::Kings);
+    Math::vec2  t_bl = {
+        title_pos.x - (title_size.x * title_scale.x) / 2.0,
+        title_pos.y - (title_size.y * title_scale.y) / 2.0
+    };
 
-	double	   current_item_y = menu_start_pos_bl.y - (i * menu_item_total_height);
-	Math::vec2 item_pos		  = { menu_start_pos_bl.x, current_item_y };
-	Math::vec2 item_size	  = menu_item_size;
+    text_manager.DrawText("DRAGONIC TACTICS",
+        Math::vec2{ t_bl.x + shadow_offset.x, t_bl.y + shadow_offset.y },
+        Fonts::Kings, title_scale, title_shadow_color);
+    text_manager.DrawText("DRAGONIC TACTICS", t_bl, Fonts::Kings, title_scale, title_main_color);
 
-	CS200::RGBA item_color = (item.option == current_option) ? seleted_color : non_seleted_color;
+    // 메뉴 항목 (가로 배치, 선택 항목에 반동 화살표)
+    auto draw_items = [&](const std::vector<MenuItem>& items, double base_y)
+    {
+        double offset_start = -(static_cast<double>(items.size()) - 1.0) / 2.0;
+        for (size_t i = 0; i < items.size(); ++i)
+        {
+            const auto& item        = items[i];
+            Math::vec2  center_pos  = {
+                menu_center_pos.x + ((offset_start + static_cast<double>(i)) * menu_item_spacing),
+                base_y
+            };
+            Math::ivec2 text_size   = text_manager.CalculateTextSize(item.text, Fonts::Kings);
+            Math::vec2  text_bl     = {
+                center_pos.x - text_size.x / 2.0,
+                center_pos.y - text_size.y / 2.0
+            };
+            bool        is_selected = (item.option == current_option);
+            CS200::RGBA item_color  = is_selected ? selected_color : non_selected_color;
 
-	static constexpr double Y_OFFSET_RATIO = 0.5;
-	double					y_offset	   = item_size.y * Y_OFFSET_RATIO;
+            text_manager.DrawText(item.text, text_bl, Fonts::Kings, { 1.0, 1.0 }, item_color);
 
-	Math::vec2 text_draw_pos = item_pos;
-	text_draw_pos.y -= y_offset;
+            if (is_selected)
+            {
+                Math::ivec2 ptr_size  = text_manager.CalculateTextSize(">", Fonts::Kings);
+                double      padding   = 40.0;
+                double      bounce    = std::sin(run_time * 5.0) * 10.0;
 
+                Math::vec2 left_pos  = {
+                    center_pos.x - (text_size.x / 2.0) - padding - bounce - ptr_size.x,
+                    text_bl.y
+                };
+                Math::vec2 right_pos = {
+                    center_pos.x + (text_size.x / 2.0) + padding + bounce,
+                    text_bl.y
+                };
 
-	text_manager.DrawText(item.text, text_draw_pos, Fonts::Outlined, { 1.0, 1.0 }, item_color);
+                text_manager.DrawText(">", left_pos,  Fonts::Kings, { 1.0, 1.0 }, selected_color);
+                text_manager.DrawText("<", right_pos, Fonts::Kings, { 1.0, 1.0 }, selected_color);
+            }
+        }
+    };
 
-	Math::vec2 center_pos = item_pos + (item_size * 0.5);
+    draw_items(main_menu_items, menu_center_pos.y);
+#if defined(DEVELOPER_VERSION)
+    draw_items(dev_menu_items, menu_center_pos.y - 120.0);
+#endif
 
-	Math::ScaleMatrix		   scale_matrix(item_size);
-	Math::TranslationMatrix	   trans_matrix(center_pos);
-	[[maybe_unused]] Math::TransformationMatrix transform = trans_matrix * scale_matrix;
+    renderer_2d->EndScene();
+}
 
-	// renderer_2d.DrawRectangle(
-	// 	transform,
-	// 	DEBUG_FILL_COLOR,
-	// 	DEBUG_LINE_COLOR,
-	// 	DEBUG_LINE_WIDTH
-	// );
-  }
+void MainMenu::DrawFlames(double time)
+{
+    auto renderer_2d = Engine::GetTextureManager().GetRenderer2D();
+    for (auto& f : flames)
+    {
+        f.pos.y += f.speed_y;
+        f.pos.x += f.speed_x + std::sin(time * 3.0 + f.flicker_offset) * 0.8;
 
-  renderer_2d->EndScene();
+        if (f.pos.y > default_window_size.y + 50) InitFlame(f, false);
+
+        double  flicker      = 0.5 + 0.5 * std::sin(time * 15.0 + f.flicker_offset);
+        uint8_t a            = static_cast<uint8_t>((0.3 + 0.7 * flicker) * 255.0);
+        CS200::RGBA render_color = f.color | a;
+
+        renderer_2d->DrawCircle(
+            Math::TranslationMatrix(f.pos) * Math::ScaleMatrix(Math::vec2{ f.size, f.size }),
+            render_color, render_color, 0, 0);
+    }
+}
+
+void MainMenu::Unload()
+{
+    Engine::GetSoundManager().StopBGM();
 }
 
 gsl::czstring MainMenu::GetName() const
 {
-  return "MainMenu";
+    return "MainMenu";
 }

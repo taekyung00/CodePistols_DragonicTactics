@@ -19,9 +19,10 @@ class DiceManager : public CS230::Component
 
   int RollDice(int count, int sides);
   int RollDiceFromString(
-	const std::string& notation); 
+	const std::string& notation);
   void					  SetSeed(int seed);
   const std::vector<int>& GetLastRolls() const;
+  const std::string&      GetLastNotation() const;
 
   private:
   void LogRoll(const std::string& notation, int total) const;
@@ -29,4 +30,5 @@ class DiceManager : public CS230::Component
   private:
   std::mt19937	   rng;
   std::vector<int> lastRolls;
+  std::string      lastNotation;
 };

@@ -14,12 +14,14 @@ Updated:    Oct 09, 2025
 #include "Engine/GameObjectManager.h"
 #include "Engine/Input.h"
 #include "Engine/Matrix.h"
+#include "Engine/DrawDepth.h"
 #include "Game/DragonicTactics/Objects/Actions/Action.h"
 #include "Game/DragonicTactics/Objects/Components/StatusEffectComponent.h"
 #include "Game/DragonicTactics/Types/CharacterTypes.h"
 #include "Game/DragonicTactics/Types/GameTypes.h"
 #include <map>
 #include <vector>
+#include "Components/ShakeComponent.h"
 
 class GridSystem;
 class GridPosition;
@@ -33,6 +35,7 @@ class GridFootprint;
 class Action;
 class StatsComponent;
 class MovementComponent;
+class ShakeComponent;
 
 class Character : public CS230::GameObject
 {
@@ -40,7 +43,7 @@ class Character : public CS230::GameObject
   virtual ~Character() = default;
 
   void Update(double dt) override;
-  void Draw(Math::TransformationMatrix camera_matrix) override;
+  void Draw(Math::TransformationMatrix camera_matrix, unsigned int color = 0xFFFFFFFF, float depth = DrawDepth::CHARACTER) override;
 
   GameObjectTypes Type() override
   {
@@ -56,6 +59,7 @@ class Character : public CS230::GameObject
   virtual void PerformAction(Action* action, Character* target, Math::ivec2 tile_position);
   virtual void TakeDamage(int damage, Character* attacker);
   virtual void ReceiveHeal(int amount);
+  virtual bool IsAIControlled() const { return false; };
 
   void SetPath(std::vector<Math::ivec2> path);
   void SetGridSystem(GridSystem* grid);
@@ -76,6 +80,7 @@ class Character : public CS230::GameObject
   StatsComponent* GetStatsComponent();
   ActionPoints*	  GetActionPointsComponent();
   SpellSlots*	  GetSpellSlots();
+  ShakeComponent* GetShakeComponent();
   void			  SetActionPoints(int new_points);
   // StatusEffects* GetStatusEffects() const;
   // GridFootprint* GetGridFootprint() const;
