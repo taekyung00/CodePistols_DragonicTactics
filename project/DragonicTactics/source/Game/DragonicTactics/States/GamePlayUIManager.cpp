@@ -663,6 +663,19 @@ void GamePlayUIManager::InitSpellTooltips()
         }
 
         spell_tooltip_cache_[id] = std::move(lines);
+
+        // 각 줄의 실제 화면 폭(scale 적용) 중 최댓값 → 박스 폭 사전 계산
+        constexpr double PAD = 10.0;
+        auto& textMgr2 = Engine::GetTextManager();
+        double max_text_w = 0.0;
+        const auto& cached = spell_tooltip_cache_[id];
+        if (!cached.empty())
+            max_text_w = textMgr2.CalculateTextSize(cached[0], Fonts::Kings).x * 0.5;
+        for (size_t li = 1; li < cached.size(); ++li)
+            max_text_w = std::max(max_text_w,
+                textMgr2.CalculateTextSize(cached[li], Fonts::Kings).x * 0.4);
+        spell_tooltip_widths_[id] = std::min(max_text_w + PAD * 2.0,
+                                             static_cast<double>(VW) - 20.0);
     }
 }
 
@@ -1015,7 +1028,8 @@ void GamePlayUIManager::DrawSpellTooltip()
     auto& textMgr  = Engine::GetTextManager();
     auto* renderer = CS230::TextureManager::GetRenderer2D();
 
-    constexpr double TT_W = 380.0;
+    auto wit = spell_tooltip_widths_.find(hovered_spell_id_);
+    double TT_W = (wit != spell_tooltip_widths_.end()) ? wit->second : 380.0;
     constexpr double LH   = 24.0;
     constexpr double PAD  = 10.0;
     double TT_H = PAD * 2.0 + static_cast<double>(lines.size()) * LH;

@@ -82,6 +82,7 @@ class GamePlayUIManager
   std::string  hovered_spell_id_;
   double       hovered_slot_cx_ = 0.0;
   std::unordered_map<std::string, std::vector<std::string>> spell_tooltip_cache_;
+  std::unordered_map<std::string, double>                  spell_tooltip_widths_;
 
   // InputHandler pointer
   PlayerInputHandler*   m_input_handler_ptr_ = nullptr;
