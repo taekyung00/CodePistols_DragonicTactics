@@ -97,7 +97,7 @@ void GamePlayUIManager::Update(double dt)
             };
 
             set_disabled("slot_attack",    no_ap || is_ai);
-            set_disabled("slot_end_turn",  is_ai);
+            set_disabled("slot_end_turn",  is_ai || game_end_text != nullptr);
 
             // [수정된 부분] 요구 레벨 이상의 슬롯이 하나라도 있는지 확인하도록 변경!
             auto spell_disabled = [&](const std::string& id, int min_lv) {
@@ -136,7 +136,7 @@ void GamePlayUIManager::Update(double dt)
         if      (popup_spell_id_ == "S_ATK_010") { lv_min = 1; lv_max = 5; }
         else if (popup_spell_id_ == "S_ATK_030") { lv_min = 3; lv_max = 5; }
         else if (popup_spell_id_ == "S_ATK_040") { lv_min = 3; lv_max = 5; }
-        else if (popup_spell_id_ == "S_ENH_040") { lv_min = 0; lv_max = 5; }
+        else if (popup_spell_id_ == "S_ENH_040") { lv_min = 1; lv_max = 4; }
         else if (popup_spell_id_ == "S_GEO_010") { lv_min = 2; lv_max = 5; }
         else if (popup_spell_id_ == "S_GEO_020") { lv_min = 1; lv_max = 5; }
 
@@ -464,7 +464,7 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
         button_manager_.AddButton(b);
     }
 
-    // slot 5: Mana Conversion (upcast Lv0~5)
+    // slot 5: Mana Conversion (upcast Lv1~4)
     {
         int idx = 5;
         Button b;
@@ -708,7 +708,7 @@ void GamePlayUIManager::DrawUicastPopup()
     if      (popup_spell_id_ == "S_ATK_010") { lv_min = 1; lv_max = 5; }
     else if (popup_spell_id_ == "S_ATK_030") { lv_min = 3; lv_max = 5; }
     else if (popup_spell_id_ == "S_ATK_040") { lv_min = 3; lv_max = 5; }
-    else if (popup_spell_id_ == "S_ENH_040") { lv_min = 0; lv_max = 5; }
+    else if (popup_spell_id_ == "S_ENH_040") { lv_min = 1; lv_max = 4; }
     else if (popup_spell_id_ == "S_GEO_010") { lv_min = 2; lv_max = 5; }
     else if (popup_spell_id_ == "S_GEO_020") { lv_min = 1; lv_max = 5; }
 

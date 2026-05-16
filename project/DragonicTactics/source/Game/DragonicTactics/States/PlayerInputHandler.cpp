@@ -118,6 +118,10 @@ void PlayerInputHandler::Update(double dt, Character* current_character, GridSys
     grid->ClearWallPreviewTiles();
   }
 
+  // ── 다른 스펠 선택 등으로 배치 상태를 벗어나면 Confirm 버튼이 화면에 남지 않도록 동기화 ──
+  if (m_state != ActionState::WallPlacementMulti && m_state != ActionState::LavaPlacementMulti)
+    btns.SetVisible("slot_wall_confirm", false);
+
   // ── WallPlacementMulti / LavaPlacementMulti 우클릭: 선택 타일이면 해제, 아니면 전체 취소 ──
   if (m_state == ActionState::WallPlacementMulti || m_state == ActionState::LavaPlacementMulti)
   {

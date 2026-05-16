@@ -146,6 +146,10 @@ void Settings::Update(double dt)
         }
     }
 
+    // 마우스 버튼을 떼면 슬라이더 드래그 캡처 해제
+    if (!input.MouseDown(0))
+        m_dragging_slider = Option::COUNT;
+
     // 마우스 호버 + 클릭
     for (int i = 0; i < static_cast<int>(rows.size()); ++i)
     {
@@ -153,7 +157,9 @@ void Settings::Update(double dt)
 
         if (mouse_pos.y > p.y - 30.0 && mouse_pos.y < p.y + 30.0)
         {
-            current_option = rows[i].option;
+            // 드래그 중에는 호버로 현재 옵션이 바뀌지 않도록 고정
+            if (m_dragging_slider == Option::COUNT)
+                current_option = rows[i].option;
 
             // 클릭: 토글/전환 처리
             if (input.MouseJustPressed(0))
@@ -178,20 +184,24 @@ void Settings::Update(double dt)
                     Engine::GetGameStateManager().PopState();
                     return;
                 }
-            }
-
-            // 볼륨 슬라이더 드래그
-            if (input.MouseDown(0))
-            {
-                if (current_option == Option::BGMVolume || current_option == Option::SFXVolume)
+                else if (current_option == Option::BGMVolume || current_option == Option::SFXVolume)
                 {
-                    float rel_x  = std::clamp(static_cast<float>(mouse_pos.x) - slider_x_start, 0.0f, slider_width);
-                    int   new_val = static_cast<int>((rel_x / slider_width) * 100.0f);
-                    if (current_option == Option::BGMVolume) { s_bgm_volume = new_val; ApplySettings(); }
-                    else                                       s_sfx_volume = new_val;
+                    // 드래그 시작 슬라이더 캡처 (마우스를 누른 그 슬라이더로 고정)
+                    m_dragging_slider = current_option;
                 }
             }
         }
+    }
+
+    // 볼륨 슬라이더 드래그 — 캡처된 슬라이더에만, 마우스 가로 위치로 적용.
+    // 마우스가 다른 볼륨 바로 넘어가도 캡처된 슬라이더만 변경된다.
+    if (input.MouseDown(0) &&
+        (m_dragging_slider == Option::BGMVolume || m_dragging_slider == Option::SFXVolume))
+    {
+        float rel_x   = std::clamp(static_cast<float>(mouse_pos.x) - slider_x_start, 0.0f, slider_width);
+        int   new_val = static_cast<int>((rel_x / slider_width) * 100.0f);
+        if (m_dragging_slider == Option::BGMVolume) { s_bgm_volume = new_val; ApplySettings(); }
+        else                                          s_sfx_volume = new_val;
     }
 
     // 확인 키

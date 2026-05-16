@@ -34,6 +34,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## 게임 부팅 & 상태 흐름
+
+문서 대부분은 전투 본편(`GamePlay`)을 다루지만, **거기에 도달하기까지의 경로**는 별도 셸 레이어다. 진입점부터 따라가야 전체 그림이 잡힌다.
+
+**진입점**: `source/main.cpp` → `Engine::Instance().Start("Dragonic Tactics")` → `Engine::GetGameStateManager().PushState<Splash>()` 가 **유일한** 시작점. 이후 모든 화면 전환은 `GameStateManager`의 `PushState<T>()` / `PopState()`.
+
+```
+main.cpp → Splash → MainMenu ┬─ Settings (오디오·맵 크기 설정 → GamePlay 로드 맵에 반영)
+                             ├─ DragonicTactics  → GamePlay (전투 본편, 문서 대부분의 대상)
+                             ├─ Exit
+                             └─ [DEVELOPER_VERSION 전용] ConsoleTest / RenderingTest
+```
+
+- **셸 레이어 위치 주의**: `Splash`·`MainMenu`·`Settings`·`Score`·`Background`·`Particles` 는 `source/Game/` **직하위**에 있다 — `source/Game/DragonicTactics/` 하위가 **아니다**. 전투 본편 코드만 `DragonicTactics/` 서브트리에 있다.
+- ⚠️ `source/Game/States.h`의 `enum class State { Splash, MainMenu, Final }`는 **레거시·미사용**이다. 실제 내비게이션은 이 enum이 아니라 `GameStateManager`의 push/pop으로 동작 — 혼동 주의.
+- **Settings → GamePlay 연결**: `Settings`의 맵 크기 선택이 아래 [데이터 주도 설계](#데이터-주도-설계)의 `GamePlay::s_next_map_id` / `s_should_restart` 정적 필드를 통해 로드할 맵을 결정한다.
+
+---
+
 ## 빌드
 
 **⚠️ 빌드 명령은 반드시 `DragonicTactics/` 디렉토리에서 실행 (프로젝트 루트 아님)**
@@ -45,7 +64,20 @@ cmake --build --preset windows-debug # 빌드
 build/windows-debug/dragonic_tactics.exe  # 실행 (반드시 DragonicTactics/에서)
 ```
 
-프리셋: `windows-debug`, `windows-developer-release`, `windows-release`, `linux-debug`, `web-debug-on-windows`
+프리셋: `windows-debug`, `windows-developer-release`, `windows-release`, `linux-debug`, `web-debug-on-windows` (그 외 `linux-developer-release`, `linux-release`, `web-debug`, `web-developer-release`, `web-release`)
+
+### Developer vs Release 빌드
+
+`CMakePresets.json`의 프리셋 캐시 변수 `IS_DEVELOPER_VERSION`이 빌드 변형을 가른다. **테스트·디버그 도구의 존재 여부 자체가 여기서 결정된다.**
+
+| 프리셋 | `IS_DEVELOPER_VERSION` | Test/ConsoleTest/RenderingTest | Windows 서브시스템 |
+| ---- | ---- | ---- | ---- |
+| `windows-debug` / `windows-developer-release` / `web-debug-on-windows` / `linux-debug` / `linux-developer-release` / `web-debug` / `web-developer-release` | `TRUE` | 컴파일됨 | `CONSOLE` (콘솔창 표시) |
+| `windows-release` / `linux-release` / `web-release` | `FALSE` | **GLOB에서 제외** | `WINDOWS` (콘솔 없음) |
+
+- `TRUE` 시 `source/CMakeLists.txt`가 `DEVELOPER_VERSION` + `_DEBUG` 매크로를 정의한다. 코드의 `#if defined(DEVELOPER_VERSION)` 가 ConsoleTest ImGui 패널과 MainMenu 개발자 메뉴 항목(ConsoleTest/RenderingTest)을 게이트한다.
+- `FALSE` 시 `source/CMakeLists.txt`가 `/Test/`, `States/ConsoleTest.*`, `States/RenderingTest.*` 를 소스 GLOB에서 제외 → 테스트·테스트 진입 상태가 바이너리에 아예 포함되지 않는다.
+- ⚠️ **테스트·디버그가 필요하면 `windows-debug`(또는 `*-developer-release`)로 빌드할 것. `windows-release`에는 존재하지 않는다.**
 
 캐시 초기화: `rm -rf build/ && cmake --preset windows-debug`
 
@@ -614,11 +646,15 @@ CastSpell → CanCast(클래스/슬롯/Geometry/Range/AP 체크) → ConsumeSpel
 
 ## 테스트
 
-**자체 테스트 프레임워크** (외부 라이브러리 없음): `Test/TestAssert.h` + 목 객체 (`Week1TestMocks`, `Week3TestMocks`)
+**자체 테스트 프레임워크** (외부 라이브러리 없음): `Test/TestAssert.h` + 목 객체 (`Week1TestMocks`, `Week3TestMocks`). 테스트 파일은 `source/Game/DragonicTactics/Test/` 아래.
 
-테스트 파일: `source/Game/DragonicTactics/Test/` — `TestEventBus`, `TestAI`, `TestAStar`, `TestCombatSystem`, `TestDiceManager`, `TestTurnManager`, `TestDataRegistry`, `TestAbility`, `TestMemory`, `TestNew`, `TestTurnInit`
+⚠️ **별도 테스트 실행파일·CTest 타깃은 없다.** 단위 테스트는 게임 바이너리에 컴파일되어 **`ConsoleTest` GameState에서 런타임 실행**된다 — `DEVELOPER_VERSION` 빌드 전용, MainMenu 개발자 메뉴 → ConsoleTest 진입 (위 [Developer vs Release 빌드](#developer-vs-release-빌드) 참고).
 
-**런타임 테스트 단축키 (GamePlay 상태)**:
+실행 메커니즘 (`States/ConsoleTest.cpp`): `DrawImGui()`의 `#if defined(DEVELOPER_VERSION)` ImGui 버튼 클릭 → 전역 `bool` 플래그 set → **다음 프레임** `ConsoleTest::Update()`가 해당 스위트를 실행하고 결과를 `Engine::GetLogger()`(콘솔창)에 출력한 뒤 플래그 reset. Escape → MainMenu 복귀.
+
+ConsoleTest에 **실제 와이어링된 버튼** (= 현재 실행 가능한 집합): `TestAStar`, `TestEventBus`, `TestSpellSystem`(빈 스텁), `TestCombatSystem`, `TestDiceManager`, `TestDataRegistry`, `TestTrunManager`(원문 철자), `TestAI`, `TestNewFile`, `TestMemory`. ⚠️ `Test/` 디렉토리에 다른 테스트 파일(예: `TestAbility`, `TestTurnInit`)이 더 있어도 ConsoleTest 버튼에 연결돼 있지 않으면 이 경로로는 실행되지 않는다 — UI에 노출된 것이 실행 가능한 집합이다.
+
+**런타임 테스트 단축키 (GamePlay 상태 — ConsoleTest와 별개의 인게임 점검 기능)**:
 
 | 키     | 동작                     |
 | ----- | ---------------------- |
@@ -630,6 +666,15 @@ CastSpell → CanCast(클래스/슬롯/Geometry/Range/AP 체크) → ConsumeSpel
 | P     | TurnManager 테스트        |
 | J/R/L | JSON 로드 / 리로드 / 로그     |
 | Enter | 전체 전투 시스템 테스트          |
+
+### 디버그 서브시스템
+
+`DebugManager`는 `GamePlay::Load()`에서 등록되는 GS 컴포넌트로, 두 도구를 소유한다:
+
+- `DebugConsole` — ImGui 런타임 명령 콘솔 (`RegisterCommand` 기반 명령 레지스트리 + 히스토리)
+- `DebugVisualizer` — EventBus 구독 기반 그리드/AI 디시전 오버레이 패널
+
+god mode·`timeScale`(빨리감기)·각종 오버레이 토글을 보유한다. 위치: `source/Game/DragonicTactics/Debugger/` (`DebugManager` / `DebugConsole` / `DebugVisualizer`). 콘솔 명령어 전체 목록은 아래 [문서 참조](#문서-참조)의 `docs/debug/commands.md` 참고.
 
 ---
 
