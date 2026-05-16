@@ -180,6 +180,7 @@ void GamePlay::Load()
   GetGSComponent<DataRegistry>()->LoadAllCharacterData("Assets/Data/characters.json");
   GetGSComponent<SpellSystem>()->LoadFromCSV("Assets/Data/spell_table.csv");
   m_ui_manager->InitSpellTooltips();
+  m_ui_manager->InitStatusEffectIcons();
   // GetGSComponent<SpellSystem>()->SetEventBus(GetGSComponent<EventBus>());
 
   auto* map_registry = GetGSComponent<MapDataRegistry>();
@@ -532,6 +533,8 @@ void GamePlay::Draw()
   CS230::GameObjectManager* goMgr = GetGSComponent<CS230::GameObjectManager>();
   if (goMgr)
     goMgr->DrawAll(Math::TransformationMatrix{});
+
+  m_ui_manager->DrawWorld();
 
   GetGSComponent<DebugManager>()->Draw(grid_system);
 

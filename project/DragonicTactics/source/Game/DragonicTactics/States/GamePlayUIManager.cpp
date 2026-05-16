@@ -208,6 +208,43 @@ void GamePlayUIManager::Update(double dt)
         }
     }
 
+    // ── 3c. 상태이상 아이콘 호버 감지 (virtual UI space) ─────────────────
+    hovered_effect_name_.clear();
+    hovered_effect_duration_ = 0;
+    {
+        constexpr double PORT_H   = 48.0;
+        constexpr double ICON_S   = 32.0;
+        constexpr double ICON_X0  = 60.0;  // 8(panel) + 48(portrait) + 4(gap)
+        constexpr double ROW_STEP = 52.0;  // PORT_H + 4
+
+        int    n_rows  = static_cast<int>(m_characters.size());
+        double pan_h   = n_rows * PORT_H + (n_rows - 1) * 4.0 + 8.0;
+        double pan_top = static_cast<double>(VH) * 0.5 + pan_h * 0.5;
+        double row_bot = pan_top - 4.0 - PORT_H;
+
+        for (Character* ch : m_characters)
+        {
+            if (ch)
+            {
+                double icon_y = row_bot + (PORT_H - ICON_S) * 0.5;
+                const auto& effects = ch->GetActiveEffects();
+                for (int ei = 0; ei < static_cast<int>(effects.size()); ++ei)
+                {
+                    double icon_x = ICON_X0 + ei * ICON_S;
+                    if (virt_mouse.x >= icon_x && virt_mouse.x < icon_x + ICON_S &&
+                        virt_mouse.y >= icon_y && virt_mouse.y < icon_y + ICON_S)
+                    {
+                        hovered_effect_name_     = effects[ei].name;
+                        hovered_effect_duration_ = effects[ei].duration;
+                        break;
+                    }
+                }
+            }
+            if (!hovered_effect_name_.empty()) break;
+            row_bot -= ROW_STEP;
+        }
+    }
+
     // ── 4. 호버 캐릭터 감지 ──────────────────────────────────────
     hovered_character_ = nullptr;
     auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
@@ -305,6 +342,8 @@ void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_
     DrawTurnIndicator();
     DrawHoverTooltip();
     DrawSpellTooltip();
+    DrawStatusEffectPanel();
+    DrawStatusEffectTooltip();
     DrawBattleLog();
 
     auto& textMng = Engine::GetTextManager();
@@ -1061,6 +1100,156 @@ void GamePlayUIManager::DrawSpellTooltip()
             Fonts::Kings, { 0.4, 0.4 }, CS200::WHITE, DrawDepth::UI);
         ty -= LH;
     }
+}
+
+void GamePlayUIManager::InitStatusEffectIcons()
+{
+    static const std::pair<const char*, const char*> ICONS[] = {
+        {"Blessing",   "Assets/images/blessing.png"},
+        {"Lifesteal",  "Assets/images/lifesteal.png"},
+        {"Frenzy",     "Assets/images/frenzy.png"},
+        {"Exhaustion", "Assets/images/exhaustion.png"},
+        {"Purify",     "Assets/images/purify.png"},
+        {"Curse",      "Assets/images/curse.png"},
+        {"Haste",      "Assets/images/haste.png"},
+        {"Stealth",    "Assets/images/stealth.png"},
+        {"Fear",       "Assets/images/fear.png"},
+    };
+    for (const auto& [name, path] : ICONS)
+        status_icon_textures_[name] = Engine::GetTextureManager().Load(path);
+
+    effect_descriptions_ = {
+        {"Lifesteal",  "Recover 50% of damage dealt this turn (round down)"},
+        {"Frenzy",     "If next attack deals 10+ damage, target receives random debuff; otherwise, the Fighter receives it."},
+        {"Exhaustion", "Speed and Action points become 0 next turn"},
+        {"Purify",     "Removes all status effects from self"},
+        {"Blessing",   "All damage taken -3, all damage dealt +3"},
+        {"Curse",      "All damage taken +3, all damage dealt -3"},
+        {"Haste",      "Speed +1, Actions +1"},
+        {"Stealth",    "Untargetable. First damage next turn doubled. Removed on attack."},
+        {"Fear",       "All damage dealt -3, speed -1"},
+    };
+
+    // 효과별 툴팁 폭 사전 계산
+    {
+        constexpr double PAD = 10.0;
+        auto& tm = Engine::GetTextManager();
+        for (const auto& [name, desc] : effect_descriptions_)
+        {
+            double w0 = tm.CalculateTextSize(name,                   Fonts::Kings).x * 0.5;
+            double w1 = tm.CalculateTextSize("Duration: 99 turn(s)", Fonts::Kings).x * 0.4;
+            double w2 = tm.CalculateTextSize(desc,                   Fonts::Kings).x * 0.35;
+            double max_w = std::max({ w0, w1, w2 });
+            effect_tooltip_widths_[name] = std::min(max_w + PAD * 2.0,
+                                                    static_cast<double>(VW) - 20.0);
+        }
+    }
+
+    // Portrait textures for the left-side status panel
+    portrait_textures_[static_cast<int>(CharacterTypes::Dragon)]  = Engine::GetTextureManager().Load("Assets/images/dragon.png");
+    portrait_textures_[static_cast<int>(CharacterTypes::Fighter)] = Engine::GetTextureManager().Load("Assets/images/fighter.png");
+    portrait_textures_[static_cast<int>(CharacterTypes::Cleric)]  = Engine::GetTextureManager().Load("Assets/images/cleric_p.png");
+    portrait_textures_[static_cast<int>(CharacterTypes::Rogue)]   = Engine::GetTextureManager().Load("Assets/images/rogue_p.png");
+    portrait_textures_[static_cast<int>(CharacterTypes::Wizard)]  = Engine::GetTextureManager().Load("Assets/images/wizard_p.png");
+}
+
+void GamePlayUIManager::DrawWorld()
+{
+    // Status effect icons are now rendered in DrawStatusEffectPanel() (Pass 2 UI)
+}
+
+void GamePlayUIManager::DrawStatusEffectPanel()
+{
+    if (m_characters.empty()) return;
+
+    auto* renderer = CS230::TextureManager::GetRenderer2D();
+    constexpr double PORT_D   = 48.0;
+    constexpr double PORT_SCL = PORT_D / 128.0;  // 0.375
+    constexpr double ICON_S   = 32.0;
+    constexpr double PAN_X    = 8.0;
+    constexpr double ICON_X0  = PAN_X + PORT_D + 4.0;  // 60
+    constexpr double ROW_STEP = PORT_D + 4.0;           // 52
+
+    int    n_rows  = static_cast<int>(m_characters.size());
+    double pan_h   = n_rows * PORT_D + (n_rows - 1) * 4.0 + 8.0;
+    double pan_w   = 300.0;
+    double pan_cy  = static_cast<double>(VH) * 0.5;
+    double pan_top = pan_cy + pan_h * 0.5;
+
+    Math::TransformationMatrix bg =
+        Math::TranslationMatrix(Math::vec2{ PAN_X + pan_w * 0.5, pan_cy }) *
+        Math::ScaleMatrix(Math::vec2{ pan_w, pan_h });
+    renderer->DrawRectangle(bg, 0x1a1a2e99, 0x5555aaff, 1.5, DrawDepth::UI + 0.02f);
+
+    double row_bot = pan_top - 4.0 - PORT_D;
+
+    for (Character* ch : m_characters)
+    {
+        if (!ch) { row_bot -= ROW_STEP; continue; }
+
+        auto pit = portrait_textures_.find(static_cast<int>(ch->GetCharacterType()));
+        if (pit != portrait_textures_.end() && pit->second)
+        {
+            uint32_t tint = ch->IsAlive() ? 0xFFFFFFFF : 0x666666FF;
+            pit->second->Draw(
+                Math::TranslationMatrix(Math::vec2{ PAN_X, row_bot }) *
+                Math::ScaleMatrix(Math::vec2{ PORT_SCL, PORT_SCL }),
+                tint, DrawDepth::UI + 0.015f);
+        }
+
+        const auto& effects = ch->GetActiveEffects();
+        double icon_y = row_bot + (PORT_D - ICON_S) * 0.5;
+        for (int ei = 0; ei < static_cast<int>(effects.size()); ++ei)
+        {
+            auto iit = status_icon_textures_.find(effects[ei].name);
+            if (iit == status_icon_textures_.end() || !iit->second) continue;
+            double icon_x = ICON_X0 + ei * ICON_S;
+            iit->second->Draw(
+                Math::TranslationMatrix(Math::vec2{ icon_x, icon_y }),
+                0xFFFFFFFF, DrawDepth::UI + 0.01f);
+        }
+
+        row_bot -= ROW_STEP;
+    }
+}
+
+void GamePlayUIManager::DrawStatusEffectTooltip()
+{
+    if (hovered_effect_name_.empty()) return;
+
+    auto& textMgr  = Engine::GetTextManager();
+    auto* renderer = CS230::TextureManager::GetRenderer2D();
+    Math::vec2 mouse = m_virtual_mouse_;
+
+    auto wit = effect_tooltip_widths_.find(hovered_effect_name_);
+    double TT_W = (wit != effect_tooltip_widths_.end()) ? wit->second : 340.0;
+    constexpr double LH   = 24.0;
+    constexpr double PAD  = 10.0;
+    constexpr double TT_H = PAD * 2.0 + LH * 3.0;
+
+    double tip_x = mouse.x + 16.0;
+    if (tip_x + TT_W > static_cast<double>(VW) - 4.0)
+        tip_x = mouse.x - TT_W - 8.0;
+    double tip_top = mouse.y + TT_H;
+
+    Math::TransformationMatrix bg =
+        Math::TranslationMatrix(Math::vec2{ tip_x + TT_W * 0.5, tip_top - TT_H * 0.5 }) *
+        Math::ScaleMatrix(Math::vec2{ TT_W, TT_H });
+    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5f, DrawDepth::UI + 0.001f);
+
+    double ty = tip_top - PAD;
+    textMgr.DrawText(hovered_effect_name_,
+        Math::vec2{ tip_x + PAD, ty }, Fonts::Kings, {0.5, 0.5}, CS200::GOLD, DrawDepth::UI);
+    ty -= LH;
+
+    textMgr.DrawText("Duration: " + std::to_string(hovered_effect_duration_) + " turn(s)",
+        Math::vec2{ tip_x + PAD, ty }, Fonts::Kings, {0.4, 0.4}, CS200::YELLOW, DrawDepth::UI);
+    ty -= LH;
+
+    auto dit = effect_descriptions_.find(hovered_effect_name_);
+    if (dit != effect_descriptions_.end())
+        textMgr.DrawText(dit->second, Math::vec2{ tip_x + PAD, ty },
+            Fonts::Kings, {0.35, 0.35}, CS200::WHITE, DrawDepth::UI);
 }
 
 void GamePlayUIManager::DrawActionLabel()

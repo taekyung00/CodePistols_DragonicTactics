@@ -37,8 +37,10 @@ class GamePlayUIManager
 
   void InitButtons(PlayerInputHandler* inputHandler);
   void InitSpellTooltips();
+  void InitStatusEffectIcons();
   void SetCamera(const TacticalCamera* camera);
   ButtonManager& GetButtons();
+  void DrawWorld();
 
   void OnTurnStarted(const std::string& actor_name, int turn_number, bool is_player, int round_number);
   void AddBattleLogEntry(const std::string& line);
@@ -83,6 +85,16 @@ class GamePlayUIManager
   double       hovered_slot_cx_ = 0.0;
   std::unordered_map<std::string, std::vector<std::string>> spell_tooltip_cache_;
   std::unordered_map<std::string, double>                  spell_tooltip_widths_;
+
+  // Status effect icons
+  std::unordered_map<std::string, std::shared_ptr<CS230::Texture>> status_icon_textures_;
+  std::unordered_map<std::string, std::string>                     effect_descriptions_;
+  std::unordered_map<std::string, double>                          effect_tooltip_widths_;
+  std::string hovered_effect_name_;
+  int         hovered_effect_duration_ = 0;
+
+  // Character portraits for left-side status panel (key = CharacterTypes int value)
+  std::unordered_map<int, std::shared_ptr<CS230::Texture>> portrait_textures_;
 
   // InputHandler pointer
   PlayerInputHandler*   m_input_handler_ptr_ = nullptr;
@@ -130,5 +142,7 @@ class GamePlayUIManager
   void DrawTurnIndicator();
   void DrawHoverTooltip();
   void DrawSpellTooltip();
+  void DrawStatusEffectTooltip();
+  void DrawStatusEffectPanel();
   void DrawActionLabel();
 };
