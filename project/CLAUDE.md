@@ -498,6 +498,7 @@ std::vector<Character*> enemys {};        // 모든 AI 캐릭터 (Fighter, Cleri
 - `InitializeTurnOrder({ player } + enemys)` — 새 AI 추가 시 자동 반영
 - `CheckGameEnd`: `std::all_of(enemys, IsAlive==false)` → 전원 사망 시 Player Win
 - ⚠️ `LoadJSONMap`은 `maps.json`의 `spawn_points` 키(`"fighter"`, `"cleric"`, ...)를 찾아 스폰 — 새 캐릭터는 maps.json에 spawn_point 추가 필요
+- ⚠️ **`m_confirmed_dead_` 패턴** (`GamePlay.h`): `unique_ptr`로 소유된 캐릭터가 `GameObjectManager`에서 삭제된 후 `CharacterDeathEvent` 핸들러가 뒤늦게 호출되어 댕글링 포인터가 생기는 use-after-free를 방지한다. `CheckGameEnd`는 `enemys` 포인터 값을 `m_confirmed_dead_` set에 기록해 두고, 이후 `IsAlive()` 대신 set 포함 여부로 사망 판정한다. 새 캐릭터 추가 시 동일 패턴 준수 필수 (자세한 내용: `docs/Detailed Implementations/features/character_death_crash_fix.md`).
 
 **PlayerInputHandler.ActionState** (입력 상태 머신):
 
@@ -630,8 +631,8 @@ CastSpell → CanCast(클래스/슬롯/Geometry/Range/AP 체크) → ConsumeSpel
 □ Objects/X.h + X.cpp            — Character 상속, IsAIControlled()=true, Action()→AISystem 위임
 □ StateComponents/AI/XStrategy.h/.cpp — IAIStrategy 구현, Single 스펠에 range 상수 + 거리 체크 필수
 □ StateComponents/AISystem.cpp   — m_strategies[CharacterTypes::X] = new XStrategy()
-□ Factories/CharacterFactory.h   — class X; + CreateX() 선언
-□ Factories/CharacterFactory.cpp — #include X.h + Create() switch case + CreateX() 구현
+□ Factories/CharacterFactory.h   — (1) class X; 전방선언 추가, (2) private에 static unique_ptr<X> CreateX() 선언
+□ Factories/CharacterFactory.cpp — (1) #include "X.h" 추가, (2) Create() switch에 case X: return CreateX(pos); 추가, (3) CreateX() 구현
 □ Assets/Data/characters.json    — "X": { hp, speed, ap, attack_dice, spell_slots, ... }
 □ Assets/Data/maps.json          — 각 맵 spawn_points에 "x": {"x":N, "y":N} 추가
 □ States/GamePlay.cpp            — LoadJSONMap에 spawn_points.find("x") + enemys.push_back()
@@ -688,6 +689,16 @@ god mode·`timeScale`(빨리감기)·각종 오버레이 토글을 보유한다.
 - `Assets/Data/status_effect.csv` — 상태 이상 설정
 
 **맵 전환**: `GamePlay::s_next_map_id` (string, 기본값 `"first_map"`)와 `GamePlay::s_should_restart` (bool) 정적 필드를 GamePlay 전환 전에 설정해 어떤 맵을 로드할지 지정한다. `s_next_map_id`는 `maps.json`의 맵 ID 문자열이며, 없으면 첫 번째 맵으로 fallback한다.
+
+**DataRegistry 핫리로드 API** (`StateComponents/DataRegistry.h`):
+
+```cpp
+GetGSComponent<DataRegistry>()->ReloadAll();          // 전체 JSON 재로드
+GetGSComponent<DataRegistry>()->ReloadCharacters();   // characters.json만 재로드
+GetGSComponent<DataRegistry>()->ReloadSpells();       // spell_table.csv만 재로드
+```
+
+⚠️ **`StateComponents/DataRegistry.ini`는 설정 파일이 아니다** — `.ini` 확장자를 사용하지만 실제로는 `DataRegistry.h`의 템플릿 메서드 구현체(`GetValue<T>`, `GetArray<T>`)가 담긴 C++ 파일이다. `DataRegistry.h`의 마지막 줄에서 `#include`된다. 새 파일 추가 시 이 확장자 관례를 따라서는 안 된다.
 
 ---
 
@@ -749,12 +760,15 @@ renderer_2d->EndScene();
 struct TacticalCamera {
     Math::vec2 target = { 0.0, 0.0 };
     double zoom = 1.0;
-    static constexpr int VIRTUAL_W = 1600;
-    static constexpr int VIRTUAL_H = 900;
+    static constexpr double ZOOM_MIN = 0.25;
+    static constexpr double ZOOM_MAX = 3.0;
+    static constexpr int    VIRTUAL_W = 1600;
+    static constexpr int    VIRTUAL_H = 900;
     Math::TransformationMatrix GetWorldMatrix(Math::ivec2 win) const;
     Math::vec2 ScreenToWorld(Math::vec2 screen, Math::ivec2 win) const;
     Math::vec2 WorldToScreen(Math::vec2 world, Math::ivec2 win) const;
     static Math::TransformationMatrix BuildVirtualNdc(Math::ivec2 win);  // 레터박스 UI NDC
+    static Math::vec2 ScreenToVirtual(Math::vec2 screen, Math::ivec2 win); // 실제 픽셀 → 가상 1600×900 (UI 히트 판정용)
 };
 ```
 

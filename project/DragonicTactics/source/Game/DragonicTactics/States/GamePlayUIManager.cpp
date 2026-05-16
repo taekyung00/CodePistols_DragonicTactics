@@ -43,6 +43,7 @@ Created:     November 24, 2025
 #include "../Objects/Components/StatsComponent.h"
 
 #include "PlayerInputHandler.h"
+#include <sstream>
 
 // Virtual resolution helpers — mirrors the demo's letterbox approach
 static constexpr int VW = TacticalCamera::VIRTUAL_W;
@@ -189,6 +190,24 @@ void GamePlayUIManager::Update(double dt)
     // ── 3. 버튼 업데이트 ─────────────────────────────────────────
     button_manager_.Update(virt_mouse, mouse_click);
 
+    // ── 3b. 스펠 슬롯 호버 감지 — ButtonManager::IsHovered 재사용 ─
+    {
+        static constexpr std::array<const char*, 9> SPELL_IDS = {
+            "S_ATK_010","S_ATK_020","S_ATK_030","S_ATK_040",
+            "S_ENH_040","S_ENH_050","S_DEB_020","S_GEO_010","S_GEO_020"
+        };
+        hovered_spell_id_.clear();
+        for (int i = 0; i < 9; ++i)
+        {
+            if (button_manager_.IsHovered(std::string("slot_") + SPELL_IDS[i]))
+            {
+                hovered_spell_id_ = SPELL_IDS[i];
+                hovered_slot_cx_  = slot_bar_x_[i + 1] + 32.0; // left_edge + 32 = center
+                break;
+            }
+        }
+    }
+
     // ── 4. 호버 캐릭터 감지 ──────────────────────────────────────
     hovered_character_ = nullptr;
     auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
@@ -285,6 +304,7 @@ void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_
     DrawActionLabel();
     DrawTurnIndicator();
     DrawHoverTooltip();
+    DrawSpellTooltip();
     DrawBattleLog();
 
     auto& textMng = Engine::GetTextManager();
@@ -610,6 +630,40 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
 ButtonManager& GamePlayUIManager::GetButtons()
 {
   return button_manager_;
+}
+
+void GamePlayUIManager::InitSpellTooltips()
+{
+    static constexpr std::array<const char*, 9> SPELL_IDS = {
+        "S_ATK_010", "S_ATK_020", "S_ATK_030", "S_ATK_040",
+        "S_ENH_040", "S_ENH_050", "S_DEB_020", "S_GEO_010", "S_GEO_020"
+    };
+
+    auto* spell_sys = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
+    if (!spell_sys) return;
+
+    for (const char* id : SPELL_IDS)
+    {
+        const SpellData* data = spell_sys->GetSpellData(id);
+        if (!data) continue;
+
+        std::vector<std::string> lines;
+        lines.push_back(data->spell_name + " [Lv " + std::to_string(data->spell_level) + "]");
+
+        std::istringstream ss(data->effect_raw);
+        std::string line;
+        while (std::getline(ss, line))
+        {
+            if (line.empty()) continue;
+            if (line.find("\"Basic\"") != std::string::npos) continue;
+            if (line == "Move to current location.") continue;
+            if (line.find("Summons NULL") != std::string::npos) continue;
+            if (line == "Deals 0 damage.") continue;
+            lines.push_back(line);
+        }
+
+        spell_tooltip_cache_[id] = std::move(lines);
+    }
 }
 
 void GamePlayUIManager::OnTurnStarted(const std::string& actor_name, int turn_number, bool is_player, int round_number)
@@ -947,6 +1001,52 @@ void GamePlayUIManager::DrawCharacterStatsPanel([[maybe_unused]] Math::Transform
 
 	current_y -= panel_height_per_char + 40.0;
   }
+}
+
+void GamePlayUIManager::DrawSpellTooltip()
+{
+    if (hovered_spell_id_.empty()) return;
+    if (popup_open_) return;
+
+    auto it = spell_tooltip_cache_.find(hovered_spell_id_);
+    if (it == spell_tooltip_cache_.end() || it->second.empty()) return;
+
+    const auto& lines = it->second;
+    auto& textMgr  = Engine::GetTextManager();
+    auto* renderer = CS230::TextureManager::GetRenderer2D();
+
+    constexpr double TT_W = 380.0;
+    constexpr double LH   = 24.0;
+    constexpr double PAD  = 10.0;
+    double TT_H = PAD * 2.0 + static_cast<double>(lines.size()) * LH;
+
+    double tip_x = hovered_slot_cx_ - TT_W * 0.5;
+    if (tip_x < 4.0) tip_x = 4.0;
+    if (tip_x + TT_W > static_cast<double>(VW) - 4.0)
+        tip_x = static_cast<double>(VW) - TT_W - 4.0;
+
+    // 슬롯 바 아이콘 상단(center + 32 = 144) 기준으로 위쪽에 배치
+    double tip_top = slot_bar_center_y_ + 32.0 + 8.0 + TT_H;
+
+    Math::TransformationMatrix bg =
+        Math::TranslationMatrix(Math::vec2{ tip_x + TT_W * 0.5, tip_top - TT_H * 0.5 }) *
+        Math::ScaleMatrix(Math::vec2{ TT_W, TT_H });
+    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5f, DrawDepth::UI + 0.001f);
+
+    double ty = tip_top - PAD;
+
+    // 첫 줄: 스펠 이름 + 레벨 (금색)
+    textMgr.DrawText(lines[0], Math::vec2{ tip_x + PAD, ty },
+        Fonts::Kings, { 0.5, 0.5 }, CS200::GOLD, DrawDepth::UI);
+    ty -= LH;
+
+    // 이후 줄: 효과 설명 (흰색)
+    for (size_t i = 1; i < lines.size(); ++i)
+    {
+        textMgr.DrawText(lines[i], Math::vec2{ tip_x + PAD, ty },
+            Fonts::Kings, { 0.4, 0.4 }, CS200::WHITE, DrawDepth::UI);
+        ty -= LH;
+    }
 }
 
 void GamePlayUIManager::DrawActionLabel()

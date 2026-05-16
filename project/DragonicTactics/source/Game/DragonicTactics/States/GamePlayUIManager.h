@@ -16,6 +16,7 @@ Created:    November 24, 2025
 #include <deque>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 #include "ButtonManager.h"
 
@@ -35,6 +36,7 @@ class GamePlayUIManager
   void SetCharacters(const std::vector<Character*>& characters);
 
   void InitButtons(PlayerInputHandler* inputHandler);
+  void InitSpellTooltips();
   void SetCamera(const TacticalCamera* camera);
   ButtonManager& GetButtons();
 
@@ -73,8 +75,13 @@ class GamePlayUIManager
   int         popup_slot_index_     = -1;
   bool        popup_hit_this_frame_ = false;
 
-  // Hover tooltip
+  // Character hover tooltip
   Character* hovered_character_ = nullptr;
+
+  // Spell hover tooltip
+  std::string  hovered_spell_id_;
+  double       hovered_slot_cx_ = 0.0;
+  std::unordered_map<std::string, std::vector<std::string>> spell_tooltip_cache_;
 
   // InputHandler pointer
   PlayerInputHandler*   m_input_handler_ptr_ = nullptr;
@@ -121,5 +128,6 @@ class GamePlayUIManager
   void DrawUicastPopup();
   void DrawTurnIndicator();
   void DrawHoverTooltip();
+  void DrawSpellTooltip();
   void DrawActionLabel();
 };

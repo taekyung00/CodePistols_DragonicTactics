@@ -179,6 +179,7 @@ void GamePlay::Load()
   GetGSComponent<DataRegistry>()->LoadFromFile("Assets/Data/characters.json");
   GetGSComponent<DataRegistry>()->LoadAllCharacterData("Assets/Data/characters.json");
   GetGSComponent<SpellSystem>()->LoadFromCSV("Assets/Data/spell_table.csv");
+  m_ui_manager->InitSpellTooltips();
   // GetGSComponent<SpellSystem>()->SetEventBus(GetGSComponent<EventBus>());
 
   auto* map_registry = GetGSComponent<MapDataRegistry>();
