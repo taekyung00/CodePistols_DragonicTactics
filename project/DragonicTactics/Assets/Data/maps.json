@@ -22,7 +22,8 @@
             "spawn_points": {
                 "dragon":  {"x": 3, "y": 1},
                 "fighter": {"x": 3, "y": 6},
-                "cleric":  {"x": 4, "y": 6}
+                "cleric":  {"x": 4, "y": 6},
+                "rogue":   {"x": 5, "y": 6}
             }
         },
         {
@@ -49,7 +50,8 @@
             "spawn_points": {
                 "dragon":  {"x": 4, "y": 1},
                 "fighter": {"x": 4, "y": 8},
-                "cleric":  {"x": 5, "y": 8}
+                "cleric":  {"x": 5, "y": 8},
+                "rogue":   {"x": 6, "y": 8}
             }
         },
         {
@@ -78,7 +80,8 @@
             "spawn_points": {
                 "dragon":  {"x": 5, "y": 1},
                 "fighter": {"x": 5, "y": 10},
-                "cleric":  {"x": 6, "y": 10}
+                "cleric":  {"x": 6, "y": 10},
+                "rogue":   {"x": 7, "y": 10}
             }
         }
     ]

@@ -72,7 +72,7 @@ void GamePlayUIManager::ShowGameEnd(std::string&& text)
   game_end_text = std::make_unique<std::string>(text);
 }
 
-void GamePlayUIManager::Update(double)
+void GamePlayUIManager::Update(double dt)
 {
     Math::vec2 mouse_pos   = Engine::GetInput().GetMousePos();
     bool       mouse_click = Engine::GetInput().MouseJustPressed(0);
@@ -293,6 +293,17 @@ void GamePlayUIManager::Update(double)
             }
         }
     }
+
+    // ── 5. 데미지 텍스트 수명 감소 및 만료 제거 ───────────────────
+    if (m_notice_timer_ > 0.0)
+        m_notice_timer_ -= dt;
+
+    for (auto& text : m_damage_texts)
+        text.lifetime -= dt;
+    m_damage_texts.erase(
+        std::remove_if(m_damage_texts.begin(), m_damage_texts.end(),
+                       [](const DamageText& t) { return t.lifetime <= 0.0; }),
+        m_damage_texts.end());
 }
 
 void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_matrix)
@@ -307,6 +318,7 @@ void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_
     DrawStatusEffectPanel();
     DrawStatusEffectTooltip();
     DrawBattleLog();
+    DrawNotice();
     DrawDisableReasonTooltip();
     DrawDragonWorldHoverTooltip();
 
@@ -737,6 +749,13 @@ bool GamePlayUIManager::IsMouseOverLogPanel() const
   if (!show_battle_log_) return false;
   return m_virtual_mouse_.x >= LOG_PANEL_X && m_virtual_mouse_.x <= LOG_PANEL_X + LOG_PANEL_W
       && m_virtual_mouse_.y <= LOG_PANEL_Y && m_virtual_mouse_.y >= LOG_PANEL_Y - LOG_PANEL_H;
+}
+
+void GamePlayUIManager::ScrollLog(double delta)
+{
+  double visible_h  = LOG_PANEL_H - LOG_TITLE_H;
+  double max_scroll = std::max(0.0, ComputeLogContentHeight() - visible_h);
+  log_scroll_offset_ = std::clamp(log_scroll_offset_ - delta * 30.0, 0.0, max_scroll);
 }
 
 void GamePlayUIManager::AddBattleLogEntry(const std::string& line)
@@ -1515,4 +1534,31 @@ void GamePlayUIManager::DrawDragonWorldHoverTooltip()
                 Math::vec2{ tip_x + PAD, ty }, Fonts::Kings, {0.4, 0.4}, CS200::RED, DrawDepth::UI);
         }
     }
+}
+
+void GamePlayUIManager::ShowNotice(const std::string& text)
+{
+    m_notice_text_  = text;
+    m_notice_timer_ = NOTICE_DURATION;
+}
+
+void GamePlayUIManager::DrawNotice()
+{
+    if (m_notice_timer_ <= 0.0) return;
+
+    auto* renderer = CS230::TextureManager::GetRenderer2D();
+    auto& textMgr  = Engine::GetTextManager();
+
+    constexpr double cx = VW * 0.5;
+    // TurnIndicator 아래 (panel_cy ≈ 868) 에서 NOTICE_H + 8 px 아래
+    constexpr double cy = static_cast<double>(VH) - 8.0 - 48.0 - 8.0 - NOTICE_H * 0.5;
+
+    Math::TransformationMatrix bg =
+        Math::TranslationMatrix(Math::vec2{ cx, cy }) *
+        Math::ScaleMatrix(Math::vec2{ NOTICE_W, NOTICE_H });
+    renderer->DrawRectangle(bg, 0x1a0a0aee, 0xff5533ff, 2.0, DrawDepth::UI - 0.003f);
+
+    textMgr.DrawText(m_notice_text_,
+        Math::vec2{ cx - NOTICE_W * 0.5 + 12.0, cy - 10.0 },
+        Fonts::Kings, { 0.42, 0.42 }, CS200::WHITE, DrawDepth::UI - 0.004f);
 }

@@ -12,6 +12,7 @@
 
 #include "AI/ClericStrategy.h"
 #include "AI/FighterStrategy.h"
+#include "AI/RogueStrategy.h"
 // #include "AI/WizardStrategy.h" (TODO)
 
 #include "../StateComponents/CombatSystem.h"
@@ -42,6 +43,7 @@ void AISystem::Init()
   // [핵심] 캐릭터 타입에 맞는 두뇌를 갈아끼우는 곳
   m_strategies[CharacterTypes::Fighter] = new FighterStrategy();
   m_strategies[CharacterTypes::Cleric]  = new ClericStrategy();
+  m_strategies[CharacterTypes::Rogue]   = new RogueStrategy();
 
   // 나중에 이렇게 추가하면 됩니다:
   // m_strategies[CharacterTypes::Wizard] = new WizardStrategy();

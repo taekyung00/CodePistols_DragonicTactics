@@ -379,7 +379,9 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
 			             || (t.filter == "Ally"  && sameTeam)
 			             || (t.filter == "Enemy" && !sameTeam)
 			             || (t.filter == "Self"  && hit == caster);
-			if (filterOk)
+			// Stealth: Enemy 타겟팅 스펠은 은신 중인 캐릭터를 타겟으로 할 수 없음
+			bool stealthBlock = (t.filter == "Enemy" && hit->Has("Stealth"));
+			if (filterOk && !stealthBlock)
 				targets.push_back(hit);
 		}
 	}
@@ -395,6 +397,7 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
 			if (t.filter == "Self"  && c != caster) continue;
 			if (t.filter == "Ally"  && !sameTeam)   continue;
 			if (t.filter == "Enemy" && sameTeam)     continue;
+			if (t.filter == "Enemy" && c->Has("Stealth")) continue;
 			int dist = grid->ManhattanDistance(caster->GetGridPosition()->Get(), c->GetGridPosition()->Get());
 			if (dist <= radius)
 				targets.push_back(c);

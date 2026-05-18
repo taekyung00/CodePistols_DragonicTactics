@@ -45,6 +45,9 @@ class GamePlayUIManager
   void OnTurnStarted(const std::string& actor_name, int turn_number, bool is_player, int round_number);
   void AddBattleLogEntry(const std::string& line);
   bool IsMouseOverLogPanel() const;
+  void ScrollLog(double delta);
+
+  void ShowNotice(const std::string& text);
 
   private:
   struct DamageText
@@ -137,7 +140,15 @@ class GamePlayUIManager
 
   double end_turn_click_timer_ = 0.0;
 
+  // Notice toast
+  std::string m_notice_text_;
+  double      m_notice_timer_                = 0.0;
+  static constexpr double NOTICE_DURATION   = 1.5;
+  static constexpr double NOTICE_W          = 460.0;
+  static constexpr double NOTICE_H          = 44.0;
+
   void DrawCharacterStatsPanel(Math::TransformationMatrix camera_matrix);
+  void DrawNotice();
   void   DrawBattleLog();
   double ComputeLogContentHeight() const;
   void DrawSlotBar();

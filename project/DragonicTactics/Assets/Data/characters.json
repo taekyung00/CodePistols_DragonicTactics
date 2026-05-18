@@ -49,5 +49,21 @@
     },
     "known_spells": [],
     "known_abilities": []
+  },
+  "Rogue": {
+    "max_hp": 65,
+    "speed": 4,
+    "max_action_points": 1,
+    "base_attack_power": 5,
+    "attack_dice": "1d8",
+    "base_defense_power": 0,
+    "defense_dice": "1d6",
+    "attack_range": 1,
+    "spell_slots": {
+      "1": 4,
+      "2": 2
+    },
+    "known_spells": [],
+    "known_abilities": []
   }
 }

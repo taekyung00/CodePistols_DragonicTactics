@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `GamePlay::DrawImGui()` | Map Selection / Combat Status 개발자 패널                                 |
 | `GamePlay::Draw()`      | **2-패스 렌더링**: Pass 1 = 월드 공간(TacticalCamera), Pass 2 = UI 공간(가상 1600×900) |
 
-**현재 맵 구성**: Dragon = 플레이어, Fighter + Cleric = AI 적 (`maps.json` spawn_points 기준, `enemys` 벡터로 관리).
+**현재 맵 구성**: Dragon = 플레이어, Fighter + Cleric + Rogue = AI 적 (`maps.json` spawn_points 기준, `enemys` 벡터로 관리).
 
 ---
 
@@ -26,11 +26,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **구현 완료**: SpellSystem (CSV 파싱 + 시전 + UI), StatusEffectHandler (9가지 효과 + OnApplied/OnRemoved), TurnManager, GridSystem, SoundManager (BGM/SFX)
 - **구현 완료**: FighterStrategy (`fighter.mmd` 플로우차트 완전 반영 — 킬루프/생존/일반교전/원거리 분기)
 - **구현 완료**: ClericStrategy (`cleric.mmd` 플로우차트 완전 반영 — 킬루프/힐/버프·디버프/근접 분기) + Cleric 캐릭터 클래스
-- **미구현**: WizardStrategy, RogueStrategy — 캐릭터 클래스 및 characters.json 스탯도 없음 (`FighterStrategy`/`ClericStrategy`가 참조 구현)
-  - 스프라이트 이미지(`wizard_p.png`, `rogue_p.png`)와 오디오 SFX 파일(`wizard_action.wav`, `wizard_hurt.wav`, `rouge_action.wav`, `rouge_hurt.wav`)은 Assets에 이미 존재 — 구현 시 에셋 생성 불필요
-  - `SoundManager.h` SFX 상수는 미등록 — Wizard/Rogue 구현 시 상수 추가 필요 (⚠️ 파일명 오타 주의: Rogue SFX 파일은 `rouge_*.wav`)
+- **구현 완료**: RogueStrategy (`rouge.mmd` 플로우차트 반영 — 은신 킬루프/버프/원거리이동/근접전투 분기) + Rogue 캐릭터 클래스
+- **미구현**: WizardStrategy — 캐릭터 클래스 및 characters.json 스탯도 없음 (`FighterStrategy`/`ClericStrategy`/`RogueStrategy`가 참조 구현)
+  - 스프라이트 이미지(`wizard_p.png`)와 오디오 SFX 파일(`wizard_action.wav`, `wizard_hurt.wav`)은 Assets에 이미 존재 — 구현 시 에셋 생성 불필요
+  - `SoundManager.h` Wizard SFX 상수는 미등록 — Wizard 구현 시 상수 추가 필요
   - `CharacterTypes` 열거 순서: `None, Dragon, Fighter, Rogue, Cleric, Wizard, Count`
-  - AI 플로우차트 참조: `architecture/character_flowchart/wizard.mmd`, `architecture/character_flowchart/rouge.mmd`
+  - AI 플로우차트: `architecture/character_flowchart/wizard.mmd` — **스펠 ID 및 의사결정 구조는 아래 AI Strategy 패턴 섹션에 정리됨**
 
 ---
 
@@ -194,6 +195,7 @@ Engine::GetGameStateManager().GetGSComponent<EventBus>()->Publish(
 | `StatusEffectRemovedEvent` | target, effectName, reason |
 | `AIDecisionEvent` | actor, decision_type, decision_target, destination |
 | `BattleEndedEvent` | playerVictory, turnsElapsed |
+| `UINoticeEvent` | message — 화면 상단 중앙 토스트 1.5초 표시 (재사용 가능) |
 
 ### AI Strategy 패턴
 
@@ -270,7 +272,9 @@ MakeDecision
 | Divine Shield | `S_BUF_010` | 1 | Ally:Single:**4** | 파이터>로그>위자드, 자신 제외, `BLESSING_RANGE=4` |
 | Curse of Suffering | `S_DEB_010` | 1 | Enemy:Single:**5** | `CURSE_RANGE=5` |
 
-**Cleric 스탯** (`Assets/Data/characters.json`): HP 90, Speed 2, AP 1, 1d6 공격, 슬롯 Lv1×3 / Lv2×2
+**Cleric 스탯** (`Assets/Data/characters.json`): HP 90, Speed 2, AP 1, 1d6 공격/1d8 방어, 슬롯 Lv1×3 / Lv2×2
+
+**Rogue 스탯** (`Assets/Data/characters.json`): HP 65, Speed 4, AP 1, 1d8 공격/1d6 방어, 슬롯 Lv1×4 / Lv2×2
 
 **Dragon 스탯** (`Assets/Data/characters.json`): HP 140, Speed 5, AP 2, 3d6 공격/2d8 방어, 공격 범위 3, 슬롯 Lv1×4 / Lv2×3 / Lv3×2 / Lv4×2 / Lv5×1
 
@@ -287,6 +291,59 @@ MakeDecision
 | Purify | `S_ENH_050` | 1 | Self:Single:0 | 자신 모든 상태 효과 제거 |
 | Magma Blast | `S_GEO_010` | 2 | Empty:Point:6 | 빈 타일 → Lava + 3d6 피해, 업캐스트: +1d4/레벨 |
 | Wall Creation | `S_GEO_020` | 1 | Empty:Point:5 | 빈 타일 → Wall, 업캐스팅 가능 |
+
+**RogueStrategy 의사결정 구조** (`architecture/character_flowchart/rouge.mmd`, 상세: `docs/Detailed Implementations/features/rogue_strategy.md`):
+
+```
+MakeDecision
+  ├── IsInStealth && CanKillWithStealth → MakeKillLoopDecision (약점 공략/일반 공격 반복)
+  ├── MakeBuffPhaseDecision → !신속 + 1레벨 슬롯 + IsHasteMeaningful → Gale Step
+  └── Phase_Decision
+        ├── AP = 0 → EndTurn
+        ├── 비인접 → 이동 or (미공격 & 비은신 → Shadow Hide → 종료)
+        └── 인접 → 은신 상태?
+              Yes → 2레벨 슬롯 → Weakpoint Strike (2배, 은신 해제)
+                    없음 & ShouldBreakStealth → 일반공격 (2배)
+                    없음 & 가치 없음 → 재포지셔닝 이동
+              No  → !HasAttackedThisTurn → Shadow Hide → 종료
+                    이미 공격 → 일반공격
+```
+
+**Rogue 스펠 ID** (`Assets/Data/spell_table.csv` 기준):
+
+| 스펠 | ID | 레벨 | 타겟팅 | 비고 |
+|---|---|---|---|---|
+| Weakpoint Strike | `S_ATK_070` | 2 | Enemy:Single:**1** (인접 필수) | 1d10, 은신 중 2배(2d20). `Special: If target is debuffed, damage becomes 2d20` |
+| Gale Step | `S_BUF_020` | 1 | Self:Single:0 | Haste 2턴 (AP+1, MP+1) |
+| Shadow Hide | `S_ENH_060` | 0 (슬롯 불필요) | Self:Single:0 | Stealth 1턴 — Around 스펠이 아니므로 `target = actor` 설정 |
+
+**⚠️ Rogue 무한루프 방지**: Weakpoint Strike(Single, range 1 인접 필수) → 비인접 시 CanCast 실패 → AP 미소모 → 무한루프. `MakeCombatDecision`에서 `dist <= 1` 직접 체크 후 비인접이면 UseAbility 반환 금지.
+
+**WizardStrategy 의사결정 구조** (`architecture/character_flowchart/wizard.mmd`):
+
+```
+MakeDecision
+  ├── 공포(Fear) 상태 확인: 피해-3 / MP-1 / 텔레포트 불가 패널티 적용
+  ├── [1순위] 확정 킬 가능 → Kill_Loop
+  │     ├── AP > 0 & 1레벨로 충분 → Fire Bolt (Slot1)
+  │     └── AP > 0 & 2레벨 필요  → Magic Missile (Slot2)
+  └── Phase_Decision
+        ├── AP = 0 → EndTurn
+        ├── Sweet Spot 아님 → 텔레포트(!공포, Slot0) or 일반 이동(공포/MP있음)
+        └── Sweet Spot 도달
+              ├── 슬롯 > 50% → 최적 마법 시전 (Fire Bolt/Magic Missile)
+              └── 슬롯 ≤ 50% → EvalConv(HP > 30%) → Mana Conversion
+                              실패 → 원거리 캔트립 (Fire Bolt)
+```
+
+**Wizard 스펠 ID** (`Assets/Data/spell_table.csv` 기준):
+
+| 스펠 | ID | 레벨 | 타겟팅 | 비고 |
+|---|---|---|---|---|
+| Fire Bolt | `S_ATK_010` | 1 | Enemy:Single:4 | 2d8 + 업캐스트:+1d6/레벨 (Dragon 공유) |
+| Magic Missile | `S_ATK_060` | 2 | Enemy:Single:**-1** (무한 사거리) | flat_per_level:8, 업캐스트 가능 |
+| Teleport | `S_GEO_030` | 0 (슬롯 불필요) | Empty:Point:1 | `Move to self:teleport:selected` — 공포 상태에서는 사용 불가 |
+| Mana Conversion | `S_ENH_040` | 0 | Self:Single:0 | HP 소모 → 슬롯 회복 (Dragon 공유) |
 
 **⚠️ Cleric 스펠은 자신에게 사용 불가** — Divine Shield 포함 모든 스펠이 타 아군/적 대상. `FindAllyNeedingBuff()`는 actor 제외, 파이터>로그>위자드 순으로만 반환.
 
@@ -639,7 +696,7 @@ CastSpell → CanCast(클래스/슬롯/Geometry/Range/AP 체크) → ConsumeSpel
 □ Engine/SoundManager.h          — SFX_X_ACTION / SFX_X_HURT 상수 추가
 ```
 
-**Wizard/Rogue 한정**: 스프라이트(`wizard_p.png`, `rogue_p.png`)와 SFX 파일(`wizard_action/hurt.wav`, `rouge_action/hurt.wav`)은 Assets에 이미 존재 — 에셋 생성 단계 생략 가능. SoundManager.h 상수만 추가하면 됨.
+**Wizard 한정**: 스프라이트(`wizard_p.png`)와 SFX 파일(`wizard_action.wav`, `wizard_hurt.wav`)은 Assets에 이미 존재 — 에셋 생성 단계 생략 가능. SoundManager.h 상수만 추가하면 됨.
 
 **캐릭터 클래스 계층**: `CS230::GameObject` ← `Character` ← `Dragon` / `Fighter` / `Cleric` / `Wizard` / `Rogue`
 
@@ -709,7 +766,7 @@ GameState 컴포넌트가 아닌 **엔진 레벨 서비스**. `Engine::GetSoundM
 - **BGM**: OGG 파일 (`Assets/Audio/BGM/`) → 루프 재생
 - **SFX**: WAV 파일 (`Assets/Audio/SFX/`) → 단발, 8채널 소스 풀
 
-상수 경로가 헤더에 정의되어 있음: `SoundManager::BGM_MAIN_MENU`, `SoundManager::BGM_BATTLE`, `SFX_DRAGON_ACTION`, `SFX_DRAGON_HURT`, `SFX_DRAGON_WALK`, `SFX_FIGHTER_ACTION`, `SFX_FIGHTER_HURT`, `SFX_CLERIC_ACTION`, `SFX_CLERIC_HURT`, `SFX_HUMAN_WALK`
+상수 경로가 헤더에 정의되어 있음: `SoundManager::BGM_MAIN_MENU`, `SoundManager::BGM_BATTLE`, `SFX_DRAGON_ACTION`, `SFX_DRAGON_HURT`, `SFX_DRAGON_WALK`, `SFX_FIGHTER_ACTION`, `SFX_FIGHTER_HURT`, `SFX_CLERIC_ACTION`, `SFX_CLERIC_HURT`, `SFX_ROGUE_ACTION`, `SFX_ROGUE_HURT`, `SFX_HUMAN_WALK`
 
 ```cpp
 Engine::GetSoundManager().PlayBGM(SoundManager::BGM_BATTLE);   // 루프 BGM 시작
@@ -820,6 +877,7 @@ tex->Draw(Math::TranslationMatrix(Math::ivec2{screen_x - TILE_SIZE, screen_y - T
 
 `TurnEntry` 구조체(`round_number`, `turn_number`, `actor_name`, `is_player`, `lines`)를 `std::deque<TurnEntry> turn_history_`로 관리 (최대 `MAX_LOG_ROUNDS = 5` 라운드 보관). 로그는 최신이 아래로 추가되고(`push_back`), 새 턴 시작 시 자동 하단 스크롤 (단, 마우스가 패널 위에 있고 최하단이 아니면 스크롤 유지). 라운드 헤더(`─── Round N ───`)와 사이드 헤더(`▷ Player Turn` / `▷ Enemy Turn`)가 라운드/진영 전환 시 삽입된다.
 
+- **UINoticeEvent 토스트**: `bus->Publish(UINoticeEvent{ "message" })` 로 발행하면 `GamePlayUIManager::ShowNotice()`가 화면 상단 중앙에 1.5초 표시. 행동 차단 이유(은신·사거리 초과 등)를 플레이어에게 알릴 때 사용. 폰트가 ASCII만 지원하므로 em dash(—) 등 특수문자 사용 금지.
 - **이벤트 타이밍 제약** (`TurnManager.cpp`): `PublishTurnStartEvent()`를 반드시 용암 피해 `ApplyDamage` **전에** 호출해야 함 — 배틀 로그가 `TurnStartedEvent`를 받아 새 턴 섹션을 열기 때문. 순서가 바뀌면 피해 항목이 이전 캐릭터의 섹션에 들어간다.
 - **패널 레이아웃 상수**: `GamePlayUIManager.h`의 `LOG_PANEL_X/Y/W/H`, `LOG_TITLE_H`, `LOG_LINE_H`, `LOG_INDENT`, `LOG_SB_W/X`에 집중 관리됨 — 패널 위치·크기 변경 시 이 상수들만 수정.
 - **스크롤**: 패널 위 마우스 휠(`GetMouseScroll()`) + 스크롤바 드래그. 패널 위에서는 카메라 줌 차단 (`IsMouseOverLogPanel()`).

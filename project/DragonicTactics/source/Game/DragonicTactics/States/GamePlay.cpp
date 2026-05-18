@@ -59,6 +59,7 @@ namespace
       case CharacterTypes::Dragon:  return SoundManager::SFX_DRAGON_ACTION;
       case CharacterTypes::Fighter: return SoundManager::SFX_FIGHTER_ACTION;
       case CharacterTypes::Cleric:  return SoundManager::SFX_CLERIC_ACTION;
+      case CharacterTypes::Rogue:   return SoundManager::SFX_ROGUE_ACTION;
       default:                      return nullptr;
     }
   }
@@ -70,6 +71,7 @@ namespace
       case CharacterTypes::Dragon:  return SoundManager::SFX_DRAGON_HURT;
       case CharacterTypes::Fighter: return SoundManager::SFX_FIGHTER_HURT;
       case CharacterTypes::Cleric:  return SoundManager::SFX_CLERIC_HURT;
+      case CharacterTypes::Rogue:   return SoundManager::SFX_ROGUE_HURT;
       default:                      return nullptr;
     }
   }
@@ -307,6 +309,12 @@ void GamePlay::Load()
 		}
 	  });
 
+  GetGSComponent<EventBus>()->Subscribe<UINoticeEvent>(
+	  [this](const UINoticeEvent& event)
+	  {
+		m_ui_manager->ShowNotice(event.message);
+	  });
+
   GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>(
 	  [this](const CharacterDeathEvent& event)
 	  {
@@ -360,6 +368,8 @@ void GamePlay::Load()
   Engine::GetSoundManager().LoadSFX(SoundManager::SFX_FIGHTER_HURT);
   Engine::GetSoundManager().LoadSFX(SoundManager::SFX_CLERIC_ACTION);
   Engine::GetSoundManager().LoadSFX(SoundManager::SFX_CLERIC_HURT);
+  Engine::GetSoundManager().LoadSFX(SoundManager::SFX_ROGUE_ACTION);
+  Engine::GetSoundManager().LoadSFX(SoundManager::SFX_ROGUE_HURT);
   Engine::GetSoundManager().LoadSFX(SoundManager::SFX_HUMAN_WALK);
 
   Engine::GetSoundManager().LoadBGM("Assets/Audio/BGM/BGM_test.ogg");
@@ -390,8 +400,11 @@ void GamePlay::DisplayDamageAmount(const CharacterDamagedEvent& event)
 
 void GamePlay::CheckGameEnd(const CharacterDeathEvent& event)
 {
+  auto* turnMgr = GetGSComponent<TurnManager>();
+
   if (event.character == player)
   {
+	if (turnMgr) turnMgr->EndCombat();
 	m_ui_manager->ShowGameEnd("Invader Win");
 	game_end = true;
 	return;
@@ -401,6 +414,7 @@ void GamePlay::CheckGameEnd(const CharacterDeathEvent& event)
 	[this](Character* c) { return c == nullptr || m_confirmed_dead_.count(c) > 0; });
   if (all_enemies_dead && !enemys.empty())
   {
+	if (turnMgr) turnMgr->EndCombat();
 	m_ui_manager->ShowGameEnd("Player Win");
 	game_end = true;
   }
@@ -441,16 +455,22 @@ void GamePlay::Update(double dt)
     m_prev_mouse = mouse;
 
     double scroll = inp.GetMouseScroll();
-    if (scroll != 0.0 && !ImGui::GetIO().WantCaptureMouse
-        && !m_ui_manager->IsMouseOverLogPanel())
+    if (scroll != 0.0 && !ImGui::GetIO().WantCaptureMouse)
     {
-      Math::vec2 wb = m_camera.ScreenToWorld(mouse, win);
-      m_camera.zoom *= (1.0 + scroll * 0.125);
-      if (m_camera.zoom < TacticalCamera::ZOOM_MIN) m_camera.zoom = TacticalCamera::ZOOM_MIN;
-      if (m_camera.zoom > TacticalCamera::ZOOM_MAX) m_camera.zoom = TacticalCamera::ZOOM_MAX;
-      Math::vec2 wa = m_camera.ScreenToWorld(mouse, win);
-      m_camera.target.x -= wa.x - wb.x;
-      m_camera.target.y -= wa.y - wb.y;
+      if (m_ui_manager->IsMouseOverLogPanel())
+      {
+        m_ui_manager->ScrollLog(scroll);
+      }
+      else
+      {
+        Math::vec2 wb = m_camera.ScreenToWorld(mouse, win);
+        m_camera.zoom *= (1.0 + scroll * 0.125);
+        if (m_camera.zoom < TacticalCamera::ZOOM_MIN) m_camera.zoom = TacticalCamera::ZOOM_MIN;
+        if (m_camera.zoom > TacticalCamera::ZOOM_MAX) m_camera.zoom = TacticalCamera::ZOOM_MAX;
+        Math::vec2 wa = m_camera.ScreenToWorld(mouse, win);
+        m_camera.target.x -= wa.x - wb.x;
+        m_camera.target.y -= wa.y - wb.y;
+      }
     }
   }
 
@@ -698,6 +718,20 @@ void GamePlay::LoadJSONMap(const std::string& map_id)
 	grid_system->AddCharacter(cleric_raw, cleric_spawn);
 	enemys.push_back(cleric_raw);
 	Engine::GetLogger().LogEvent("Cleric spawned at: " + std::to_string(cleric_spawn.x) + ", " + std::to_string(cleric_spawn.y));
+  }
+
+  // Rogue
+  auto rogue_spawn_it = map_data.spawn_points.find("rogue");
+  if (rogue_spawn_it != map_data.spawn_points.end())
+  {
+	Math::ivec2 rogue_spawn = rogue_spawn_it->second;
+	auto  rogue_ptr = character_factory->Create(CharacterTypes::Rogue, rogue_spawn);
+	auto* rogue_raw = rogue_ptr.get();
+	rogue_raw->SetGridSystem(grid_system);
+	go_manager->Add(std::move(rogue_ptr));
+	grid_system->AddCharacter(rogue_raw, rogue_spawn);
+	enemys.push_back(rogue_raw);
+	Engine::GetLogger().LogEvent("Rogue spawned at: " + std::to_string(rogue_spawn.x) + ", " + std::to_string(rogue_spawn.y));
   }
 
   Engine::GetLogger().LogEvent("LoadJSONMap - END: " + map_data.name);
