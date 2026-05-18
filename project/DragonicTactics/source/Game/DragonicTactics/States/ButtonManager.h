@@ -31,9 +31,14 @@ struct Button
     bool disabled = false;
     bool hovered  = false;
     bool pressed  = false;    // 이번 프레임에 클릭됨
-
+    bool held     = false;
+    int press_timer = 0;
+    
     // 콜백
     std::function<void()> on_click;
+
+    // 비활성화된 사유를 저장하는 문자열
+    std::string disable_reason;
 
     // 색상 (상태별)
     CS200::RGBA color_normal   = 0x3a3a5cff;  // 기본 (어두운 보라)
@@ -78,6 +83,10 @@ public:
 
     /// @brief 버튼이 호버 중인가
     bool IsHovered(const std::string& id) const;
+
+    // [추가] 비활성화 사유 설정 및 가져오기
+    void SetDisableReason(const std::string& id, const std::string& reason);
+    std::string GetDisableReason(const std::string& id) const;
 
     // ============================================================
     // 프레임 루프

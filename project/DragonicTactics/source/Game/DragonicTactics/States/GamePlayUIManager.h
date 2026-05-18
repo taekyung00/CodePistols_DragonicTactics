@@ -55,6 +55,9 @@ class GamePlayUIManager
     double      lifetime;
   };
 
+  std::string popup_hover_reason_;
+  Math::vec2  popup_hover_pos_;
+  
   std::vector<DamageText> m_damage_texts;
 
   const double GAME_END_TEXT_SIZE = 2.0;
@@ -145,4 +148,6 @@ class GamePlayUIManager
   void DrawStatusEffectTooltip();
   void DrawStatusEffectPanel();
   void DrawActionLabel();
+  void DrawDisableReasonTooltip();
+  void DrawDragonWorldHoverTooltip();
 };
