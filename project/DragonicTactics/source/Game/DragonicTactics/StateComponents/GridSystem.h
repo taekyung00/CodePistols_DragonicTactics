@@ -49,7 +49,7 @@ class GridSystem : public CS230::Component
   /// @brief 이동 모드 활성화 (이동 가능 타일 계산 및 저장)
   /// @param character_pos 캐릭터 현재 위치
   /// @param movement_range 캐릭터 이동 범위
-  void EnableMovementMode(Math::ivec2 character_pos, int movement_range);
+  void EnableMovementMode(Math::ivec2 character_pos, int movement_range, int lava_penalty = 0);
 
   /// @brief 이동 모드 비활성화 (시각화 데이터 초기화)
   void DisableMovementMode();
@@ -126,6 +126,7 @@ std::vector<Math::ivec2> GetLineTiles(Math::ivec2 center, int reach) const;
   // ========================================
   bool					   movement_mode_active_ = false;	   // 이동 모드 활성화 여부
   Math::ivec2			   movement_source_pos_	 = { -1, -1 }; // 이동 시작 위치
+  int					   hover_lava_penalty_   = 0;		   // 호버 경로 계산 시 용암 페널티
   std::set<Math::ivec2>	   reachable_tiles_;				   // 이동 가능한 타일 집합
   std::vector<Math::ivec2> hovered_path_;					   // 마우스 호버 시 경로
   Math::ivec2			   hovered_tile_ = { -1, -1 };		   // 현재 마우스 호버 타일

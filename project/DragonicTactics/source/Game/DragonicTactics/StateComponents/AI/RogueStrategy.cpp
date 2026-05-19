@@ -33,6 +33,14 @@ AIDecision RogueStrategy::MakeDecision(Character* actor)
     return buffDecision;
 
   // ── [2] 판단 지점 루프 ──────────────────────────────────────
+  // Shadow Hide 직후: 스텔스 + AP=0 + 이동력 잔여 → 후퇴 이동
+  if (IsInStealth(actor) && actor->GetActionPoints() <= 0 && actor->GetMovementRange() > 0)
+  {
+    Math::ivec2 retreatPos = FindRetreatPos(actor, dragon, grid);
+    if (retreatPos != actor->GetGridPosition()->Get())
+      return { AIDecisionType::Move, nullptr, retreatPos, "", "Stealth: retreat to safe dist", LAVA_TILE_PENALTY };
+  }
+
   if (actor->GetActionPoints() <= 0)
     return { AIDecisionType::EndTurn, nullptr, {}, "", "No AP" };
 
@@ -214,7 +222,9 @@ bool RogueStrategy::ShouldBreakStealth(Character* /*actor*/, Character* dragon) 
 
 bool RogueStrategy::IsHasteMeaningful(Character* actor) const
 {
-  // MP 부족 or AP가 이미 2 이상(추가 AP 활용 가능)
+  if (actor->GetActionPoints() <= 0)
+    return false;
+  // 이동력 소진(다음 턴 혜택) or AP 2 이상(이번 턴 추가 행동 가능)
   return actor->GetMovementRange() <= 0 || actor->GetActionPoints() >= 2;
 }
 
@@ -226,7 +236,20 @@ Math::ivec2 RogueStrategy::FindNextMovePos(Character* actor, Character* target, 
 {
   Math::ivec2 targetPos    = target->GetGridPosition()->Get();
   Math::ivec2 myPos        = actor->GetGridPosition()->Get();
-  int         bestPathCost = 999999;
+
+  // 협공 선호도: Fighter 반대편 포지션 선호
+  Character* fighter_char = nullptr;
+  for (auto* c : grid->GetAllCharacters())
+  {
+    if (c && c->IsAlive() && c->GetCharacterType() == CharacterTypes::Fighter)
+    {
+      fighter_char = c;
+      break;
+    }
+  }
+
+  int bestPathCost  = 999999;
+  int bestPrefScore = 999999;
 
   std::vector<Math::ivec2> bestPath;
 
@@ -243,11 +266,15 @@ Math::ivec2 RogueStrategy::FindNextMovePos(Character* actor, Character* target, 
     auto path = grid->FindPath(myPos, attackPos, LAVA_TILE_PENALTY);
     if (!path.empty())
     {
-      int cost = ComputePathCost(path, grid);
-      if (cost < bestPathCost)
+      int cost      = ComputePathCost(path, grid);
+      GridPosition* fp  = fighter_char ? fighter_char->GetGridPosition() : nullptr;
+      int prefScore     = fp ? -grid->ManhattanDistance(attackPos, fp->Get()) : 0;
+      if (cost < bestPathCost ||
+          (cost == bestPathCost && prefScore < bestPrefScore))
       {
-        bestPathCost = cost;
-        bestPath     = path;
+        bestPathCost  = cost;
+        bestPrefScore = prefScore;
+        bestPath      = path;
       }
     }
   }
@@ -298,4 +325,30 @@ int RogueStrategy::CountLavaTiles(const std::vector<Math::ivec2>& path, GridSyst
 int RogueStrategy::ComputePathCost(const std::vector<Math::ivec2>& path, GridSystem* grid) const
 {
   return static_cast<int>(path.size()) + CountLavaTiles(path, grid) * LAVA_TILE_PENALTY;
+}
+
+Math::ivec2 RogueStrategy::FindRetreatPos(Character* actor, Character* dragon, GridSystem* grid)
+{
+  Math::ivec2 myPos     = actor->GetGridPosition()->Get();
+  Math::ivec2 dragonPos = dragon->GetGridPosition()->Get();
+
+  auto reachable = grid->GetReachableTiles(myPos, actor->GetMovementRange());
+
+  Math::ivec2 best     = myPos;
+  int         bestDist = 0;
+
+  for (const auto& tile : reachable)
+  {
+    int d = grid->ManhattanDistance(tile, dragonPos);
+    if (d < 2 || d > SAFE_RETREAT_DIST)
+      continue;
+    if (grid->GetTileType(tile) == GridSystem::TileType::Lava && bestDist >= 2)
+      continue;
+    if (d > bestDist)
+    {
+      bestDist = d;
+      best     = tile;
+    }
+  }
+  return best;
 }

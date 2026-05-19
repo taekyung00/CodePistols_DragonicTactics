@@ -34,6 +34,8 @@ Created:    November 24, 2025
 #include "Game/DragonicTactics/Objects/Fighter.h"
 #include "Game/DragonicTactics/StateComponents/SpellSystem.h"
 
+static constexpr int PLAYER_LAVA_PENALTY = 2;
+
 Math::ivec2 PlayerInputHandler::ConvertScreenToGrid(Math::vec2 screen_pos)
 {
   Math::vec2 world_pos = screen_pos;
@@ -227,7 +229,7 @@ void PlayerInputHandler::HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, 
 	  if (grid_pos == dragon->GetGridPosition()->Get() && dragon->GetMovementRange() > 0)
 	  {
 		SetState(ActionState::SelectingMove);
-		grid->EnableMovementMode(dragon->GetGridPosition()->Get(), dragon->GetMovementRange());
+		grid->EnableMovementMode(dragon->GetGridPosition()->Get(), dragon->GetMovementRange(), PLAYER_LAVA_PENALTY);
 	  }
 	  break;
 	}
@@ -235,7 +237,7 @@ void PlayerInputHandler::HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, 
 	case ActionState::SelectingMove:
 	  if (grid->IsReachable(grid_pos))
 	  {
-		auto path = grid->FindPath(dragon->GetGridPosition()->Get(), grid_pos);
+		auto path = grid->FindPath(dragon->GetGridPosition()->Get(), grid_pos, PLAYER_LAVA_PENALTY);
 
 		if (!path.empty())
 		{

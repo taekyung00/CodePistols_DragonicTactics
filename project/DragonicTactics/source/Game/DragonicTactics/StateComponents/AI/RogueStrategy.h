@@ -22,6 +22,7 @@ private:
   // --- 이동 ---
   Math::ivec2 FindNextMovePos(Character* actor, Character* target, GridSystem* grid);
   Math::ivec2 FindRepositionPos(Character* actor, Character* dragon, GridSystem* grid);
+  Math::ivec2 FindRetreatPos(Character* actor, Character* dragon, GridSystem* grid);
 
   // --- 경로 비용 ---
   int CountLavaTiles(const std::vector<Math::ivec2>& path, GridSystem* grid) const;
@@ -36,4 +37,5 @@ private:
   static constexpr float STEALTH_KILL_HP_THRESHOLD = 0.25f;
   static constexpr float BREAK_STEALTH_THRESHOLD   = 0.30f;
   static constexpr int   LAVA_TILE_PENALTY          = 2;
+  static constexpr int   SAFE_RETREAT_DIST          = 4;
 };

@@ -490,10 +490,11 @@ std::vector<Math::ivec2> GridSystem::GetReachableTiles(Math::ivec2 start, int ma
 // ========================================
 // 이동 모드 활성화
 // ========================================
-void GridSystem::EnableMovementMode(Math::ivec2 character_pos, int movement_range)
+void GridSystem::EnableMovementMode(Math::ivec2 character_pos, int movement_range, int lava_penalty)
 {
 	movement_mode_active_ = true;
 	movement_source_pos_  = character_pos;
+	hover_lava_penalty_   = lava_penalty;
 
 	// 이동 가능한 타일 계산
 	std::vector<Math::ivec2> reachable = GetReachableTiles(character_pos, movement_range);
@@ -542,7 +543,7 @@ void GridSystem::SetHoveredTile(Math::ivec2 hovered_tile)
 	}
 
 	// A* 경로 찾기
-	hovered_path_ = FindPath(movement_source_pos_, hovered_tile);
+	hovered_path_ = FindPath(movement_source_pos_, hovered_tile, hover_lava_penalty_);
 
 	if (!hovered_path_.empty())
 	{
