@@ -131,6 +131,7 @@ class DebugVisualizer
   std::deque<SfxLogEntry> sfx_log_;
 
   double game_time_{ 0.0 };
+  size_t last_dice_log_read_{ 0 };
 
   // === Event Handlers ===
   void OnAIDecision(const struct AIDecisionEvent& event);

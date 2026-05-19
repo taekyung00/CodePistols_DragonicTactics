@@ -121,12 +121,10 @@ bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender)
 	return false;
   }
 
-  // Stealth: 은신 중인 캐릭터는 공격 불가
+  // Stealth: 은신 중인 캐릭터는 공격 불가 (알림은 PlayerInputHandler 호버에서 처리)
   if (defender->Has("Stealth"))
   {
 	Engine::GetLogger().LogEvent("CombatSystem: Cannot attack " + defender->TypeName() + " (Stealth)");
-	if (auto* bus = Engine::GetGameStateManager().GetGSComponent<EventBus>())
-	  bus->Publish(UINoticeEvent{ defender->TypeName() + " is in Stealth cannot be targeted" });
 	return false;
   }
 

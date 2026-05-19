@@ -24,6 +24,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **폐기됨**: `Abilities/` 디렉토리 전체 (AbilityBase, MeleeAttack, ShieldBash) — `Objects/Actions/ActionAttack`만 사용
 - **구현 완료**: SpellSystem (CSV 파싱 + 시전 + UI), StatusEffectHandler (9가지 효과 + OnApplied/OnRemoved), TurnManager, GridSystem, SoundManager (BGM/SFX)
+  - 9가지 효과: `Lifesteal` (피해의 50% 회복), `Frenzy` (10+ 피해 시 랜덤 디버프), `Exhaustion` (다음 턴 AP·Speed=0), `Purify` (전체 효과 제거 — 스펠 효과로만 발동, 독립 버프/디버프 아님), `Blessing` (피해 수/받 ±3), `Curse` (피해 수/받 ∓3), `Haste` (Speed+1·AP+1), `Stealth` (타겟 불가·첫 공격 2배·공격 시 해제), `Fear` (피해 -3·Speed-1)
 - **구현 완료**: FighterStrategy (`fighter.mmd` 플로우차트 완전 반영 — 킬루프/생존/일반교전/원거리 분기)
 - **구현 완료**: ClericStrategy (`cleric.mmd` 플로우차트 완전 반영 — 킬루프/힐/버프·디버프/근접 분기) + Cleric 캐릭터 클래스
 - **구현 완료**: RogueStrategy (`rouge.mmd` 플로우차트 반영 — 은신 킬루프/버프/원거리이동/근접전투 분기) + Rogue 캐릭터 클래스
@@ -440,6 +441,8 @@ character->AddEffect(name, duration, magnitude)
 character->RemoveEffect(name)
 character->RemoveAllEffects()         // 전체 제거 (Purify 등에서 사용)
 character->GetActiveEffects()         // → const std::vector<ActiveEffect>&
+// magnitude 조회가 필요하면 StatusEffectComponent 직접 접근:
+character->GetGOComponent<StatusEffectComponent>()->GetMagnitude("Fear")  // → int (없으면 0)
 
 // 가상 훅 (서브클래스 override 가능, TurnManager가 호출)
 character->OnTurnStart()
@@ -641,6 +644,24 @@ CastSpell → CanCast(클래스/슬롯/Geometry/Range/AP 체크) → ConsumeSpel
 
 **넉백 시 용암 착지 → 즉시 정지 + 피해**: `ApplyMoveEffect`의 knockback 루프는 `TileType::Lava` 타일에 닿는 순간 멈추고 (`break`), 이후 `GetLavaDamageAt()`으로 피해를 즉시 적용한다. 벽(Wall)은 착지 불가, 그 앞에서 멈춤. 빈 타일은 계속 미끄러짐.
 
+**지형 변환 스펠 (다중 타일)** — Wall Creation / Magma Blast는 단일 타일이 아닌 타일 목록을 받는 별도 API 사용:
+
+```cpp
+// 다중 Wall 배치 (WallPlacementMulti 상태에서 PlayerInputHandler가 호출)
+spells->CastWalls(caster, "S_GEO_020", tiles_vector, upcast_level);
+
+// 다중 Lava 배치 (LavaPlacementMulti 상태에서 호출)
+spells->CastLavaZones(caster, "S_GEO_010", tiles_vector, upcast_level);
+
+// 지형 효과 틱 (TurnManager::StartNextTurn에서 호출 — 용암 피해 적용 + 만료 제거)
+spells->TickTerrainEffects(current_round);
+
+// 특정 타일의 용암 피해량 조회 (SpellSystem 내부 + knockback 피해 계산)
+int dmg = spells->GetLavaDamageAt(tile_pos);  // 없으면 0
+```
+
+`TerrainEffect` 구조체 (`SpellSystem.h`): `affected_tiles`, `damage_per_turn`(0이면 Wall), `created_round`, `duration_rounds`.
+
 ---
 
 ## StatusEffect 두 레이어 구조
@@ -668,6 +689,7 @@ CastSpell → CanCast(클래스/슬롯/Geometry/Range/AP 체크) → ConsumeSpel
 | `ModifyDamageTaken`       | 피해 계산          | Blessing-3, Curse+3                            |
 | `OnAfterAttack`           | ApplyDamage 직후 (기본 공격 및 데미지 스펠 공통) | Stealth 소모, Lifesteal 회복, Frenzy 발동 |
 | `OnTurnStart`             | 턴 시작           | Exhaustion→AP/Speed 0, Haste→AP+1              |
+| `IsTargetable(target)`    | PlayerInputHandler/GridSystem 타겟 선택 시 | Stealth 중이면 false → 타겟 불가 |
 
 **⚠️ base speed 수정 주의**:
 
@@ -721,6 +743,8 @@ CastSpell → CanCast(클래스/슬롯/Geometry/Range/AP 체크) → ConsumeSpel
 ```
 
 **Wizard 한정**: 스프라이트(`wizard_p.png`)와 SFX 파일(`wizard_action.wav`, `wizard_hurt.wav`)은 Assets에 이미 존재 — 에셋 생성 단계 생략 가능. SoundManager.h 상수만 추가하면 됨.
+
+⚠️ **Wizard 전용 미완성 항목**: `CharacterFactory.h`에 `class Wizard;` 전방선언과 `static unique_ptr<Wizard> CreateWizard()` 선언이 아직 없음 — Wizard 구현 시 반드시 추가 (Dragon/Fighter/Cleric/Rogue 패턴 그대로 따를 것).
 
 **캐릭터 클래스 계층**: `CS230::GameObject` ← `Character` ← `Dragon` / `Fighter` / `Cleric` / `Wizard` / `Rogue`
 

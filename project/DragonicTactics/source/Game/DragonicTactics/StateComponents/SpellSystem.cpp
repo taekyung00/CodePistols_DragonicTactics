@@ -397,7 +397,6 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
 			if (t.filter == "Self"  && c != caster) continue;
 			if (t.filter == "Ally"  && !sameTeam)   continue;
 			if (t.filter == "Enemy" && sameTeam)     continue;
-			if (t.filter == "Enemy" && c->Has("Stealth")) continue;
 			int dist = grid->ManhattanDistance(caster->GetGridPosition()->Get(), c->GetGridPosition()->Get());
 			if (dist <= radius)
 				targets.push_back(c);
@@ -750,6 +749,7 @@ bool SpellSystem::CanCast(Character* caster, const std::string& spell_id, Math::
 				bool sameTeam = (caster->IsAIControlled() == hit->IsAIControlled());
 				if (t.filter == "Ally"  && !sameTeam) return false;
 				if (t.filter == "Enemy" && sameTeam)  return false;
+				if (t.filter == "Enemy" && hit->Has("Stealth")) return false;
 			}
 		}
 	}
