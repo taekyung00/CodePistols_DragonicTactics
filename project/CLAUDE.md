@@ -150,7 +150,7 @@ MapDataRegistry, SpellSystem, StatusEffectHandler,
 CS230::ParticleManager<Particles::Hit>
 ```
 
-- `DiceManager` — `Roll("2d6")`, `Roll("1d20+5")` 형식으로 주사위 굴림
+- `DiceManager` — `Roll("2d6")`, `Roll("1d20+5")` 형식으로 주사위 굴림. `RollEntry { notation, rolls, total }` 구조체를 `roll_log_`(최대 200개)에 누적 — `GetRollLog()`로 전체 로그 조회. DebugVisualizer의 Dice History 탭은 `last_dice_log_read_` 인덱스로 새 항목만 읽음 (업캐스트처럼 한 프레임에 여러 번 굴리는 경우도 전부 기록)
 - `CombatSystem` — 공격/방어 주사위 굴림 + 최종 데미지 계산 (StatusEffectHandler 훅 연동)
 - `util::Timer` — 엔진 제공 타이머 (`Engine/Timer.h`). BattleOrchestrator는 이를 사용하지 않음 — AI 대기는 `m_wait_timer` (double, dt 카운트다운)로 처리
 
@@ -428,6 +428,8 @@ grid->IsReachable(tile)                  // 특정 타일이 이동 가능한지
 TileType dt = grid->GetTileType(destination);
 bool dest_ok = (dt == TileType::Empty || dt == TileType::Lava) && !grid->IsOccupied(destination);
 ```
+
+**Dragon(플레이어) 용암 회피 이동**: `PlayerInputHandler`에서 Dragon의 이동 경로는 `PLAYER_LAVA_PENALTY = 2`를 적용해 용암 우회를 선호한다. `EnableMovementMode`와 클릭 시 `FindPath` 양쪽에 전달된다. BFS 이동 범위(초록 타일)는 변경 없음 — 용암 타일도 클릭 가능하나 경로만 우회. `GridSystem::hover_lava_penalty_`에 penalty가 저장되어 호버 경로 미리보기에도 동일하게 적용된다.
 
 ### Character 주요 API
 
