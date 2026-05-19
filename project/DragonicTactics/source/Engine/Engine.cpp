@@ -229,7 +229,8 @@ void Engine::Start(std::string_view window_title)
 
   Engine::GetSoundManager().LoadBGM(SoundManager::BGM_MAIN_MENU);
   Engine::GetSoundManager().LoadBGM(SoundManager::BGM_BATTLE);
-  Engine::GetSoundManager().LoadBGM(SoundManager::SFX_HIT);
+  // SFX_HIT은 WAV이므로 OGG 로더(LoadBGM)가 아니라 LoadSFX로 프리로드해야 한다.
+  Engine::GetSoundManager().LoadSFX(SoundManager::SFX_HIT);
 }
 
 void Engine::Stop()

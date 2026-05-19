@@ -108,6 +108,8 @@ python scripts/make_release.py --version v0.3.0 --upload
 더블클릭(`make_release.exe`) 실행 시 버전·옵션을 프롬프트로 입력받는다.
 사전 점검 로직 내장: `cmake` / `gh` CLI 미설치 시 winget으로 자동 설치, `gh` 미로그인 시 `gh auth login` 자동 실행.
 
+⚠️ **이 배포본은 git 워킹 트리가 아닐 수 있다** — zip 플레이테스트 패키지로 추출한 소스에는 `project/`·`DragonicTactics/` 어디에도 `.git`이 없어 모든 디렉토리에서 `git` 명령이 "not a git repository"로 실패한다. 버전 관리·`make_release.py --upload`의 `gh`/git 연동을 쓰려면 **정상 클론(git 루트가 존재하는 체크아웃)에서 작업**해야 하며, `make_release.py`는 `DragonicTactics/` 기준으로 실행된다. git 오류가 나면 먼저 `.git` 존재 여부(zip 배포본인지)부터 확인할 것.
+
 ZIP 출력 위치: 프로젝트 루트(`project/DragonicTactics_vX.Y.Z_playtest.zip`) — 루트 `.gitignore`의 `*.zip` 규칙으로 자동 무시됨.
 
 ZIP 내부 구조:
@@ -674,6 +676,28 @@ CastSpell → CanCast(클래스/슬롯/Geometry/Range/AP 체크) → ConsumeSpel
 
 ---
 
+## 코드 스타일
+
+포매팅은 `DragonicTactics/.clang-format`로 강제된다 (**clang-format 14** 기준 작성). 새/수정 코드는 반드시 이 설정에 맞출 것 — 검증·정렬은 `clang-format` CLI 또는 에디터 포맷터 사용.
+
+| 항목 | 값 |
+|---|---|
+| 표준 | `Standard: Latest` (C++20) |
+| 중괄호 | **Allman** (`BreakBeforeBraces: Allman` — 여는 중괄호는 항상 새 줄) |
+| 들여쓰기 | **탭** (`UseTab: true`, `IndentWidth/TabWidth: 4`) — ⚠️ 스페이스 아님 |
+| 줄 길이 | `ColumnLimit: 200` |
+| 포인터/참조 정렬 | 왼쪽 (`int* p`, `int& r` — `PointerAlignment/ReferenceAlignment: Left`) |
+| 이항 연산자 | 줄바꿈 안 함 (`BreakBeforeBinaryOperators: None`) |
+| 접근 지정자 | `AccessModifierOffset: -4` (클래스 본문 대비 한 단계 내어쓰기) |
+| 네임스페이스 | 본문 들여쓰기 (`NamespaceIndentation: All`) |
+| switch | `case` 라벨·블록 모두 들여쓰기 (`IndentCaseLabels/IndentCaseBlocks: true`) |
+| include | 블록 순서 보존 + 대소문자 구분 정렬 (`IncludeBlocks: Preserve`, `SortIncludes: CaseSensitive`) |
+| 연속 정렬 | 대입·선언·매크로를 주석 너머까지 정렬 (`AlignConsecutive*: AcrossComments`) — 인접 줄을 세로로 맞추므로 임의 정렬 금지 |
+
+⚠️ 들여쓰기는 **탭**이다. 스페이스로 들여쓰면 diff 전체가 오염되니, 기존 코드의 탭 정렬을 그대로 따를 것.
+
+---
+
 ## 새 파일 추가 규칙
 
 1. 헤더: `.h` 확장자 (`.hpp` 아님)
@@ -767,6 +791,8 @@ GameState 컴포넌트가 아닌 **엔진 레벨 서비스**. `Engine::GetSoundM
 - **SFX**: WAV 파일 (`Assets/Audio/SFX/`) → 단발, 8채널 소스 풀
 
 상수 경로가 헤더에 정의되어 있음: `SoundManager::BGM_MAIN_MENU`, `SoundManager::BGM_BATTLE`, `SFX_DRAGON_ACTION`, `SFX_DRAGON_HURT`, `SFX_DRAGON_WALK`, `SFX_FIGHTER_ACTION`, `SFX_FIGHTER_HURT`, `SFX_CLERIC_ACTION`, `SFX_CLERIC_HURT`, `SFX_ROGUE_ACTION`, `SFX_ROGUE_HURT`, `SFX_HUMAN_WALK`
+
+⚠️ **Rogue 에셋 파일명 철자 함정**: 코드 상수는 `SFX_ROGUE_*`("rog**ue**")이지만, 이 상수가 가리키는 디스크상 실제 파일은 "rou**ge**" 철자다 — `Assets/Audio/SFX/rouge_action.wav`, `rouge_hurt.wav` (`Engine/SoundManager.h`). 플로우차트 `architecture/character_flowchart/rouge.mmd`·`rouge.jpg`도 동일하게 "rouge". 따라서 **코드에서는 상수 `SFX_ROGUE_*`를 그대로 사용**(상수가 올바른 "rouge" 경로를 담고 있음), **에셋 파일을 새로 추가·교체할 때만 파일명을 "rouge"로** 작성할 것. (참조 문서는 `rogue_strategy.md`가 정본 — 아래 [문서 참조](#문서-참조) 참고.)
 
 ```cpp
 Engine::GetSoundManager().PlayBGM(SoundManager::BGM_BATTLE);   // 루프 BGM 시작
@@ -964,4 +990,11 @@ ButtonManager는 배경 사각형(`DrawRectangle`)만 담당하고, 아이콘은
 - [docs/Detailed Implementations/weeks/cleric_implementation.md](docs/Detailed%20Implementations/weeks/cleric_implementation.md) — Cleric 구현 가이드
 - [docs/debug/commands.md](docs/debug/commands.md) — 디버그 콘솔 명령어 목록
 - [docs/systems/](docs/systems/) — 시스템별 상세 문서 (EventBus, Characters, Components 등)
-- [DragonicTactics/README.md](DragonicTactics/README.md) — 빌드 셋업 (영문/한글)
+- [DragonicTactics/README.md](DragonicTactics/README.md) — 게임 룰·조작·스킬 (영문/한글, 빌드 설명 없음 — 빌드는 위 [빌드](#빌드) 섹션)
+- [docs/Detailed Implementations/features/sound_manager.md](docs/Detailed%20Implementations/features/sound_manager.md) — SoundManager 구현 상세
+- [docs/Detailed Implementations/features/spell_log_ui.md](docs/Detailed%20Implementations/features/spell_log_ui.md) — 스펠/배틀 로그 UI 구현
+- [docs/Detailed Implementations/features/imgui_debug_only.md](docs/Detailed%20Implementations/features/imgui_debug_only.md) — ImGui 패널 DEVELOPER_VERSION 게이팅
+- [docs/Detailed Implementations/features/depth.md](docs/Detailed%20Implementations/features/depth.md) — DrawDepth 렌더 순서 가이드
+- [docs/debug/](docs/debug/) — 디버그 가이드 모음 (commands.md 외 tools.md, ui.md, ARCHITECTURE_COVERAGE_ANALYSIS.md, SEPARATE_CONSOLE_WINDOW_GUIDE.md)
+- [DragonicTactics/docs/DevEnvironment.md](DragonicTactics/docs/DevEnvironment.md) / [DebuggingWeb.md](DragonicTactics/docs/DebuggingWeb.md) — 개발 환경 셋업·웹 빌드 디버깅
+- ⚠️ `docs/Detailed Implementations/features/`에 `rogue_strategy.md`와 `rouge_strategy.md`가 모두 존재 — **`rogue_strategy.md`가 정본**(위에서 링크 중), `rouge_strategy.md`는 구 철자 잔재이므로 참조 금지

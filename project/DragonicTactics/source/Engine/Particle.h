@@ -87,7 +87,10 @@ namespace CS230
 	{
 		for (size_t i = 0; i < count; ++i)
 		{
-			if ((particles[i]) && (particles[i]->Alive()))
+			// 실제로 재사용하는 슬롯은 particles[index]다. 기존 코드는 particles[i]를
+			// 검사해 (1) 잘못된 슬롯의 alive 여부를 보고 (2) count > 풀 크기일 때
+			// 벡터 범위를 넘어 접근하는 버그가 있었다. index 기준으로 정정.
+			if ((particles[index]) && (particles[index]->Alive()))
 			{
 				Engine::GetLogger().LogEvent("Particle overwritten");
 			}
