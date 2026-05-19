@@ -301,6 +301,7 @@ MakeDecision
 MakeDecision
   ├── IsInStealth && CanKillWithStealth → MakeKillLoopDecision (약점 공략/일반 공격 반복)
   ├── MakeBuffPhaseDecision → !신속 + 1레벨 슬롯 + IsHasteMeaningful → Gale Step
+  ├── [후퇴] IsInStealth && AP=0 && Movement>0 → FindRetreatPos → 이동 (Shadow Hide 직후 동일 턴)
   └── Phase_Decision
         ├── AP = 0 → EndTurn
         ├── 비인접 → 이동 or (미공격 & 비은신 → Shadow Hide → 종료)
@@ -311,6 +312,11 @@ MakeDecision
               No  → !HasAttackedThisTurn → Shadow Hide → 종료
                     이미 공격 → 일반공격
 ```
+
+- `FindRetreatPos`: `GetReachableTiles(pos, remaining_movement)` 결과 중 Dragon과 거리 2~`SAFE_RETREAT_DIST(=4)` 범위에서 가장 먼 비용암 타일 반환. Shadow Hide(AP 소모) 후 남은 이동력을 활용해 Dragon에서 멀어지는 hit-and-run 패턴을 구현.
+- **`IsHasteMeaningful` 무한루프 방지**: `AP <= 0`이면 즉시 false 반환 — AP=0 상태에서 Gale Step을 시도하면 `CanCast` 실패 → AP 미소모 → 무한루프. AP 체크가 반드시 먼저 실행되어야 함.
+- **FighterStrategy 포지셔닝**: `FindNextMovePos`에서 비용이 동점일 때 `attackPos.y == targetPos.y` (Dragon 측면)를 우선. 동일 비용 경로가 없을 때는 기존과 동일.
+- **RogueStrategy 포지셔닝**: `FindNextMovePos`에서 비용 동점 시 Fighter와 거리가 가장 먼 Dragon 인접 위치를 우선 (협공 포지션). `prefScore = -(Fighter까지 맨해튼 거리)`, Fighter 사망 시 0으로 fallback.
 
 **Rogue 스펠 ID** (`Assets/Data/spell_table.csv` 기준):
 
@@ -359,7 +365,14 @@ MakeDecision
 **⚠️ UseAbility AIDecision 작성 시 주의**:
 - `AISystem::ExecuteDecision`은 `decision.target->GetGridPosition()->Get()`을 target_tile로 `CastSpell`에 전달 (`destination` 필드 무시됨)
 - `Around` geometry 스펠(Fearful Cry): caster 중심 AoE → `CanCast` 범위 체크가 `caster→target_tile` 거리로 계산 → **`target = actor(자신)`** 으로 설정해야 거리=0으로 항상 통과
-- `Single` geometry 스펠: CanCast 실패(사거리 초과) 시 AP 미소모 → 다음 프레임에 동일 결정 반복 → **무한루프** — **Strategy에서 반드시 `distance <= SPELL_RANGE`를 직접 체크**해야 함. 범위 밖이면 UseAbility 반환 금지, `MakeMeleePhaseDecision`(이동)으로 fall-through.
+- `Single` geometry 스펠: CanCast 실패(사거리 초과 또는 Stealth 대상) 시 AP 미소모 → 다음 프레임에 동일 결정 반복 → **무한루프** — **Strategy에서 반드시 `distance <= SPELL_RANGE`와 스텔스 여부를 직접 체크**해야 함.
+
+**⚠️ Stealth + Geometry 관계**:
+- `Single`/`Point` geometry + `Enemy` filter: `CanCast`에서 대상이 Stealth 중이면 false 반환 → 스펠 차단
+- `Around`/`Line`/`OddEven` geometry: Stealth 체크 없음 → **AoE 스펠은 은신 중 캐릭터도 타격** (Tail Swipe, Dragon's Fury 포함)
+- 플레이어가 스텔스 대상을 타겟할 때: 클릭 시가 아니라 **마우스 호버 시** `UINoticeEvent` 발행 (`PlayerInputHandler::CheckStealthHoverNotice`)
+  - `TargetingForAttack` 상태: 모든 타일 호버에서 체크
+  - `TargetingForSpell` 상태: `Single`/`Point` geometry 스펠에서만 체크 (AoE는 알림 불필요)
 
 ### GridSystem API
 
@@ -391,7 +404,7 @@ grid->GetExitPosition()
 grid->SetExitPosition(pos)
 
 // 타일 하이라이트 시각화 (PlayerInputHandler가 제어, GridSystem::Draw()에서 렌더)
-grid->EnableMovementMode(pos, range)      // 초록 펄스 — BFS 이동 가능 타일
+grid->EnableMovementMode(pos, range, lava_penalty = 0)  // 초록 펄스 — BFS 이동 가능 타일 + hover 경로 lava_penalty 저장
 grid->DisableMovementMode()
 grid->EnableSpellTargetingMode(pos, geometry, range)  // 빨간 펄스 — 스펠 타겟 타일
 grid->DisableSpellTargetingMode()
