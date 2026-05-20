@@ -50,6 +50,7 @@ main.cpp → Splash → MainMenu ┬─ Settings (오디오·맵 크기 설정 �
 ```
 
 - **셸 레이어 위치 주의**: `Splash`·`MainMenu`·`Settings`·`Score`·`Background`·`Particles` 는 `source/Game/` **직하위**에 있다 — `source/Game/DragonicTactics/` 하위가 **아니다**. 전투 본편 코드만 `DragonicTactics/` 서브트리에 있다.
+- **Splash 지속시간**: `#if defined(DEVELOPER_VERSION)` → 0.3초, `#else` → 2.0초 (`source/Game/Splash.cpp`). 릴리즈 빌드에서 2초 스플래시를 표시.
 - ⚠️ `source/Game/States.h`의 `enum class State { Splash, MainMenu, Final }`는 **레거시·미사용**이다. 실제 내비게이션은 이 enum이 아니라 `GameStateManager`의 push/pop으로 동작 — 혼동 주의.
 - **Settings → GamePlay 연결**: `Settings`의 맵 크기 선택이 아래 [데이터 주도 설계](#데이터-주도-설계)의 `GamePlay::s_next_map_id` / `s_should_restart` 정적 필드를 통해 로드할 맵을 결정한다.
 
@@ -300,8 +301,10 @@ MakeDecision
 ```
 MakeDecision
   ├── IsInStealth && CanKillWithStealth → MakeKillLoopDecision (약점 공략/일반 공격 반복)
-  ├── MakeBuffPhaseDecision → !신속 + 1레벨 슬롯 + IsHasteMeaningful → Gale Step
-  ├── [후퇴] IsInStealth && AP=0 && Movement>0 → FindRetreatPos → 이동 (Shadow Hide 직후 동일 턴)
+  ├── MakeBuffPhaseDecision
+  │     ├── [1] !Haste + Lv1슬롯 + IsHasteMeaningful → Gale Step
+  │     └── [2] !Stealth + !공격 + AP>0 → Shadow Hide (AP>0 가드 필수 — 무한루프 방지)
+  ├── [이동] IsInStealth && AP=0 && Movement>0 && dist>1 → Dragon 방향 접근
   └── Phase_Decision
         ├── AP = 0 → EndTurn
         ├── 비인접 → 이동 or (미공격 & 비은신 → Shadow Hide → 종료)
@@ -313,8 +316,17 @@ MakeDecision
                     이미 공격 → 일반공격
 ```
 
-- `FindRetreatPos`: `GetReachableTiles(pos, remaining_movement)` 결과 중 Dragon과 거리 2~`SAFE_RETREAT_DIST(=4)` 범위에서 가장 먼 비용암 타일 반환. Shadow Hide(AP 소모) 후 남은 이동력을 활용해 Dragon에서 멀어지는 hit-and-run 패턴을 구현.
-- **`IsHasteMeaningful` 무한루프 방지**: `AP <= 0`이면 즉시 false 반환 — AP=0 상태에서 Gale Step을 시도하면 `CanCast` 실패 → AP 미소모 → 무한루프. AP 체크가 반드시 먼저 실행되어야 함.
+**이상적 콤보 패턴** (Haste 발동 첫 턴):
+```
+Turn N   AP=1: Gale Step → OnApplied(Haste) AP+1 즉시 → AP=1
+               Shadow Hide → AP=0, Stealth 적용
+               dist>1 → Dragon 방향 접근 (남은 이동력 소모)
+Turn N+1 AP=2 (OnTurnStart Haste +1): Shadow Hide 재적용 → AP=1 → 이동+Weakpoint Strike 2배
+```
+
+- **`IsHasteMeaningful`**: `return AP > 0;` — 과거의 `movementRange <= 0 || AP >= 2` 조건은 Rogue max_ap=1에서 AP≥2가 절대 불가하여 이동력 소진 시에만 발동하는 문제가 있었음.
+- **Haste OnApplied 즉시 AP+1**: `StatusEffectHandler::OnApplied`에서 Speed+1에 더해 `target->SetActionPoints(AP+1)` 즉시 실행 — 같은 턴 Gale Step+Shadow Hide 콤보를 가능하게 함. `OnTurnStart`의 AP+1은 별도로 유지.
+- **스텔스 중 이동**: AP=0 상태에서도 이동력이 남으면 Dragon에게 접근. Dragon은 스텔스 캐릭터를 타겟할 수 없으므로 후퇴 불필요.
 - **FighterStrategy 포지셔닝**: `FindNextMovePos`에서 비용이 동점일 때 `attackPos.y == targetPos.y` (Dragon 측면)를 우선. 동일 비용 경로가 없을 때는 기존과 동일.
 - **RogueStrategy 포지셔닝**: `FindNextMovePos`에서 비용 동점 시 Fighter와 거리가 가장 먼 Dragon 인접 위치를 우선 (협공 포지션). `prefScore = -(Fighter까지 맨해튼 거리)`, Fighter 사망 시 0으로 fallback.
 
@@ -628,14 +640,23 @@ ID, Name, Category, Classes, Required Slot Level, Targeting, Upcasting Effect, E
 | Geometry | `Single` \| `Around` \| `Line` \| `OddEven` \| `Point` |
 | Range    | 정수 (`-1` = 무한, `0` = 자신)                               |
 
-**Effect 4줄 템플릿**:
+**Effect 템플릿** (줄 순서 고정 — Line 1~4 필수, Line 5+ `Special:` 선택):
 
 ```
 Deals {formula} damage.
 Applies "{STATUS}" status for {N} turns [to self].
 Move to {mover:move_type:distance}.
 Summons {entity} at {location}.
+Special: {특수 효과 설명}.   ← 선택, 복수 줄 가능 ("; "로 이어붙임)
 ```
+
+**{formula} 형식** — `CalculateSpellDamage`가 처리하는 세 가지 패턴:
+
+| 패턴 | 예시 | 계산 |
+|---|---|---|
+| 주사위 | `2d8`, `3d8 + Xd8` (업캐스트) | DiceManager 굴림 |
+| 음수(힐) | `-(1d10 + Xd10)` | 음수 피해 = 대상 HP 회복 (`ApplySpellEffect`에서 `damage < 0` 분기) |
+| 고정 배수 | `flat_per_level:8` | `8 × (upcast_level − spell_level + 1)` — Magic Missile 전용 |
 
 Move 값: `self:stay:0` (이동 없음) | `target:knockback:N` (밀쳐냄) | `self:teleport:selected` (순간이동)
 
@@ -648,10 +669,19 @@ Applies "Blessing" status for 2 turns.             ← 피격 대상들에게 �
 
 `SpellData` 파싱 결과: `caster_effect_status` / `caster_effect_duration` 필드 (`SpellSystem.h`).
 
+**`Special:` 줄** — `SpellData::special_effect`에 저장, `ApplySpecialEffect`에서 처리. 현재 구현된 패턴:
+
+| 내용 | 동작 | 사용 스펠 |
+|---|---|---|
+| `Recover a Spell Slot of (formula) level.` | `upcast_level − spell_level + 1` 레벨 슬롯 1개 회복 | Mana Conversion |
+| `If target is debuffed, damage becomes 2d20 instead.` | `Has("Curse") \|\| Has("Fear") \|\| Has("Exhaustion")` 시 2d20 교체 | Weakpoint Strike |
+
+`SpellData::ap_cost` — AP 소모량 (기본값 1). CSV 컬럼 없음, `ParseCSVRow` 내에서 스펠 ID 기반으로 하드코딩. 현재 Meteor(`S_ATK_040`)만 `ap_cost = 3`. 새 스펠에 비표준 AP 비용이 필요하면 `ParseCSVRow` 끝부분에 `if (data.id == "S_XXX") data.ap_cost = N;`으로 추가.
+
 **시전 흐름**:
 
 ```
-CastSpell → CanCast(클래스/슬롯/Geometry/Range/AP 체크) → ConsumeSpell → AP.Consume(1) → ApplySpellEffect
+CastSpell → CanCast(클래스/슬롯/Geometry/Range/AP 체크) → ConsumeSpell → AP.Consume(spell.ap_cost) → ApplySpellEffect
   ApplySpellEffect → targets 결정(Geometry) → 피해 → OnAfterAttack(Lifesteal/Frenzy/Stealth 훅) → 상태효과(targets) → 시전자 자신 효과 → ApplyMoveEffect → ApplySpecialEffect
 ```
 
@@ -698,7 +728,7 @@ int dmg = spells->GetLavaDamageAt(tile_pos);  // 없으면 0
 
 | 훅                         | 호출 시점          | 주요 동작                                          |
 | ------------------------- | -------------- | ---------------------------------------------- |
-| `OnApplied(target, name)` | `AddEffect` 직후 | Fear→base speed-1, Haste→+1, Purify→전체 제거 전 복원 |
+| `OnApplied(target, name)` | `AddEffect` 직후 | Fear→base speed-1, Haste→speed+1·AP+1(즉시), Purify→전체 제거 전 복원 |
 | `OnRemoved(target, name)` | 효과 만료/Purify 시 | Fear→base speed+1, Haste→-1 복원                 |
 | `ModifyDamageDealt`       | 피해 계산          | Blessing+3, Fear-3, Curse-3, Stealth×2         |
 | `ModifyDamageTaken`       | 피해 계산          | Blessing-3, Curse+3                            |

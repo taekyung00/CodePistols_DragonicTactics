@@ -54,7 +54,7 @@ struct SpellData
   std::vector<std::string> usable_classes; // col[3]  ["Dragon", "Fighter"] — ", " 구분
 
   // ── Effect 템플릿 파싱 결과 (col[8] → ParseEffectField) ──
-  std::string damage_formula;  // "3d8", "0", "-(1d10)", "8 * (Spell Level + 1 - ...)"
+  std::string damage_formula;  // "3d8", "0", "-(1d10)", "flat_per_level:8"
   std::string effect_status;        // targets에 적용. "Basic" = 없음
   int         effect_duration;      // 지속 턴
   std::string caster_effect_status; // 시전자 자신에게 적용. "Basic" = 없음 (CSV: "to self" 접미사)
@@ -66,6 +66,7 @@ struct SpellData
   std::string effect_raw;	  // 파싱 전 원본 Effect 문자열 (디버그/툴팁용)
   std::string special_effect; // "Special:" 줄 내용. 없으면 빈 문자열
   std::string upcast_dice;	  // 레벨 차이당 굴리는 주사위. "1d6", "2d6" 등. 없으면 빈 문자열
+  int         ap_cost = 1;    // AP 소모량 (기본 1, Meteor 등 특수 스펠은 다를 수 있음)
 };
 
 class SpellSystem : public CS230::Component

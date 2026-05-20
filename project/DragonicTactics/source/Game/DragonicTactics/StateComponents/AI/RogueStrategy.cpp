@@ -32,13 +32,20 @@ AIDecision RogueStrategy::MakeDecision(Character* actor)
   if (buffDecision.type != AIDecisionType::None)
     return buffDecision;
 
-  // ── [2] 판단 지점 루프 ──────────────────────────────────────
-  // Shadow Hide 직후: 스텔스 + AP=0 + 이동력 잔여 → 후퇴 이동
+  // ── [2] 스텔스 + AP=0 + 이동력 잔여 → Dragon에게 접근 ──────────
+  // Dragon은 스텔스 캐릭터를 타겟할 수 없으므로 후퇴 불필요.
+  // 비인접이면 남은 이동력으로 Dragon에게 접근, 인접이면 다음 턴 Weakpoint Strike 대기.
   if (IsInStealth(actor) && actor->GetActionPoints() <= 0 && actor->GetMovementRange() > 0)
   {
-    Math::ivec2 retreatPos = FindRetreatPos(actor, dragon, grid);
-    if (retreatPos != actor->GetGridPosition()->Get())
-      return { AIDecisionType::Move, nullptr, retreatPos, "", "Stealth: retreat to safe dist", LAVA_TILE_PENALTY };
+    Math::ivec2 myPos  = actor->GetGridPosition()->Get();
+    int         dist   = grid->ManhattanDistance(myPos, dragon->GetGridPosition()->Get());
+    if (dist > 1)
+    {
+      Math::ivec2 approachPos = FindNextMovePos(actor, dragon, grid);
+      if (approachPos != myPos)
+        return { AIDecisionType::Move, nullptr, approachPos, "",
+                 "Stealth: approach dragon", LAVA_TILE_PENALTY };
+    }
   }
 
   if (actor->GetActionPoints() <= 0)
@@ -89,16 +96,15 @@ AIDecision RogueStrategy::MakeKillLoopDecision(Character* actor, Character* drag
 
 AIDecision RogueStrategy::MakeBuffPhaseDecision(Character* actor, Character* /*dragon*/, GridSystem* /*grid*/)
 {
-  if (actor->Has("Haste"))
-    return { AIDecisionType::None, nullptr, {}, "", "" };
+  // [1] Gale Step: Haste 없을 때
+  if (!actor->Has("Haste") && HasSpellSlot(actor, 1) && IsHasteMeaningful(actor))
+    return { AIDecisionType::UseAbility, actor, {}, "S_BUF_020", "Buff: Gale Step (Haste)", 0, 1 };
 
-  if (!HasSpellSlot(actor, 1))
-    return { AIDecisionType::None, nullptr, {}, "", "" };
+  // [2] Shadow Hide: Stealth 없을 때, AP 있을 때 (AP 체크 필수 — 없으면 무한루프)
+  if (!IsInStealth(actor) && !actor->HasAttackedThisTurn() && actor->GetActionPoints() > 0)
+    return { AIDecisionType::UseAbility, actor, {}, "S_ENH_060", "Buff: Shadow Hide (stealth)", 0, 0 };
 
-  if (!IsHasteMeaningful(actor))
-    return { AIDecisionType::None, nullptr, {}, "", "" };
-
-  return { AIDecisionType::UseAbility, actor, {}, "S_BUF_020", "Buff: Gale Step (Haste)", 0, 1 };
+  return { AIDecisionType::None, nullptr, {}, "", "" };
 }
 
 // ============================================================
@@ -222,10 +228,9 @@ bool RogueStrategy::ShouldBreakStealth(Character* /*actor*/, Character* dragon) 
 
 bool RogueStrategy::IsHasteMeaningful(Character* actor) const
 {
-  if (actor->GetActionPoints() <= 0)
-    return false;
-  // 이동력 소진(다음 턴 혜택) or AP 2 이상(이번 턴 추가 행동 가능)
-  return actor->GetMovementRange() <= 0 || actor->GetActionPoints() >= 2;
+  // Haste 미보유 + 슬롯 있음은 MakeBuffPhaseDecision에서 이미 체크
+  // AP > 0이면 항상 Gale Step 사용 (무한루프 방지용 AP 체크는 유지)
+  return actor->GetActionPoints() > 0;
 }
 
 // ============================================================

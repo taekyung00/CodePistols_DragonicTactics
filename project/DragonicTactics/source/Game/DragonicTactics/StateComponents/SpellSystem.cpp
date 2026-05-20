@@ -144,6 +144,11 @@ SpellData SpellSystem::ParseCSVRow(const std::vector<std::string>& col) const
 	data.effect_raw		= col[7];
 
 	ParseEffectField(col[7], data);
+
+	// ap_cost 특수 처리 (CSV 컬럼 없음 — 스펠 ID 기반 설정)
+	if (data.id == "S_ATK_040")
+		data.ap_cost = 3; // Meteor: 강력한 광역기, AP 3 소모
+
 	return data;
 }
 
@@ -589,7 +594,7 @@ bool SpellSystem::CastSpell(Character* caster, const std::string& spell_id, Math
 	{
 		auto* debug_mgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
 		if (!(debug_mgr && debug_mgr->IsGodModeEnabled() && caster->GetCharacterType() == CharacterTypes::Dragon))
-			caster->GetActionPointsComponent()->Consume(1);
+			caster->GetActionPointsComponent()->Consume(spell.ap_cost);
 	}
 
 	// 1. 시전자가 드래곤인지 검사하여 파티클 생성
@@ -722,7 +727,7 @@ bool SpellSystem::CanCast(Character* caster, const std::string& spell_id, Math::
 	}
 
 	// 사거리 체크 이후, return true 바로 앞에 추가
-	if (caster->GetActionPoints() < 1)
+	if (caster->GetActionPoints() < spell.ap_cost)
 		return false;
 
 	// Ally/Enemy/Self/Empty 필터 검증 (Single/Point 지오메트리)

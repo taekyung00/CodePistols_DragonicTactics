@@ -31,7 +31,12 @@ void Splash::Load()
 void Splash::Update([[maybe_unused]] double dt)
 {
   Engine::GetLogger().LogDebug(std::to_string(counter));
-  if (counter >= 0.3)
+#if defined(DEVELOPER_VERSION)
+  constexpr double SPLASH_DURATION = 0.3;
+#else
+  constexpr double SPLASH_DURATION = 2.0;
+#endif
+  if (counter >= SPLASH_DURATION)
   {
 	Engine::GetGameStateManager().PopState();
 	Engine::GetGameStateManager().PushState<MainMenu>();

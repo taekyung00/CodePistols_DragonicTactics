@@ -47,11 +47,12 @@ void StatusEffectHandler::OnApplied(Character* target, const std::string& effect
 	auto* stats = target->GetGOComponent<StatsComponent>();
 	if (stats) { stats->ModifyBaseSpeed(-1); stats->RefreshSpeed(); }
   }
-  // Haste: base speed +1 즉시 적용
+  // Haste: base speed +1 즉시 적용, AP+1도 즉시 부여 (같은 턴에 Shadow Hide 연계 가능)
   else if (effect_name == "Haste")
   {
 	auto* stats = target->GetGOComponent<StatsComponent>();
 	if (stats) { stats->ModifyBaseSpeed(+1); stats->RefreshSpeed(); }
+	target->SetActionPoints(target->GetActionPoints() + 1);
   }
   // Purify: base speed 등 변경된 스탯 먼저 복원한 뒤 모든 효과 제거
   else if (effect_name == "Purify")
