@@ -141,7 +141,9 @@ void StatusEffectHandler::OnAfterAttack(Character* attacker, Character* defender
 
 	// 무작위 부정 효과: Curse(0) / Fear(1)
 	static const std::string FRENZY_EFFECTS[] = { "Curse", "Fear" };
-	int						 roll			  = Engine::GetGameStateManager().GetGSComponent<DiceManager>()->RollDice(1,2) - 1; // 0~1
+	auto* frenzy_dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
+	if (!frenzy_dice) return;
+	int roll = frenzy_dice->RollDice(1, 2) - 1; // 0~1
 	const std::string&		 effect			  = FRENZY_EFFECTS[roll];
 
 	if (damage_dealt >= 10)

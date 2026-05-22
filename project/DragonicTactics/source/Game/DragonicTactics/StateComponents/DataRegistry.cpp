@@ -263,8 +263,12 @@ bool DataRegistry::LoadAllCharacterData(const std::string& filepath)
 	  {
 		for (auto& [levelStr, count] : charData["spell_slots"].items())
 		{
-		  int level				   = std::stoi(levelStr);
-		  Cdata.spell_slots[level] = count.get<int>();
+		  try
+		  {
+			int level			   = std::stoi(levelStr);
+			Cdata.spell_slots[level] = count.get<int>();
+		  }
+		  catch (...) { Engine::GetLogger().LogError("DataRegistry: invalid spell_slots key: " + levelStr); }
 		}
 	  }
 

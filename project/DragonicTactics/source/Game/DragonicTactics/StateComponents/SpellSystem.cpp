@@ -311,7 +311,9 @@ int SpellSystem::CalculateSpellDamage(const SpellData& spell, int upcast_level)
 			auto d_pos = spell.upcast_dice.find('d');
 			if (d_pos != std::string::npos)
 			{
-				int			per_level  = (d_pos > 0) ? std::stoi(spell.upcast_dice.substr(0, d_pos)) : 1;
+				int per_level = 1;
+				try { if (d_pos > 0) per_level = std::stoi(spell.upcast_dice.substr(0, d_pos)); }
+				catch (...) { per_level = 1; }
 				std::string face	   = spell.upcast_dice.substr(d_pos);				// "d10"
 				std::string rolled_str = std::to_string(level_diff * per_level) + face; // "1d10", "3d10"
 				return dice->RollDiceFromString(rolled_str);
@@ -323,7 +325,9 @@ int SpellSystem::CalculateSpellDamage(const SpellData& spell, int upcast_level)
 	// ── flat_per_level:N (Magic Missile) ──
 	if (spell.damage_formula.rfind("flat_per_level:", 0) == 0)
 	{
-		int multiplier = std::stoi(spell.damage_formula.substr(15));
+		int multiplier = 0;
+		try { multiplier = std::stoi(spell.damage_formula.substr(15)); }
+		catch (...) { Engine::GetLogger().LogError("SpellSystem: invalid flat_per_level formula: " + spell.damage_formula); }
 		int level_diff = std::max(0, upcast_level - spell.spell_level) + 1;
 		return multiplier * level_diff;
 	}
@@ -347,7 +351,9 @@ int SpellSystem::CalculateSpellDamage(const SpellData& spell, int upcast_level)
 		auto d_pos = spell.upcast_dice.find('d');
 		if (d_pos != std::string::npos)
 		{
-			int			per_level  = (d_pos > 0) ? std::stoi(spell.upcast_dice.substr(0, d_pos)) : 1;
+			int per_level = 1;
+			try { if (d_pos > 0) per_level = std::stoi(spell.upcast_dice.substr(0, d_pos)); }
+			catch (...) { per_level = 1; }
 			std::string face	   = spell.upcast_dice.substr(d_pos);
 			std::string rolled_str = std::to_string(level_diff * per_level) + face;
 			total += dice->RollDiceFromString(rolled_str);

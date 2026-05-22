@@ -415,8 +415,10 @@ void DebugManager::RegisterGameCommands()
 	{
 	  if (args.size() < 2)
 		return;
-	  if (auto* ch = FindCharacterByName(args[0]))
-		ch->SetHP(std::stoi(args[1]));
+	  try {
+		if (auto* ch = FindCharacterByName(args[0]))
+		  ch->SetHP(std::stoi(args[1]));
+	  } catch (...) { Engine::GetLogger().LogError("set_hp: invalid value: " + args[1]); }
 	},
 	"set_hp <target> <value> — HP 직접 설정");
 
@@ -427,8 +429,10 @@ void DebugManager::RegisterGameCommands()
 	{
 	  if (args.size() < 2)
 		return;
-	  if (auto* ch = FindCharacterByName(args[0]))
-		ch->SetActionPoints(std::stoi(args[1]));
+	  try {
+		if (auto* ch = FindCharacterByName(args[0]))
+		  ch->SetActionPoints(std::stoi(args[1]));
+	  } catch (...) { Engine::GetLogger().LogError("set_ap: invalid value: " + args[1]); }
 	},
 	"set_ap <target> <value> — AP 설정");
 
@@ -463,8 +467,10 @@ void DebugManager::RegisterGameCommands()
 	{
 	  if (args.size() < 3)
 		return;
-	  if (auto* ch = FindCharacterByName(args[0]))
-		ch->AddEffect(args[1], std::stoi(args[2]));
+	  try {
+		if (auto* ch = FindCharacterByName(args[0]))
+		  ch->AddEffect(args[1], std::stoi(args[2]));
+	  } catch (...) { Engine::GetLogger().LogError("add_effect: invalid duration: " + args[2]); }
 	},
 	"add_effect <target> <effect_name> <duration> — 상태이상 부여");
 
@@ -478,8 +484,10 @@ void DebugManager::RegisterGameCommands()
 	  auto* ch = FindCharacterByName(args[0]);
 	  if (!ch)
 		return;
-	  if (auto* slots = ch->GetSpellSlots())
-		slots->RestoreOne(std::stoi(args[1]));
+	  try {
+		if (auto* slots = ch->GetSpellSlots())
+		  slots->RestoreOne(std::stoi(args[1]));
+	  } catch (...) { Engine::GetLogger().LogError("spell_restore: invalid level: " + args[1]); }
 	},
 	"spell_restore <target> <level> — 해당 레벨 슬롯 1개 복구");
 
@@ -512,8 +520,10 @@ void DebugManager::RegisterGameCommands()
 	  auto* ch = FindCharacterByName(args[0]);
 	  if (!ch)
 		return;
-	  if (auto* slots = ch->GetSpellSlots())
-		slots->Consume(std::stoi(args[1]));
+	  try {
+		if (auto* slots = ch->GetSpellSlots())
+		  slots->Consume(std::stoi(args[1]));
+	  } catch (...) { Engine::GetLogger().LogError("spell_consume: invalid level: " + args[1]); }
 	},
 	"spell_consume <target> <level> — 해당 레벨 슬롯 1개 소모");
 

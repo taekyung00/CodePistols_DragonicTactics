@@ -26,7 +26,7 @@ int CombatSystem::CalculateDamage(Character* attacker, Character* defender, cons
 {
   if (attacker == nullptr || defender == nullptr)
   {
-	Engine::GetLogger().LogError("CombatSystem: Null " + attacker->TypeName() + " or " + defender->TypeName());
+	Engine::GetLogger().LogError("CombatSystem: Null attacker or defender in CalculateDamage");
 	return 0;
   }
 
@@ -181,7 +181,8 @@ bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender)
 
 int CombatSystem::RollAttackDamage(const std::string& damageDice, int baseDamage)
 {
-  int diceRoll = Engine::GetGameStateManager().GetGSComponent<DiceManager>()->RollDiceFromString(damageDice);
+  auto* dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
+  int diceRoll = dice ? dice->RollDiceFromString(damageDice) : 0;
   return diceRoll + baseDamage;
 }
 

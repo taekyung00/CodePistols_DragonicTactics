@@ -968,6 +968,18 @@ tex->Draw(Math::TranslationMatrix(Math::ivec2{screen_x - TILE_SIZE, screen_y - T
 | `DrawDepth::OVERLAY` | 0.8f | 이동/스펠 범위 오버레이 |
 | `DrawDepth::TILE` | 0.9f | 그리드 배경 타일 |
 
+**UI 레이어 내부 depth 계층** (상태이상 패널 ↔ 툴팁 겹침 방지):
+
+| 레이어 | depth 식 | 값 |
+|---|---|---|
+| 툴팁 텍스트 | `DrawDepth::UI` | 0.01f ← 가장 앞 |
+| 툴팁 배경 | `DrawDepth::UI + 0.001f` | 0.011f |
+| 상태이상 아이콘 | `DrawDepth::UI + 0.01f` | 0.02f |
+| 포트레이트 | `DrawDepth::UI + 0.015f` | 0.025f |
+| 패널 배경 | `DrawDepth::UI + 0.02f` | 0.03f ← 가장 뒤 |
+
+⚠️ 슬롯바 아이콘은 `DrawDepth::UI - 0.005f = 0.005f` — 툴팁보다 앞이지만 슬롯바 위에는 툴팁이 표시되지 않으므로 충돌 없음. 상태이상 패널 아이콘을 이 값으로 설정하면 툴팁을 가리므로 반드시 `UI + 0.01f` 이상 사용.
+
 ### 배틀 로그 (`States/GamePlayUIManager`)
 
 `TurnEntry` 구조체(`round_number`, `turn_number`, `actor_name`, `is_player`, `lines`)를 `std::deque<TurnEntry> turn_history_`로 관리 (최대 `MAX_LOG_ROUNDS = 5` 라운드 보관). 로그는 최신이 아래로 추가되고(`push_back`), 새 턴 시작 시 자동 하단 스크롤 (단, 마우스가 패널 위에 있고 최하단이 아니면 스크롤 유지). 라운드 헤더(`─── Round N ───`)와 사이드 헤더(`▷ Player Turn` / `▷ Enemy Turn`)가 라운드/진영 전환 시 삽입된다.
@@ -997,6 +1009,42 @@ for (int i = 0; i < static_cast<int>(slot_icons_.size()); ++i)
 ```
 
 ButtonManager는 배경 사각형(`DrawRectangle`)만 담당하고, 아이콘은 항상 `DrawSlotBar()`가 그린다. `Button::image_path` 필드는 ButtonManager에 존재하지만 현재 슬롯 버튼에는 사용하지 않는다.
+
+### 상태이상 패널 (`States/GamePlayUIManager`)
+
+화면 좌측에 캐릭터 포트레이트 + 활성 상태이상 아이콘을 고정 표시하는 **Pass 2 UI 패널**. 카메라 줌·패닝 무관, 슬롯바와 동일한 렌더링 경로.
+
+**레이아웃 (virtual 1600×900, y=0 = 하단)**
+
+| 요소 | 위치 | 크기 |
+|---|---|---|
+| 포트레이트 | x=8, y=수직 중앙 기준 각 row | 48×48 (128px native → scale 0.375) |
+| 상태이상 아이콘 | x=60+N×32, y=row_bot+8 | 32×32 |
+| 패널 배경 | x=8 기준, 폭=300 | 높이 = rows×48 + (rows-1)×4 + 8 |
+
+- 패널 수직 중심: `pan_cy = VH * 0.5 = 450`
+- 첫 row_bot: `pan_cy + pan_h/2 - 4 - 48`
+- Row 간격: 52 (48+4)
+
+**`InitStatusEffectIcons()`에서 로드** (`GamePlay::Load()`에서 `InitSpellTooltips()` 직후 호출):
+- 9종 아이콘 PNG (32×32): `Assets/images/{blessing,lifesteal,...}.png` → `status_icon_textures_`
+- 포트레이트 PNG (128×128): `Assets/images/{dragon,fighter,cleric_p,rogue_p,wizard_p}.png` → `portrait_textures_` (key = `static_cast<int>(CharacterTypes::X)`)
+- 툴팁 폭 사전 계산 → `effect_tooltip_widths_` (스펠 툴팁의 `spell_tooltip_widths_`와 동일 패턴)
+
+**`DrawWorld()`는 현재 비어 있다** — 상태이상 아이콘이 Pass 1 월드 공간에서 `DrawStatusEffectPanel()`(Pass 2)로 이전됨. `GamePlay::Draw()`에서 `DrawWorld()` 호출은 그대로 남아 있음(내부만 빔).
+
+**툴팁 동적 폭 계산 패턴** (`InitStatusEffectIcons()` + `InitSpellTooltips()` 공통):
+```cpp
+// 로드 타임에 CalculateTextSize로 최대 폭 계산 → 맵에 저장
+double w = textMgr.CalculateTextSize(line, Fonts::Kings).x * scale;
+widths_map[id] = std::min(max_w + PAD * 2.0, static_cast<double>(VW) - 20.0);
+
+// 렌더 타임에 조회
+auto wit = widths_map.find(hovered_id);
+double TT_W = (wit != widths_map.end()) ? wit->second : 340.0;
+```
+
+**호버 감지**: Update()의 블록 3c에서 `virt_mouse`(가상 좌표)를 직접 비교. `DrawStatusEffectPanel()`의 `pan_cy`/`row_bot` 계산식과 **정확히 동일한 공식**을 사용해야 픽셀 정확도 보장.
 
 ### 폰트 (`Engine/TextManager`, `Engine/Fonts.h`)
 

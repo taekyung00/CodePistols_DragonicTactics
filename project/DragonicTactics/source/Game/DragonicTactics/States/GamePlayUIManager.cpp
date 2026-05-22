@@ -28,6 +28,7 @@ Created:     November 24, 2025
 #include "Game/DragonicTactics/StateComponents/CombatSystem.h"
 #include "Game/DragonicTactics/StateComponents/DiceManager.h"
 #include "Game/DragonicTactics/StateComponents/EventBus.h"
+#include "Game/DragonicTactics/Types/Events.h"
 #include "Game/MainMenu.h"
 
 #include "Engine/Input.h"
@@ -355,6 +356,21 @@ void GamePlayUIManager::SetCharacters(const std::vector<Character*>& characters)
 {
   m_characters = characters;
   Engine::GetLogger().LogEvent("GamePlayUIManager: Tracking " + std::to_string(m_characters.size()) + " characters for stats display");
+
+  auto* bus = Engine::GetGameStateManager().GetGSComponent<EventBus>();
+  if (bus)
+  {
+    bus->Subscribe<CharacterDeathEvent>([this](const CharacterDeathEvent& e) {
+      for (auto& ptr : m_characters)
+      {
+        if (ptr == e.character)
+        {
+          ptr = nullptr;
+          break;
+        }
+      }
+    });
+  }
 }
 
 void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
