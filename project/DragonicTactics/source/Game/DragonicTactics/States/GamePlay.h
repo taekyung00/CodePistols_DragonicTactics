@@ -69,7 +69,11 @@ class GamePlay : public CS230::GameState
 
   Character* player  = nullptr;
   std::vector<Character*> enemys {};
-  bool		 game_end = false;
+  static constexpr double GAME_OVER_DELAY = 0.5;  // 게임 종료 후 GameOver 화면 전환까지 대기 시간(초)
+
+  bool   game_end             = false;
+  bool   game_end_player_won_ = false;
+  double game_end_timer_      = -1.0;  // >= 0 이면 카운트다운 중
 
   // 메모리 해제 후 IsAlive() 호출을 피하기 위해 포인터 값으로만 추적
   std::set<Character*> m_confirmed_dead_;

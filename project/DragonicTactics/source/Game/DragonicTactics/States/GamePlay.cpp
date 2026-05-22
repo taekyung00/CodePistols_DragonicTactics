@@ -15,6 +15,7 @@ Created:    November 5, 2025
 #include "GamePlay.h"
 #include "OpenGL/Environment.h"
 
+#include "Game/GameOver.h"
 #include "Game/MainMenu.h"
 
 #include "Game/DragonicTactics/Objects/Components/GridPosition.h"
@@ -405,8 +406,9 @@ void GamePlay::CheckGameEnd(const CharacterDeathEvent& event)
   if (event.character == player)
   {
 	if (turnMgr) turnMgr->EndCombat();
-	m_ui_manager->ShowGameEnd("Invader Win");
-	game_end = true;
+	game_end_player_won_ = false;
+	game_end_timer_      = GAME_OVER_DELAY;
+	game_end             = true;
 	return;
   }
 
@@ -415,8 +417,9 @@ void GamePlay::CheckGameEnd(const CharacterDeathEvent& event)
   if (all_enemies_dead && !enemys.empty())
   {
 	if (turnMgr) turnMgr->EndCombat();
-	m_ui_manager->ShowGameEnd("Player Win");
-	game_end = true;
+	game_end_player_won_ = true;
+	game_end_timer_      = GAME_OVER_DELAY;
+	game_end             = true;
   }
 }
 
@@ -429,6 +432,19 @@ void GamePlay::Update(double dt)
 	Engine::GetGameStateManager().PopState();
 	Engine::GetGameStateManager().PushState<GamePlay>();
 	return;
+  }
+
+  // 게임 종료 타이머: 1.5초 대기 후 GameOver 상태로 전환
+  if (game_end_timer_ >= 0.0)
+  {
+	game_end_timer_ -= dt;
+	if (game_end_timer_ < 0.0)
+	{
+	  GameOver::s_player_won = game_end_player_won_;
+	  Engine::GetGameStateManager().PopState();
+	  Engine::GetGameStateManager().PushState<GameOver>();
+	  return;
+	}
   }
 
   // Camera pan (right-drag) and zoom (scroll wheel) — runs every frame
