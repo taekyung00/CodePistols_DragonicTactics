@@ -49,6 +49,9 @@ class GamePlayUIManager
 
   void ShowNotice(const std::string& text);
 
+  void DrawHoveredTileOutline();
+  void DrawTileOutlineAtPosition(Math::vec2 world_pos, uint32_t border_color);
+  
   private:
   struct DamageText
   {

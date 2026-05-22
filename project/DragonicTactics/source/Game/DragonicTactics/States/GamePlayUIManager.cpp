@@ -321,7 +321,15 @@ void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_
     DrawNotice();
     DrawDisableReasonTooltip();
     DrawDragonWorldHoverTooltip();
+    DrawHoveredTileOutline();
 
+
+    Character* character = Engine::GetGameStateManager().GetGSComponent<TurnManager>()->GetCurrentCharacter();
+    Math::vec2 enemy_pos = character->GetPosition();
+    if (character->GetCharacterType() != CharacterTypes::Dragon) {
+        DrawTileOutlineAtPosition(enemy_pos, 0xFF0000FF);
+    }
+    
     auto& textMng = Engine::GetTextManager();
 
     for (const auto& text : m_damage_texts)
@@ -987,7 +995,7 @@ void GamePlayUIManager::DrawCharacterStatsPanel([[maybe_unused]] Math::Transform
   for (Character* character : m_characters)
   {
 	if (character == nullptr) continue;
-
+    
 	double text_x_pos = panel_x + text_left_margin;
 
 	Engine::GetTextManager().DrawText(character->TypeName(),
@@ -1561,4 +1569,119 @@ void GamePlayUIManager::DrawNotice()
     textMgr.DrawText(m_notice_text_,
         Math::vec2{ cx - NOTICE_W * 0.5 + 12.0, cy - 10.0 },
         Fonts::Kings, { 0.42, 0.42 }, CS200::WHITE, DrawDepth::UI - 0.004f);
+}
+
+void GamePlayUIManager::DrawHoveredTileOutline()
+{
+    if (!m_camera_) return;
+
+    auto actual_win = Engine::GetWindow().GetSize();
+    Math::vec2 mouse_pos = Engine::GetInput().GetMousePos();
+    
+    Math::vec2 world_pos = m_camera_->ScreenToWorld(mouse_pos, actual_win);
+    double tile_size = GridSystem::TILE_SIZE;
+
+    int grid_x = static_cast<int>(std::floor(world_pos.x / tile_size));
+    int grid_y = static_cast<int>(std::floor(world_pos.y / tile_size));
+
+    // ==========================================================
+    // [핵심 추가] 맵 범위를 벗어난 경우 그리지 않고 렌더링 취소
+    // ==========================================================
+    // TODO: 프로젝트의 실제 맵 크기에 맞게 가로/세로 최대 타일 개수를 넣어주세요.
+    // 만약 GridSystem 컴포넌트에서 맵 크기를 가져올 수 있다면 그 값을 사용하면 가장 좋습니다!
+    int map_width  = Engine::GetGameStateManager().GetGSComponent<GridSystem>()->GetWidth(); // 예시: 맵의 가로 타일 개수
+    int map_height = Engine::GetGameStateManager().GetGSComponent<GridSystem>()->GetHeight(); // 예시: 맵의 세로 타일 개수
+
+    if (grid_x < 1 || grid_x >= map_width - 1 || 
+        grid_y < 1 || grid_y >= map_height - 1) 
+    {
+        return; // 유효한 맵 범위가 아니면 여기서 함수를 종료하여 허공에 그리는 것을 방지합니다.
+    }
+    // ==========================================================
+
+    double center_x = (static_cast<double>(grid_x) * tile_size) + (tile_size * 0.5);
+    double center_y = (static_cast<double>(grid_y) * tile_size) + (tile_size * 0.5);
+    
+    Math::vec2 world_center = { center_x, center_y };
+    Math::vec2 world_edge   = { center_x + tile_size * 0.5, center_y + tile_size * 0.5 };
+
+    Math::vec2 screen_center = m_camera_->WorldToScreen(world_center, actual_win);
+    Math::vec2 ui_center     = to_virtual(screen_center, actual_win);
+
+    Math::vec2 screen_edge   = m_camera_->WorldToScreen(world_edge, actual_win);
+    Math::vec2 ui_edge       = to_virtual(screen_edge, actual_win);
+
+    double visual_width  = std::abs(ui_edge.x - ui_center.x) * 2.0;
+    double visual_height = std::abs(ui_edge.y - ui_center.y) * 2.0;
+
+    Math::TransformationMatrix tile_transform =
+        Math::TranslationMatrix(ui_center) *
+        Math::ScaleMatrix(Math::vec2{ visual_width, visual_height });
+
+    auto* renderer = CS230::TextureManager::GetRenderer2D();
+    bool mouse_is_down = Engine::GetInput().MouseDown(0);
+
+    if (mouse_is_down)
+    {
+        // 클릭 중: 내부를 0x00000066 (반투명 검은색)으로 채워서 어둡게 만듭니다.
+        // 테두리는 여전히 0xFFFFFFFF (흰색)으로 유지합니다.
+        renderer->DrawRectangle(tile_transform, 0x00000066, 0xFFFFFFFF, 3.0, DrawDepth::UI - 0.1f);
+    }
+    else
+    {
+        // 단순 호버링: 기존처럼 내부는 0x00000000 (투명)으로 둡니다.
+        renderer->DrawRectangle(tile_transform, 0x00000000, 0xFFFFFFFF, 3.0, DrawDepth::UI - 0.1f);
+    }
+}
+
+// --- DragonicTactics/States/GamePlayUIManager.cpp ---
+
+void GamePlayUIManager::DrawTileOutlineAtPosition(Math::vec2 world_pos, uint32_t border_color)
+{
+    if (!m_camera_) return;
+
+    auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    if (!grid) return; 
+
+    auto actual_win = Engine::GetWindow().GetSize();
+    double tile_size = GridSystem::TILE_SIZE;
+
+    // 1. 전달받은 월드 좌표를 바탕으로 그리드 인덱스 계산
+    int grid_x = static_cast<int>(std::floor(world_pos.x / tile_size));
+    int grid_y = static_cast<int>(std::floor(world_pos.y / tile_size));
+
+    // 2. 맵 범위 검사
+    int map_width  = grid->GetWidth(); 
+    int map_height = grid->GetHeight(); 
+
+    if (grid_x < 0 || grid_x >= map_width || 
+        grid_y < 0 || grid_y >= map_height) 
+    {
+        return; 
+    }
+
+    // 3. 타일의 중앙 및 모서리 좌표 계산
+    double center_x = (static_cast<double>(grid_x) * tile_size) + (tile_size * 0.5);
+    double center_y = (static_cast<double>(grid_y) * tile_size) + (tile_size * 0.5);
+    
+    Math::vec2 world_center = { center_x, center_y };
+    Math::vec2 world_edge   = { center_x + tile_size * 0.5, center_y + tile_size * 0.5 };
+
+    // 4. 월드 좌표 -> UI 화면 좌표 변환
+    Math::vec2 screen_center = m_camera_->WorldToScreen(world_center, actual_win);
+    Math::vec2 ui_center     = to_virtual(screen_center, actual_win);
+
+    Math::vec2 screen_edge   = m_camera_->WorldToScreen(world_edge, actual_win);
+    Math::vec2 ui_edge       = to_virtual(screen_edge, actual_win);
+
+    double visual_width  = std::abs(ui_edge.x - ui_center.x) * 2.0;
+    double visual_height = std::abs(ui_edge.y - ui_center.y) * 2.0;
+
+    Math::TransformationMatrix tile_transform =
+        Math::TranslationMatrix(ui_center) *
+        Math::ScaleMatrix(Math::vec2{ visual_width, visual_height });
+
+    // 5. 전달받은 색상(border_color)으로 테두리 렌더링
+    auto* renderer = CS230::TextureManager::GetRenderer2D();
+    renderer->DrawRectangle(tile_transform, 0x00000000, border_color, 3.0, DrawDepth::UI - 0.1f);
 }
