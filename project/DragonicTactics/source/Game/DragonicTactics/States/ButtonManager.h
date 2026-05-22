@@ -33,6 +33,7 @@ struct Button
     bool pressed  = false;    // 이번 프레임에 클릭됨
     bool held     = false;
     int press_timer = 0;
+    int hover_timer = 0;  // [추가됨] 호버링 상태가 유지된 프레임 수를 세는 카운터
     
     // 콜백
     std::function<void()> on_click;
