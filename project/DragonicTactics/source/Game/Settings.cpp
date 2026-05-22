@@ -236,21 +236,42 @@ void Settings::Draw()
 
     auto& text_manager = Engine::GetTextManager();
 
+    // 1. 입력을 확인하기 위해 Input과 마우스 좌표를 가져옵니다.
+    CS230::Input& input       = Engine::GetInput();
+    Math::vec2    mouse_pos   = TacticalCamera::ScreenToVirtual(input.GetMousePos(), win);
+
+    // 2. 마우스 클릭 및 키보드 눌림 상태를 확인합니다.
+    bool is_mouse_down = input.MouseDown(0); 
+    // 키보드를 누르고 있는 상태 (엔진에 KeyDown 함수가 있다면 사용, 없다면 생략 가능)
+    bool is_key_down   = input.KeyDown(CS230::Input::Keys::Enter) || input.KeyDown(CS230::Input::Keys::Z);
+
     // 타이틀 (그림자 + 본체)
     Math::ivec2 title_size = text_manager.CalculateTextSize("SETTINGS", Fonts::Kings);
     Math::vec2  t_adj      = { title_pos.x - title_size.x * 0.75, title_pos.y };
     text_manager.DrawText("SETTINGS", Math::vec2{ t_adj.x + 5.0, t_adj.y - 5.0 }, Fonts::Kings, { 1.5, 1.5 }, title_shadow_color);
-    text_manager.DrawText("SETTINGS", t_adj,                                        Fonts::Kings, { 1.5, 1.5 }, title_main_color);
+    text_manager.DrawText("SETTINGS", t_adj,                                      Fonts::Kings, { 1.5, 1.5 }, title_main_color);
 
     // 설정 항목 렌더링
     for (int i = 0; i < static_cast<int>(rows.size()); ++i)
     {
         const auto& row     = rows[i];
         bool        is_sel  = (row.option == current_option);
-        CS200::RGBA color   = is_sel ? selected_color : non_selected_color;
         Math::vec2  p       = { menu_start_pos.x, menu_start_pos.y - i * row_spacing };
 
-        // 라벨
+        // 3. Update 함수와 동일한 호버링 충돌 검사 로직 적용
+        bool is_hovering = (mouse_pos.y > p.y - 30.0 && mouse_pos.y < p.y + 30.0);
+
+        // 4. 상호작용(클릭 또는 키보드 누름) 중인지 판별
+        bool is_interacting = (is_hovering && is_mouse_down) || (is_sel && is_key_down);
+
+        // 5. 기본 색상을 지정하고, 상호작용 중일 때만 하얀색으로 변경
+        CS200::RGBA color = is_sel ? selected_color : non_selected_color;
+        if (is_interacting)
+        {
+            color = 0xFFFFFFFF; // 하얀색
+        }
+
+        // 라벨 렌더링 (동적으로 변하는 color 적용)
         text_manager.DrawText(row.label, { p.x - 500.0, p.y }, Fonts::Kings, { 0.8, 0.8 }, color);
 
         // 값 / 위젯 렌더링
@@ -278,7 +299,7 @@ void Settings::Draw()
                 Math::TranslationMatrix(knob_pos) * Math::ScaleMatrix(Math::vec2{ knob_size, knob_size }),
                 selected_color, title_main_color, 0, 0);
 
-            // 퍼센트 텍스트
+            // 퍼센트 텍스트 렌더링 (동적으로 변하는 color 적용)
             text_manager.DrawText(std::to_string(vol) + "%",
                 Math::vec2{ slider_x_start + slider_width + 30.0f, p.y },
                 Fonts::Kings, { 0.6, 0.6 }, color);
@@ -291,13 +312,14 @@ void Settings::Draw()
                 case Option::MapSize:
                     if      (s_current_map_size == MapSize::Small)  val = "< SMALL >";
                     else if (s_current_map_size == MapSize::Medium) val = "< MEDIUM >";
-                    else                                             val = "< LARGE >";
+                    else                                            val = "< LARGE >";
                     break;
                 case Option::BGMMute: val = s_is_bgm_muted ? "[MUTED]"  : "[ACTIVE]"; break;
                 case Option::SFXMute: val = s_is_sfx_muted ? "[MUTED]"  : "[ACTIVE]"; break;
                 case Option::Back:    val = "GO MENU"; break;
                 default: break;
             }
+            // 값 텍스트 렌더링 (동적으로 변하는 color 적용)
             text_manager.DrawText(val, { static_cast<double>(slider_x_start), p.y }, Fonts::Kings, { 0.8, 0.8 }, color);
         }
 
@@ -305,7 +327,8 @@ void Settings::Draw()
         if (is_sel)
         {
             double bounce = std::sin(run_time * 8.0) * 10.0;
-            text_manager.DrawText(">", { p.x - 560.0 - bounce, p.y }, Fonts::Kings, { 0.8, 0.8 }, selected_color);
+            // 화살표도 텍스트와 색상을 맞추고 싶다면 selected_color 대신 color를 넣으시면 됩니다.
+            text_manager.DrawText(">", { p.x - 560.0 - bounce, p.y }, Fonts::Kings, { 0.8, 0.8 }, color);
         }
     }
 

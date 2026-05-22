@@ -166,7 +166,7 @@ void MainMenu::Update(double dt)
     check_hover(dev_menu_items, menu_center_pos.y - 120.0);
 #endif
 
-    if (input.MouseJustPressed(0) && mouse_is_hovering)
+    if (input.MouseJustReleased(0) && mouse_is_hovering)
     {
         SelecetOption();
     }
@@ -202,6 +202,19 @@ void MainMenu::Draw()
     // 메뉴 항목 (가로 배치, 선택 항목에 반동 화살표)
     auto draw_items = [&](const std::vector<MenuItem>& items, double base_y)
     {
+        // 1. Update 함수에서 사용하신 것과 동일하게 Input과 마우스 좌표를 가져옵니다.
+        CS230::Input& input       = Engine::GetInput();
+        auto          window_size = Engine::GetWindow().GetSize();
+        Math::vec2    mouse_pos   = TacticalCamera::ScreenToVirtual(input.GetMousePos(), window_size);
+
+        // 2. 키보드와 마우스가 '눌려있는(Down)' 상태인지 확인합니다.
+        // [중요] 프로젝트의 Input 클래스에 구현된 '누르고 있는 상태' 검사 함수명에 맞게 변경해 주세요.
+        // (예: MouseIsDown, IsMouseDown, KeyIsDown, IsKeyDown 등)
+        bool is_mouse_down = input.MouseDown(0); 
+        bool is_key_down   = input.KeyDown(CS230::Input::Keys::Enter) || 
+                            input.KeyDown(CS230::Input::Keys::Space) || 
+                            input.KeyDown(CS230::Input::Keys::Z);
+
         double offset_start = -(static_cast<double>(items.size()) - 1.0) / 2.0;
         for (size_t i = 0; i < items.size(); ++i)
         {
@@ -215,9 +228,25 @@ void MainMenu::Draw()
                 center_pos.x - text_size.x / 2.0,
                 center_pos.y - text_size.y / 2.0
             };
-            bool        is_selected = (item.option == current_option);
-            CS200::RGBA item_color  = is_selected ? selected_color : non_selected_color;
 
+            bool is_selected = (item.option == current_option);
+
+            // 3. Update와 동일한 방식의 마우스 호버링 충돌 검사입니다.
+            Math::vec2 rect_bl = { center_pos.x - (menu_item_size.x / 2.0), base_y - (menu_item_size.y / 2.0) };
+            bool is_hovering = (mouse_pos.x >= rect_bl.x && mouse_pos.x <= rect_bl.x + menu_item_size.x &&
+                                mouse_pos.y >= rect_bl.y && mouse_pos.y <= rect_bl.y + menu_item_size.y);
+
+            // 4. 마우스를 버튼 위에 올리고 누르고 있거나, 항목이 선택된 상태에서 결정 키를 누르고 있다면 상호작용 중입니다.
+            bool is_interacting = (is_hovering && is_mouse_down) || (is_selected && is_key_down);
+
+            // 5. 색상 결정 로직 (기본은 선택/비선택 색상, 누를 때는 하얀색)
+            CS200::RGBA item_color = is_selected ? selected_color : non_selected_color;
+            if (is_interacting)
+            {
+                item_color = 0xFFFFFFFF; // 0xFFFFFFFF = 완전한 하얀색
+            }
+
+            // 결정된 색상으로 텍스트를 화면에 그립니다.
             text_manager.DrawText(item.text, text_bl, Fonts::Kings, { 1.0, 1.0 }, item_color);
 
             if (is_selected)
@@ -235,8 +264,9 @@ void MainMenu::Draw()
                     text_bl.y
                 };
 
-                text_manager.DrawText(">", left_pos,  Fonts::Kings, { 1.0, 1.0 }, selected_color);
-                text_manager.DrawText("<", right_pos, Fonts::Kings, { 1.0, 1.0 }, selected_color);
+                // 양옆의 반동 화살표(>, <)도 텍스트와 같이 하얀색으로 반응하게 하려면 item_color를 전달합니다.
+                text_manager.DrawText(">", left_pos,  Fonts::Kings, { 1.0, 1.0 }, item_color);
+                text_manager.DrawText("<", right_pos, Fonts::Kings, { 1.0, 1.0 }, item_color);
             }
         }
     };
