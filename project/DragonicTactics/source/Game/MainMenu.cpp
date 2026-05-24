@@ -141,6 +141,7 @@ void MainMenu::Update(double dt)
              input.KeyJustReleased(CS230::Input::Keys::Space) ||
              input.KeyJustReleased(CS230::Input::Keys::Z))
     {
+        Engine::GetSoundManager().PlaySFX(SoundManager::SFX_BUTTON_CLICK);
         SelecetOption();
     }
 
@@ -168,6 +169,7 @@ void MainMenu::Update(double dt)
 
     if (input.MouseJustReleased(0) && mouse_is_hovering)
     {
+        Engine::GetSoundManager().PlaySFX(SoundManager::SFX_BUTTON_CLICK);
         SelecetOption();
     }
 }

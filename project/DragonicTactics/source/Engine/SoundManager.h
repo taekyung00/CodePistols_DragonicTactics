@@ -31,6 +31,7 @@ public:
     static constexpr const char* SFX_ROGUE_ACTION   = "Assets/Audio/SFX/rouge_action.wav";
     static constexpr const char* SFX_ROGUE_HURT     = "Assets/Audio/SFX/rouge_hurt.wav";
     static constexpr const char* SFX_HUMAN_WALK     = "Assets/Audio/SFX/human_walk.wav";
+    static constexpr const char* SFX_BUTTON_CLICK   = "Assets/Audio/SFX/ButtonClick.wav";
 
     SoundManager()  = default;
     ~SoundManager() = default;

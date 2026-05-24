@@ -166,21 +166,25 @@ void Settings::Update(double dt)
             {
                 if (current_option == Option::MapSize)
                 {
+                    Engine::GetSoundManager().PlaySFX(SoundManager::SFX_BUTTON_CLICK);
                     s_current_map_size = static_cast<MapSize>(
                         (static_cast<int>(s_current_map_size) + 1) % static_cast<int>(MapSize::COUNT));
                     GamePlay::s_next_map_id = GetCurrentMapId();
                 }
                 else if (current_option == Option::BGMMute)
                 {
+                    Engine::GetSoundManager().PlaySFX(SoundManager::SFX_BUTTON_CLICK);
                     s_is_bgm_muted = !s_is_bgm_muted;
                     ApplySettings();
                 }
                 else if (current_option == Option::SFXMute)
                 {
+                    Engine::GetSoundManager().PlaySFX(SoundManager::SFX_BUTTON_CLICK);
                     s_is_sfx_muted = !s_is_sfx_muted;
                 }
                 else if (current_option == Option::Back)
                 {
+                    Engine::GetSoundManager().PlaySFX(SoundManager::SFX_BUTTON_CLICK);
                     Engine::GetGameStateManager().PopState();
                     return;
                 }

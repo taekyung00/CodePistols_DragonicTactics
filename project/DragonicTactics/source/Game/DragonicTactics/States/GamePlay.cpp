@@ -247,6 +247,7 @@ void GamePlay::Load()
   std::vector<Character*> all_characters = { player };
   all_characters.insert(all_characters.end(), enemys.begin(), enemys.end());
   m_ui_manager->SetCharacters(all_characters);
+  m_ui_manager->SetPlayer(player);
   Engine::GetLogger().LogEvent("GamePlay::Load - Characters registered to UI Manager");
 
   // EventBus 구독을 StartCombat() 전에 등록 — 첫 TurnStartedEvent를 놓치지 않기 위함

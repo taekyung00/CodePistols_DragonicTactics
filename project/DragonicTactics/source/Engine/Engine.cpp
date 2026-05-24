@@ -231,6 +231,8 @@ void Engine::Start(std::string_view window_title)
   Engine::GetSoundManager().LoadBGM(SoundManager::BGM_BATTLE);
   // SFX_HIT은 WAV이므로 OGG 로더(LoadBGM)가 아니라 LoadSFX로 프리로드해야 한다.
   Engine::GetSoundManager().LoadSFX(SoundManager::SFX_HIT);
+  // ButtonClick은 메인 메뉴·Settings·전투 모두에서 쓰이므로 엔진 시작 시 글로벌 프리로드
+  Engine::GetSoundManager().LoadSFX(SoundManager::SFX_BUTTON_CLICK);
 }
 
 void Engine::Stop()

@@ -10,6 +10,7 @@
 #include "Engine/TextManager.h"
 #include "Engine/DrawDepth.h"
 #include "Engine/Texture.h"
+#include "Engine/SoundManager.h"
 #include <chrono>
 
 void ButtonManager::AddButton(const Button& button)
@@ -106,8 +107,9 @@ void ButtonManager::Update(Math::vec2 mouse_pos, bool mouse_just_clicked)
                 btn.pressed = true;
                 btn.press_timer = 10;
                 
-                if (!btn.disabled && btn.on_click != nullptr) 
+                if (!btn.disabled && btn.on_click != nullptr)
                 {
+                    Engine::GetSoundManager().PlaySFX(SoundManager::SFX_BUTTON_CLICK);
                     btn.on_click();
                 }
             }

@@ -83,8 +83,11 @@ void GamePlayUIManager::Update(double dt)
     Math::vec2 virt_mouse = to_virtual(mouse_pos, actual_win);
     m_virtual_mouse_      = virt_mouse;
 
+    // Feature 3: Cancel hint alpha pulse timer
+    m_cancel_hint_time_ += dt;
+
     // 매 프레임 팝업창 슬롯 부족 호버 텍스트 초기화
-    popup_hover_reason_ = ""; 
+    popup_hover_reason_ = "";
 
     // ── 1. 슬롯 비활성화 갱신 ─────────────────────────────────────
     auto* turnMgr = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
@@ -236,30 +239,34 @@ void GamePlayUIManager::Update(double dt)
     {
         constexpr double PORT_H   = 48.0;
         constexpr double ICON_S   = 32.0;
-        constexpr double ICON_X0  = 60.0;  
-        constexpr double ROW_STEP = 52.0;  
+        constexpr double ICON_X0  = 60.0;
+        constexpr double ROW_STEP = 52.0;
 
-        int    n_rows  = static_cast<int>(m_characters.size());
+        // Dragon is now displayed in DrawDragonHUD — exclude from this panel
+        int n_rows = 0;
+        for (Character* ch : m_characters)
+            if (ch && ch->GetCharacterType() != CharacterTypes::Dragon)
+                ++n_rows;
+
         double pan_h   = n_rows * PORT_H + (n_rows - 1) * 4.0 + 8.0;
         double pan_top = static_cast<double>(VH) * 0.5 + pan_h * 0.5;
         double row_bot = pan_top - 4.0 - PORT_H;
 
         for (Character* ch : m_characters)
         {
-            if (ch)
+            if (!ch || ch->GetCharacterType() == CharacterTypes::Dragon) continue;
+
+            double icon_y = row_bot + (PORT_H - ICON_S) * 0.5;
+            const auto& effects = ch->GetActiveEffects();
+            for (int ei = 0; ei < static_cast<int>(effects.size()); ++ei)
             {
-                double icon_y = row_bot + (PORT_H - ICON_S) * 0.5;
-                const auto& effects = ch->GetActiveEffects();
-                for (int ei = 0; ei < static_cast<int>(effects.size()); ++ei)
+                double icon_x = ICON_X0 + ei * ICON_S;
+                if (virt_mouse.x >= icon_x && virt_mouse.x < icon_x + ICON_S &&
+                    virt_mouse.y >= icon_y && virt_mouse.y < icon_y + ICON_S)
                 {
-                    double icon_x = ICON_X0 + ei * ICON_S;
-                    if (virt_mouse.x >= icon_x && virt_mouse.x < icon_x + ICON_S &&
-                        virt_mouse.y >= icon_y && virt_mouse.y < icon_y + ICON_S)
-                    {
-                        hovered_effect_name_     = effects[ei].name;
-                        hovered_effect_duration_ = effects[ei].duration;
-                        break;
-                    }
+                    hovered_effect_name_     = effects[ei].name;
+                    hovered_effect_duration_ = effects[ei].duration;
+                    break;
                 }
             }
             if (!hovered_effect_name_.empty()) break;
@@ -314,8 +321,10 @@ void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_
     DrawUicastPopup();
     DrawActionLabel();
     DrawTurnIndicator();
+    DrawCancelHint();
     DrawHoverTooltip();
     DrawSpellTooltip();
+    DrawDragonHUD();
     DrawStatusEffectPanel();
     DrawStatusEffectTooltip();
     DrawBattleLog();
@@ -369,8 +378,17 @@ void GamePlayUIManager::SetCharacters(const std::vector<Character*>& characters)
           break;
         }
       }
+      if (m_player_ == e.character)
+      {
+        m_player_ = nullptr;
+      }
     });
   }
+}
+
+void GamePlayUIManager::SetPlayer(Character* player)
+{
+  m_player_ = player;
 }
 
 void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
@@ -1177,7 +1195,13 @@ void GamePlayUIManager::DrawStatusEffectPanel()
     constexpr double ICON_X0  = PAN_X + PORT_D + 4.0;  // 60
     constexpr double ROW_STEP = PORT_D + 4.0;           // 52
 
-    int    n_rows  = static_cast<int>(m_characters.size());
+    // Dragon is shown in DrawDragonHUD — exclude from this panel
+    int n_rows = 0;
+    for (Character* ch : m_characters)
+        if (ch && ch->GetCharacterType() != CharacterTypes::Dragon)
+            ++n_rows;
+    if (n_rows == 0) return;
+
     double pan_h   = n_rows * PORT_D + (n_rows - 1) * 4.0 + 8.0;
     double pan_w   = 300.0;
     double pan_cy  = static_cast<double>(VH) * 0.5;
@@ -1192,7 +1216,7 @@ void GamePlayUIManager::DrawStatusEffectPanel()
 
     for (Character* ch : m_characters)
     {
-        if (!ch) { row_bot -= ROW_STEP; continue; }
+        if (!ch || ch->GetCharacterType() == CharacterTypes::Dragon) continue;
 
         auto pit = portrait_textures_.find(static_cast<int>(ch->GetCharacterType()));
         if (pit != portrait_textures_.end() && pit->second)
@@ -1700,4 +1724,226 @@ void GamePlayUIManager::DrawTileOutlineAtPosition(Math::vec2 world_pos, uint32_t
     // 5. 전달받은 색상(border_color)으로 테두리 렌더링
     auto* renderer = CS230::TextureManager::GetRenderer2D();
     renderer->DrawRectangle(tile_transform, 0x00000000, border_color, 3.0, DrawDepth::UI - 0.1f);
+}
+
+// ─── Dragon HUD (Feature 2) ────────────────────────────────────────────
+// Text in this engine is drawn with BOTTOM-LEFT at the given position and
+// extends UPWARD. All rows below use explicit baselines with safe gaps so
+// nothing overlaps. Layout (virtual 1600×900, y=900=top):
+//
+//   y=892 ┌─ Panel top ─────────────────────────┐
+//   y=866 │ ┌───────┐  Dragon (name, scale .45) │  ← NAME_Y
+//   y=820 │ │ Port  │  [HP ████████ 140/140  ]  │  ← HP_BAR cy
+//   y=784 │ │ 64×64 │  AP 2/2    MOV 5/5         │  ← APMOV_Y
+//         │ └───────┘                            │
+//   y=752 │ ───────── Spell Slots ──────────      │  ← Slot header
+//   y=720 │ L1:  * * * *      (4/4)              │
+//   y=688 │ L2:  * * *        (3/3)              │
+//   y=656 │ L3:  * *          (2/2)              │
+//   y=624 │ L4:  * *          (2/2)              │
+//   y=592 │ L5:  .            (0/1)              │
+//   y=560 │ [Status icons]                       │
+//   y=540 └──────────────────────────────────────┘
+void GamePlayUIManager::DrawDragonHUD()
+{
+    if (!m_player_) return;
+
+    auto* renderer = CS230::TextureManager::GetRenderer2D();
+    auto& textMgr  = Engine::GetTextManager();
+
+    constexpr double PAN_X   = 8.0;
+    constexpr double PAN_W   = 320.0;
+    constexpr double PAN_H   = 352.0;
+    constexpr double PAN_TOP = static_cast<double>(VH) - 8.0;        // 892
+    constexpr double PAN_BOT = PAN_TOP - PAN_H;                       // 540
+    constexpr double PAN_CY  = PAN_TOP - PAN_H * 0.5;                 // 716
+
+    // Panel background
+    Math::TransformationMatrix bg =
+        Math::TranslationMatrix(Math::vec2{ PAN_X + PAN_W * 0.5, PAN_CY }) *
+        Math::ScaleMatrix(Math::vec2{ PAN_W, PAN_H });
+    renderer->DrawRectangle(bg, 0x1a1a2ecc, 0x5555aaff, 1.5, DrawDepth::UI + 0.02f);
+
+    // ── Portrait (64×64) at top-left ────────────────────────────────
+    constexpr double PORT_D    = 64.0;
+    constexpr double PORT_SCL  = PORT_D / 128.0;
+    constexpr double PORT_X    = PAN_X + 10.0;                        // 18
+    constexpr double PORT_TOP  = PAN_TOP - 10.0;                      // 882
+    constexpr double PORT_BOT  = PORT_TOP - PORT_D;                   // 818
+
+    auto pit = portrait_textures_.find(static_cast<int>(m_player_->GetCharacterType()));
+    if (pit != portrait_textures_.end() && pit->second)
+    {
+        uint32_t tint = m_player_->IsAlive() ? 0xFFFFFFFF : 0x666666FF;
+        pit->second->Draw(
+            Math::TranslationMatrix(Math::vec2{ PORT_X, PORT_BOT }) *
+            Math::ScaleMatrix(Math::vec2{ PORT_SCL, PORT_SCL }),
+            tint, DrawDepth::UI + 0.015f);
+    }
+
+    // ── Right column: Name / HP bar / AP&MOV ───────────────────────
+    constexpr double STAT_X    = PORT_X + PORT_D + 12.0;              // 94
+    constexpr double NAME_Y    = 866.0;                               // name baseline
+    constexpr double HP_BAR_CY = 826.0;                               // bar center
+    constexpr double HP_BAR_W  = 200.0;
+    constexpr double HP_BAR_H  = 18.0;                                // bar 817-835
+    constexpr double APMOV_Y   = 786.0;                               // text baseline (text top ≈ 808)
+
+    textMgr.DrawText(m_player_->TypeName(),
+        Math::vec2{ STAT_X, NAME_Y },
+        Fonts::Kings, { 0.45, 0.45 }, CS200::GOLD, DrawDepth::UI);
+
+    const int hp     = m_player_->GetHP();
+    const int hp_max = m_player_->GetMaxHP();
+    const double hp_ratio = (hp_max > 0) ? std::clamp(static_cast<double>(hp) / hp_max, 0.0, 1.0) : 0.0;
+
+    Math::TransformationMatrix hp_bg =
+        Math::TranslationMatrix(Math::vec2{ STAT_X + HP_BAR_W * 0.5, HP_BAR_CY }) *
+        Math::ScaleMatrix(Math::vec2{ HP_BAR_W, HP_BAR_H });
+    renderer->DrawRectangle(hp_bg, 0x442222ff, 0x000000ff, 1.0, DrawDepth::UI + 0.01f);
+
+    if (hp_ratio > 0.0)
+    {
+        const double fill_w = HP_BAR_W * hp_ratio;
+        Math::TransformationMatrix hp_fill =
+            Math::TranslationMatrix(Math::vec2{ STAT_X + fill_w * 0.5, HP_BAR_CY }) *
+            Math::ScaleMatrix(Math::vec2{ fill_w, HP_BAR_H });
+        renderer->DrawRectangle(hp_fill, 0x44cc44ff, 0x44cc44ff, 0.0, DrawDepth::UI + 0.005f);
+    }
+
+    // HP value text centered INSIDE the bar
+    {
+        std::string hp_text = "HP " + std::to_string(hp) + " / " + std::to_string(hp_max);
+        constexpr double HP_TEXT_SCALE = 0.3;
+        Math::vec2 sz = textMgr.CalculateTextSize(hp_text, Fonts::Kings);
+        const double tx = STAT_X + HP_BAR_W * 0.5 - sz.x * HP_TEXT_SCALE * 0.5;
+        const double ty = HP_BAR_CY - sz.y * HP_TEXT_SCALE * 0.5;
+        textMgr.DrawText(hp_text,
+            Math::vec2{ tx, ty },
+            Fonts::Kings, { HP_TEXT_SCALE, HP_TEXT_SCALE }, CS200::WHITE, DrawDepth::UI - 0.002f);
+    }
+
+    // AP / MOV
+    int ap_cur = m_player_->GetActionPoints();
+    int ap_max = 0;
+    if (auto* ap_comp = m_player_->GetActionPointsComponent())
+        ap_max = ap_comp->GetMaxPoints();
+    int mov_cur = m_player_->GetMovementRange();
+    int mov_max = 0;
+    if (auto* st = m_player_->GetStatsComponent())
+        mov_max = st->GetAllStats().speed;
+
+    std::string ap_mov = "AP " + std::to_string(ap_cur) + "/" + std::to_string(ap_max)
+                       + "    MOV " + std::to_string(mov_cur) + "/" + std::to_string(mov_max);
+    textMgr.DrawText(ap_mov,
+        Math::vec2{ STAT_X, APMOV_Y },
+        Fonts::Kings, { 0.38, 0.38 }, CS200::WHITE, DrawDepth::UI);
+
+    // ── Divider line under header ──────────────────────────────────
+    constexpr double DIV_Y = 770.0;
+    Math::TransformationMatrix div =
+        Math::TranslationMatrix(Math::vec2{ PAN_X + PAN_W * 0.5, DIV_Y }) *
+        Math::ScaleMatrix(Math::vec2{ PAN_W - 24.0, 1.5 });
+    renderer->DrawRectangle(div, 0x5555aaaa, 0x5555aaaa, 0.0, DrawDepth::UI + 0.005f);
+
+    // ── Spell slots: one line per level, scale 0.4 (well clear of portrait) ──
+    constexpr double SLOT_FIRST_Y = 738.0;
+    constexpr double SLOT_STEP    = 30.0;
+    double slot_y = SLOT_FIRST_Y;
+    if (auto* slots = m_player_->GetSpellSlots())
+    {
+        const auto& max_map = slots->GetMaxSlots();
+        for (const auto& [level, max_cnt] : max_map)
+        {
+            if (max_cnt <= 0) continue;
+            int cur_cnt = slots->GetSpellSlotCount(level);
+            std::string line = "L" + std::to_string(level) + ":  ";
+            for (int i = 0; i < max_cnt; ++i)
+                line += (i < cur_cnt) ? "* " : ". ";
+            line += "  (" + std::to_string(cur_cnt) + "/" + std::to_string(max_cnt) + ")";
+
+            textMgr.DrawText(line,
+                Math::vec2{ PAN_X + 16.0, slot_y },
+                Fonts::Kings, { 0.4, 0.4 }, CS200::WHITE, DrawDepth::UI);
+            slot_y -= SLOT_STEP;
+        }
+    }
+
+    // ── Status effect icons (bottom of HUD) ────────────────────────
+    const auto& effects = m_player_->GetActiveEffects();
+    if (!effects.empty())
+    {
+        constexpr double ICON_S = 32.0;
+        constexpr double ICON_Y = PAN_BOT + 10.0;                     // 550
+        for (int ei = 0; ei < static_cast<int>(effects.size()); ++ei)
+        {
+            auto iit = status_icon_textures_.find(effects[ei].name);
+            if (iit == status_icon_textures_.end() || !iit->second) continue;
+            const double icon_x = PAN_X + 16.0 + ei * (ICON_S + 4.0);
+            iit->second->Draw(
+                Math::TranslationMatrix(Math::vec2{ icon_x, ICON_Y }),
+                0xFFFFFFFF, DrawDepth::UI + 0.01f);
+        }
+    }
+}
+
+// ─── Right-click cancel hint (Feature 3) ───────────────────────────────
+// Pulsing text just below the turn indicator (top-center).
+void GamePlayUIManager::DrawCancelHint()
+{
+    if (!m_input_handler_ptr_) return;
+
+    auto state = m_input_handler_ptr_->GetCurrentState();
+    using AS = PlayerInputHandler::ActionState;
+
+    bool show = (state == AS::SelectingMove ||
+                 state == AS::Moving ||
+                 state == AS::TargetingForAttack ||
+                 state == AS::TargetingForSpell ||
+                 state == AS::WallPlacementMulti ||
+                 state == AS::LavaPlacementMulti);
+    if (!show) return;
+
+    std::string text;
+    if (state == AS::WallPlacementMulti || state == AS::LavaPlacementMulti)
+        text = "Right Click: Remove tile / Deselect";
+    else
+        text = "Right Click: Cancel";
+
+    // Alpha pulse: 55% to 100%, never fully fades
+    const double a = 0.55 + 0.45 * (0.5 + 0.5 * std::sin(m_cancel_hint_time_ * 2.5));
+    const uint8_t a_byte = static_cast<uint8_t>(std::clamp(a, 0.0, 1.0) * 255.0);
+    // GOLD = 0xffcb00ff (R=0xff G=0xcb B=0x00); replace alpha with pulse value
+    const uint32_t tint = 0xffcb0000U | static_cast<uint32_t>(a_byte);
+
+    auto& textMgr   = Engine::GetTextManager();
+    auto* renderer  = CS230::TextureManager::GetRenderer2D();
+    constexpr double SCALE = 0.45;
+    Math::vec2 text_size = textMgr.CalculateTextSize(text, Fonts::Kings);
+    const double text_w  = text_size.x * SCALE;
+    const double text_h  = text_size.y * SCALE;
+
+    // Centered under turn indicator (turn indicator bottom y ≈ 844, place hint at 810)
+    const double cx = static_cast<double>(VW) * 0.5;
+    const double y_baseline = 798.0;
+
+    // Subtle pulsing background pill so the text is visible against any map color
+    constexpr double PAD_X = 16.0;
+    constexpr double PAD_Y = 6.0;
+    const double bg_w = text_w + PAD_X * 2.0;
+    const double bg_h = text_h + PAD_Y * 2.0;
+    const double bg_cy = y_baseline + text_h * 0.5 - 2.0;
+    // Background alpha pulses with text but starts darker
+    const uint8_t bg_a = static_cast<uint8_t>(std::clamp(a * 0.65, 0.0, 1.0) * 255.0);
+    const uint32_t bg_fill   = 0x1a0a0000U | static_cast<uint32_t>(bg_a);
+    const uint32_t bg_border = 0xffcb0000U | static_cast<uint32_t>(bg_a);
+
+    Math::TransformationMatrix bg =
+        Math::TranslationMatrix(Math::vec2{ cx, bg_cy }) *
+        Math::ScaleMatrix(Math::vec2{ bg_w, bg_h });
+    renderer->DrawRectangle(bg, bg_fill, bg_border, 1.5, DrawDepth::UI + 0.001f);
+
+    textMgr.DrawText(text,
+        Math::vec2{ cx - text_w * 0.5, y_baseline },
+        Fonts::Kings, { SCALE, SCALE }, tint, DrawDepth::UI);
 }

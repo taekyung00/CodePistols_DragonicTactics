@@ -34,6 +34,7 @@ class GamePlayUIManager
   void Draw(Math::TransformationMatrix camera_matrix);
 
   void SetCharacters(const std::vector<Character*>& characters);
+  void SetPlayer(Character* player);
 
   void InitButtons(PlayerInputHandler* inputHandler);
   void InitSpellTooltips();
@@ -71,7 +72,11 @@ class GamePlayUIManager
   std::unique_ptr<std::string> game_end_text = nullptr;
 
   std::vector<Character*> m_characters;
+  Character*              m_player_ = nullptr;
   ButtonManager button_manager_;
+
+  // Cancel hint pulse timer (Feature 3)
+  double m_cancel_hint_time_ = 0.0;
 
   // Slot icons (index 0~9: spells, 10: End Turn)
   std::vector<std::shared_ptr<CS230::Texture>> slot_icons_;
@@ -164,4 +169,6 @@ class GamePlayUIManager
   void DrawActionLabel();
   void DrawDisableReasonTooltip();
   void DrawDragonWorldHoverTooltip();
+  void DrawDragonHUD();
+  void DrawCancelHint();
 };
