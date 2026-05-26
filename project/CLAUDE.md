@@ -44,12 +44,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```
 main.cpp → Splash → MainMenu ┬─ Settings (오디오·맵 크기 설정 → GamePlay 로드 맵에 반영)
-                             ├─ DragonicTactics  → GamePlay (전투 본편, 문서 대부분의 대상)
-                             ├─ Exit
-                             └─ [DEVELOPER_VERSION 전용] ConsoleTest / RenderingTest
+                             ├─ DragonicTactics  → GamePlay ──[게임 종료]──→ GameOver
+                             ├─ Exit                                         ├─ PLAY AGAIN → GamePlay
+                             └─ [DEVELOPER_VERSION 전용] ConsoleTest /       └─ MAIN MENU  → MainMenu
+                                RenderingTest
 ```
 
-- **셸 레이어 위치 주의**: `Splash`·`MainMenu`·`Settings`·`Score`·`Background`·`Particles` 는 `source/Game/` **직하위**에 있다 — `source/Game/DragonicTactics/` 하위가 **아니다**. 전투 본편 코드만 `DragonicTactics/` 서브트리에 있다.
+- **GameOver 상태**: `source/Game/GameOver.h` / `GameOver.cpp` — `source/Game/` 직하위 (MainMenu·Settings와 동일 레벨). `GameOver::s_player_won` (static bool)으로 결과를 전달받아 "PLAYER WIN"(금색) / "INVADER WIN"(빨간색) 타이틀 표시. 전환 타이밍은 `GamePlay.h`의 `static constexpr double GAME_OVER_DELAY = 1.5` (초) — 값 변경 시 이 상수만 수정.
+- **셸 레이어 위치 주의**: `Splash`·`MainMenu`·`Settings`·`GameOver`·`Score`·`Background`·`Particles` 는 `source/Game/` **직하위**에 있다 — `source/Game/DragonicTactics/` 하위가 **아니다**. 전투 본편 코드만 `DragonicTactics/` 서브트리에 있다.
 - **Splash 지속시간**: `#if defined(DEVELOPER_VERSION)` → 0.3초, `#else` → 2.0초 (`source/Game/Splash.cpp`). 릴리즈 빌드에서 2초 스플래시를 표시.
 - ⚠️ `source/Game/States.h`의 `enum class State { Splash, MainMenu, Final }`는 **레거시·미사용**이다. 실제 내비게이션은 이 enum이 아니라 `GameStateManager`의 push/pop으로 동작 — 혼동 주의.
 - **Settings → GamePlay 연결**: `Settings`의 맵 크기 선택이 아래 [데이터 주도 설계](#데이터-주도-설계)의 `GamePlay::s_next_map_id` / `s_should_restart` 정적 필드를 통해 로드할 맵을 결정한다.
@@ -128,6 +130,14 @@ CODEPISTOLS_DRAGONICTACTICS/
 cd DragonicTactics
 python -m PyInstaller --onefile --console --name make_release --distpath scripts scripts/make_release.py
 ```
+
+### 크래시 덤프 (`source/main.cpp`)
+
+Windows 빌드에 `SetUnhandledExceptionFilter` 기반 크래시 핸들러가 등록되어 있다. 크래시 발생 시 실행 파일 옆에 `crash_YYYYMMDD_HHMMSS.dmp`를 자동 생성한다.
+
+- **분석**: Visual Studio → 파일 → 열기 → `.dmp` → "Debug with Native Only" — 크래시 시점의 콜스택·변수 상태 확인 가능
+- **조건**: `.pdb` 파일이 `.exe`와 같은 폴더에 있어야 심볼(함수명·라인 번호) 표시됨. `windows-debug` 빌드는 자동 생성.
+- `#if defined(_WIN32)` 게이팅 — Emscripten/Linux 빌드 영향 없음
 
 ---
 
@@ -1045,6 +1055,8 @@ double TT_W = (wit != widths_map.end()) ? wit->second : 340.0;
 ```
 
 **호버 감지**: Update()의 블록 3c에서 `virt_mouse`(가상 좌표)를 직접 비교. `DrawStatusEffectPanel()`의 `pan_cy`/`row_bot` 계산식과 **정확히 동일한 공식**을 사용해야 픽셀 정확도 보장.
+
+**⚠️ `m_characters` 댕글링 포인터 방지**: `GamePlayUIManager::SetCharacters()`는 `CharacterDeathEvent`를 구독해서 사망 시 해당 슬롯을 `nullptr`로 교체한다. `DrawStatusEffectPanel()`·Update 블록 3c·`DrawCharacterStatsPanel()` 세 곳의 루프는 모두 `!ch` / `ch == nullptr` 가드를 가지므로 안전하게 skip한다. 캐릭터 사망 후 `GetActiveEffects()` 등 컴포넌트 접근 전에 이 가드가 반드시 있어야 access violation이 발생하지 않는다.
 
 ### 폰트 (`Engine/TextManager`, `Engine/Fonts.h`)
 

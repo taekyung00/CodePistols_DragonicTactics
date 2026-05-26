@@ -36,6 +36,14 @@ namespace CS230
   /*Basic setup*/
   void Window::setupSDLWindow(std::string_view title)
   {
+	// Windows DPI: declare per-monitor awareness before SDL_Init so Windows
+	// reports true logical pixel sizes and does not apply DPI virtualization.
+	// Without this, SDL_GL_GetDrawableSize and event sizes can disagree,
+	// causing the OpenGL viewport to mismatch the NDC matrix on scaled displays.
+#if defined(_WIN32) && !defined(__EMSCRIPTEN__)
+	SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitorv2");
+#endif
+
 	// Part 1 - Initialize SDL for visual use
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 	{
@@ -128,7 +136,11 @@ namespace CS230
 	  switch (event.window.event)
 	  {
 		case SDL_WINDOWEVENT_CLOSE: closed = true; break;
-		case SDL_WINDOWEVENT_RESIZED: window_size = { event.window.data1, event.window.data2 }; break;
+		case SDL_WINDOWEVENT_RESIZED:
+		  // Do NOT use event.window.data1/data2 here — they are logical pixels.
+		  // SIZE_CHANGED already fired first and set window_size via SDL_GL_GetDrawableSize
+		  // (physical pixels). Overwriting with logical pixels breaks HiDPI rendering.
+		  break;
 		case SDL_WINDOWEVENT_SIZE_CHANGED:
 		  SDL_GL_GetDrawableSize(sdl_window, &window_size.x, &window_size.y);
 		  GL::Viewport(0, 0, window_size.x, window_size.y);
@@ -154,9 +166,20 @@ namespace CS230
 
   void Window::ForceResize(int desired_width, int desired_height)
   {
+	// Clamp to the usable display area (excludes taskbar).
+	// If the window fills the entire screen exactly, Windows auto-applies
+	// borderless fullscreen — leaving 1px gap prevents this on scaled displays.
+	SDL_Rect usable{};
+	if (SDL_GetDisplayUsableBounds(0, &usable) == 0)
+	{
+	  if (desired_width  >= usable.w) desired_width  = usable.w - 1;
+	  if (desired_height >= usable.h) desired_height = usable.h - 1;
+	}
+
 	SDL_SetWindowSize(sdl_window, desired_width, desired_height);
-	window_size.x = desired_width;
-	window_size.y = desired_height;
+
+	// Use physical pixel size (consistent with SIZE_CHANGED handler).
+	SDL_GL_GetDrawableSize(sdl_window, &window_size.x, &window_size.y);
   }
 
   void Window::SetWindowPosition(int x, int y)
