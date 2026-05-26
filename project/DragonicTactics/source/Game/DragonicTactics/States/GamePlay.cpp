@@ -412,6 +412,14 @@ void GamePlay::Load()
 
   Engine::GetSoundManager().LoadBGM("Assets/Audio/BGM/BGM_test.ogg");
   Engine::GetSoundManager().PlayBGM("Assets/Audio/BGM/BGM_test.ogg");
+
+  // 컷신 이미지 로드
+  m_cutscene_textures_.resize(CUTSCENE_COUNT);
+  m_cutscene_textures_[0] = Engine::GetTextureManager().Load("Assets/images/cut1.png");
+  m_cutscene_textures_[1] = Engine::GetTextureManager().Load("Assets/images/cut2.png");
+  m_cutscene_textures_[2] = Engine::GetTextureManager().Load("Assets/images/cut3.png");
+  m_cutscene_index_ = 0;
+  m_cutscene_timer_ = 0.0;
 }
 
 
@@ -468,6 +476,28 @@ void GamePlay::Update(double dt)
 	Engine::GetLogger().LogEvent("=== RESTARTING GAMEPLAY ===");
 	Engine::GetGameStateManager().PopState();
 	Engine::GetGameStateManager().PushState<GamePlay>();
+	return;
+  }
+
+  // 컷신 페이즈 — 모든 컷이 재생될 때까지 게임 로직 차단
+  if (m_cutscene_index_ < CUTSCENE_COUNT)
+  {
+	auto& inp = Engine::GetInput();
+	// 좌클릭 또는 Space로 현재 컷 즉시 넘기기, Escape로 전체 스킵
+	if (inp.KeyJustPressed(CS230::Input::Keys::Escape))
+	{
+	  m_cutscene_index_ = CUTSCENE_COUNT;
+	  return;
+	}
+	if (inp.MouseJustPressed(0) || inp.KeyJustPressed(CS230::Input::Keys::Space))
+	  m_cutscene_timer_ = CUTSCENE_DURATION;
+
+	m_cutscene_timer_ += dt;
+	if (m_cutscene_timer_ >= CUTSCENE_DURATION)
+	{
+	  m_cutscene_timer_ = 0.0;
+	  ++m_cutscene_index_;
+	}
 	return;
   }
 
@@ -592,6 +622,37 @@ void GamePlay::Unload()
 
 void GamePlay::Draw()
 {
+  // 컷신 페이즈 렌더링
+  if (m_cutscene_index_ < CUTSCENE_COUNT)
+  {
+	Engine::GetWindow().Clear(0xffffffff);
+	auto* renderer_2d = CS230::TextureManager::GetRenderer2D();
+	auto  win         = Engine::GetWindow().GetSize();
+	Math::TransformationMatrix ui_ndc = TacticalCamera::BuildVirtualNdc(win);
+	Engine::GetTextureManager().SaveCurrentScene(ui_ndc);
+	renderer_2d->BeginScene(ui_ndc);
+
+	auto& tex = m_cutscene_textures_[m_cutscene_index_];
+	if (tex)
+	{
+	  auto   sz = tex->GetSize();
+	  double sx = static_cast<double>(TacticalCamera::VIRTUAL_W) / sz.x;
+	  double sy = static_cast<double>(TacticalCamera::VIRTUAL_H) / sz.y;
+	  double s  = std::min(sx, sy);
+	  double w  = sz.x * s;
+	  double h  = sz.y * s;
+	  double bx = (TacticalCamera::VIRTUAL_W - w) * 0.5;
+	  double by = (TacticalCamera::VIRTUAL_H - h) * 0.5;
+	  tex->Draw(
+		Math::TranslationMatrix(Math::vec2{ bx, by }) *
+		Math::ScaleMatrix(Math::vec2{ s, s }),
+		0xFFFFFFFF, DrawDepth::UI);
+	}
+
+	renderer_2d->EndScene();
+	return;
+  }
+
   Engine::GetWindow().Clear(0x1a1a1aff);
   auto renderer_2d = Engine::GetTextureManager().GetRenderer2D();
   auto win          = Engine::GetWindow().GetSize();
