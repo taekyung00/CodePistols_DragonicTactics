@@ -332,15 +332,7 @@ void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_
     DrawNotice();
     DrawDisableReasonTooltip();
     DrawDragonWorldHoverTooltip();
-    DrawHoveredTileOutline();
 
-
-    Character* character = Engine::GetGameStateManager().GetGSComponent<TurnManager>()->GetCurrentCharacter();
-    Math::vec2 enemy_pos = character->GetPosition();
-    if (character->GetCharacterType() != CharacterTypes::Dragon) {
-        DrawTileOutlineAtPosition(enemy_pos, 0xFF0000FF);
-    }
-    
     auto& textMng = Engine::GetTextManager();
 
     for (const auto& text : m_damage_texts)
@@ -1181,7 +1173,51 @@ void GamePlayUIManager::InitStatusEffectIcons()
 
 void GamePlayUIManager::DrawWorld()
 {
-    //auto* renderer = CS230::TextureManager::GetRenderer2D();
+    auto* renderer = CS230::TextureManager::GetRenderer2D();
+    constexpr double ts = GridSystem::TILE_SIZE;
+
+    // ── 호버 타일 흰색 테두리 ──
+    if (m_camera_)
+    {
+        Math::vec2 mouse_pos = Engine::GetInput().GetMousePos();
+        auto actual_win = Engine::GetWindow().GetSize();
+        Math::vec2 world_pos = m_camera_->ScreenToWorld(mouse_pos, actual_win);
+
+        int gx = static_cast<int>(std::floor(world_pos.x / ts));
+        int gy = static_cast<int>(std::floor(world_pos.y / ts));
+
+        auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+        if (grid && gx >= 1 && gx < grid->GetWidth() - 1 && gy >= 1 && gy < grid->GetHeight() - 1)
+        {
+            double cx = gx * ts + ts * 0.5;
+            double cy = gy * ts + ts * 0.5;
+            uint32_t fill = Engine::GetInput().MouseDown(0) ? 0x00000066u : 0x00000000u;
+            renderer->DrawRectangle(
+                Math::TranslationMatrix(Math::vec2{ cx, cy }) * Math::ScaleMatrix(Math::vec2{ ts, ts }),
+                fill, 0xFFFFFFFF, 3.0, DrawDepth::OVERLAY);
+        }
+    }
+
+    // ── 현재 턴 AI 캐릭터 빨간색 테두리 ──
+    {
+        auto* turnMgr = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
+        if (turnMgr)
+        {
+            Character* cur = turnMgr->GetCurrentCharacter();
+            if (cur && cur->GetCharacterType() != CharacterTypes::Dragon)
+            {
+                Math::vec2 pos = cur->GetPosition();
+                int gx = static_cast<int>(std::floor(pos.x / ts));
+                int gy = static_cast<int>(std::floor(pos.y / ts));
+                double cx = gx * ts + ts * 0.5;
+                double cy = gy * ts + ts * 0.5;
+                renderer->DrawRectangle(
+                    Math::TranslationMatrix(Math::vec2{ cx, cy }) * Math::ScaleMatrix(Math::vec2{ ts, ts }),
+                    0x00000000u, 0xFF0000FFu, 3.0, DrawDepth::OVERLAY);
+            }
+        }
+    }
+
     constexpr double ICON_SIZE = 24.0; // 캐릭터 위에 띄울 아이콘의 작은 사이즈
 
     for (Character* ch : m_characters)
