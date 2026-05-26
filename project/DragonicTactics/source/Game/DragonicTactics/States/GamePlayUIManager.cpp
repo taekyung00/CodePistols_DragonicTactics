@@ -238,10 +238,9 @@ void GamePlayUIManager::Update(double dt)
     hovered_effect_name_.clear();
     hovered_effect_duration_ = 0;
     {
-        constexpr double PORT_H   = 48.0;
-        constexpr double ICON_S   = 32.0;
-        constexpr double ICON_X0  = 60.0;
-        constexpr double ROW_STEP = 52.0;
+        constexpr double ICON_S    = 32.0;
+        constexpr double PANEL_TOP = 532.0;
+        constexpr double PANEL_BOT = 168.0;
 
         // Dragon is now displayed in DrawDragonHUD — exclude from this panel
         int n_rows = 0;
@@ -249,8 +248,13 @@ void GamePlayUIManager::Update(double dt)
             if (ch && ch->GetCharacterType() != CharacterTypes::Dragon)
                 ++n_rows;
 
-        double pan_h   = n_rows * PORT_H + (n_rows - 1) * 4.0 + 8.0;
-        double pan_top = static_cast<double>(VH) * 0.5 + pan_h * 0.5;
+        double avail_h  = PANEL_TOP - PANEL_BOT;
+        int    reserve  = std::max(n_rows, 4);
+        double PORT_H   = std::min((avail_h - (reserve - 1) * 4.0 - 8.0) / reserve, 128.0);
+        double ICON_X0  = 8.0 + PORT_H + 4.0;
+        double ROW_STEP = PORT_H + 4.0;
+
+        double pan_top = PANEL_TOP;
         double row_bot = pan_top - 4.0 - PORT_H;
 
         for (Character* ch : m_characters)
@@ -272,6 +276,26 @@ void GamePlayUIManager::Update(double dt)
             }
             if (!hovered_effect_name_.empty()) break;
             row_bot -= ROW_STEP;
+        }
+
+        // Dragon HUD 상태이상 아이콘 호버 감지
+        if (hovered_effect_name_.empty() && m_player_)
+        {
+            constexpr double PAN_BOT_D = static_cast<double>(VH) - 8.0 - 352.0; // 540
+            constexpr double ICON_Y_D  = PAN_BOT_D + 10.0;                       // 550
+
+            const auto& dragon_effects = m_player_->GetActiveEffects();
+            for (int ei = 0; ei < static_cast<int>(dragon_effects.size()); ++ei)
+            {
+                double icon_x = 8.0 + 16.0 + static_cast<double>(ei) * (ICON_S + 4.0);
+                if (virt_mouse.x >= icon_x && virt_mouse.x < icon_x + ICON_S &&
+                    virt_mouse.y >= ICON_Y_D  && virt_mouse.y < ICON_Y_D + ICON_S)
+                {
+                    hovered_effect_name_     = dragon_effects[ei].name;
+                    hovered_effect_duration_ = dragon_effects[ei].duration;
+                    break;
+                }
+            }
         }
     }
 
@@ -1231,11 +1255,9 @@ void GamePlayUIManager::DrawWorld()
         // 캐릭터의 월드 포지션을 기반으로 렌더링 위치 계산
         Math::vec2 pos = ch->GetPosition();
         
-        // 아이콘들을 중앙 정렬하기 위한 시작 x 좌표 계산
-        double total_width = effects.size() * ICON_SIZE;
-        double start_x = pos.x + (GridSystem::TILE_SIZE / 2.0) - (total_width / 2.0);
-        // 캐릭터 머리 위 (타일 사이즈보다 약간 높은 위치)
-        double start_y = pos.y + GridSystem::TILE_SIZE + 10.0;
+        // 캐릭터 타일 왼쪽 하단에서 시작
+        double start_x = pos.x;
+        double start_y = pos.y;
 
         for (size_t i = 0; i < effects.size(); ++i)
         {
@@ -1262,12 +1284,10 @@ void GamePlayUIManager::DrawStatusEffectPanel()
     if (m_characters.empty()) return;
 
     auto* renderer = CS230::TextureManager::GetRenderer2D();
-    constexpr double PORT_D   = 48.0;
-    constexpr double PORT_SCL = PORT_D / 128.0;  // 0.375
-    constexpr double ICON_S   = 32.0;
-    constexpr double PAN_X    = 8.0;
-    constexpr double ICON_X0  = PAN_X + PORT_D + 4.0;  // 60
-    constexpr double ROW_STEP = PORT_D + 4.0;           // 52
+    constexpr double ICON_S    = 32.0;
+    constexpr double PAN_X     = 8.0;
+    constexpr double PANEL_TOP = 532.0;   // 8px below Dragon HUD (PAN_BOT=540)
+    constexpr double PANEL_BOT = 168.0;   // 8px above slot bar top (160)
 
     // Dragon is shown in DrawDragonHUD — exclude from this panel
     int n_rows = 0;
@@ -1276,10 +1296,17 @@ void GamePlayUIManager::DrawStatusEffectPanel()
             ++n_rows;
     if (n_rows == 0) return;
 
-    double pan_h   = n_rows * PORT_D + (n_rows - 1) * 4.0 + 8.0;
+    // 항상 4슬롯 예약 — 캐릭터 추가 여분 공간 확보, 최대 128px
+    double avail_h    = PANEL_TOP - PANEL_BOT;
+    int    reserve    = std::max(n_rows, 4);
+    double PORT_D     = std::min((avail_h - (reserve - 1) * 4.0 - 8.0) / reserve, 128.0);
+    double ICON_X0    = PAN_X + PORT_D + 4.0;
+    double ROW_STEP   = PORT_D + 4.0;
+
+    double pan_h   = reserve * PORT_D + (reserve - 1) * 4.0 + 8.0;
     double pan_w   = 300.0;
-    double pan_cy  = static_cast<double>(VH) * 0.5;
-    double pan_top = pan_cy + pan_h * 0.5;
+    double pan_top = PANEL_TOP;
+    double pan_cy  = pan_top - pan_h * 0.5;
 
     Math::TransformationMatrix bg =
         Math::TranslationMatrix(Math::vec2{ PAN_X + pan_w * 0.5, pan_cy }) *
@@ -1296,9 +1323,10 @@ void GamePlayUIManager::DrawStatusEffectPanel()
         if (pit != portrait_textures_.end() && pit->second)
         {
             uint32_t tint = ch->IsAlive() ? 0xFFFFFFFF : 0x666666FF;
+            double scl = PORT_D / static_cast<double>(pit->second->GetSize().x);
             pit->second->Draw(
                 Math::TranslationMatrix(Math::vec2{ PAN_X, row_bot }) *
-                Math::ScaleMatrix(Math::vec2{ PORT_SCL, PORT_SCL }),
+                Math::ScaleMatrix(Math::vec2{ scl, scl }),
                 tint, DrawDepth::UI + 0.015f);
         }
 
@@ -1340,21 +1368,21 @@ void GamePlayUIManager::DrawStatusEffectTooltip()
     Math::TransformationMatrix bg =
         Math::TranslationMatrix(Math::vec2{ tip_x + TT_W * 0.5, tip_top - TT_H * 0.5 }) *
         Math::ScaleMatrix(Math::vec2{ TT_W, TT_H });
-    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5f, DrawDepth::UI + 0.001f);
+    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5f, DrawDepth::UI - 0.003f);
 
     double ty = tip_top - PAD - 22;
     textMgr.DrawText(hovered_effect_name_,
-        Math::vec2{ tip_x + PAD, ty }, Fonts::Kings, {0.5, 0.5}, CS200::GOLD, DrawDepth::UI);
+        Math::vec2{ tip_x + PAD, ty }, Fonts::Kings, {0.5, 0.5}, CS200::GOLD, DrawDepth::UI - 0.004f);
     ty -= LH;
 
     textMgr.DrawText("Duration: " + std::to_string(hovered_effect_duration_) + " turn(s)",
-        Math::vec2{ tip_x + PAD, ty }, Fonts::Kings, {0.4, 0.4}, CS200::YELLOW, DrawDepth::UI);
+        Math::vec2{ tip_x + PAD, ty }, Fonts::Kings, {0.4, 0.4}, CS200::YELLOW, DrawDepth::UI - 0.004f);
     ty -= LH;
 
     auto dit = effect_descriptions_.find(hovered_effect_name_);
     if (dit != effect_descriptions_.end())
         textMgr.DrawText(dit->second, Math::vec2{ tip_x + PAD, ty },
-            Fonts::Kings, {0.35, 0.35}, CS200::WHITE, DrawDepth::UI);
+            Fonts::Kings, {0.35, 0.35}, CS200::WHITE, DrawDepth::UI - 0.004f);
 }
 
 void GamePlayUIManager::DrawActionLabel()
