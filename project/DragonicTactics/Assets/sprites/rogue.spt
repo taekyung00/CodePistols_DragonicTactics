@@ -1,4 +1,4 @@
 Assets/images/rogue_p.png
-FrameSize 128 128
-HotSpot 0 0
+FrameSize 256 256
+HotSpot 32 32
 Scale 0.5
