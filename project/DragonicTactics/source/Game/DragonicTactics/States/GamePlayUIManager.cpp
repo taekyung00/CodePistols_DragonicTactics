@@ -109,8 +109,8 @@ void GamePlayUIManager::Update(double dt)
             set_disabled("slot_attack", no_ap || is_ai, is_ai ? "Enemy's turn." : "No AP.");
             set_disabled("slot_end_turn", is_ai || game_end_text != nullptr, is_ai ? "Enemy's turn." : "");
 
-            // 스펠 슬롯 비활성화 판별 함수 (is_fixed로 팝업과 고정 스킬 구분)
-            auto spell_disabled = [&](const std::string& id, int min_lv, bool is_fixed) {
+            // 요구 AP를 파라미터로 추가 (기본값 1)
+            auto spell_disabled = [&](const std::string& id, int min_lv, bool is_fixed, int req_ap = 1) {
                 bool has_any_slot = false;
                 if (slots) {
                     for (int lv = min_lv; lv <= 5; ++lv) {
@@ -121,14 +121,15 @@ void GamePlayUIManager::Update(double dt)
                     }
                 }
                 
-                // 팝업 스펠(!is_fixed)은 슬롯이 없어도 버튼은 눌리게 둔다(팝업을 띄우기 위함)
-                bool disabled = is_ai || no_ap || (is_fixed && !has_any_slot);
-                
+                // 현재 AP가 요구 AP보다 적은지 확인
+                bool not_enough_ap = (current->GetActionPoints() < req_ap);
+                bool disabled = is_ai || not_enough_ap || (is_fixed && !has_any_slot);
+
                 std::string reason = "";
                 if (disabled) {
                     if (is_ai) reason = "Enemy's turn.";
-                    else if (no_ap) reason = "No AP."; // 우선순위 1: AP
-                    else if (is_fixed && !has_any_slot) reason = "No Spell slot."; // 우선순위 2: 고정 스펠의 슬롯
+                    else if (not_enough_ap) reason = "Not enough AP.";
+                    else if (is_fixed && !has_any_slot) reason = "No Spell slot.";
                 }
                 set_disabled(id, disabled, reason);
             };
@@ -136,7 +137,7 @@ void GamePlayUIManager::Update(double dt)
             spell_disabled("slot_S_ATK_010", 1, false);
             spell_disabled("slot_S_ATK_020", 2, true);  // 고정
             spell_disabled("slot_S_ATK_030", 3, false); 
-            spell_disabled("slot_S_ATK_040", 3, false);
+            spell_disabled("slot_S_ATK_040", 3, false, 3);
             spell_disabled("slot_S_ENH_040", 1, false);
             spell_disabled("slot_S_ENH_050", 1, true);  // 고정
             spell_disabled("slot_S_DEB_020", 1, true);  // 고정
@@ -1180,7 +1181,44 @@ void GamePlayUIManager::InitStatusEffectIcons()
 
 void GamePlayUIManager::DrawWorld()
 {
-    // Status effect icons are now rendered in DrawStatusEffectPanel() (Pass 2 UI)
+    //auto* renderer = CS230::TextureManager::GetRenderer2D();
+    constexpr double ICON_SIZE = 24.0; // 캐릭터 위에 띄울 아이콘의 작은 사이즈
+
+    for (Character* ch : m_characters)
+    {
+        // 살아있는 캐릭터만 확인
+        if (!ch || !ch->IsAlive()) continue;
+
+        const auto& effects = ch->GetActiveEffects();
+        if (effects.empty()) continue;
+
+        // 캐릭터의 월드 포지션을 기반으로 렌더링 위치 계산
+        Math::vec2 pos = ch->GetPosition();
+        
+        // 아이콘들을 중앙 정렬하기 위한 시작 x 좌표 계산
+        double total_width = effects.size() * ICON_SIZE;
+        double start_x = pos.x + (GridSystem::TILE_SIZE / 2.0) - (total_width / 2.0);
+        // 캐릭터 머리 위 (타일 사이즈보다 약간 높은 위치)
+        double start_y = pos.y + GridSystem::TILE_SIZE + 10.0;
+
+        for (size_t i = 0; i < effects.size(); ++i)
+        {
+            auto iit = status_icon_textures_.find(effects[i].name);
+            if (iit != status_icon_textures_.end() && iit->second)
+            {
+                // 원본 텍스처 크기를 우리가 원하는 ICON_SIZE에 맞게 스케일링
+                double scale_x = ICON_SIZE / static_cast<double>(iit->second->GetSize().x);
+                double scale_y = ICON_SIZE / static_cast<double>(iit->second->GetSize().y);
+
+                Math::TransformationMatrix mat =
+                    Math::TranslationMatrix(Math::vec2{ start_x + (i * ICON_SIZE), start_y }) *
+                    Math::ScaleMatrix(Math::vec2{ scale_x, scale_y });
+
+                // UI 뎁스에 그려서 항상 가장 위에 보이도록 설정
+                iit->second->Draw(mat, 0xFFFFFFFF, DrawDepth::UI); 
+            }
+        }
+    }
 }
 
 void GamePlayUIManager::DrawStatusEffectPanel()

@@ -53,6 +53,22 @@ bool		GamePlay::s_should_restart = false;
 
 namespace
 {
+  std::string GetSpellSFX(const std::string& spellName) {
+        if (spellName == "Divine Shield" || spellName == "Healing Touch" ||
+            spellName == "Teleport" || spellName == "Mana Conversion" || spellName == "Purify") 
+            return "Assets/Audio/SFX/spell/Arcane.wav";
+        if (spellName == "Curse of Suffering") return "Assets/Audio/SFX/spell/Curse.wav";
+        if (spellName == "Fire Bolt" || spellName == "Dragon's Fury") return "Assets/Audio/SFX/spell/Fire.wav";
+        if (spellName == "Gale Step" || spellName == "Shadow Hide") return "Assets/Audio/SFX/spell/Gale Step.wav";
+        if (spellName == "Magma Blast") return "Assets/Audio/SFX/spell/Lava Creation.wav";
+        if (spellName == "Magic Missile") return "Assets/Audio/SFX/spell/Magic Missile.wav";
+        if (spellName == "Meteor") return "Assets/Audio/SFX/spell/Meteor.wav";
+        if (spellName == "Smite" || spellName == "Tail Swipe") return "Assets/Audio/SFX/spell/Smite.wav";
+        if (spellName == "Wall Creation") return "Assets/Audio/SFX/spell/Wall Creation.wav";
+        if (spellName == "Weakpoint Strike") return "Assets/Audio/SFX/spell/Weakpoint Strike.wav";
+        return ""; 
+    }
+
   const char* SfxActionFor(CharacterTypes t)
   {
     switch (t)
@@ -156,7 +172,7 @@ void GamePlay::Load()
   m_ui_manager	  = std::make_unique<GamePlayUIManager>();
   m_orchestrator  = std::make_unique<BattleOrchestrator>();
   m_ui_manager->InitButtons(m_input_handler.get());
-
+  
   AddGSComponent(new EventBus());
   AddGSComponent(new DiceManager());
   AddGSComponent(new AISystem());
@@ -297,19 +313,38 @@ void GamePlay::Load()
 		}
 	  });
 
-  GetGSComponent<EventBus>()->Subscribe<SpellCastEvent>(
-	  [this](const SpellCastEvent& event)
-	  {
-		if (event.caster)
-		{
-		  m_ui_manager->AddBattleLogEntry(
-			event.caster->TypeName() + " cast " + event.spellName
-			+ " Lv." + std::to_string(event.spellLevel));
+  // 리드미에 있는 추가 스펠 사운드 로드
+    Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/spell/Arcane.wav");
+    Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/spell/Curse.wav");
+    Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/spell/Fire.wav");
+    Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/spell/Gale Step.wav");
+    Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/spell/Lava Creation.wav");
+    Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/spell/Magic Missile.wav");
+    Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/spell/Meteor.wav");
+    Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/spell/Smite.wav");
+    Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/spell/Wall Creation.wav");
+    Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/spell/Weakpoint Strike.wav");
 
-		  if (const char* sfx = SfxActionFor(event.caster->GetCharacterType()))
-			Engine::GetSoundManager().PlaySFX(sfx);
-		}
-	  });
+    // SpellCastEvent 구독 내용 수정
+    GetGSComponent<EventBus>()->Subscribe<SpellCastEvent>(
+        [this](const SpellCastEvent& event) {
+            if (event.caster) {
+                m_ui_manager->AddBattleLogEntry(event.caster->TypeName() + " cast " + event.spellName + " Lv." + std::to_string(event.spellLevel));
+                
+                // 스펠 전용 사운드가 있다면 재생
+                std::string sfxPath = GetSpellSFX(event.spellName);
+                
+                // 🔍 [디버깅] 스펠 이름과 재생할 사운드 경로를 콘솔에 출력!
+                std::cout << "[SOUND DEBUG] Spell Name: [" << event.spellName << "] | " 
+                          << "Path: [" << (sfxPath.empty() ? "Empty(Default Sound)" : sfxPath) << "]" << std::endl;
+
+                if (!sfxPath.empty()) {
+                    Engine::GetSoundManager().PlaySFX(sfxPath.c_str());
+                } else if (const char* sfx = SfxActionFor(event.caster->GetCharacterType())) {
+                    Engine::GetSoundManager().PlaySFX(sfx);
+                }
+            }
+        });
 
   GetGSComponent<EventBus>()->Subscribe<UINoticeEvent>(
 	  [this](const UINoticeEvent& event)
@@ -363,6 +398,7 @@ void GamePlay::Load()
 
   Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/SFX_test.wav");
 
+  
   Engine::GetSoundManager().LoadSFX(SoundManager::SFX_DRAGON_ACTION);
   Engine::GetSoundManager().LoadSFX(SoundManager::SFX_DRAGON_HURT);
   Engine::GetSoundManager().LoadSFX(SoundManager::SFX_DRAGON_WALK);
@@ -752,4 +788,6 @@ void GamePlay::LoadJSONMap(const std::string& map_id)
   }
 
   Engine::GetLogger().LogEvent("LoadJSONMap - END: " + map_data.name);
+
+  
 }
