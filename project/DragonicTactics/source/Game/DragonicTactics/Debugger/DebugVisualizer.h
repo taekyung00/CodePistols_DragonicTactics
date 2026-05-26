@@ -21,7 +21,7 @@ class DebugVisualizer
 {
   public:
   DebugVisualizer()									 = default;
-  ~DebugVisualizer()								 = default;
+  ~DebugVisualizer();
   DebugVisualizer(const DebugVisualizer&)			 = delete;
   DebugVisualizer& operator=(const DebugVisualizer&) = delete;
 

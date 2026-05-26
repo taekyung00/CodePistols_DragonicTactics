@@ -42,6 +42,11 @@ namespace
   }
 }
 
+DebugVisualizer::~DebugVisualizer()
+{
+  Engine::GetSoundManager().ClearSfxCallback();
+}
+
 void DebugVisualizer::Init()
 {
   Engine::GetLogger().LogEvent("DebugVisualizer: Subscribing to events");
