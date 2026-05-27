@@ -65,5 +65,21 @@
     },
     "known_spells": [],
     "known_abilities": []
+  },
+  "Wizard": {
+    "max_hp": 70,
+    "speed": 2,
+    "max_action_points": 1,
+    "base_attack_power": 0,
+    "attack_dice": "1d4",
+    "base_defense_power": 0,
+    "defense_dice": "1d4",
+    "attack_range": 1,
+    "spell_slots": {
+      "1": 4,
+      "2": 3
+    },
+    "known_spells": [],
+    "known_abilities": []
   }
 }

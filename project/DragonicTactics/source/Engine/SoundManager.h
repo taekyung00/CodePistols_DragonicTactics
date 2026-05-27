@@ -13,6 +13,7 @@ Wav - SFX
 #include <functional>
 #include <string>
 #include <map>
+#include <vector>
 
 class SoundManager
 {
@@ -30,6 +31,8 @@ public:
     static constexpr const char* SFX_CLERIC_HURT    = "Assets/Audio/SFX/cleric_hurt.wav";
     static constexpr const char* SFX_ROGUE_ACTION   = "Assets/Audio/SFX/rouge_action.wav";
     static constexpr const char* SFX_ROGUE_HURT     = "Assets/Audio/SFX/rouge_hurt.wav";
+    static constexpr const char* SFX_WIZARD_ACTION  = "Assets/Audio/SFX/wizard_action.wav";
+    static constexpr const char* SFX_WIZARD_HURT    = "Assets/Audio/SFX/wizard_hurt.wav";
     static constexpr const char* SFX_HUMAN_WALK     = "Assets/Audio/SFX/human_walk.wav";
     static constexpr const char* SFX_BUTTON_CLICK   = "Assets/Audio/SFX/ButtonClick.wav";
 
@@ -46,9 +49,12 @@ public:
     void SetBGMLoop(bool loop);
     void SetBGMVolume(float volume);
     void LoadSFX(const std::string& wav_path);
-    void PlaySFX(const std::string& wav_path);
+    void PlaySFX(const std::string& wav_path);           // 앞에서 round-robin — 공격/스펠 SFX용
+    void PlaySFXLast(const std::string& wav_path);       // 끝에서 역방향 탐색 — hurt SFX 전용
+    void PlaySFXDelayed(const std::string& wav_path, double delay_seconds);
     void StopAllSFX();
     void SetSFXVolume(float volume);
+    void Update(double dt);
 
     // Debug 훅: PlaySFX 호출 직후 wav_path를 받아 호출됨. 한 개 콜백만 보관(디버그 용도).
     using SfxCallback = std::function<void(const std::string&)>;
@@ -77,8 +83,20 @@ private:
 
     SfxCallback sfx_callback_;
 
+    // 지연 재생 SFX 큐
+    struct DelayedSFX
+    {
+        std::string path;
+        double      timer;
+    };
+    std::vector<DelayedSFX> pending_sfx_;
+
+    // round-robin 소스 할당 — 연속 PlaySFX 호출 시 같은 소스 재사용 방지
+    int last_sfx_source_index_ = -1;
+
     bool   LoadOGGToBuffer(const std::string& path, ALuint& out_buffer);
     bool   LoadWAVToBuffer(const std::string& path, ALuint& out_buffer);
-    ALuint GetFreeSFXSource();
+    ALuint GetFreeSFXSource();     // 앞에서 round-robin
+    ALuint GetLastFreeSFXSource(); // 끝에서 역방향 탐색
     
 };

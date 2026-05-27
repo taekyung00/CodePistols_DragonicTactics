@@ -17,6 +17,7 @@ Updated:    November 25, 2025
 #include "../Objects/Dragon.h"
 #include "../Objects/Fighter.h"
 #include "../Objects/Rogue.h"
+#include "../Objects/Wizard.h"
 #include "../StateComponents/DataRegistry.h"
 #include "Engine/Engine.h"
 #include "Engine/GameStateManager.h"
@@ -46,9 +47,7 @@ std::unique_ptr<Character> CharacterFactory::Create(CharacterTypes type, Math::i
 	case CharacterTypes::Fighter: return CreateFighter(start_position);
 	case CharacterTypes::Cleric:  return CreateCleric(start_position);
 	case CharacterTypes::Rogue:   return CreateRogue(start_position);
-
-	  // TODO: Add more character types
-	  // case CharacterTypes::Wizard: return CreateWizard(start_position);
+	case CharacterTypes::Wizard:  return CreateWizard(start_position);
 
 	case CharacterTypes::None:
 	case CharacterTypes::Count:
@@ -246,4 +245,44 @@ std::unique_ptr<Rogue> CharacterFactory::CreateRogue(Math::ivec2 position)
   }
 
   return rogue;
+}
+
+std::unique_ptr<Wizard> CharacterFactory::CreateWizard(Math::ivec2 position)
+{
+  std::unique_ptr<Wizard> wizard = std::make_unique<Wizard>(position);
+
+  DataRegistry* registry = Engine::GetGameStateManager().GetGSComponent<DataRegistry>();
+  if (registry != nullptr)
+  {
+    CharacterData  data  = registry->GetCharacterData("Wizard");
+    CharacterStats stats = ConvertToCharacterStats(data);
+
+    StatsComponent* stats_comp = wizard->GetStatsComponent();
+    if (stats_comp != nullptr)
+    {
+      *stats_comp = StatsComponent(stats);
+    }
+
+    ActionPoints* ap = wizard->GetActionPointsComponent();
+    if (ap != nullptr)
+    {
+      ap->SetPoints(data.max_action_points);
+    }
+
+    SpellSlots* spell_slots = wizard->GetSpellSlots();
+    if (spell_slots != nullptr && !data.spell_slots.empty())
+    {
+      wizard->SetSpellSlots(data.spell_slots);
+    }
+
+    Engine::GetLogger().LogDebug(
+      "CharacterFactory: Created Wizard from JSON at (" + std::to_string(position.x) + ", " + std::to_string(position.y) + ") - HP: " + std::to_string(data.max_hp) +
+      ", Speed: " + std::to_string(data.speed));
+  }
+  else
+  {
+    Engine::GetLogger().LogError("CharacterFactory: DataRegistry not found, using default Wizard stats");
+  }
+
+  return wizard;
 }

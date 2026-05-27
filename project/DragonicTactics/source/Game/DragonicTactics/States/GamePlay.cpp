@@ -23,6 +23,7 @@ Created:    November 5, 2025
 #include "Game/DragonicTactics/Objects/Cleric.h"
 #include "Game/DragonicTactics/Objects/Dragon.h"
 #include "Game/DragonicTactics/Objects/Fighter.h"
+#include "Game/DragonicTactics/Objects/Wizard.h"
 
 #include "Engine/Camera.h"
 #include "Engine/SoundManager.h"
@@ -77,6 +78,7 @@ namespace
       case CharacterTypes::Fighter: return SoundManager::SFX_FIGHTER_ACTION;
       case CharacterTypes::Cleric:  return SoundManager::SFX_CLERIC_ACTION;
       case CharacterTypes::Rogue:   return SoundManager::SFX_ROGUE_ACTION;
+      case CharacterTypes::Wizard:  return SoundManager::SFX_WIZARD_ACTION;
       default:                      return nullptr;
     }
   }
@@ -89,6 +91,7 @@ namespace
       case CharacterTypes::Fighter: return SoundManager::SFX_FIGHTER_HURT;
       case CharacterTypes::Cleric:  return SoundManager::SFX_CLERIC_HURT;
       case CharacterTypes::Rogue:   return SoundManager::SFX_ROGUE_HURT;
+      case CharacterTypes::Wizard:  return SoundManager::SFX_WIZARD_HURT;
       default:                      return nullptr;
     }
   }
@@ -292,8 +295,9 @@ void GamePlay::Load()
 
 		if (event.target)
 		{
+		  // 끝 슬롯 우선 탐색 → 공격 SFX(앞 슬롯)와 다른 소스 사용 보장
 		  if (const char* sfx = SfxHurtFor(event.target->GetCharacterType()))
-			Engine::GetSoundManager().PlaySFX(sfx);
+			Engine::GetSoundManager().PlaySFXLast(sfx);
 		}
 	  });
 
@@ -408,6 +412,8 @@ void GamePlay::Load()
   Engine::GetSoundManager().LoadSFX(SoundManager::SFX_CLERIC_HURT);
   Engine::GetSoundManager().LoadSFX(SoundManager::SFX_ROGUE_ACTION);
   Engine::GetSoundManager().LoadSFX(SoundManager::SFX_ROGUE_HURT);
+  Engine::GetSoundManager().LoadSFX(SoundManager::SFX_WIZARD_ACTION);
+  Engine::GetSoundManager().LoadSFX(SoundManager::SFX_WIZARD_HURT);
   Engine::GetSoundManager().LoadSFX(SoundManager::SFX_HUMAN_WALK);
 
   Engine::GetSoundManager().LoadBGM("Assets/Audio/BGM/BGM_test.ogg");
@@ -470,6 +476,9 @@ void GamePlay::CheckGameEnd(const CharacterDeathEvent& event)
 
 void GamePlay::Update(double dt)
 {
+  // 지연된 SFX 큐 처리 — 컷신/종료 상태와 무관하게 매 프레임 실행
+  Engine::GetSoundManager().Update(dt);
+
   if (s_should_restart)
   {
 	s_should_restart = false;
@@ -846,6 +855,20 @@ void GamePlay::LoadJSONMap(const std::string& map_id)
 	grid_system->AddCharacter(rogue_raw, rogue_spawn);
 	enemys.push_back(rogue_raw);
 	Engine::GetLogger().LogEvent("Rogue spawned at: " + std::to_string(rogue_spawn.x) + ", " + std::to_string(rogue_spawn.y));
+  }
+
+  // Wizard
+  auto wizard_spawn_it = map_data.spawn_points.find("wizard");
+  if (wizard_spawn_it != map_data.spawn_points.end())
+  {
+	Math::ivec2 wizard_spawn = wizard_spawn_it->second;
+	auto  wizard_ptr = character_factory->Create(CharacterTypes::Wizard, wizard_spawn);
+	auto* wizard_raw = wizard_ptr.get();
+	wizard_raw->SetGridSystem(grid_system);
+	go_manager->Add(std::move(wizard_ptr));
+	grid_system->AddCharacter(wizard_raw, wizard_spawn);
+	enemys.push_back(wizard_raw);
+	Engine::GetLogger().LogEvent("Wizard spawned at: " + std::to_string(wizard_spawn.x) + ", " + std::to_string(wizard_spawn.y));
   }
 
   Engine::GetLogger().LogEvent("LoadJSONMap - END: " + map_data.name);

@@ -14,6 +14,7 @@ class Cleric;
 class Dragon;
 class Fighter;
 class Rogue;
+class Wizard;
 
 class CharacterFactory : public CS230::Component
 {
@@ -27,4 +28,5 @@ class CharacterFactory : public CS230::Component
   static std::unique_ptr<Dragon>  CreateDragon(Math::ivec2 position);
   static std::unique_ptr<Fighter> CreateFighter(Math::ivec2 position);
   static std::unique_ptr<Rogue>   CreateRogue(Math::ivec2 position);
+  static std::unique_ptr<Wizard>  CreateWizard(Math::ivec2 position);
 };

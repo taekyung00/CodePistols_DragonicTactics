@@ -50,6 +50,7 @@ void Settings::ApplySettings()
 {
     auto& sound = Engine::GetSoundManager();
     sound.SetBGMVolume(s_is_bgm_muted ? 0.0f : (s_bgm_volume / 100.0f));
+    sound.SetSFXVolume(s_is_sfx_muted ? 0.0f : (s_sfx_volume / 100.0f));
 }
 
 void Settings::DrawImGui()
@@ -143,6 +144,7 @@ void Settings::Update(double dt)
         else if (current_option == Option::SFXVolume)
         {
             s_sfx_volume = std::clamp(s_sfx_volume + dir * wheel_sensitivity, 0, 100);
+            ApplySettings();
         }
     }
 
@@ -181,6 +183,7 @@ void Settings::Update(double dt)
                 {
                     Engine::GetSoundManager().PlaySFX(SoundManager::SFX_BUTTON_CLICK);
                     s_is_sfx_muted = !s_is_sfx_muted;
+                    ApplySettings();
                 }
                 else if (current_option == Option::Back)
                 {
@@ -205,7 +208,7 @@ void Settings::Update(double dt)
         float rel_x   = std::clamp(static_cast<float>(mouse_pos.x) - slider_x_start, 0.0f, slider_width);
         int   new_val = static_cast<int>((rel_x / slider_width) * 100.0f);
         if (m_dragging_slider == Option::BGMVolume) { s_bgm_volume = new_val; ApplySettings(); }
-        else                                          s_sfx_volume = new_val;
+        else                                        { s_sfx_volume = new_val; ApplySettings(); }
     }
 
     // 확인 키
@@ -217,7 +220,7 @@ void Settings::Update(double dt)
             return;
         }
         else if (current_option == Option::BGMMute) { s_is_bgm_muted = !s_is_bgm_muted; ApplySettings(); }
-        else if (current_option == Option::SFXMute) { s_is_sfx_muted = !s_is_sfx_muted; }
+        else if (current_option == Option::SFXMute) { s_is_sfx_muted = !s_is_sfx_muted; ApplySettings(); }
     }
 
     if (input.KeyJustReleased(CS230::Input::Keys::Escape))

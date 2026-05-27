@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `GamePlay::DrawImGui()` | Map Selection / Combat Status 개발자 패널                                 |
 | `GamePlay::Draw()`      | **2-패스 렌더링**: Pass 1 = 월드 공간(TacticalCamera), Pass 2 = UI 공간(가상 1600×900) |
 
-**현재 맵 구성**: Dragon = 플레이어, Fighter + Cleric + Rogue = AI 적 (`maps.json` spawn_points 기준, `enemys` 벡터로 관리).
+**현재 맵 구성**: Dragon = 플레이어, Fighter + Cleric + Rogue + Wizard = AI 적 (`maps.json` spawn_points 기준, `enemys` 벡터로 관리).
 
 ---
 
@@ -28,11 +28,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **구현 완료**: FighterStrategy (`fighter.mmd` 플로우차트 완전 반영 — 킬루프/생존/일반교전/원거리 분기)
 - **구현 완료**: ClericStrategy (`cleric.mmd` 플로우차트 완전 반영 — 킬루프/힐/버프·디버프/근접 분기) + Cleric 캐릭터 클래스
 - **구현 완료**: RogueStrategy (`rouge.mmd` 플로우차트 반영 — 은신 킬루프/버프/원거리이동/근접전투 분기) + Rogue 캐릭터 클래스
-- **미구현**: WizardStrategy — 캐릭터 클래스 및 characters.json 스탯도 없음 (`FighterStrategy`/`ClericStrategy`/`RogueStrategy`가 참조 구현)
-  - 스프라이트 이미지(`wizard_p.png`)와 오디오 SFX 파일(`wizard_action.wav`, `wizard_hurt.wav`)은 Assets에 이미 존재 — 구현 시 에셋 생성 불필요
-  - `SoundManager.h` Wizard SFX 상수는 미등록 — Wizard 구현 시 상수 추가 필요
+- **구현 완료**: WizardStrategy (`wizard.mmd` 플로우차트 반영 — 킬루프/Sweet Spot 이동/마나 변환/Fire Bolt·Magic Missile 분기) + Wizard 캐릭터 클래스
   - `CharacterTypes` 열거 순서: `None, Dragon, Fighter, Rogue, Cleric, Wizard, Count`
-  - AI 플로우차트: `architecture/character_flowchart/wizard.mmd` — **스펠 ID 및 의사결정 구조는 아래 AI Strategy 패턴 섹션에 정리됨**
+  - AI 플로우차트: `architecture/character_flowchart/wizard.mmd`
 
 ---
 
@@ -50,11 +48,25 @@ main.cpp → Splash → MainMenu ┬─ Settings (오디오·맵 크기 설정 �
                                 RenderingTest
 ```
 
-- **GameOver 상태**: `source/Game/GameOver.h` / `GameOver.cpp` — `source/Game/` 직하위 (MainMenu·Settings와 동일 레벨). `GameOver::s_player_won` (static bool)으로 결과를 전달받아 "PLAYER WIN"(금색) / "INVADER WIN"(빨간색) 타이틀 표시. 전환 타이밍은 `GamePlay.h`의 `static constexpr double GAME_OVER_DELAY = 1.5` (초) — 값 변경 시 이 상수만 수정.
+- **GameOver 상태**: `source/Game/GameOver.h` / `GameOver.cpp` — `source/Game/` 직하위 (MainMenu·Settings와 동일 레벨). `GameOver::s_player_won` (static bool)으로 결과를 전달받아 "PLAYER WIN"(금색) / "INVADER WIN"(빨간색) 타이틀 표시. 전환 타이밍은 `GamePlay.h`의 `static constexpr double GAME_OVER_DELAY = 0.5` (초) — 값 변경 시 이 상수만 수정.
 - **셸 레이어 위치 주의**: `Splash`·`MainMenu`·`Settings`·`GameOver`·`Score`·`Background`·`Particles` 는 `source/Game/` **직하위**에 있다 — `source/Game/DragonicTactics/` 하위가 **아니다**. 전투 본편 코드만 `DragonicTactics/` 서브트리에 있다.
 - **Splash 지속시간**: `#if defined(DEVELOPER_VERSION)` → 0.3초, `#else` → 2.0초 (`source/Game/Splash.cpp`). 릴리즈 빌드에서 2초 스플래시를 표시.
 - ⚠️ `source/Game/States.h`의 `enum class State { Splash, MainMenu, Final }`는 **레거시·미사용**이다. 실제 내비게이션은 이 enum이 아니라 `GameStateManager`의 push/pop으로 동작 — 혼동 주의.
 - **Settings → GamePlay 연결**: `Settings`의 맵 크기 선택이 아래 [데이터 주도 설계](#데이터-주도-설계)의 `GamePlay::s_next_map_id` / `s_should_restart` 정적 필드를 통해 로드할 맵을 결정한다.
+
+### 컷신 시스템 (GamePlay 진입 후 전투 시작 전)
+
+`GamePlay::Load()` 완료 직후 전투가 시작되기 전에 컷신 3장을 순서대로 표시한다. 컷신 진행 중에는 모든 게임 로직 · 입력이 차단된다.
+
+| 상수 | 값 | 의미 |
+|---|---|---|
+| `CUTSCENE_DURATION` | 1.5s | 컷당 자동 전환 시간 |
+| `CUTSCENE_COUNT` | 3 | 총 컷 수 |
+
+- **이미지**: `Assets/images/cut1.png`, `cut2.png`, `cut3.png` (가상 1600×900 풀스크린 렌더)
+- **조작**: 좌클릭 또는 `Space` → 현재 컷 즉시 넘기기; `Escape` → 전체 스킵
+- **렌더**: `Draw()`에서 컷신 페이즈 시 Pass 2 UI NDC만 사용 (월드 패스 없음)
+- ⚠️ 새 컷 추가 시 `CUTSCENE_COUNT` 상수와 `m_cutscene_textures_` 로드 라인 양쪽 수정 필요
 
 ---
 
@@ -290,6 +302,8 @@ MakeDecision
 
 **Rogue 스탯** (`Assets/Data/characters.json`): HP 65, Speed 4, AP 1, 1d8 공격/1d6 방어, 슬롯 Lv1×4 / Lv2×2
 
+**Wizard 스탯** (`Assets/Data/characters.json`): HP 70, Speed 2, AP 1, 1d4 공격/1d4 방어, 슬롯 Lv1×4 / Lv2×3
+
 **Dragon 스탯** (`Assets/Data/characters.json`): HP 140, Speed 5, AP 2, 3d6 공격/2d8 방어, 공격 범위 3, 슬롯 Lv1×4 / Lv2×3 / Lv3×2 / Lv4×2 / Lv5×1
 
 **Dragon 스펠 ID** (`Assets/Data/spell_table.csv` 기준):
@@ -350,7 +364,7 @@ Turn N+1 AP=2 (OnTurnStart Haste +1): Shadow Hide 재적용 → AP=1 → 이동+
 
 **⚠️ Rogue 무한루프 방지**: Weakpoint Strike(Single, range 1 인접 필수) → 비인접 시 CanCast 실패 → AP 미소모 → 무한루프. `MakeCombatDecision`에서 `dist <= 1` 직접 체크 후 비인접이면 UseAbility 반환 금지.
 
-**WizardStrategy 의사결정 구조** (`architecture/character_flowchart/wizard.mmd`):
+**WizardStrategy 의사결정 구조** (`architecture/character_flowchart/wizard.mmd`, 구현: `StateComponents/AI/WizardStrategy.cpp`):
 
 ```
 MakeDecision
@@ -360,12 +374,16 @@ MakeDecision
   │     └── AP > 0 & 2레벨 필요  → Magic Missile (Slot2)
   └── Phase_Decision
         ├── AP = 0 → EndTurn
-        ├── Sweet Spot 아님 → 텔레포트(!공포, Slot0) or 일반 이동(공포/MP있음)
+        ├── Sweet Spot 아님 → MakeMoveDecision
+        │     ├── [1] 이동력 범위 내 Sweet Spot 도달 가능 → 걷기 (AP 절약 우선)
+        │     └── [2] 걷기 불가 → 텔레포트(!공포) or 걷기(공포)
         └── Sweet Spot 도달
               ├── 슬롯 > 50% → 최적 마법 시전 (Fire Bolt/Magic Missile)
               └── 슬롯 ≤ 50% → EvalConv(HP > 30%) → Mana Conversion
                               실패 → 원거리 캔트립 (Fire Bolt)
 ```
+
+- **Walk-first 최적화** (`MakeMoveDecision`): `GetReachableTiles(myPos, move_range)`로 걸어서 Sweet Spot 도달 가능한지 먼저 확인 → 가능하면 이동(AP 불소모), 불가능할 때만 Teleport(AP 1 소모). Wizard는 max AP = 1이므로 AP를 아껴야 Sweet Spot 도착 후 공격 가능.
 
 **Wizard 스펠 ID** (`Assets/Data/spell_table.csv` 기준):
 
@@ -612,6 +630,8 @@ None ──[Dragon 타일 클릭]──→ SelectingMove → Moving
 `SelectingAction` 상태는 enum에 남아있지만 실제로는 미사용. Dragon 타일 클릭으로 이동 선택 진입 (Move 버튼 없음).
 Dragon(플레이어) 턴에서만 동작. AI(Fighter) 턴은 `BattleOrchestrator`가 처리.
 
+**`SoundManager::Update(dt)` 호출 위치**: `GamePlay::Update()`의 **맨 첫 줄**에서 `Engine::GetSoundManager().Update(dt)` 호출 — 컷신·게임 종료 early return 이전에 실행되어 지연 SFX 큐(`PlaySFXDelayed`)를 매 프레임 처리한다.
+
 **⚠️ GS 컴포넌트 Update 중복 호출 금지** (`States/GamePlay.cpp`):
 
 `UpdateGSComponents(dt)`가 등록된 모든 GS 컴포넌트(`DebugManager` 포함)의 `Update()`를 자동 호출한다. 특정 컴포넌트를 추가로 명시 호출하면 같은 프레임에 `ProcessInput()`이 두 번 실행되어 `KeyJustPressed`가 두 번 true → 토글이 ON→OFF로 즉시 복귀하는 버그 발생.
@@ -797,10 +817,6 @@ int dmg = spells->GetLavaDamageAt(tile_pos);  // 없으면 0
 □ Engine/SoundManager.h          — SFX_X_ACTION / SFX_X_HURT 상수 추가
 ```
 
-**Wizard 한정**: 스프라이트(`wizard_p.png`)와 SFX 파일(`wizard_action.wav`, `wizard_hurt.wav`)은 Assets에 이미 존재 — 에셋 생성 단계 생략 가능. SoundManager.h 상수만 추가하면 됨.
-
-⚠️ **Wizard 전용 미완성 항목**: `CharacterFactory.h`에 `class Wizard;` 전방선언과 `static unique_ptr<Wizard> CreateWizard()` 선언이 아직 없음 — Wizard 구현 시 반드시 추가 (Dragon/Fighter/Cleric/Rogue 패턴 그대로 따를 것).
-
 **캐릭터 클래스 계층**: `CS230::GameObject` ← `Character` ← `Dragon` / `Fighter` / `Cleric` / `Wizard` / `Rogue`
 
 ---
@@ -837,6 +853,11 @@ ConsoleTest에 **실제 와이어링된 버튼** (= 현재 실행 가능한 집�
 
 god mode·`timeScale`(빨리감기)·각종 오버레이 토글을 보유한다. 위치: `source/Game/DragonicTactics/Debugger/` (`DebugManager` / `DebugConsole` / `DebugVisualizer`). 콘솔 명령어 전체 목록은 아래 [문서 참조](#문서-참조)의 `docs/debug/commands.md` 참고.
 
+**God Mode 구현 상태** (`docs/Detailed Implementations/features/갓모드 — Dragon 데미지 무효 + AP 무제한.md`):
+- 데미지 차단: ✅ `CombatSystem::ApplyDamage()` 내 early return으로 구현 완료
+- AP 소모 차단: ❌ **미구현** — `CombatSystem.cpp:161`(공격), `SpellSystem.cpp:542/802/837`(스펠 3곳) 수정 필요
+- `DebugManager::IsGodModeEnabled()` → `debug_mode && god_mode` (Dragon에만 적용)
+
 ---
 
 ## 데이터 주도 설계
@@ -869,27 +890,65 @@ GameState 컴포넌트가 아닌 **엔진 레벨 서비스**. `Engine::GetSoundM
 - **BGM**: OGG 파일 (`Assets/Audio/BGM/`) → 루프 재생
 - **SFX**: WAV 파일 (`Assets/Audio/SFX/`) → 단발, 8채널 소스 풀
 
-상수 경로가 헤더에 정의되어 있음: `SoundManager::BGM_MAIN_MENU`, `SoundManager::BGM_BATTLE`, `SFX_DRAGON_ACTION`, `SFX_DRAGON_HURT`, `SFX_DRAGON_WALK`, `SFX_FIGHTER_ACTION`, `SFX_FIGHTER_HURT`, `SFX_CLERIC_ACTION`, `SFX_CLERIC_HURT`, `SFX_ROGUE_ACTION`, `SFX_ROGUE_HURT`, `SFX_HUMAN_WALK`
+상수 경로가 헤더에 정의되어 있음: `SoundManager::BGM_MAIN_MENU`, `SoundManager::BGM_BATTLE`, `SFX_DRAGON_ACTION`, `SFX_DRAGON_HURT`, `SFX_DRAGON_WALK`, `SFX_FIGHTER_ACTION`, `SFX_FIGHTER_HURT`, `SFX_CLERIC_ACTION`, `SFX_CLERIC_HURT`, `SFX_ROGUE_ACTION`, `SFX_ROGUE_HURT`, `SFX_WIZARD_ACTION`, `SFX_WIZARD_HURT`, `SFX_HUMAN_WALK`
 
 ⚠️ **Rogue 에셋 파일명 철자 함정**: 코드 상수는 `SFX_ROGUE_*`("rog**ue**")이지만, 이 상수가 가리키는 디스크상 실제 파일은 "rou**ge**" 철자다 — `Assets/Audio/SFX/rouge_action.wav`, `rouge_hurt.wav` (`Engine/SoundManager.h`). 플로우차트 `architecture/character_flowchart/rouge.mmd`·`rouge.jpg`도 동일하게 "rouge". 따라서 **코드에서는 상수 `SFX_ROGUE_*`를 그대로 사용**(상수가 올바른 "rouge" 경로를 담고 있음), **에셋 파일을 새로 추가·교체할 때만 파일명을 "rouge"로** 작성할 것. (참조 문서는 `rogue_strategy.md`가 정본 — 아래 [문서 참조](#문서-참조) 참고.)
 
 ```cpp
 Engine::GetSoundManager().PlayBGM(SoundManager::BGM_BATTLE);   // 루프 BGM 시작
 Engine::GetSoundManager().StopBGM();
-Engine::GetSoundManager().PlaySFX(SoundManager::SFX_HIT);      // 단발 SFX
+Engine::GetSoundManager().PlaySFX(SoundManager::SFX_HIT);      // 단발 SFX (앞 소스 slot round-robin)
+Engine::GetSoundManager().PlaySFXLast(SoundManager::SFX_HIT);  // hurt SFX 전용 — 끝 소스 slot 역방향
+Engine::GetSoundManager().PlaySFXDelayed(path, 0.15);          // 지연 재생 (초 단위)
+Engine::GetSoundManager().Update(dt);                          // GamePlay::Update 첫 줄에서 호출
 Engine::GetSoundManager().SetBGMVolume(0.7f);                  // 0.0 ~ 1.0
+Engine::GetSoundManager().SetSFXVolume(0.8f);                  // 0.0 ~ 1.0 (Settings::ApplySettings()에서 호출)
 ```
 
 `GamePlay::Load()`에서 `PlayBGM`, `GamePlay::Unload()`에서 `StopBGM` 호출 패턴을 따른다.
 
+**SFX 소스 풀 분리** (`Engine/SoundManager.cpp`):
+
+OpenAL 소스 풀 8개를 공격 SFX와 피격 SFX가 항상 다른 슬롯을 사용하도록 분리:
+
+| 메서드 | 탐색 방향 | 용도 |
+|---|---|---|
+| `PlaySFX` | 앞(0→7) round-robin | 공격·스펠·이동 SFX |
+| `PlaySFXLast` | 끝(7→0) 역방향 | 피격(hurt) SFX 전용 |
+
+같은 프레임에 두 소리가 동시 재생될 때 서로 다른 소스를 사용 → 한 소리가 다른 소리를 덮어쓰지 않음.
+
 **SFX 재생 순서** (`States/GamePlay.cpp` EventBus 구독, `StateComponents/CombatSystem.cpp`):
 
-| 순서 | 이벤트 | SFX |
-|---|---|---|
-| 1 | `CharacterAttackedEvent` | 공격자 action SFX (`SfxActionFor`) |
-| 2 | `CharacterDamagedEvent` | 피격자 hurt SFX (`SfxHurtFor`) |
+| 순서 | 이벤트 | SFX | 메서드 |
+|---|---|---|---|
+| 1 | `CharacterAttackedEvent` | 공격자 action SFX (`SfxActionFor`) | `PlaySFX` |
+| 2 | `CharacterDamagedEvent` | 피격자 hurt SFX (`SfxHurtFor`) | `PlaySFXLast` |
 
-`CombatSystem::ExecuteAttack`에서 `CharacterAttackedEvent`를 `ApplyDamage` **전에** 발행해 순서 보장 (구현 완료). 이 순서를 바꾸면 hurt SFX가 먼저 재생되므로 변경 금지.
+`CombatSystem::ExecuteAttack`에서 `CharacterAttackedEvent`를 `ApplyDamage` **전에** 발행해 순서 보장. `PlaySFXLast`는 끝 슬롯부터 탐색하므로 `PlaySFX`(앞 슬롯)와 소스 충돌 없음.
+
+⚠️ **Settings SFX 볼륨 반영**: `Settings::ApplySettings()`가 BGM 볼륨과 함께 `SetSFXVolume()`도 호출한다. SFX 볼륨·뮤트 변경 시 반드시 `ApplySettings()`를 통할 것 — SoundManager를 직접 호출하면 Settings UI와 동기화가 깨진다.
+
+**스펠 전용 SFX** (`GamePlay.cpp` 파일 내 `GetSpellSFX()` 함수):
+
+`SpellCastEvent` 구독에서 `GetSpellSFX(spellName)`을 먼저 조회해 스펠별 WAV를 재생한다. 경로가 비어 있으면 캐릭터 action SFX로 fallback.
+
+| 스펠명 | 파일 |
+|---|---|
+| Divine Shield, Healing Touch, Teleport, Mana Conversion, Purify | `Assets/Audio/SFX/spell/Arcane.wav` |
+| Curse of Suffering | `Assets/Audio/SFX/spell/Curse.wav` |
+| Fire Bolt, Dragon's Fury | `Assets/Audio/SFX/spell/Fire.wav` |
+| Gale Step, Shadow Hide | `Assets/Audio/SFX/spell/Gale Step.wav` |
+| Magma Blast | `Assets/Audio/SFX/spell/Lava Creation.wav` |
+| Magic Missile | `Assets/Audio/SFX/spell/Magic Missile.wav` |
+| Meteor | `Assets/Audio/SFX/spell/Meteor.wav` |
+| Smite, Tail Swipe | `Assets/Audio/SFX/spell/Smite.wav` |
+| Wall Creation | `Assets/Audio/SFX/spell/Wall Creation.wav` |
+| Weakpoint Strike | `Assets/Audio/SFX/spell/Weakpoint Strike.wav` |
+
+새 스펠을 추가할 때 대응 WAV가 있다면 `GetSpellSFX()` switch에 케이스 추가. 파일은 `GamePlay::Load()`에서 `LoadSFX(path)`로 미리 로드해야 런타임 끊김이 없다.
+
+⚠️ `GamePlay.cpp`의 `SpellCastEvent` 구독 내부에 `std::cout` 디버그 출력이 남아 있다 — 릴리즈 전 제거 필요 (라인 338–340 근방).
 
 ---
 
@@ -1112,6 +1171,8 @@ double TT_W = (wit != widths_map.end()) ? wit->second : 340.0;
 - [docs/Detailed Implementations/features/button_manager.md](docs/Detailed%20Implementations/features/button_manager.md) — ButtonManager(슬롯 바 버튼 패널) 구현 가이드
 - [docs/Detailed Implementations/features/UI 개선 구현점.md](docs/Detailed%20Implementations/features/UI%20개선%20구현점.md) — UI 리팩토링 실제 변경점 (bb7e32fa 커밋 대비, TacticalCamera/2-패스/슬롯바/배틀로그 플리커 수정 포함)
 - [docs/Detailed Implementations/features/character_death_crash_fix.md](docs/Detailed%20Implementations/features/character_death_crash_fix.md) — 캐릭터 사망 시 비결정적 크래시 수정 (use-after-free, m_confirmed_dead_ 패턴, RemoveFromTurnOrder)
+- [docs/Detailed Implementations/features/crash_risks.md](docs/Detailed%20Implementations/features/crash_risks.md) — 알려진 크래시 위험 지점 9개 정리 (🔴`CombatSystem.cpp:29` null 역참조 CRITICAL 포함)
+- [docs/Detailed Implementations/features/fighter_spells_purify_check.md](docs/Detailed%20Implementations/features/fighter_spells_purify_check.md) — 알려진 CSV/전략 버그 3개: Smite `Lifesteal for 0 turns` → `Basic`, Purify `Any:Around:4` → `Self:Single:0`, FighterStrategy `HasBuff("Bloodlust")` → `HasBuff("Lifesteal")`
 - [architecture/game_architecture_rules.md](architecture/game_architecture_rules.md) — 아키텍처 원칙
 - [architecture/Implementation_Checklist.md](architecture/Implementation_Checklist.md) — 진행 체크리스트
 - [docs/Detailed Implementations/features/fighter_strategy.md](docs/Detailed%20Implementations/features/fighter_strategy.md) — FighterStrategy 구현 상세 가이드
