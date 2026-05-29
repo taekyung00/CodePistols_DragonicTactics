@@ -16,7 +16,7 @@
 // ──────────────────────────────────────────────
 const std::pair<std::string, std::string> StatusEffectHandler::KNOWN_EFFECTS[NUM_EFFECTS] = {
   {	"Lifesteal", "Recover 50% of damage dealt this turn (round down)" },
-  {	 "Frenzy",	  "If next attack deals 10+ damage, target receives random debuff (Curse, Fear, Exhaustion); otherwise, the Fighter receives it." },
+  {	 "Frenzy",	  "If next attack deals 10+ damage, target receives random debuff (Curse, Fear); otherwise, the Fighter receives it." },
   { "Exhaustion",						  "Speed and Action points become 0 next turn" },
   {	 "Purify",						"Removes all status effects from self" },
   {	"Blessing",						 "All damage taken -3, all damage dealt +3" },
@@ -47,11 +47,12 @@ void StatusEffectHandler::OnApplied(Character* target, const std::string& effect
 	auto* stats = target->GetGOComponent<StatsComponent>();
 	if (stats) { stats->ModifyBaseSpeed(-1); stats->RefreshSpeed(); }
   }
-  // Haste: base speed +1 즉시 적용
+  // Haste: base speed +1 즉시 적용, AP+1도 즉시 부여 (같은 턴에 Shadow Hide 연계 가능)
   else if (effect_name == "Haste")
   {
 	auto* stats = target->GetGOComponent<StatsComponent>();
 	if (stats) { stats->ModifyBaseSpeed(+1); stats->RefreshSpeed(); }
+	target->SetActionPoints(target->GetActionPoints() + 1);
   }
   // Purify: base speed 등 변경된 스탯 먼저 복원한 뒤 모든 효과 제거
   else if (effect_name == "Purify")
@@ -138,9 +139,11 @@ void StatusEffectHandler::OnAfterAttack(Character* attacker, Character* defender
   {
 	attacker->RemoveEffect("Frenzy");
 
-	// 무작위 부정 효과: Curse(0) / Fear(1) / Exhaustion(2)
-	static const std::string FRENZY_EFFECTS[] = { "Curse", "Fear", "Exhaustion" };
-	int						 roll			  = Engine::GetGameStateManager().GetGSComponent<DiceManager>()->RollDice(1,3) - 1; // 0~2
+	// 무작위 부정 효과: Curse(0) / Fear(1)
+	static const std::string FRENZY_EFFECTS[] = { "Curse", "Fear" };
+	auto* frenzy_dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
+	if (!frenzy_dice) return;
+	int roll = frenzy_dice->RollDice(1, 2) - 1; // 0~1
 	const std::string&		 effect			  = FRENZY_EFFECTS[roll];
 
 	if (damage_dealt >= 10)

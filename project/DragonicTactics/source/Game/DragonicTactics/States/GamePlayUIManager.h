@@ -16,6 +16,7 @@ Created:    November 24, 2025
 #include <deque>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 #include "ButtonManager.h"
 
@@ -33,15 +34,25 @@ class GamePlayUIManager
   void Draw(Math::TransformationMatrix camera_matrix);
 
   void SetCharacters(const std::vector<Character*>& characters);
+  void SetPlayer(Character* player);
 
   void InitButtons(PlayerInputHandler* inputHandler);
+  void InitSpellTooltips();
+  void InitStatusEffectIcons();
   void SetCamera(const TacticalCamera* camera);
   ButtonManager& GetButtons();
+  void DrawWorld();
 
   void OnTurnStarted(const std::string& actor_name, int turn_number, bool is_player, int round_number);
   void AddBattleLogEntry(const std::string& line);
   bool IsMouseOverLogPanel() const;
+  void ScrollLog(double delta);
 
+  void ShowNotice(const std::string& text);
+
+  void DrawHoveredTileOutline();
+  void DrawTileOutlineAtPosition(Math::vec2 world_pos, uint32_t border_color);
+  
   private:
   struct DamageText
   {
@@ -51,6 +62,9 @@ class GamePlayUIManager
     double      lifetime;
   };
 
+  std::string popup_hover_reason_;
+  Math::vec2  popup_hover_pos_;
+  
   std::vector<DamageText> m_damage_texts;
 
   const double GAME_END_TEXT_SIZE = 2.0;
@@ -58,7 +72,11 @@ class GamePlayUIManager
   std::unique_ptr<std::string> game_end_text = nullptr;
 
   std::vector<Character*> m_characters;
+  Character*              m_player_ = nullptr;
   ButtonManager button_manager_;
+
+  // Cancel hint pulse timer (Feature 3)
+  double m_cancel_hint_time_ = 0.0;
 
   // Slot icons (index 0~9: spells, 10: End Turn)
   std::vector<std::shared_ptr<CS230::Texture>> slot_icons_;
@@ -73,8 +91,24 @@ class GamePlayUIManager
   int         popup_slot_index_     = -1;
   bool        popup_hit_this_frame_ = false;
 
-  // Hover tooltip
+  // Character hover tooltip
   Character* hovered_character_ = nullptr;
+
+  // Spell hover tooltip
+  std::string  hovered_spell_id_;
+  double       hovered_slot_cx_ = 0.0;
+  std::unordered_map<std::string, std::vector<std::string>> spell_tooltip_cache_;
+  std::unordered_map<std::string, double>                  spell_tooltip_widths_;
+
+  // Status effect icons
+  std::unordered_map<std::string, std::shared_ptr<CS230::Texture>> status_icon_textures_;
+  std::unordered_map<std::string, std::string>                     effect_descriptions_;
+  std::unordered_map<std::string, double>                          effect_tooltip_widths_;
+  std::string hovered_effect_name_;
+  int         hovered_effect_duration_ = 0;
+
+  // Character portraits for left-side status panel (key = CharacterTypes int value)
+  std::unordered_map<int, std::shared_ptr<CS230::Texture>> portrait_textures_;
 
   // InputHandler pointer
   PlayerInputHandler*   m_input_handler_ptr_ = nullptr;
@@ -114,12 +148,27 @@ class GamePlayUIManager
 
   double end_turn_click_timer_ = 0.0;
 
+  // Notice toast
+  std::string m_notice_text_;
+  double      m_notice_timer_                = 0.0;
+  static constexpr double NOTICE_DURATION   = 1.5;
+  static constexpr double NOTICE_W          = 460.0;
+  static constexpr double NOTICE_H          = 44.0;
+
   void DrawCharacterStatsPanel(Math::TransformationMatrix camera_matrix);
+  void DrawNotice();
   void   DrawBattleLog();
   double ComputeLogContentHeight() const;
   void DrawSlotBar();
   void DrawUicastPopup();
   void DrawTurnIndicator();
   void DrawHoverTooltip();
+  void DrawSpellTooltip();
+  void DrawStatusEffectTooltip();
+  void DrawStatusEffectPanel();
   void DrawActionLabel();
+  void DrawDisableReasonTooltip();
+  void DrawDragonWorldHoverTooltip();
+  void DrawDragonHUD();
+  void DrawCancelHint();
 };

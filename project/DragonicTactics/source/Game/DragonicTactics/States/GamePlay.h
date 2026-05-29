@@ -14,6 +14,9 @@ Created:    November 5, 2025
 #include <memory>
 #include <set>
 #include <string>
+#include <vector>
+
+namespace CS230 { class Texture; }
 
 struct TacticalCamera {
     Math::vec2 target = { 0.0, 0.0 };
@@ -69,13 +72,24 @@ class GamePlay : public CS230::GameState
 
   Character* player  = nullptr;
   std::vector<Character*> enemys {};
-  bool		 game_end = false;
+  static constexpr double GAME_OVER_DELAY = 0.5;  // 게임 종료 후 GameOver 화면 전환까지 대기 시간(초)
+
+  bool   game_end             = false;
+  bool   game_end_player_won_ = false;
+  double game_end_timer_      = -1.0;  // >= 0 이면 카운트다운 중
 
   // 메모리 해제 후 IsAlive() 호출을 피하기 위해 포인터 값으로만 추적
   std::set<Character*> m_confirmed_dead_;
 
   int selected_json_map_index_ = 0;
   std::vector<std::string> available_json_maps_;
+
+  // Cutscene
+  static constexpr double CUTSCENE_DURATION = 1.5;
+  static constexpr int    CUTSCENE_COUNT    = 4;
+  int    m_cutscene_index_ = 0;
+  double m_cutscene_timer_ = 0.0;
+  std::vector<std::shared_ptr<CS230::Texture>> m_cutscene_textures_;
 
   TacticalCamera m_camera;
   Math::vec2     m_prev_mouse            = { 0.0, 0.0 };

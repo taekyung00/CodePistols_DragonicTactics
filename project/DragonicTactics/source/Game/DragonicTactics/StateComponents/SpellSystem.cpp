@@ -144,6 +144,11 @@ SpellData SpellSystem::ParseCSVRow(const std::vector<std::string>& col) const
 	data.effect_raw		= col[7];
 
 	ParseEffectField(col[7], data);
+
+	// ap_cost 특수 처리 (CSV 컬럼 없음 — 스펠 ID 기반 설정)
+	if (data.id == "S_ATK_040")
+		data.ap_cost = 3; // Meteor: 강력한 광역기, AP 3 소모
+
 	return data;
 }
 
@@ -306,7 +311,9 @@ int SpellSystem::CalculateSpellDamage(const SpellData& spell, int upcast_level)
 			auto d_pos = spell.upcast_dice.find('d');
 			if (d_pos != std::string::npos)
 			{
-				int			per_level  = (d_pos > 0) ? std::stoi(spell.upcast_dice.substr(0, d_pos)) : 1;
+				int per_level = 1;
+				try { if (d_pos > 0) per_level = std::stoi(spell.upcast_dice.substr(0, d_pos)); }
+				catch (...) { per_level = 1; }
 				std::string face	   = spell.upcast_dice.substr(d_pos);				// "d10"
 				std::string rolled_str = std::to_string(level_diff * per_level) + face; // "1d10", "3d10"
 				return dice->RollDiceFromString(rolled_str);
@@ -318,7 +325,9 @@ int SpellSystem::CalculateSpellDamage(const SpellData& spell, int upcast_level)
 	// ── flat_per_level:N (Magic Missile) ──
 	if (spell.damage_formula.rfind("flat_per_level:", 0) == 0)
 	{
-		int multiplier = std::stoi(spell.damage_formula.substr(15));
+		int multiplier = 0;
+		try { multiplier = std::stoi(spell.damage_formula.substr(15)); }
+		catch (...) { Engine::GetLogger().LogError("SpellSystem: invalid flat_per_level formula: " + spell.damage_formula); }
 		int level_diff = std::max(0, upcast_level - spell.spell_level) + 1;
 		return multiplier * level_diff;
 	}
@@ -342,7 +351,9 @@ int SpellSystem::CalculateSpellDamage(const SpellData& spell, int upcast_level)
 		auto d_pos = spell.upcast_dice.find('d');
 		if (d_pos != std::string::npos)
 		{
-			int			per_level  = (d_pos > 0) ? std::stoi(spell.upcast_dice.substr(0, d_pos)) : 1;
+			int per_level = 1;
+			try { if (d_pos > 0) per_level = std::stoi(spell.upcast_dice.substr(0, d_pos)); }
+			catch (...) { per_level = 1; }
 			std::string face	   = spell.upcast_dice.substr(d_pos);
 			std::string rolled_str = std::to_string(level_diff * per_level) + face;
 			total += dice->RollDiceFromString(rolled_str);
@@ -379,7 +390,9 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
 			             || (t.filter == "Ally"  && sameTeam)
 			             || (t.filter == "Enemy" && !sameTeam)
 			             || (t.filter == "Self"  && hit == caster);
-			if (filterOk)
+			// Stealth: Enemy 타겟팅 스펠은 은신 중인 캐릭터를 타겟으로 할 수 없음
+			bool stealthBlock = (t.filter == "Enemy" && hit->Has("Stealth"));
+			if (filterOk && !stealthBlock)
 				targets.push_back(hit);
 		}
 	}
@@ -587,7 +600,7 @@ bool SpellSystem::CastSpell(Character* caster, const std::string& spell_id, Math
 	{
 		auto* debug_mgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
 		if (!(debug_mgr && debug_mgr->IsGodModeEnabled() && caster->GetCharacterType() == CharacterTypes::Dragon))
-			caster->GetActionPointsComponent()->Consume(1);
+			caster->GetActionPointsComponent()->Consume(spell.ap_cost);
 	}
 
 	// 1. 시전자가 드래곤인지 검사하여 파티클 생성
@@ -720,7 +733,7 @@ bool SpellSystem::CanCast(Character* caster, const std::string& spell_id, Math::
 	}
 
 	// 사거리 체크 이후, return true 바로 앞에 추가
-	if (caster->GetActionPoints() < 1)
+	if (caster->GetActionPoints() < spell.ap_cost)
 		return false;
 
 	// Ally/Enemy/Self/Empty 필터 검증 (Single/Point 지오메트리)
@@ -747,6 +760,7 @@ bool SpellSystem::CanCast(Character* caster, const std::string& spell_id, Math::
 				bool sameTeam = (caster->IsAIControlled() == hit->IsAIControlled());
 				if (t.filter == "Ally"  && !sameTeam) return false;
 				if (t.filter == "Enemy" && sameTeam)  return false;
+				if (t.filter == "Enemy" && hit->Has("Stealth")) return false;
 			}
 		}
 	}

@@ -26,7 +26,7 @@ int CombatSystem::CalculateDamage(Character* attacker, Character* defender, cons
 {
   if (attacker == nullptr || defender == nullptr)
   {
-	Engine::GetLogger().LogError("CombatSystem: Null " + attacker->TypeName() + " or " + defender->TypeName());
+	Engine::GetLogger().LogError("CombatSystem: Null attacker or defender in CalculateDamage");
 	return 0;
   }
 
@@ -121,6 +121,13 @@ bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender)
 	return false;
   }
 
+  // Stealth: 은신 중인 캐릭터는 공격 불가 (알림은 PlayerInputHandler 호버에서 처리)
+  if (defender->Has("Stealth"))
+  {
+	Engine::GetLogger().LogEvent("CombatSystem: Cannot attack " + defender->TypeName() + " (Stealth)");
+	return false;
+  }
+
   // Check range
   if (!IsInRange(attacker, defender, attacker->GetStatsComponent()->GetAttackRange()))
   {
@@ -174,7 +181,8 @@ bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender)
 
 int CombatSystem::RollAttackDamage(const std::string& damageDice, int baseDamage)
 {
-  int diceRoll = Engine::GetGameStateManager().GetGSComponent<DiceManager>()->RollDiceFromString(damageDice);
+  auto* dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
+  int diceRoll = dice ? dice->RollDiceFromString(damageDice) : 0;
   return diceRoll + baseDamage;
 }
 

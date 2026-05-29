@@ -89,6 +89,11 @@ struct MovementBlockedEvent
   std::string reason; // "occupied", "out of bounds", "insufficient AP"
 };
 
+struct UINoticeEvent
+{
+  std::string message;
+};
+
 // SpellEvents.h - Magic system events
 
 struct SpellCastEvent

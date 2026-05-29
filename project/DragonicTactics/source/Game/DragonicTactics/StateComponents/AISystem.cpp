@@ -12,7 +12,8 @@
 
 #include "AI/ClericStrategy.h"
 #include "AI/FighterStrategy.h"
-// #include "AI/WizardStrategy.h" (TODO)
+#include "AI/RogueStrategy.h"
+#include "AI/WizardStrategy.h"
 
 #include "../StateComponents/CombatSystem.h"
 #include "../StateComponents/GridSystem.h"
@@ -42,9 +43,8 @@ void AISystem::Init()
   // [핵심] 캐릭터 타입에 맞는 두뇌를 갈아끼우는 곳
   m_strategies[CharacterTypes::Fighter] = new FighterStrategy();
   m_strategies[CharacterTypes::Cleric]  = new ClericStrategy();
-
-  // 나중에 이렇게 추가하면 됩니다:
-  // m_strategies[CharacterTypes::Wizard] = new WizardStrategy();
+  m_strategies[CharacterTypes::Rogue]   = new RogueStrategy();
+  m_strategies[CharacterTypes::Wizard]  = new WizardStrategy();
 }
 
 AIDecision AISystem::MakeDecision(Character* actor)
@@ -105,7 +105,11 @@ void AISystem::ExecuteDecision(Character* actor, const AIDecision& decision)
 	case AIDecisionType::UseAbility:
 	  if (spell_system)
 	  {
-		spell_system->CastSpell(actor, decision.abilityName, decision.target->GetGridPosition()->Get(), decision.upcast_level);
+		// target이 nullptr인 경우(Teleport 등 빈 타일 대상 스펠)는 destination 필드를 사용
+		Math::ivec2 target_tile = decision.target
+		    ? decision.target->GetGridPosition()->Get()
+		    : decision.destination;
+		spell_system->CastSpell(actor, decision.abilityName, target_tile, decision.upcast_level);
 		actionExecuted = true;
 	  }
 	  break;

@@ -36,7 +36,10 @@ public:
 	  return "Hit Particle";
 	}
 
-	static constexpr int	MaxCount = 10;
+	// 피해 1건당 Emit(count=10) 고정. 광역기(Meteor 등)는 한 프레임에 여러 대상을
+	// 동시에 때려 10*N개를 즉시 요구하므로 풀 10은 즉시 고갈됐다. MaxLife 1.0초 동안
+	// 동시 다발 피해(최대 ~6건)를 커버하도록 64로 확대.
+	static constexpr int	MaxCount = 64;
 	static constexpr double MaxLife	 = 1.0;
   };
 

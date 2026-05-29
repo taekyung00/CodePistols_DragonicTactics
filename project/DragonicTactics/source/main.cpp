@@ -10,6 +10,45 @@
 #include "Engine/Window.h"
 #include "Game/Splash.h"
 
+#if defined(_WIN32)
+#  include <windows.h>
+#  include <dbghelp.h>
+#  include <ctime>
+#  pragma comment(lib, "dbghelp.lib")
+
+static LONG WINAPI CrashHandler(EXCEPTION_POINTERS* ep)
+{
+    // 파일명: crash_YYYYMMDD_HHMMSS.dmp
+    std::time_t now = std::time(nullptr);
+    std::tm     lt{};
+    localtime_s(&lt, &now);
+    char fname[64];
+    std::strftime(fname, sizeof(fname), "crash_%Y%m%d_%H%M%S.dmp", &lt);
+
+    HANDLE hFile = CreateFileA(fname, GENERIC_WRITE, 0, nullptr,
+                               CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (hFile != INVALID_HANDLE_VALUE)
+    {
+        MINIDUMP_EXCEPTION_INFORMATION mei{};
+        mei.ThreadId          = GetCurrentThreadId();
+        mei.ExceptionPointers = ep;
+        mei.ClientPointers    = FALSE;
+
+        // MiniDumpWithFullMemory: 전체 힙 + 스택 + 모듈 정보 포함
+        MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(),
+                          hFile, MiniDumpWithFullMemory, &mei, nullptr, nullptr);
+        CloseHandle(hFile);
+
+        // 파일명을 콘솔에도 출력
+        OutputDebugStringA("[CrashHandler] Minidump saved: ");
+        OutputDebugStringA(fname);
+        OutputDebugStringA("\n");
+    }
+
+    return EXCEPTION_EXECUTE_HANDLER;
+}
+#endif
+
 namespace
 {
   [[maybe_unused]] int	gWindowWidth  = 400;
@@ -62,6 +101,10 @@ EMSCRIPTEN_BINDINGS(main_window)
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
 {
+#if defined(_WIN32)
+  SetUnhandledExceptionFilter(CrashHandler);
+#endif
+
   Engine& engine = Engine::Instance();
   engine.Start("Dragonic Tactics");
 

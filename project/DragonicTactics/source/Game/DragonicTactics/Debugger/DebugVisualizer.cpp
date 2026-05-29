@@ -42,6 +42,11 @@ namespace
   }
 }
 
+DebugVisualizer::~DebugVisualizer()
+{
+  Engine::GetSoundManager().ClearSfxCallback();
+}
+
 void DebugVisualizer::Init()
 {
   Engine::GetLogger().LogEvent("DebugVisualizer: Subscribing to events");
@@ -94,29 +99,25 @@ void DebugVisualizer::Update(double dt)
 	recent_moves_.pop_front();
   }
 
-  // Track dice rolls from DiceManager
+  // Track dice rolls from DiceManager — read all new entries since last Update
   auto* dice_mgr = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
   if (dice_mgr)
   {
-	const auto& last_rolls = dice_mgr->GetLastRolls();
-	if (!last_rolls.empty() && (dice_history_.empty() || dice_history_.back().rolls != last_rolls))
+	const auto& roll_log = dice_mgr->GetRollLog();
+	// Guard against roll_log shrinking (e.g. after a scene reload)
+	if (last_dice_log_read_ > roll_log.size())
+	  last_dice_log_read_ = roll_log.size();
+	while (last_dice_log_read_ < roll_log.size())
 	{
-	  // New roll detected - store it
+	  const auto& entry = roll_log[last_dice_log_read_++];
 	  DiceRollInfo roll_info;
-	  roll_info.rolls = last_rolls;
-	  roll_info.total = 0;
-	  for (int r : last_rolls)
-		roll_info.total += r;
-	  roll_info.notation  = dice_mgr->GetLastNotation();
+	  roll_info.notation  = entry.notation;
+	  roll_info.rolls     = entry.rolls;
+	  roll_info.total     = entry.total;
 	  roll_info.timestamp = game_time_;
-
 	  dice_history_.push_back(roll_info);
-
-	  // Keep last 20 rolls
 	  if (dice_history_.size() > 20)
-	  {
 		dice_history_.pop_front();
-	  }
 	}
   }
 }

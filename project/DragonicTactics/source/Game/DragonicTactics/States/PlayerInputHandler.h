@@ -66,7 +66,8 @@ class PlayerInputHandler
   std::vector<Math::ivec2> m_wall_placement_tiles;
   int                      m_wall_placement_count = 0;
   const TacticalCamera*    m_camera               = nullptr;
-  bool m_ignore_next_click = false;
+  bool        m_ignore_next_click         = false;
+  Math::ivec2 m_last_stealth_notice_tile_ = { -1, -1 };
 
   //helper function
   Math::ivec2 ConvertScreenToGrid(Math::vec2 world_pos);
@@ -74,4 +75,5 @@ class PlayerInputHandler
   void HandleDragonInput(double dt, Dragon* dragon, GridSystem* grid, CombatSystem* combat_system);
   void HandleMouseClick(Math::vec2 mouse_pos, Dragon* dragon, GridSystem* grid, CombatSystem* combat_system);
   void HandleRightClick(Dragon* dragon);
+  void CheckStealthHoverNotice(Dragon* dragon, GridSystem* grid, Math::ivec2 hover_tile);
 };

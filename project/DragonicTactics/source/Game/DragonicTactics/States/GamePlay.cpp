@@ -15,6 +15,7 @@ Created:    November 5, 2025
 #include "GamePlay.h"
 #include "OpenGL/Environment.h"
 
+#include "Game/GameOver.h"
 #include "Game/MainMenu.h"
 
 #include "Game/DragonicTactics/Objects/Components/GridPosition.h"
@@ -22,6 +23,7 @@ Created:    November 5, 2025
 #include "Game/DragonicTactics/Objects/Cleric.h"
 #include "Game/DragonicTactics/Objects/Dragon.h"
 #include "Game/DragonicTactics/Objects/Fighter.h"
+#include "Game/DragonicTactics/Objects/Wizard.h"
 
 #include "Engine/Camera.h"
 #include "Engine/SoundManager.h"
@@ -52,6 +54,22 @@ bool		GamePlay::s_should_restart = false;
 
 namespace
 {
+  std::string GetSpellSFX(const std::string& spellName) {
+        if (spellName == "Divine Shield" || spellName == "Healing Touch" ||
+            spellName == "Teleport" || spellName == "Mana Conversion" || spellName == "Purify") 
+            return "Assets/Audio/SFX/spell/Arcane.wav";
+        if (spellName == "Curse of Suffering") return "Assets/Audio/SFX/spell/Curse.wav";
+        if (spellName == "Fire Bolt" || spellName == "Dragon's Fury") return "Assets/Audio/SFX/spell/Fire.wav";
+        if (spellName == "Gale Step" || spellName == "Shadow Hide") return "Assets/Audio/SFX/spell/Gale Step.wav";
+        if (spellName == "Magma Blast") return "Assets/Audio/SFX/spell/Lava Creation.wav";
+        if (spellName == "Magic Missile") return "Assets/Audio/SFX/spell/Magic Missile.wav";
+        if (spellName == "Meteor") return "Assets/Audio/SFX/spell/Meteor.wav";
+        if (spellName == "Smite" || spellName == "Tail Swipe") return "Assets/Audio/SFX/spell/Smite.wav";
+        if (spellName == "Wall Creation") return "Assets/Audio/SFX/spell/Wall Creation.wav";
+        if (spellName == "Weakpoint Strike") return "Assets/Audio/SFX/spell/Weakpoint Strike.wav";
+        return ""; 
+    }
+
   const char* SfxActionFor(CharacterTypes t)
   {
     switch (t)
@@ -59,6 +77,8 @@ namespace
       case CharacterTypes::Dragon:  return SoundManager::SFX_DRAGON_ACTION;
       case CharacterTypes::Fighter: return SoundManager::SFX_FIGHTER_ACTION;
       case CharacterTypes::Cleric:  return SoundManager::SFX_CLERIC_ACTION;
+      case CharacterTypes::Rogue:   return SoundManager::SFX_ROGUE_ACTION;
+      case CharacterTypes::Wizard:  return SoundManager::SFX_WIZARD_ACTION;
       default:                      return nullptr;
     }
   }
@@ -70,6 +90,8 @@ namespace
       case CharacterTypes::Dragon:  return SoundManager::SFX_DRAGON_HURT;
       case CharacterTypes::Fighter: return SoundManager::SFX_FIGHTER_HURT;
       case CharacterTypes::Cleric:  return SoundManager::SFX_CLERIC_HURT;
+      case CharacterTypes::Rogue:   return SoundManager::SFX_ROGUE_HURT;
+      case CharacterTypes::Wizard:  return SoundManager::SFX_WIZARD_HURT;
       default:                      return nullptr;
     }
   }
@@ -153,7 +175,7 @@ void GamePlay::Load()
   m_ui_manager	  = std::make_unique<GamePlayUIManager>();
   m_orchestrator  = std::make_unique<BattleOrchestrator>();
   m_ui_manager->InitButtons(m_input_handler.get());
-
+  
   AddGSComponent(new EventBus());
   AddGSComponent(new DiceManager());
   AddGSComponent(new AISystem());
@@ -179,6 +201,8 @@ void GamePlay::Load()
   GetGSComponent<DataRegistry>()->LoadFromFile("Assets/Data/characters.json");
   GetGSComponent<DataRegistry>()->LoadAllCharacterData("Assets/Data/characters.json");
   GetGSComponent<SpellSystem>()->LoadFromCSV("Assets/Data/spell_table.csv");
+  m_ui_manager->InitSpellTooltips();
+  m_ui_manager->InitStatusEffectIcons();
   // GetGSComponent<SpellSystem>()->SetEventBus(GetGSComponent<EventBus>());
 
   auto* map_registry = GetGSComponent<MapDataRegistry>();
@@ -242,6 +266,7 @@ void GamePlay::Load()
   std::vector<Character*> all_characters = { player };
   all_characters.insert(all_characters.end(), enemys.begin(), enemys.end());
   m_ui_manager->SetCharacters(all_characters);
+  m_ui_manager->SetPlayer(player);
   Engine::GetLogger().LogEvent("GamePlay::Load - Characters registered to UI Manager");
 
   // EventBus 구독을 StartCombat() 전에 등록 — 첫 TurnStartedEvent를 놓치지 않기 위함
@@ -270,8 +295,9 @@ void GamePlay::Load()
 
 		if (event.target)
 		{
+		  // 끝 슬롯 우선 탐색 → 공격 SFX(앞 슬롯)와 다른 소스 사용 보장
 		  if (const char* sfx = SfxHurtFor(event.target->GetCharacterType()))
-			Engine::GetSoundManager().PlaySFX(sfx);
+			Engine::GetSoundManager().PlaySFXLast(sfx);
 		}
 	  });
 
@@ -291,18 +317,43 @@ void GamePlay::Load()
 		}
 	  });
 
-  GetGSComponent<EventBus>()->Subscribe<SpellCastEvent>(
-	  [this](const SpellCastEvent& event)
-	  {
-		if (event.caster)
-		{
-		  m_ui_manager->AddBattleLogEntry(
-			event.caster->TypeName() + " cast " + event.spellName
-			+ " Lv." + std::to_string(event.spellLevel));
+  // 리드미에 있는 추가 스펠 사운드 로드
+    Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/spell/Arcane.wav");
+    Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/spell/Curse.wav");
+    Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/spell/Fire.wav");
+    Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/spell/Gale Step.wav");
+    Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/spell/Lava Creation.wav");
+    Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/spell/Magic Missile.wav");
+    Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/spell/Meteor.wav");
+    Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/spell/Smite.wav");
+    Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/spell/Wall Creation.wav");
+    Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/spell/Weakpoint Strike.wav");
 
-		  if (const char* sfx = SfxActionFor(event.caster->GetCharacterType()))
-			Engine::GetSoundManager().PlaySFX(sfx);
-		}
+    // SpellCastEvent 구독 내용 수정
+    GetGSComponent<EventBus>()->Subscribe<SpellCastEvent>(
+        [this](const SpellCastEvent& event) {
+            if (event.caster) {
+                m_ui_manager->AddBattleLogEntry(event.caster->TypeName() + " cast " + event.spellName + " Lv." + std::to_string(event.spellLevel));
+                
+                // 스펠 전용 사운드가 있다면 재생
+                std::string sfxPath = GetSpellSFX(event.spellName);
+                
+                // 🔍 [디버깅] 스펠 이름과 재생할 사운드 경로를 콘솔에 출력!
+                std::cout << "[SOUND DEBUG] Spell Name: [" << event.spellName << "] | " 
+                          << "Path: [" << (sfxPath.empty() ? "Empty(Default Sound)" : sfxPath) << "]" << std::endl;
+
+                if (!sfxPath.empty()) {
+                    Engine::GetSoundManager().PlaySFX(sfxPath.c_str());
+                } else if (const char* sfx = SfxActionFor(event.caster->GetCharacterType())) {
+                    Engine::GetSoundManager().PlaySFX(sfx);
+                }
+            }
+        });
+
+  GetGSComponent<EventBus>()->Subscribe<UINoticeEvent>(
+	  [this](const UINoticeEvent& event)
+	  {
+		m_ui_manager->ShowNotice(event.message);
 	  });
 
   GetGSComponent<EventBus>()->Subscribe<CharacterDeathEvent>(
@@ -351,6 +402,7 @@ void GamePlay::Load()
 
   Engine::GetSoundManager().LoadSFX("Assets/Audio/SFX/SFX_test.wav");
 
+  
   Engine::GetSoundManager().LoadSFX(SoundManager::SFX_DRAGON_ACTION);
   Engine::GetSoundManager().LoadSFX(SoundManager::SFX_DRAGON_HURT);
   Engine::GetSoundManager().LoadSFX(SoundManager::SFX_DRAGON_WALK);
@@ -358,10 +410,23 @@ void GamePlay::Load()
   Engine::GetSoundManager().LoadSFX(SoundManager::SFX_FIGHTER_HURT);
   Engine::GetSoundManager().LoadSFX(SoundManager::SFX_CLERIC_ACTION);
   Engine::GetSoundManager().LoadSFX(SoundManager::SFX_CLERIC_HURT);
+  Engine::GetSoundManager().LoadSFX(SoundManager::SFX_ROGUE_ACTION);
+  Engine::GetSoundManager().LoadSFX(SoundManager::SFX_ROGUE_HURT);
+  Engine::GetSoundManager().LoadSFX(SoundManager::SFX_WIZARD_ACTION);
+  Engine::GetSoundManager().LoadSFX(SoundManager::SFX_WIZARD_HURT);
   Engine::GetSoundManager().LoadSFX(SoundManager::SFX_HUMAN_WALK);
 
   Engine::GetSoundManager().LoadBGM("Assets/Audio/BGM/BGM_test.ogg");
   Engine::GetSoundManager().PlayBGM("Assets/Audio/BGM/BGM_test.ogg");
+
+  // 컷신 이미지 로드
+  m_cutscene_textures_.resize(CUTSCENE_COUNT);
+  m_cutscene_textures_[0] = Engine::GetTextureManager().Load("Assets/images/cut1.png");
+  m_cutscene_textures_[1] = Engine::GetTextureManager().Load("Assets/images/cut2.png");
+  m_cutscene_textures_[2] = Engine::GetTextureManager().Load("Assets/images/cut3.png");
+  m_cutscene_textures_[3] = Engine::GetTextureManager().Load("Assets/images/cut4.png");
+  m_cutscene_index_ = 0;
+  m_cutscene_timer_ = 0.0;
 }
 
 
@@ -388,10 +453,14 @@ void GamePlay::DisplayDamageAmount(const CharacterDamagedEvent& event)
 
 void GamePlay::CheckGameEnd(const CharacterDeathEvent& event)
 {
+  auto* turnMgr = GetGSComponent<TurnManager>();
+
   if (event.character == player)
   {
-	m_ui_manager->ShowGameEnd("Invader Win");
-	game_end = true;
+	if (turnMgr) turnMgr->EndCombat();
+	game_end_player_won_ = false;
+	game_end_timer_      = GAME_OVER_DELAY;
+	game_end             = true;
 	return;
   }
 
@@ -399,13 +468,18 @@ void GamePlay::CheckGameEnd(const CharacterDeathEvent& event)
 	[this](Character* c) { return c == nullptr || m_confirmed_dead_.count(c) > 0; });
   if (all_enemies_dead && !enemys.empty())
   {
-	m_ui_manager->ShowGameEnd("Player Win");
-	game_end = true;
+	if (turnMgr) turnMgr->EndCombat();
+	game_end_player_won_ = true;
+	game_end_timer_      = GAME_OVER_DELAY;
+	game_end             = true;
   }
 }
 
 void GamePlay::Update(double dt)
 {
+  // 지연된 SFX 큐 처리 — 컷신/종료 상태와 무관하게 매 프레임 실행
+  Engine::GetSoundManager().Update(dt);
+
   if (s_should_restart)
   {
 	s_should_restart = false;
@@ -413,6 +487,44 @@ void GamePlay::Update(double dt)
 	Engine::GetGameStateManager().PopState();
 	Engine::GetGameStateManager().PushState<GamePlay>();
 	return;
+  }
+
+  // 컷신 페이즈 — 모든 컷이 재생될 때까지 게임 로직 차단
+  if (m_cutscene_index_ < CUTSCENE_COUNT)
+  {
+	auto& inp = Engine::GetInput();
+	// 좌클릭 또는 Space로 현재 컷 즉시 넘기기, Escape로 전체 스킵
+	if (inp.KeyJustPressed(CS230::Input::Keys::Escape))
+	{
+	  m_cutscene_index_ = CUTSCENE_COUNT;
+	  return;
+	}
+	if (inp.MouseJustPressed(0) || 
+      inp.KeyJustPressed(CS230::Input::Keys::Space)||
+      inp.KeyJustPressed(CS230::Input::Keys::Z)||
+      inp.KeyJustPressed(CS230::Input::Keys::Enter))
+	  m_cutscene_timer_ = CUTSCENE_DURATION;
+
+	m_cutscene_timer_ += dt;
+	if (m_cutscene_timer_ >= CUTSCENE_DURATION)
+	{
+	  m_cutscene_timer_ = 0.0;
+	  ++m_cutscene_index_;
+	}
+	return;
+  }
+
+  // 게임 종료 타이머: 1.5초 대기 후 GameOver 상태로 전환
+  if (game_end_timer_ >= 0.0)
+  {
+	game_end_timer_ -= dt;
+	if (game_end_timer_ < 0.0)
+	{
+	  GameOver::s_player_won = game_end_player_won_;
+	  Engine::GetGameStateManager().PopState();
+	  Engine::GetGameStateManager().PushState<GameOver>();
+	  return;
+	}
   }
 
   // Camera pan (right-drag) and zoom (scroll wheel) — runs every frame
@@ -439,25 +551,31 @@ void GamePlay::Update(double dt)
     m_prev_mouse = mouse;
 
     double scroll = inp.GetMouseScroll();
-    if (scroll != 0.0 && !ImGui::GetIO().WantCaptureMouse
-        && !m_ui_manager->IsMouseOverLogPanel())
+    if (scroll != 0.0 && !ImGui::GetIO().WantCaptureMouse)
     {
-      Math::vec2 wb = m_camera.ScreenToWorld(mouse, win);
-      m_camera.zoom *= (1.0 + scroll * 0.125);
-      if (m_camera.zoom < TacticalCamera::ZOOM_MIN) m_camera.zoom = TacticalCamera::ZOOM_MIN;
-      if (m_camera.zoom > TacticalCamera::ZOOM_MAX) m_camera.zoom = TacticalCamera::ZOOM_MAX;
-      Math::vec2 wa = m_camera.ScreenToWorld(mouse, win);
-      m_camera.target.x -= wa.x - wb.x;
-      m_camera.target.y -= wa.y - wb.y;
+      if (m_ui_manager->IsMouseOverLogPanel())
+      {
+        m_ui_manager->ScrollLog(scroll);
+      }
+      else
+      {
+        Math::vec2 wb = m_camera.ScreenToWorld(mouse, win);
+        m_camera.zoom *= (1.0 + scroll * 0.125);
+        if (m_camera.zoom < TacticalCamera::ZOOM_MIN) m_camera.zoom = TacticalCamera::ZOOM_MIN;
+        if (m_camera.zoom > TacticalCamera::ZOOM_MAX) m_camera.zoom = TacticalCamera::ZOOM_MAX;
+        Math::vec2 wa = m_camera.ScreenToWorld(mouse, win);
+        m_camera.target.x -= wa.x - wb.x;
+        m_camera.target.y -= wa.y - wb.y;
+      }
     }
   }
 
-  TurnManager*				turnMgr		 = GetGSComponent<TurnManager>();
-  GridSystem*				grid		 = GetGSComponent<GridSystem>();
-  CombatSystem*				combatSystem = GetGSComponent<CombatSystem>();
-  AISystem*					aiSystem	 = GetGSComponent<AISystem>();
+  TurnManager*				      turnMgr		 = GetGSComponent<TurnManager>();
+  GridSystem*				        grid		 = GetGSComponent<GridSystem>();
+  CombatSystem*				      combatSystem = GetGSComponent<CombatSystem>();
+  AISystem*					        aiSystem	 = GetGSComponent<AISystem>();
   CS230::GameObjectManager* goMgr		 = GetGSComponent<CS230::GameObjectManager>();
-  DebugManager*				debugMgr	 = GetGSComponent<DebugManager>();
+  DebugManager*				      debugMgr	 = GetGSComponent<DebugManager>();
 
   if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Escape))
   {
@@ -517,6 +635,37 @@ void GamePlay::Unload()
 
 void GamePlay::Draw()
 {
+  // 컷신 페이즈 렌더링
+  if (m_cutscene_index_ < CUTSCENE_COUNT)
+  {
+	Engine::GetWindow().Clear(0xffffffff);
+	auto* renderer_2d = CS230::TextureManager::GetRenderer2D();
+	auto  win         = Engine::GetWindow().GetSize();
+	Math::TransformationMatrix ui_ndc = TacticalCamera::BuildVirtualNdc(win);
+	Engine::GetTextureManager().SaveCurrentScene(ui_ndc);
+	renderer_2d->BeginScene(ui_ndc);
+
+	auto& tex = m_cutscene_textures_[m_cutscene_index_];
+	if (tex)
+	{
+	  auto   sz = tex->GetSize();
+	  double sx = static_cast<double>(TacticalCamera::VIRTUAL_W) / sz.x;
+	  double sy = static_cast<double>(TacticalCamera::VIRTUAL_H) / sz.y;
+	  double s  = std::min(sx, sy);
+	  double w  = sz.x * s;
+	  double h  = sz.y * s;
+	  double bx = (TacticalCamera::VIRTUAL_W - w) * 0.5;
+	  double by = (TacticalCamera::VIRTUAL_H - h) * 0.5;
+	  tex->Draw(
+		Math::TranslationMatrix(Math::vec2{ bx, by }) *
+		Math::ScaleMatrix(Math::vec2{ s, s }),
+		0xFFFFFFFF, DrawDepth::UI);
+	}
+
+	renderer_2d->EndScene();
+	return;
+  }
+
   Engine::GetWindow().Clear(0x1a1a1aff);
   auto renderer_2d = Engine::GetTextureManager().GetRenderer2D();
   auto win          = Engine::GetWindow().GetSize();
@@ -531,6 +680,8 @@ void GamePlay::Draw()
   CS230::GameObjectManager* goMgr = GetGSComponent<CS230::GameObjectManager>();
   if (goMgr)
     goMgr->DrawAll(Math::TransformationMatrix{});
+
+  m_ui_manager->DrawWorld();
 
   GetGSComponent<DebugManager>()->Draw(grid_system);
 
@@ -696,5 +847,35 @@ void GamePlay::LoadJSONMap(const std::string& map_id)
 	Engine::GetLogger().LogEvent("Cleric spawned at: " + std::to_string(cleric_spawn.x) + ", " + std::to_string(cleric_spawn.y));
   }
 
+  // Rogue
+  auto rogue_spawn_it = map_data.spawn_points.find("rogue");
+  if (rogue_spawn_it != map_data.spawn_points.end())
+  {
+	Math::ivec2 rogue_spawn = rogue_spawn_it->second;
+	auto  rogue_ptr = character_factory->Create(CharacterTypes::Rogue, rogue_spawn);
+	auto* rogue_raw = rogue_ptr.get();
+	rogue_raw->SetGridSystem(grid_system);
+	go_manager->Add(std::move(rogue_ptr));
+	grid_system->AddCharacter(rogue_raw, rogue_spawn);
+	enemys.push_back(rogue_raw);
+	Engine::GetLogger().LogEvent("Rogue spawned at: " + std::to_string(rogue_spawn.x) + ", " + std::to_string(rogue_spawn.y));
+  }
+
+  // Wizard
+  auto wizard_spawn_it = map_data.spawn_points.find("wizard");
+  if (wizard_spawn_it != map_data.spawn_points.end())
+  {
+	Math::ivec2 wizard_spawn = wizard_spawn_it->second;
+	auto  wizard_ptr = character_factory->Create(CharacterTypes::Wizard, wizard_spawn);
+	auto* wizard_raw = wizard_ptr.get();
+	wizard_raw->SetGridSystem(grid_system);
+	go_manager->Add(std::move(wizard_ptr));
+	grid_system->AddCharacter(wizard_raw, wizard_spawn);
+	enemys.push_back(wizard_raw);
+	Engine::GetLogger().LogEvent("Wizard spawned at: " + std::to_string(wizard_spawn.x) + ", " + std::to_string(wizard_spawn.y));
+  }
+
   Engine::GetLogger().LogEvent("LoadJSONMap - END: " + map_data.name);
+
+  
 }

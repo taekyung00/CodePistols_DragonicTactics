@@ -52,6 +52,9 @@ class Settings : public CS230::GameState
     COUNT
   };
   Option current_option;
+  // 현재 드래그 중인 볼륨 슬라이더 (COUNT = 드래그 없음). 드래그 시작 슬라이더를 캡처해
+  // 마우스가 다른 바로 넘어가도 그 슬라이더에만 적용되도록 한다.
+  Option m_dragging_slider = Option::COUNT;
 
   struct SettingRow
   {

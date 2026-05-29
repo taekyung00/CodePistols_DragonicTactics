@@ -396,7 +396,8 @@ Math::ivec2 FighterStrategy::FindNextMovePos(Character* actor, Character* target
   Math::ivec2 myPos     = actor->GetGridPosition()->Get();
 
   std::vector<Math::ivec2> bestPath;
-  int                      bestPathCost = 999999;
+  int                      bestPathCost  = 999999;
+  int                      bestPrefScore = 999999;
 
   static const Math::ivec2 offsets[4] = { { 0, 1 }, { 0, -1 }, { -1, 0 }, { 1, 0 } };
   for (const auto& offset : offsets)
@@ -414,10 +415,13 @@ Math::ivec2 FighterStrategy::FindNextMovePos(Character* actor, Character* target
     if (!currentPath.empty())
     {
       int effectiveCost = ComputePathCost(currentPath, grid);
-      if (effectiveCost < bestPathCost)
+      int prefScore     = (attackPos.y == targetPos.y) ? 0 : 1; // 수평(측면) 접근 선호
+      if (effectiveCost < bestPathCost ||
+          (effectiveCost == bestPathCost && prefScore < bestPrefScore))
       {
-        bestPathCost = effectiveCost;
-        bestPath     = currentPath;
+        bestPathCost  = effectiveCost;
+        bestPrefScore = prefScore;
+        bestPath      = currentPath;
       }
     }
   }

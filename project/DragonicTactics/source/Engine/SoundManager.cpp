@@ -259,7 +259,26 @@ bool SoundManager::LoadWAVToBuffer(const std::string& path, ALuint& out_buffer)
 
 ALuint SoundManager::GetFreeSFXSource()
 {
+    // round-robin: 직전에 사용한 소스 다음부터 탐색 → 연속 PlaySFX 호출 시 소스 충돌 방지
     for (int i = 0; i < kSfxSourcePoolSize; ++i)
+    {
+        int   idx   = (last_sfx_source_index_ + 1 + i) % kSfxSourcePoolSize;
+        ALint state = 0;
+        alGetSourcei(sfx_sources_[idx], AL_SOURCE_STATE, &state);
+        if (state != AL_PLAYING)
+        {
+            last_sfx_source_index_ = idx;
+            return sfx_sources_[idx];
+        }
+    }
+    return 0;
+}
+
+ALuint SoundManager::GetLastFreeSFXSource()
+{
+    // 끝에서 역방향 탐색 — hurt SFX 전용
+    // GetFreeSFXSource(앞 탐색)와 분리되어 attack/hurt SFX가 항상 다른 소스 사용
+    for (int i = kSfxSourcePoolSize - 1; i >= 0; --i)
     {
         ALint state = 0;
         alGetSourcei(sfx_sources_[i], AL_SOURCE_STATE, &state);
@@ -267,6 +286,61 @@ ALuint SoundManager::GetFreeSFXSource()
             return sfx_sources_[i];
     }
     return 0;
+}
+
+void SoundManager::PlaySFXLast(const std::string& wav_path)
+{
+    auto it = sfx_cache_.find(wav_path);
+    if (it == sfx_cache_.end())
+        return;
+
+    ALuint source = GetLastFreeSFXSource();
+    if (source == 0)
+    {
+        Engine::GetLogger().LogError("SoundManager: No free SFX source available (last)");
+        return;
+    }
+
+    alSourcei(source, AL_BUFFER, static_cast<ALint>(it->second));
+    alSourcei(source, AL_LOOPING, AL_FALSE);
+    alSourcef(source, AL_GAIN, sfx_volume_);
+    alSourcePlay(source);
+
+    if (sfx_callback_)
+        sfx_callback_(wav_path);
+}
+
+void SoundManager::PlaySFXDelayed(const std::string& wav_path, double delay_seconds)
+{
+    // 딜레이가 0 이하면 즉시 재생
+    if (delay_seconds <= 0.0)
+    {
+        PlaySFX(wav_path);
+        return;
+    }
+    pending_sfx_.push_back({ wav_path, delay_seconds });
+}
+
+void SoundManager::Update(double dt)
+{
+    if (pending_sfx_.empty())
+        return;
+
+    for (auto& p : pending_sfx_)
+        p.timer -= dt;
+
+    // 타이머 만료된 항목을 재생하고 큐에서 제거
+    auto it = std::remove_if(pending_sfx_.begin(), pending_sfx_.end(),
+        [this](DelayedSFX& p)
+        {
+            if (p.timer <= 0.0)
+            {
+                PlaySFX(p.path);
+                return true;
+            }
+            return false;
+        });
+    pending_sfx_.erase(it, pending_sfx_.end());
 }
 
 float SoundManager::GetBGMVolume() const 

@@ -31,6 +31,11 @@ const std::string& DiceManager::GetLastNotation() const
   return lastNotation;
 }
 
+const std::vector<DiceManager::RollEntry>& DiceManager::GetRollLog() const
+{
+  return roll_log_;
+}
+
 int DiceManager::RollDice(int count, int sides)
 {
   lastRolls.clear();
@@ -51,6 +56,15 @@ int DiceManager::RollDice(int count, int sides)
 	lastRolls.push_back(roll);
 	sum += roll;
   }
+
+  RollEntry entry;
+  entry.notation = lastNotation;
+  entry.rolls    = lastRolls;
+  entry.total    = sum;
+  roll_log_.push_back(std::move(entry));
+  if (roll_log_.size() > MAX_ROLL_LOG)
+	roll_log_.erase(roll_log_.begin());
+
   return sum;
 }
 

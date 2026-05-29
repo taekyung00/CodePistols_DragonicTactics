@@ -195,13 +195,20 @@ namespace CS230
 	}
 	else
 	{
-	  Engine::GetLogger().LogError("Char '" + std::to_string(c) + "' not found");
+	  // 빈 문자열/제어문자(예: '\0')가 들어오면 fallback. 매 프레임 호출될 수 있어
+	  // LogError 대신 LogDebug로 강등(로그 폭증 방지). 동작은 기존과 동일.
+	  Engine::GetLogger().LogDebug("Font: char code " + std::to_string(static_cast<int>(c)) + " out of range, using fallback");
 	  return char_rects[0];
 	}
   }
 
   Math::ivec2 Font::MeasureText(std::string text)
   {
+	// 빈 문자열이면 text[0]이 '\0'을 참조해 GetCharRect 범위 밖 호출이 된다.
+	// 빈 텍스트는 그릴 내용이 없으므로 최소 크기(1x1)를 반환해 안전 처리.
+	if (text.empty())
+	  return Math::ivec2{ 1, 1 };
+
 	Math::ivec2 text_size = GetCharRect(text[0]).Size();
 	for (size_t i = 1; i < text.size(); ++i)
 	{

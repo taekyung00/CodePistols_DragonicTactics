@@ -41,7 +41,7 @@ Applies ""Haste"" status for 2 turns.
 Move to current location.
 Summons NULL at current location."
 S_ENH_060,Shadow Hide,,Rogue,0,Self:Single:0,FALSE,"Deals 0 damage.
-Applies ""Stealth"" status for 1 turn.
+Applies ""Stealth"" status for 2 turns.
 Move to current location.
 Summons NULL at current location."
 S_DEB_020,Fearful Cry,,"Dragon, Fighter",1,Enemy:Around:3,FALSE,"Deals 0 damage.

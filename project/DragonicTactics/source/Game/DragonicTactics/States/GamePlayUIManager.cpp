@@ -28,6 +28,7 @@ Created:     November 24, 2025
 #include "Game/DragonicTactics/StateComponents/CombatSystem.h"
 #include "Game/DragonicTactics/StateComponents/DiceManager.h"
 #include "Game/DragonicTactics/StateComponents/EventBus.h"
+#include "Game/DragonicTactics/Types/Events.h"
 #include "Game/MainMenu.h"
 
 #include "Engine/Input.h"
@@ -43,6 +44,7 @@ Created:     November 24, 2025
 #include "../Objects/Components/StatsComponent.h"
 
 #include "PlayerInputHandler.h"
+#include <sstream>
 
 // Virtual resolution helpers — mirrors the demo's letterbox approach
 static constexpr int VW = TacticalCamera::VIRTUAL_W;
@@ -76,12 +78,18 @@ void GamePlayUIManager::Update(double dt)
     Math::vec2 mouse_pos   = Engine::GetInput().GetMousePos();
     bool       mouse_click = Engine::GetInput().MouseJustPressed(0);
 
-    // Convert actual screen mouse to virtual 1600x900 coordinates
-    auto actual_win      = Engine::GetWindow().GetSize();
+    // 실제 화면 마우스를 가상 1600x900 좌표로 변환
+    auto actual_win       = Engine::GetWindow().GetSize();
     Math::vec2 virt_mouse = to_virtual(mouse_pos, actual_win);
     m_virtual_mouse_      = virt_mouse;
 
-// ── 1. 슬롯 비활성화 갱신 ─────────────────────────────────────
+    // Feature 3: Cancel hint alpha pulse timer
+    m_cancel_hint_time_ += dt;
+
+    // 매 프레임 팝업창 슬롯 부족 호버 텍스트 초기화
+    popup_hover_reason_ = "";
+
+    // ── 1. 슬롯 비활성화 갱신 ─────────────────────────────────────
     auto* turnMgr = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
     if (turnMgr)
     {
@@ -92,18 +100,19 @@ void GamePlayUIManager::Update(double dt)
             bool        no_ap  = (current->GetActionPoints() == 0);
             bool        is_ai  = current->IsAIControlled();
 
-            auto set_disabled = [&](const std::string& id, bool cond) {
-                button_manager_.SetDisabled(id, cond);
+            // 기본 비활성화/사유 세팅 헬퍼 함수
+            auto set_disabled = [&](const std::string& id, bool disabled, const std::string& reason) {
+                button_manager_.SetDisabled(id, disabled);
+                button_manager_.SetDisableReason(id, disabled ? reason : "");
             };
 
-            set_disabled("slot_attack",    no_ap || is_ai);
-            set_disabled("slot_end_turn",  is_ai);
+            set_disabled("slot_attack", no_ap || is_ai, is_ai ? "Enemy's turn." : "No AP.");
+            set_disabled("slot_end_turn", is_ai || game_end_text != nullptr, is_ai ? "Enemy's turn." : "");
 
-            // [수정된 부분] 요구 레벨 이상의 슬롯이 하나라도 있는지 확인하도록 변경!
-            auto spell_disabled = [&](const std::string& id, int min_lv) {
+            // 요구 AP를 파라미터로 추가 (기본값 1)
+            auto spell_disabled = [&](const std::string& id, int min_lv, bool is_fixed, int req_ap = 1) {
                 bool has_any_slot = false;
                 if (slots) {
-                    // 최대 레벨(5)까지 검사하여 하나라도 남아있다면 true
                     for (int lv = min_lv; lv <= 5; ++lv) {
                         if (slots->HasSlot(lv)) {
                             has_any_slot = true;
@@ -112,31 +121,39 @@ void GamePlayUIManager::Update(double dt)
                     }
                 }
                 
-                // 슬롯이 아예 없거나, AP가 없거나, AI 턴이면 비활성화
-                set_disabled(id, no_ap || !has_any_slot || is_ai);
+                // 현재 AP가 요구 AP보다 적은지 확인
+                bool not_enough_ap = (current->GetActionPoints() < req_ap);
+                bool disabled = is_ai || not_enough_ap || (is_fixed && !has_any_slot);
+
+                std::string reason = "";
+                if (disabled) {
+                    if (is_ai) reason = "Enemy's turn.";
+                    else if (not_enough_ap) reason = "Not enough AP.";
+                    else if (is_fixed && !has_any_slot) reason = "No Spell slot.";
+                }
+                set_disabled(id, disabled, reason);
             };
 
-            spell_disabled("slot_S_ATK_010", 1);
-            spell_disabled("slot_S_ATK_020", 2);
-            spell_disabled("slot_S_ATK_030", 3); // 용의 분노!
-            spell_disabled("slot_S_ATK_040", 3);
-            spell_disabled("slot_S_ENH_040", 1);
-            spell_disabled("slot_S_ENH_050", 1);
-            spell_disabled("slot_S_DEB_020", 1);
-            spell_disabled("slot_S_GEO_010", 2);
-            spell_disabled("slot_S_GEO_020", 1);
+            spell_disabled("slot_S_ATK_010", 1, false);
+            spell_disabled("slot_S_ATK_020", 2, true);  // 고정
+            spell_disabled("slot_S_ATK_030", 3, false); 
+            spell_disabled("slot_S_ATK_040", 3, false, 3);
+            spell_disabled("slot_S_ENH_040", 1, false);
+            spell_disabled("slot_S_ENH_050", 1, true);  // 고정
+            spell_disabled("slot_S_DEB_020", 1, true);  // 고정
+            spell_disabled("slot_S_GEO_010", 2, false);
+            spell_disabled("slot_S_GEO_020", 1, false);
         }
     }
 
-    // ── 2. 업캐스트 팝업 클릭 처리 (button_manager_.Update 보다 먼저) ──
-    if (popup_open_ && mouse_click)
+    // ── 2. 업캐스트 팝업 클릭 및 호버 처리 (button_manager_.Update 보다 먼저) ──
+    if (popup_open_)
     {
-        // 팝업 버튼 geometry 재계산 후 클릭 판별
         int lv_min = 1, lv_max = 5;
         if      (popup_spell_id_ == "S_ATK_010") { lv_min = 1; lv_max = 5; }
         else if (popup_spell_id_ == "S_ATK_030") { lv_min = 3; lv_max = 5; }
         else if (popup_spell_id_ == "S_ATK_040") { lv_min = 3; lv_max = 5; }
-        else if (popup_spell_id_ == "S_ENH_040") { lv_min = 0; lv_max = 5; }
+        else if (popup_spell_id_ == "S_ENH_040") { lv_min = 1; lv_max = 4; }
         else if (popup_spell_id_ == "S_GEO_010") { lv_min = 2; lv_max = 5; }
         else if (popup_spell_id_ == "S_GEO_020") { lv_min = 1; lv_max = 5; }
 
@@ -151,43 +168,136 @@ void GamePlayUIManager::Update(double dt)
                               - (num_levels * BTN_W + (num_levels - 1) * GAP) * 0.5;
 
         bool hit = false;
-        for (int i = 0; i < num_levels && !hit; ++i)
+        for (int i = 0; i < num_levels; ++i)
         {
             int    lv = lv_min + i;
             double bx = start_x + i * (BTN_W + GAP);
-            double by = popup_bottom; // top of button
+            double by = popup_bottom; 
 
+            // 호버링 판정
             if (virt_mouse.x >= bx && virt_mouse.x <= bx + BTN_W &&
                 virt_mouse.y >= by - BTN_H && virt_mouse.y <= by)
             {
-                hit = true;
-                // spell slot 보유 여부 확인
                 SpellSlots* slots = nullptr;
                 if (turnMgr)
                 {
                     Character* c = turnMgr->GetCurrentCharacter();
                     if (c) slots = c->GetSpellSlots();
                 }
-                if (!slots || slots->HasSlot(lv))
-                {
-                    if (m_input_handler_ptr_ && turnMgr)
-                    {
-                        Character* caster = turnMgr->GetCurrentCharacter();
-                        if (caster)
-                            m_input_handler_ptr_->SelectSpell(
-                                popup_spell_id_, caster, lv, button_manager_);
-                    }
+                
+                // 팝업 슬롯 부족 툴팁용 사유 저장
+                if (slots && !slots->HasSlot(lv)) {
+                    popup_hover_reason_ = "No Spell slot.";
+                    popup_hover_pos_    = Math::vec2{ bx + BTN_W * 0.5, by + 10.0 };
                 }
-                popup_open_ = false;
+
+                if (mouse_click) {
+                    hit = true;
+                    if (!slots || slots->HasSlot(lv))
+                    {
+                        if (m_input_handler_ptr_ && turnMgr)
+                        {
+                            Character* caster = turnMgr->GetCurrentCharacter();
+                            if (caster)
+                                m_input_handler_ptr_->SelectSpell(
+                                    popup_spell_id_, caster, lv, button_manager_);
+                        }
+                    }
+                    popup_open_ = false;
+                }
             }
         }
 
-        if (!hit)
+        // 팝업 바깥을 누르면 닫힘
+        if (mouse_click && !hit)
             popup_open_ = false;
     }
 
     // ── 3. 버튼 업데이트 ─────────────────────────────────────────
     button_manager_.Update(virt_mouse, mouse_click);
+
+    // ── 3b. 스펠 슬롯 호버 감지 ──────────────────────────────────
+    {
+        static constexpr std::array<const char*, 9> SPELL_IDS = {
+            "S_ATK_010","S_ATK_020","S_ATK_030","S_ATK_040",
+            "S_ENH_040","S_ENH_050","S_DEB_020","S_GEO_010","S_GEO_020"
+        };
+        hovered_spell_id_.clear();
+        for (int i = 0; i < 9; ++i)
+        {
+            if (button_manager_.IsHovered(std::string("slot_") + SPELL_IDS[i]))
+            {
+                hovered_spell_id_ = SPELL_IDS[i];
+                hovered_slot_cx_  = slot_bar_x_[i + 1] + 32.0; 
+                break;
+            }
+        }
+    }
+
+    // ── 3c. 상태이상 아이콘 호버 감지 ─────────────────────────────
+    hovered_effect_name_.clear();
+    hovered_effect_duration_ = 0;
+    {
+        constexpr double ICON_S    = 32.0;
+        constexpr double PANEL_TOP = 532.0;
+        constexpr double PANEL_BOT = 168.0;
+
+        // Dragon is now displayed in DrawDragonHUD — exclude from this panel
+        int n_rows = 0;
+        for (Character* ch : m_characters)
+            if (ch && ch->GetCharacterType() != CharacterTypes::Dragon)
+                ++n_rows;
+
+        double avail_h  = PANEL_TOP - PANEL_BOT;
+        int    reserve  = std::max(n_rows, 4);
+        double PORT_H   = std::min((avail_h - (reserve - 1) * 4.0 - 8.0) / reserve, 128.0);
+        double ICON_X0  = 8.0 + PORT_H + 4.0;
+        double ROW_STEP = PORT_H + 4.0;
+
+        double pan_top = PANEL_TOP;
+        double row_bot = pan_top - 4.0 - PORT_H;
+
+        for (Character* ch : m_characters)
+        {
+            if (!ch || ch->GetCharacterType() == CharacterTypes::Dragon) continue;
+
+            double icon_y = row_bot + (PORT_H - ICON_S) * 0.5;
+            const auto& effects = ch->GetActiveEffects();
+            for (int ei = 0; ei < static_cast<int>(effects.size()); ++ei)
+            {
+                double icon_x = ICON_X0 + ei * ICON_S;
+                if (virt_mouse.x >= icon_x && virt_mouse.x < icon_x + ICON_S &&
+                    virt_mouse.y >= icon_y && virt_mouse.y < icon_y + ICON_S)
+                {
+                    hovered_effect_name_     = effects[ei].name;
+                    hovered_effect_duration_ = effects[ei].duration;
+                    break;
+                }
+            }
+            if (!hovered_effect_name_.empty()) break;
+            row_bot -= ROW_STEP;
+        }
+
+        // Dragon HUD 상태이상 아이콘 호버 감지
+        if (hovered_effect_name_.empty() && m_player_)
+        {
+            constexpr double PAN_BOT_D = static_cast<double>(VH) - 8.0 - 352.0; // 540
+            constexpr double ICON_Y_D  = PAN_BOT_D + 10.0;                       // 550
+
+            const auto& dragon_effects = m_player_->GetActiveEffects();
+            for (int ei = 0; ei < static_cast<int>(dragon_effects.size()); ++ei)
+            {
+                double icon_x = 8.0 + 16.0 + static_cast<double>(ei) * (ICON_S + 4.0);
+                if (virt_mouse.x >= icon_x && virt_mouse.x < icon_x + ICON_S &&
+                    virt_mouse.y >= ICON_Y_D  && virt_mouse.y < ICON_Y_D + ICON_S)
+                {
+                    hovered_effect_name_     = dragon_effects[ei].name;
+                    hovered_effect_duration_ = dragon_effects[ei].duration;
+                    break;
+                }
+            }
+        }
+    }
 
     // ── 4. 호버 캐릭터 감지 ──────────────────────────────────────
     hovered_character_ = nullptr;
@@ -196,85 +306,37 @@ void GamePlayUIManager::Update(double dt)
     {
         Math::vec2 world_pos = mouse_pos;
         if (m_camera_)
-            world_pos = m_camera_->ScreenToWorld(mouse_pos, Engine::GetWindow().GetSize());
-        int gx = static_cast<int>(world_pos.x / GridSystem::TILE_SIZE);
-        int gy = static_cast<int>(world_pos.y / GridSystem::TILE_SIZE);
-        Math::ivec2 gp{ gx, gy };
-        if (grid->IsValidTile(gp))
-            hovered_character_ = grid->GetCharacterAt(gp);
-    }
-
-    // ── 5. Dragon 호버 → 이동 범위 미리 표시 ─────────────────────
-    // None 상태 + 플레이어 턴일 때만, 이전 호버 상태 변화 시에만 EnableMovement
-    bool in_none_state = m_input_handler_ptr_ &&
-                         (m_input_handler_ptr_->GetCurrentState() == PlayerInputHandler::ActionState::None);
-    if (grid && in_none_state && turnMgr)
-    {
-        Character* current_actor = turnMgr->GetCurrentCharacter();
-        bool is_player_turn = current_actor && !current_actor->IsAIControlled();
-        if (is_player_turn)
         {
-            if (hovered_character_ && !hovered_character_->IsAIControlled())
+            world_pos = m_camera_->ScreenToWorld(mouse_pos, actual_win);
+        }
+
+        int grid_x = static_cast<int>(std::floor(world_pos.x / GridSystem::TILE_SIZE));
+        int grid_y = static_cast<int>(std::floor(world_pos.y / GridSystem::TILE_SIZE));
+
+        for (Character* ch : m_characters)
+        {
+            if (ch && ch->IsAlive())
             {
-                grid->EnableMovementMode(
-                    hovered_character_->GetGridPosition()->Get(),
-                    hovered_character_->GetMovementRange());
-            }
-            else if (grid->IsMovementModeActive())
-            {
-                grid->DisableMovementMode();
+                auto* pos_comp = ch->GetGridPosition();
+                if (pos_comp && pos_comp->Get() == Math::ivec2{ grid_x, grid_y })
+                {
+                    hovered_character_ = ch;
+                    break;
+                }
             }
         }
     }
 
-    // ── 6. 데미지 텍스트 수명 갱신 ─────────────────────────────
-    for (auto& text : m_damage_texts) text.lifetime -= dt;
+    // ── 5. 데미지 텍스트 수명 감소 및 만료 제거 ───────────────────
+    if (m_notice_timer_ > 0.0)
+        m_notice_timer_ -= dt;
+
+    for (auto& text : m_damage_texts)
+        text.lifetime -= dt;
     m_damage_texts.erase(
         std::remove_if(m_damage_texts.begin(), m_damage_texts.end(),
-            [](const DamageText& t) { return t.lifetime <= 0; }),
+                       [](const DamageText& t) { return t.lifetime <= 0.0; }),
         m_damage_texts.end());
-
-    // ── 7. 배틀 로그 스크롤 입력 처리 ──────────────────────────
-    if (show_battle_log_)
-    {
-        bool over_panel = virt_mouse.x >= LOG_PANEL_X && virt_mouse.x <= LOG_PANEL_X + LOG_PANEL_W
-                       && virt_mouse.y <= LOG_PANEL_Y && virt_mouse.y >= LOG_PANEL_Y - LOG_PANEL_H;
-
-        if (over_panel)
-        {
-            double wheel = Engine::GetInput().GetMouseScroll();
-            if (wheel != 0.0)
-                log_scroll_offset_ -= wheel * 40.0;
-
-            bool over_scrollbar = virt_mouse.x >= LOG_SB_X && virt_mouse.x <= LOG_SB_X + LOG_SB_W;
-            if (Engine::GetInput().MouseJustPressed(0) && over_scrollbar)
-            {
-                log_scrollbar_dragging_ = true;
-                log_drag_start_mouse_y_ = virt_mouse.y;
-                log_drag_start_offset_  = log_scroll_offset_;
-            }
-        }
-
-        if (log_scrollbar_dragging_)
-        {
-            if (Engine::GetInput().MouseDown(0))
-            {
-                double track_h      = LOG_PANEL_H - LOG_TITLE_H;
-                double total_h      = ComputeLogContentHeight();
-                double scroll_range = std::max(0.0, total_h - track_h);
-                double drag_dy      = log_drag_start_mouse_y_ - virt_mouse.y;
-                log_scroll_offset_  = log_drag_start_offset_ + drag_dy * (scroll_range / track_h);
-            }
-            else
-                log_scrollbar_dragging_ = false;
-        }
-
-        // 클램프
-        double visible_h   = LOG_PANEL_H - LOG_TITLE_H;
-        double total_h     = ComputeLogContentHeight();
-        double max_scroll  = std::max(0.0, total_h - visible_h);
-        log_scroll_offset_ = std::max(0.0, std::min(log_scroll_offset_, max_scroll));
-    }
 }
 
 void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_matrix)
@@ -284,8 +346,16 @@ void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_
     DrawUicastPopup();
     DrawActionLabel();
     DrawTurnIndicator();
+    DrawCancelHint();
     DrawHoverTooltip();
+    DrawSpellTooltip();
+    DrawDragonHUD();
+    DrawStatusEffectPanel();
+    DrawStatusEffectTooltip();
     DrawBattleLog();
+    DrawNotice();
+    DrawDisableReasonTooltip();
+    DrawDragonWorldHoverTooltip();
 
     auto& textMng = Engine::GetTextManager();
 
@@ -312,6 +382,30 @@ void GamePlayUIManager::SetCharacters(const std::vector<Character*>& characters)
 {
   m_characters = characters;
   Engine::GetLogger().LogEvent("GamePlayUIManager: Tracking " + std::to_string(m_characters.size()) + " characters for stats display");
+
+  auto* bus = Engine::GetGameStateManager().GetGSComponent<EventBus>();
+  if (bus)
+  {
+    bus->Subscribe<CharacterDeathEvent>([this](const CharacterDeathEvent& e) {
+      for (auto& ptr : m_characters)
+      {
+        if (ptr == e.character)
+        {
+          ptr = nullptr;
+          break;
+        }
+      }
+      if (m_player_ == e.character)
+      {
+        m_player_ = nullptr;
+      }
+    });
+  }
+}
+
+void GamePlayUIManager::SetPlayer(Character* player)
+{
+  m_player_ = player;
 }
 
 void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
@@ -464,7 +558,7 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
         button_manager_.AddButton(b);
     }
 
-    // slot 5: Mana Conversion (upcast Lv0~5)
+    // slot 5: Mana Conversion (upcast Lv1~4)
     {
         int idx = 5;
         Button b;
@@ -612,6 +706,53 @@ ButtonManager& GamePlayUIManager::GetButtons()
   return button_manager_;
 }
 
+void GamePlayUIManager::InitSpellTooltips()
+{
+    static constexpr std::array<const char*, 9> SPELL_IDS = {
+        "S_ATK_010", "S_ATK_020", "S_ATK_030", "S_ATK_040",
+        "S_ENH_040", "S_ENH_050", "S_DEB_020", "S_GEO_010", "S_GEO_020"
+    };
+
+    auto* spell_sys = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
+    if (!spell_sys) return;
+
+    for (const char* id : SPELL_IDS)
+    {
+        const SpellData* data = spell_sys->GetSpellData(id);
+        if (!data) continue;
+
+        std::vector<std::string> lines;
+        lines.push_back(data->spell_name + " [Lv " + std::to_string(data->spell_level) + "]");
+
+        std::istringstream ss(data->effect_raw);
+        std::string line;
+        while (std::getline(ss, line))
+        {
+            if (line.empty()) continue;
+            if (line.find("\"Basic\"") != std::string::npos) continue;
+            if (line == "Move to current location.") continue;
+            if (line.find("Summons NULL") != std::string::npos) continue;
+            if (line == "Deals 0 damage.") continue;
+            lines.push_back(line);
+        }
+
+        spell_tooltip_cache_[id] = std::move(lines);
+
+        // 각 줄의 실제 화면 폭(scale 적용) 중 최댓값 → 박스 폭 사전 계산
+        constexpr double PAD = 10.0;
+        auto& textMgr2 = Engine::GetTextManager();
+        double max_text_w = 0.0;
+        const auto& cached = spell_tooltip_cache_[id];
+        if (!cached.empty())
+            max_text_w = textMgr2.CalculateTextSize(cached[0], Fonts::Kings).x * 0.5;
+        for (size_t li = 1; li < cached.size(); ++li)
+            max_text_w = std::max(max_text_w,
+                textMgr2.CalculateTextSize(cached[li], Fonts::Kings).x * 0.4);
+        spell_tooltip_widths_[id] = std::min(max_text_w + PAD * 2.0,
+                                             static_cast<double>(VW) - 20.0);
+    }
+}
+
 void GamePlayUIManager::OnTurnStarted(const std::string& actor_name, int turn_number, bool is_player, int round_number)
 {
   // 새 항목 추가 전에 "최신 로그를 보고 있었는가" 판정
@@ -669,6 +810,13 @@ bool GamePlayUIManager::IsMouseOverLogPanel() const
       && m_virtual_mouse_.y <= LOG_PANEL_Y && m_virtual_mouse_.y >= LOG_PANEL_Y - LOG_PANEL_H;
 }
 
+void GamePlayUIManager::ScrollLog(double delta)
+{
+  double visible_h  = LOG_PANEL_H - LOG_TITLE_H;
+  double max_scroll = std::max(0.0, ComputeLogContentHeight() - visible_h);
+  log_scroll_offset_ = std::clamp(log_scroll_offset_ - delta * 30.0, 0.0, max_scroll);
+}
+
 void GamePlayUIManager::AddBattleLogEntry(const std::string& line)
 {
   if (!turn_history_.empty())
@@ -708,7 +856,7 @@ void GamePlayUIManager::DrawUicastPopup()
     if      (popup_spell_id_ == "S_ATK_010") { lv_min = 1; lv_max = 5; }
     else if (popup_spell_id_ == "S_ATK_030") { lv_min = 3; lv_max = 5; }
     else if (popup_spell_id_ == "S_ATK_040") { lv_min = 3; lv_max = 5; }
-    else if (popup_spell_id_ == "S_ENH_040") { lv_min = 0; lv_max = 5; }
+    else if (popup_spell_id_ == "S_ENH_040") { lv_min = 1; lv_max = 4; }
     else if (popup_spell_id_ == "S_GEO_010") { lv_min = 2; lv_max = 5; }
     else if (popup_spell_id_ == "S_GEO_020") { lv_min = 1; lv_max = 5; }
 
@@ -898,7 +1046,7 @@ void GamePlayUIManager::DrawCharacterStatsPanel([[maybe_unused]] Math::Transform
   for (Character* character : m_characters)
   {
 	if (character == nullptr) continue;
-
+    
 	double text_x_pos = panel_x + text_left_margin;
 
 	Engine::GetTextManager().DrawText(character->TypeName(),
@@ -947,6 +1095,294 @@ void GamePlayUIManager::DrawCharacterStatsPanel([[maybe_unused]] Math::Transform
 
 	current_y -= panel_height_per_char + 40.0;
   }
+}
+
+void GamePlayUIManager::DrawSpellTooltip()
+{
+    if (hovered_spell_id_.empty()) return;
+    if (popup_open_) return;
+
+    auto it = spell_tooltip_cache_.find(hovered_spell_id_);
+    if (it == spell_tooltip_cache_.end() || it->second.empty()) return;
+
+    const auto& lines = it->second;
+    auto& textMgr  = Engine::GetTextManager();
+    auto* renderer = CS230::TextureManager::GetRenderer2D();
+
+    auto wit = spell_tooltip_widths_.find(hovered_spell_id_);
+    double TT_W = (wit != spell_tooltip_widths_.end()) ? wit->second : 380.0;
+    constexpr double LH   = 24.0;
+    constexpr double PAD  = 10.0;
+    double TT_H = PAD * 2.0 + static_cast<double>(lines.size()) * LH;
+
+    double tip_x = hovered_slot_cx_ - TT_W * 0.5;
+    if (tip_x < 4.0) tip_x = 4.0;
+    if (tip_x + TT_W > static_cast<double>(VW) - 4.0)
+        tip_x = static_cast<double>(VW) - TT_W - 4.0;
+
+    // 슬롯 바 아이콘 상단(center + 32 = 144) 기준으로 위쪽에 배치
+    double tip_top = slot_bar_center_y_ + 32.0 + 8.0 + TT_H;
+
+    Math::TransformationMatrix bg =
+        Math::TranslationMatrix(Math::vec2{ tip_x + TT_W * 0.5, tip_top - TT_H * 0.5 }) *
+        Math::ScaleMatrix(Math::vec2{ TT_W, TT_H });
+    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5f, DrawDepth::UI + 0.001f);
+
+    double ty = tip_top - PAD - 22;
+
+    // 첫 줄: 스펠 이름 + 레벨 (금색)
+    textMgr.DrawText(lines[0], Math::vec2{ tip_x + PAD, ty },
+        Fonts::Kings, { 0.5, 0.5 }, CS200::GOLD, DrawDepth::UI);
+    ty -= LH;
+
+    // 이후 줄: 효과 설명 (흰색)
+    for (size_t i = 1; i < lines.size(); ++i)
+    {
+        textMgr.DrawText(lines[i], Math::vec2{ tip_x + PAD, ty },
+            Fonts::Kings, { 0.4, 0.4 }, CS200::WHITE, DrawDepth::UI);
+        ty -= LH;
+    }
+}
+
+void GamePlayUIManager::InitStatusEffectIcons()
+{
+    static const std::pair<const char*, const char*> ICONS[] = {
+        {"Blessing",   "Assets/images/blessing.png"},
+        {"Lifesteal",  "Assets/images/lifesteal.png"},
+        {"Frenzy",     "Assets/images/frenzy.png"},
+        {"Exhaustion", "Assets/images/exhaustion.png"},
+        {"Purify",     "Assets/images/purify.png"},
+        {"Curse",      "Assets/images/curse.png"},
+        {"Haste",      "Assets/images/haste.png"},
+        {"Stealth",    "Assets/images/stealth.png"},
+        {"Fear",       "Assets/images/fear.png"},
+    };
+    for (const auto& [name, path] : ICONS)
+        status_icon_textures_[name] = Engine::GetTextureManager().Load(path);
+
+    effect_descriptions_ = {
+        {"Lifesteal",  "Recover 50% of damage dealt this turn (round down)"},
+        {"Frenzy",     "If next attack deals 10+ damage, target receives random debuff; otherwise, the Fighter receives it."},
+        {"Exhaustion", "Speed and Action points become 0 next turn"},
+        {"Purify",     "Removes all status effects from self"},
+        {"Blessing",   "All damage taken -3, all damage dealt +3"},
+        {"Curse",      "All damage taken +3, all damage dealt -3"},
+        {"Haste",      "Speed +1, Actions +1"},
+        {"Stealth",    "Untargetable. First damage next turn doubled. Removed on attack."},
+        {"Fear",       "All damage dealt -3, speed -1"},
+    };
+
+    // 효과별 툴팁 폭 사전 계산
+    {
+        constexpr double PAD = 10.0;
+        auto& tm = Engine::GetTextManager();
+        for (const auto& [name, desc] : effect_descriptions_)
+        {
+            double w0 = tm.CalculateTextSize(name,                   Fonts::Kings).x * 0.5;
+            double w1 = tm.CalculateTextSize("Duration: 99 turn(s)", Fonts::Kings).x * 0.4;
+            double w2 = tm.CalculateTextSize(desc,                   Fonts::Kings).x * 0.35;
+            double max_w = std::max({ w0, w1, w2 });
+            effect_tooltip_widths_[name] = std::min(max_w + PAD * 2.0,
+                                                    static_cast<double>(VW) - 20.0);
+        }
+    }
+
+    // Portrait textures for the left-side status panel
+    portrait_textures_[static_cast<int>(CharacterTypes::Dragon)]  = Engine::GetTextureManager().Load("Assets/images/dragon.png");
+    portrait_textures_[static_cast<int>(CharacterTypes::Fighter)] = Engine::GetTextureManager().Load("Assets/images/fighter.png");
+    portrait_textures_[static_cast<int>(CharacterTypes::Cleric)]  = Engine::GetTextureManager().Load("Assets/images/cleric_p.png");
+    portrait_textures_[static_cast<int>(CharacterTypes::Rogue)]   = Engine::GetTextureManager().Load("Assets/images/rogue_p.png");
+    portrait_textures_[static_cast<int>(CharacterTypes::Wizard)]  = Engine::GetTextureManager().Load("Assets/images/wizard_p.png");
+}
+
+void GamePlayUIManager::DrawWorld()
+{
+    auto* renderer = CS230::TextureManager::GetRenderer2D();
+    constexpr double ts = GridSystem::TILE_SIZE;
+
+    // ── 호버 타일 흰색 테두리 ──
+    if (m_camera_)
+    {
+        Math::vec2 mouse_pos = Engine::GetInput().GetMousePos();
+        auto actual_win = Engine::GetWindow().GetSize();
+        Math::vec2 world_pos = m_camera_->ScreenToWorld(mouse_pos, actual_win);
+
+        int gx = static_cast<int>(std::floor(world_pos.x / ts));
+        int gy = static_cast<int>(std::floor(world_pos.y / ts));
+
+        auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+        if (grid && gx >= 1 && gx < grid->GetWidth() - 1 && gy >= 1 && gy < grid->GetHeight() - 1)
+        {
+            double cx = gx * ts + ts * 0.5;
+            double cy = gy * ts + ts * 0.5;
+            uint32_t fill = Engine::GetInput().MouseDown(0) ? 0x00000066u : 0x00000000u;
+            renderer->DrawRectangle(
+                Math::TranslationMatrix(Math::vec2{ cx, cy }) * Math::ScaleMatrix(Math::vec2{ ts, ts }),
+                fill, 0xFFFFFFFF, 3.0, DrawDepth::OVERLAY);
+        }
+    }
+
+    // ── 현재 턴 AI 캐릭터 빨간색 테두리 ──
+    {
+        auto* turnMgr = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
+        if (turnMgr)
+        {
+            Character* cur = turnMgr->GetCurrentCharacter();
+            if (cur && cur->GetCharacterType() != CharacterTypes::Dragon)
+            {
+                Math::vec2 pos = cur->GetPosition();
+                int gx = static_cast<int>(std::floor(pos.x / ts));
+                int gy = static_cast<int>(std::floor(pos.y / ts));
+                double cx = gx * ts + ts * 0.5;
+                double cy = gy * ts + ts * 0.5;
+                renderer->DrawRectangle(
+                    Math::TranslationMatrix(Math::vec2{ cx, cy }) * Math::ScaleMatrix(Math::vec2{ ts, ts }),
+                    0x00000000u, 0xFF0000FFu, 3.0, DrawDepth::OVERLAY);
+            }
+        }
+    }
+
+    constexpr double ICON_SIZE = 24.0; // 캐릭터 위에 띄울 아이콘의 작은 사이즈
+
+    for (Character* ch : m_characters)
+    {
+        // 살아있는 캐릭터만 확인
+        if (!ch || !ch->IsAlive()) continue;
+
+        const auto& effects = ch->GetActiveEffects();
+        if (effects.empty()) continue;
+
+        // 캐릭터의 월드 포지션을 기반으로 렌더링 위치 계산
+        Math::vec2 pos = ch->GetPosition();
+        
+        // 캐릭터 타일 왼쪽 하단에서 시작
+        double start_x = pos.x;
+        double start_y = pos.y;
+
+        for (size_t i = 0; i < effects.size(); ++i)
+        {
+            auto iit = status_icon_textures_.find(effects[i].name);
+            if (iit != status_icon_textures_.end() && iit->second)
+            {
+                // 원본 텍스처 크기를 우리가 원하는 ICON_SIZE에 맞게 스케일링
+                double scale_x = ICON_SIZE / static_cast<double>(iit->second->GetSize().x);
+                double scale_y = ICON_SIZE / static_cast<double>(iit->second->GetSize().y);
+
+                Math::TransformationMatrix mat =
+                    Math::TranslationMatrix(Math::vec2{ start_x + (i * ICON_SIZE), start_y }) *
+                    Math::ScaleMatrix(Math::vec2{ scale_x, scale_y });
+
+                // UI 뎁스에 그려서 항상 가장 위에 보이도록 설정
+                iit->second->Draw(mat, 0xFFFFFFFF, DrawDepth::UI); 
+            }
+        }
+    }
+}
+
+void GamePlayUIManager::DrawStatusEffectPanel()
+{
+    if (m_characters.empty()) return;
+
+    auto* renderer = CS230::TextureManager::GetRenderer2D();
+    constexpr double ICON_S    = 32.0;
+    constexpr double PAN_X     = 8.0;
+    constexpr double PANEL_TOP = 532.0;   // 8px below Dragon HUD (PAN_BOT=540)
+    constexpr double PANEL_BOT = 168.0;   // 8px above slot bar top (160)
+
+    // Dragon is shown in DrawDragonHUD — exclude from this panel
+    int n_rows = 0;
+    for (Character* ch : m_characters)
+        if (ch && ch->GetCharacterType() != CharacterTypes::Dragon)
+            ++n_rows;
+    if (n_rows == 0) return;
+
+    // 항상 4슬롯 예약 — 캐릭터 추가 여분 공간 확보, 최대 128px
+    double avail_h    = PANEL_TOP - PANEL_BOT;
+    int    reserve    = std::max(n_rows, 4);
+    double PORT_D     = std::min((avail_h - (reserve - 1) * 4.0 - 8.0) / reserve, 128.0);
+    double ICON_X0    = PAN_X + PORT_D + 4.0;
+    double ROW_STEP   = PORT_D + 4.0;
+
+    double pan_h   = reserve * PORT_D + (reserve - 1) * 4.0 + 8.0;
+    double pan_w   = 300.0;
+    double pan_top = PANEL_TOP;
+    double pan_cy  = pan_top - pan_h * 0.5;
+
+    Math::TransformationMatrix bg =
+        Math::TranslationMatrix(Math::vec2{ PAN_X + pan_w * 0.5, pan_cy }) *
+        Math::ScaleMatrix(Math::vec2{ pan_w, pan_h });
+    renderer->DrawRectangle(bg, 0x1a1a2e99, 0x5555aaff, 1.5, DrawDepth::UI + 0.02f);
+
+    double row_bot = pan_top - 4.0 - PORT_D;
+
+    for (Character* ch : m_characters)
+    {
+        if (!ch || ch->GetCharacterType() == CharacterTypes::Dragon) continue;
+
+        auto pit = portrait_textures_.find(static_cast<int>(ch->GetCharacterType()));
+        if (pit != portrait_textures_.end() && pit->second)
+        {
+            uint32_t tint = ch->IsAlive() ? 0xFFFFFFFF : 0x666666FF;
+            double scl = PORT_D / static_cast<double>(pit->second->GetSize().x);
+            pit->second->Draw(
+                Math::TranslationMatrix(Math::vec2{ PAN_X, row_bot }) *
+                Math::ScaleMatrix(Math::vec2{ scl, scl }),
+                tint, DrawDepth::UI + 0.015f);
+        }
+
+        const auto& effects = ch->GetActiveEffects();
+        double icon_y = row_bot + (PORT_D - ICON_S) * 0.5;
+        for (int ei = 0; ei < static_cast<int>(effects.size()); ++ei)
+        {
+            auto iit = status_icon_textures_.find(effects[ei].name);
+            if (iit == status_icon_textures_.end() || !iit->second) continue;
+            double icon_x = ICON_X0 + ei * ICON_S;
+            iit->second->Draw(
+                Math::TranslationMatrix(Math::vec2{ icon_x, icon_y }),
+                0xFFFFFFFF, DrawDepth::UI + 0.01f);
+        }
+
+        row_bot -= ROW_STEP;
+    }
+}
+
+void GamePlayUIManager::DrawStatusEffectTooltip()
+{
+    if (hovered_effect_name_.empty()) return;
+
+    auto& textMgr  = Engine::GetTextManager();
+    auto* renderer = CS230::TextureManager::GetRenderer2D();
+    Math::vec2 mouse = m_virtual_mouse_;
+
+    auto wit = effect_tooltip_widths_.find(hovered_effect_name_);
+    double TT_W = (wit != effect_tooltip_widths_.end()) ? wit->second : 340.0;
+    constexpr double LH   = 24.0;
+    constexpr double PAD  = 10.0;
+    constexpr double TT_H = PAD * 2.0 + LH * 3.0;
+
+    double tip_x = mouse.x + 16.0;
+    if (tip_x + TT_W > static_cast<double>(VW) - 4.0)
+        tip_x = mouse.x - TT_W - 8.0;
+    double tip_top = mouse.y + TT_H;
+
+    Math::TransformationMatrix bg =
+        Math::TranslationMatrix(Math::vec2{ tip_x + TT_W * 0.5, tip_top - TT_H * 0.5 }) *
+        Math::ScaleMatrix(Math::vec2{ TT_W, TT_H });
+    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5f, DrawDepth::UI - 0.003f);
+
+    double ty = tip_top - PAD - 22;
+    textMgr.DrawText(hovered_effect_name_,
+        Math::vec2{ tip_x + PAD, ty }, Fonts::Kings, {0.5, 0.5}, CS200::GOLD, DrawDepth::UI - 0.004f);
+    ty -= LH;
+
+    textMgr.DrawText("Duration: " + std::to_string(hovered_effect_duration_) + " turn(s)",
+        Math::vec2{ tip_x + PAD, ty }, Fonts::Kings, {0.4, 0.4}, CS200::YELLOW, DrawDepth::UI - 0.004f);
+    ty -= LH;
+
+    auto dit = effect_descriptions_.find(hovered_effect_name_);
+    if (dit != effect_descriptions_.end())
+        textMgr.DrawText(dit->second, Math::vec2{ tip_x + PAD, ty },
+            Fonts::Kings, {0.35, 0.35}, CS200::WHITE, DrawDepth::UI - 0.004f);
 }
 
 void GamePlayUIManager::DrawActionLabel()
@@ -1111,4 +1547,505 @@ void GamePlayUIManager::DrawBattleLog()
       Math::ScaleMatrix(Math::vec2{ LOG_SB_W, thumb_h });
     renderer->DrawRectangle(thumb_mat, thumb_color, 0x00000000, 0.0, DrawDepth::UI - 0.02f);
   }
+}
+
+void GamePlayUIManager::DrawDisableReasonTooltip()
+{
+    std::string reason_text = "";
+    double tip_x = 0.0;
+    double box_center_y = 0.0; 
+
+    constexpr double LH   = 24.0;
+    constexpr double PAD  = 10.0;
+    constexpr double TT_H = PAD * 2.0 + LH; // 툴팁의 총 높이
+
+    // 1. 팝업창 슬롯 호버링 (버튼 위에 띄우기)
+    if (!popup_hover_reason_.empty()) 
+    {
+        reason_text = popup_hover_reason_;
+        double TT_W = static_cast<double>(reason_text.size()) * 11.0 + 20.0;
+        
+        // 팝업 중앙 정렬
+        tip_x = popup_hover_pos_.x - TT_W * 0.5;
+        
+        // 팝업 버튼 바로 위에 박스 안착
+        double box_bottom_y = popup_hover_pos_.y;
+        box_center_y = box_bottom_y + (TT_H * 0.5) + 15; 
+    }
+    // 2. 메인 스킬 버튼 호버링 (정립해주신 위치 적용: 버튼 아래, X + 30, Y - 60)
+    else 
+    {
+        const Button* hovered_disabled_btn = nullptr;
+        for (const auto& btn : button_manager_.GetButtons()) 
+        {
+            if (btn.visible && btn.disabled && btn.hovered && !btn.disable_reason.empty()) 
+            {
+                hovered_disabled_btn = &btn;
+                break;
+            }
+        }
+        
+        if (hovered_disabled_btn) {
+            reason_text = hovered_disabled_btn->disable_reason;
+            double TT_W = static_cast<double>(reason_text.size()) * 11.0 + 20.0;
+            
+            // [적용] 유저 커스텀 X 위치
+            tip_x = hovered_disabled_btn->position.x - TT_W * 0.5 + 30.0;
+            
+            // [적용] 유저 커스텀 Y 위치
+            double target_pos_y = hovered_disabled_btn->position.y - (hovered_disabled_btn->size.y * 0.5);
+            double tip_top = target_pos_y - 60.0; 
+            
+            // 계산된 top을 기준으로 박스 중앙값 설정
+            box_center_y = tip_top - (TT_H * 0.5); 
+        }
+    }
+
+    if (reason_text.empty()) return;
+
+    auto& textMgr  = Engine::GetTextManager();
+    auto* renderer = CS230::TextureManager::GetRenderer2D();
+
+    double TT_W = static_cast<double>(reason_text.size()) * 11.0 + 20.0; 
+
+    // 화면 밖 이탈 방지
+    if (tip_x < 4.0) tip_x = 4.0;
+    if (tip_x + TT_W > static_cast<double>(VW) - 4.0) tip_x = static_cast<double>(VW) - TT_W - 4.0;
+
+    // 1. 배경 박스 그리기
+    Math::TransformationMatrix bg =
+        Math::TranslationMatrix(Math::vec2{ tip_x + TT_W * 0.5, box_center_y }) *
+        Math::ScaleMatrix(Math::vec2{ TT_W, TT_H });
+    
+    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5f, DrawDepth::UI + 0.001f);
+
+    // 2. 텍스트 렌더링 (텍스트 중앙 정렬)
+    double ty = (box_center_y - TT_H * 0.5) + PAD + 1.0; 
+
+    textMgr.DrawText(reason_text,
+        Math::vec2{ tip_x + PAD, ty }, Fonts::Kings, {0.4, 0.4}, CS200::RED, DrawDepth::UI);
+}
+
+void GamePlayUIManager::DrawDragonWorldHoverTooltip()
+{
+    if (hovered_character_ != nullptr && 
+        hovered_character_->IsAlive() && 
+        hovered_character_->GetCharacterType() == CharacterTypes::Dragon)
+    {
+        if (hovered_character_->GetMovementRange() <= 0)
+        {
+            auto& textMgr = Engine::GetTextManager();
+            auto* renderer = CS230::TextureManager::GetRenderer2D();
+            
+            std::string reason_text = "No Speed.";
+            
+            // [핵심] 드래곤의 월드 위치를 가져와 화면 위치로 변환합니다.
+            Math::vec2 target_pos = m_virtual_mouse_; // (변환 실패 시 마우스 위치를 임시 백업으로 사용)
+            
+            auto* pos_comp = hovered_character_->GetGridPosition();
+            if (pos_comp && m_camera_) 
+            {
+                // 1. 그리드 타일의 정중앙 월드 좌표 계산
+                double tile_s = GridSystem::TILE_SIZE;
+                Math::vec2 world_pos = Math::vec2{
+                    static_cast<double>(pos_comp->Get().x) * tile_s + tile_s * 0.5,
+                    static_cast<double>(pos_comp->Get().y) * tile_s + tile_s * 0.5
+                };
+                
+                // 2. 카메라를 이용해 월드 좌표를 스크린 좌표로, 다시 UI용 가상 좌표로 변환
+                auto actual_win = Engine::GetWindow().GetSize();
+                Math::vec2 screen_pos = m_camera_->WorldToScreen(world_pos, actual_win);
+                target_pos = to_virtual(screen_pos, actual_win);
+                
+                // 3. 드래곤 머리 위로 예쁘게 띄우기 위해 Y축 오프셋 추가
+                target_pos.y += 60.0; 
+            }
+
+            double TT_W = static_cast<double>(reason_text.size()) * 11.0 + 20.0; 
+            constexpr double LH   = 24.0;
+            constexpr double PAD  = 10.0;
+            constexpr double TT_H = PAD * 2.0 + LH;
+
+            // X를 중앙에 배치
+            double tip_x = target_pos.x - TT_W * 0.5;
+            if (tip_x < 4.0) tip_x = 4.0;
+            if (tip_x + TT_W > static_cast<double>(VW) - 4.0) tip_x = static_cast<double>(VW) - TT_W - 4.0;
+            
+            double tip_top = target_pos.y + TT_H;
+
+            // 배경 및 텍스트 렌더링
+            Math::TransformationMatrix bg =
+                Math::TranslationMatrix(Math::vec2{ tip_x + TT_W * 0.5, tip_top - TT_H * 0.5 }) *
+                Math::ScaleMatrix(Math::vec2{ TT_W, TT_H });
+            renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5f, DrawDepth::UI + 0.001f);
+            
+            double ty = tip_top - PAD - 22;
+            textMgr.DrawText(reason_text,
+                Math::vec2{ tip_x + PAD, ty }, Fonts::Kings, {0.4, 0.4}, CS200::RED, DrawDepth::UI);
+        }
+    }
+}
+
+void GamePlayUIManager::ShowNotice(const std::string& text)
+{
+    m_notice_text_  = text;
+    m_notice_timer_ = NOTICE_DURATION;
+}
+
+void GamePlayUIManager::DrawNotice()
+{
+    if (m_notice_timer_ <= 0.0) return;
+
+    auto* renderer = CS230::TextureManager::GetRenderer2D();
+    auto& textMgr  = Engine::GetTextManager();
+
+    constexpr double cx = VW * 0.5;
+    // TurnIndicator 아래 (panel_cy ≈ 868) 에서 NOTICE_H + 8 px 아래
+    constexpr double cy = static_cast<double>(VH) - 8.0 - 48.0 - 8.0 - NOTICE_H * 0.5;
+
+    Math::TransformationMatrix bg =
+        Math::TranslationMatrix(Math::vec2{ cx, cy }) *
+        Math::ScaleMatrix(Math::vec2{ NOTICE_W, NOTICE_H });
+    renderer->DrawRectangle(bg, 0x1a0a0aee, 0xff5533ff, 2.0, DrawDepth::UI - 0.003f);
+
+    textMgr.DrawText(m_notice_text_,
+        Math::vec2{ cx - NOTICE_W * 0.5 + 12.0, cy - 10.0 },
+        Fonts::Kings, { 0.42, 0.42 }, CS200::WHITE, DrawDepth::UI - 0.004f);
+}
+
+void GamePlayUIManager::DrawHoveredTileOutline()
+{
+    if (!m_camera_) return;
+
+    auto actual_win = Engine::GetWindow().GetSize();
+    Math::vec2 mouse_pos = Engine::GetInput().GetMousePos();
+    
+    Math::vec2 world_pos = m_camera_->ScreenToWorld(mouse_pos, actual_win);
+    double tile_size = GridSystem::TILE_SIZE;
+
+    int grid_x = static_cast<int>(std::floor(world_pos.x / tile_size));
+    int grid_y = static_cast<int>(std::floor(world_pos.y / tile_size));
+
+    // ==========================================================
+    // [핵심 추가] 맵 범위를 벗어난 경우 그리지 않고 렌더링 취소
+    // ==========================================================
+    // TODO: 프로젝트의 실제 맵 크기에 맞게 가로/세로 최대 타일 개수를 넣어주세요.
+    // 만약 GridSystem 컴포넌트에서 맵 크기를 가져올 수 있다면 그 값을 사용하면 가장 좋습니다!
+    int map_width  = Engine::GetGameStateManager().GetGSComponent<GridSystem>()->GetWidth(); // 예시: 맵의 가로 타일 개수
+    int map_height = Engine::GetGameStateManager().GetGSComponent<GridSystem>()->GetHeight(); // 예시: 맵의 세로 타일 개수
+
+    if (grid_x < 1 || grid_x >= map_width - 1 || 
+        grid_y < 1 || grid_y >= map_height - 1) 
+    {
+        return; // 유효한 맵 범위가 아니면 여기서 함수를 종료하여 허공에 그리는 것을 방지합니다.
+    }
+    // ==========================================================
+
+    double center_x = (static_cast<double>(grid_x) * tile_size) + (tile_size * 0.5);
+    double center_y = (static_cast<double>(grid_y) * tile_size) + (tile_size * 0.5);
+    
+    Math::vec2 world_center = { center_x, center_y };
+    Math::vec2 world_edge   = { center_x + tile_size * 0.5, center_y + tile_size * 0.5 };
+
+    Math::vec2 screen_center = m_camera_->WorldToScreen(world_center, actual_win);
+    Math::vec2 ui_center     = to_virtual(screen_center, actual_win);
+
+    Math::vec2 screen_edge   = m_camera_->WorldToScreen(world_edge, actual_win);
+    Math::vec2 ui_edge       = to_virtual(screen_edge, actual_win);
+
+    double visual_width  = std::abs(ui_edge.x - ui_center.x) * 2.0;
+    double visual_height = std::abs(ui_edge.y - ui_center.y) * 2.0;
+
+    Math::TransformationMatrix tile_transform =
+        Math::TranslationMatrix(ui_center) *
+        Math::ScaleMatrix(Math::vec2{ visual_width, visual_height });
+
+    auto* renderer = CS230::TextureManager::GetRenderer2D();
+    bool mouse_is_down = Engine::GetInput().MouseDown(0);
+
+    if (mouse_is_down)
+    {
+        // 클릭 중: 내부를 0x00000066 (반투명 검은색)으로 채워서 어둡게 만듭니다.
+        // 테두리는 여전히 0xFFFFFFFF (흰색)으로 유지합니다.
+        renderer->DrawRectangle(tile_transform, 0x00000066, 0xFFFFFFFF, 3.0, DrawDepth::UI - 0.1f);
+    }
+    else
+    {
+        // 단순 호버링: 기존처럼 내부는 0x00000000 (투명)으로 둡니다.
+        renderer->DrawRectangle(tile_transform, 0x00000000, 0xFFFFFFFF, 3.0, DrawDepth::UI - 0.1f);
+    }
+}
+
+// --- DragonicTactics/States/GamePlayUIManager.cpp ---
+
+void GamePlayUIManager::DrawTileOutlineAtPosition(Math::vec2 world_pos, uint32_t border_color)
+{
+    if (!m_camera_) return;
+
+    auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    if (!grid) return; 
+
+    auto actual_win = Engine::GetWindow().GetSize();
+    double tile_size = GridSystem::TILE_SIZE;
+
+    // 1. 전달받은 월드 좌표를 바탕으로 그리드 인덱스 계산
+    int grid_x = static_cast<int>(std::floor(world_pos.x / tile_size));
+    int grid_y = static_cast<int>(std::floor(world_pos.y / tile_size));
+
+    // 2. 맵 범위 검사
+    int map_width  = grid->GetWidth(); 
+    int map_height = grid->GetHeight(); 
+
+    if (grid_x < 0 || grid_x >= map_width || 
+        grid_y < 0 || grid_y >= map_height) 
+    {
+        return; 
+    }
+
+    // 3. 타일의 중앙 및 모서리 좌표 계산
+    double center_x = (static_cast<double>(grid_x) * tile_size) + (tile_size * 0.5);
+    double center_y = (static_cast<double>(grid_y) * tile_size) + (tile_size * 0.5);
+    
+    Math::vec2 world_center = { center_x, center_y };
+    Math::vec2 world_edge   = { center_x + tile_size * 0.5, center_y + tile_size * 0.5 };
+
+    // 4. 월드 좌표 -> UI 화면 좌표 변환
+    Math::vec2 screen_center = m_camera_->WorldToScreen(world_center, actual_win);
+    Math::vec2 ui_center     = to_virtual(screen_center, actual_win);
+
+    Math::vec2 screen_edge   = m_camera_->WorldToScreen(world_edge, actual_win);
+    Math::vec2 ui_edge       = to_virtual(screen_edge, actual_win);
+
+    double visual_width  = std::abs(ui_edge.x - ui_center.x) * 2.0;
+    double visual_height = std::abs(ui_edge.y - ui_center.y) * 2.0;
+
+    Math::TransformationMatrix tile_transform =
+        Math::TranslationMatrix(ui_center) *
+        Math::ScaleMatrix(Math::vec2{ visual_width, visual_height });
+
+    // 5. 전달받은 색상(border_color)으로 테두리 렌더링
+    auto* renderer = CS230::TextureManager::GetRenderer2D();
+    renderer->DrawRectangle(tile_transform, 0x00000000, border_color, 3.0, DrawDepth::UI - 0.1f);
+}
+
+// ─── Dragon HUD (Feature 2) ────────────────────────────────────────────
+// Text in this engine is drawn with BOTTOM-LEFT at the given position and
+// extends UPWARD. All rows below use explicit baselines with safe gaps so
+// nothing overlaps. Layout (virtual 1600×900, y=900=top):
+//
+//   y=892 ┌─ Panel top ─────────────────────────┐
+//   y=866 │ ┌───────┐  Dragon (name, scale .45) │  ← NAME_Y
+//   y=820 │ │ Port  │  [HP ████████ 140/140  ]  │  ← HP_BAR cy
+//   y=784 │ │ 64×64 │  AP 2/2    MOV 5/5         │  ← APMOV_Y
+//         │ └───────┘                            │
+//   y=752 │ ───────── Spell Slots ──────────      │  ← Slot header
+//   y=720 │ L1:  * * * *      (4/4)              │
+//   y=688 │ L2:  * * *        (3/3)              │
+//   y=656 │ L3:  * *          (2/2)              │
+//   y=624 │ L4:  * *          (2/2)              │
+//   y=592 │ L5:  .            (0/1)              │
+//   y=560 │ [Status icons]                       │
+//   y=540 └──────────────────────────────────────┘
+void GamePlayUIManager::DrawDragonHUD()
+{
+    if (!m_player_) return;
+
+    auto* renderer = CS230::TextureManager::GetRenderer2D();
+    auto& textMgr  = Engine::GetTextManager();
+
+    constexpr double PAN_X   = 8.0;
+    constexpr double PAN_W   = 320.0;
+    constexpr double PAN_H   = 352.0;
+    constexpr double PAN_TOP = static_cast<double>(VH) - 8.0;        // 892
+    constexpr double PAN_BOT = PAN_TOP - PAN_H;                       // 540
+    constexpr double PAN_CY  = PAN_TOP - PAN_H * 0.5;                 // 716
+
+    // Panel background
+    Math::TransformationMatrix bg =
+        Math::TranslationMatrix(Math::vec2{ PAN_X + PAN_W * 0.5, PAN_CY }) *
+        Math::ScaleMatrix(Math::vec2{ PAN_W, PAN_H });
+    renderer->DrawRectangle(bg, 0x1a1a2ecc, 0x5555aaff, 1.5, DrawDepth::UI + 0.02f);
+
+    // ── Portrait (64×64) at top-left ────────────────────────────────
+    constexpr double PORT_D    = 64.0;
+    constexpr double PORT_SCL  = PORT_D / 128.0;
+    constexpr double PORT_X    = PAN_X + 10.0;                        // 18
+    constexpr double PORT_TOP  = PAN_TOP - 10.0;                      // 882
+    constexpr double PORT_BOT  = PORT_TOP - PORT_D;                   // 818
+
+    auto pit = portrait_textures_.find(static_cast<int>(m_player_->GetCharacterType()));
+    if (pit != portrait_textures_.end() && pit->second)
+    {
+        uint32_t tint = m_player_->IsAlive() ? 0xFFFFFFFF : 0x666666FF;
+        pit->second->Draw(
+            Math::TranslationMatrix(Math::vec2{ PORT_X, PORT_BOT }) *
+            Math::ScaleMatrix(Math::vec2{ PORT_SCL, PORT_SCL }),
+            tint, DrawDepth::UI + 0.015f);
+    }
+
+    // ── Right column: Name / HP bar / AP&MOV ───────────────────────
+    constexpr double STAT_X    = PORT_X + PORT_D + 12.0;              // 94
+    constexpr double NAME_Y    = 866.0;                               // name baseline
+    constexpr double HP_BAR_CY = 826.0;                               // bar center
+    constexpr double HP_BAR_W  = 200.0;
+    constexpr double HP_BAR_H  = 18.0;                                // bar 817-835
+    constexpr double APMOV_Y   = 786.0;                               // text baseline (text top ≈ 808)
+
+    textMgr.DrawText(m_player_->TypeName(),
+        Math::vec2{ STAT_X, NAME_Y },
+        Fonts::Kings, { 0.45, 0.45 }, CS200::GOLD, DrawDepth::UI);
+
+    const int hp     = m_player_->GetHP();
+    const int hp_max = m_player_->GetMaxHP();
+    const double hp_ratio = (hp_max > 0) ? std::clamp(static_cast<double>(hp) / hp_max, 0.0, 1.0) : 0.0;
+
+    Math::TransformationMatrix hp_bg =
+        Math::TranslationMatrix(Math::vec2{ STAT_X + HP_BAR_W * 0.5, HP_BAR_CY }) *
+        Math::ScaleMatrix(Math::vec2{ HP_BAR_W, HP_BAR_H });
+    renderer->DrawRectangle(hp_bg, 0x442222ff, 0x000000ff, 1.0, DrawDepth::UI + 0.01f);
+
+    if (hp_ratio > 0.0)
+    {
+        const double fill_w = HP_BAR_W * hp_ratio;
+        Math::TransformationMatrix hp_fill =
+            Math::TranslationMatrix(Math::vec2{ STAT_X + fill_w * 0.5, HP_BAR_CY }) *
+            Math::ScaleMatrix(Math::vec2{ fill_w, HP_BAR_H });
+        renderer->DrawRectangle(hp_fill, 0x44cc44ff, 0x44cc44ff, 0.0, DrawDepth::UI + 0.005f);
+    }
+
+    // HP value text centered INSIDE the bar
+    {
+        std::string hp_text = "HP " + std::to_string(hp) + " / " + std::to_string(hp_max);
+        constexpr double HP_TEXT_SCALE = 0.3;
+        Math::vec2 sz = textMgr.CalculateTextSize(hp_text, Fonts::Kings);
+        const double tx = STAT_X + HP_BAR_W * 0.5 - sz.x * HP_TEXT_SCALE * 0.5;
+        const double ty = HP_BAR_CY - sz.y * HP_TEXT_SCALE * 0.5;
+        textMgr.DrawText(hp_text,
+            Math::vec2{ tx, ty },
+            Fonts::Kings, { HP_TEXT_SCALE, HP_TEXT_SCALE }, CS200::WHITE, DrawDepth::UI - 0.002f);
+    }
+
+    // AP / MOV
+    int ap_cur = m_player_->GetActionPoints();
+    int ap_max = 0;
+    if (auto* ap_comp = m_player_->GetActionPointsComponent())
+        ap_max = ap_comp->GetMaxPoints();
+    int mov_cur = m_player_->GetMovementRange();
+    int mov_max = 0;
+    if (auto* st = m_player_->GetStatsComponent())
+        mov_max = st->GetAllStats().speed;
+
+    std::string ap_mov = "AP " + std::to_string(ap_cur) + "/" + std::to_string(ap_max)
+                       + "    MOV " + std::to_string(mov_cur) + "/" + std::to_string(mov_max);
+    textMgr.DrawText(ap_mov,
+        Math::vec2{ STAT_X, APMOV_Y },
+        Fonts::Kings, { 0.38, 0.38 }, CS200::WHITE, DrawDepth::UI);
+
+    // ── Divider line under header ──────────────────────────────────
+    constexpr double DIV_Y = 770.0;
+    Math::TransformationMatrix div =
+        Math::TranslationMatrix(Math::vec2{ PAN_X + PAN_W * 0.5, DIV_Y }) *
+        Math::ScaleMatrix(Math::vec2{ PAN_W - 24.0, 1.5 });
+    renderer->DrawRectangle(div, 0x5555aaaa, 0x5555aaaa, 0.0, DrawDepth::UI + 0.005f);
+
+    // ── Spell slots: one line per level, scale 0.4 (well clear of portrait) ──
+    constexpr double SLOT_FIRST_Y = 738.0;
+    constexpr double SLOT_STEP    = 30.0;
+    double slot_y = SLOT_FIRST_Y;
+    if (auto* slots = m_player_->GetSpellSlots())
+    {
+        const auto& max_map = slots->GetMaxSlots();
+        for (const auto& [level, max_cnt] : max_map)
+        {
+            if (max_cnt <= 0) continue;
+            int cur_cnt = slots->GetSpellSlotCount(level);
+            std::string line = "L" + std::to_string(level) + ":  ";
+            for (int i = 0; i < max_cnt; ++i)
+                line += (i < cur_cnt) ? "* " : ". ";
+            line += "  (" + std::to_string(cur_cnt) + "/" + std::to_string(max_cnt) + ")";
+
+            textMgr.DrawText(line,
+                Math::vec2{ PAN_X + 16.0, slot_y },
+                Fonts::Kings, { 0.4, 0.4 }, CS200::WHITE, DrawDepth::UI);
+            slot_y -= SLOT_STEP;
+        }
+    }
+
+    // ── Status effect icons (bottom of HUD) ────────────────────────
+    const auto& effects = m_player_->GetActiveEffects();
+    if (!effects.empty())
+    {
+        constexpr double ICON_S = 32.0;
+        constexpr double ICON_Y = PAN_BOT + 10.0;                     // 550
+        for (int ei = 0; ei < static_cast<int>(effects.size()); ++ei)
+        {
+            auto iit = status_icon_textures_.find(effects[ei].name);
+            if (iit == status_icon_textures_.end() || !iit->second) continue;
+            const double icon_x = PAN_X + 16.0 + ei * (ICON_S + 4.0);
+            iit->second->Draw(
+                Math::TranslationMatrix(Math::vec2{ icon_x, ICON_Y }),
+                0xFFFFFFFF, DrawDepth::UI + 0.01f);
+        }
+    }
+}
+
+// ─── Right-click cancel hint (Feature 3) ───────────────────────────────
+// Pulsing text just below the turn indicator (top-center).
+void GamePlayUIManager::DrawCancelHint()
+{
+    if (!m_input_handler_ptr_) return;
+
+    auto state = m_input_handler_ptr_->GetCurrentState();
+    using AS = PlayerInputHandler::ActionState;
+
+    bool show = (state == AS::SelectingMove ||
+                 state == AS::Moving ||
+                 state == AS::TargetingForAttack ||
+                 state == AS::TargetingForSpell ||
+                 state == AS::WallPlacementMulti ||
+                 state == AS::LavaPlacementMulti);
+    if (!show) return;
+
+    std::string text;
+    if (state == AS::WallPlacementMulti || state == AS::LavaPlacementMulti)
+        text = "Right Click: Remove tile / Deselect";
+    else
+        text = "Right Click: Cancel";
+
+    // Alpha pulse: 55% to 100%, never fully fades
+    const double a = 0.55 + 0.45 * (0.5 + 0.5 * std::sin(m_cancel_hint_time_ * 2.5));
+    const uint8_t a_byte = static_cast<uint8_t>(std::clamp(a, 0.0, 1.0) * 255.0);
+    // GOLD = 0xffcb00ff (R=0xff G=0xcb B=0x00); replace alpha with pulse value
+    const uint32_t tint = 0xffcb0000U | static_cast<uint32_t>(a_byte);
+
+    auto& textMgr   = Engine::GetTextManager();
+    auto* renderer  = CS230::TextureManager::GetRenderer2D();
+    constexpr double SCALE = 0.45;
+    Math::vec2 text_size = textMgr.CalculateTextSize(text, Fonts::Kings);
+    const double text_w  = text_size.x * SCALE;
+    const double text_h  = text_size.y * SCALE;
+
+    // Centered under turn indicator (turn indicator bottom y ≈ 844, place hint at 810)
+    const double cx = static_cast<double>(VW) * 0.5;
+    const double y_baseline = 798.0;
+
+    // Subtle pulsing background pill so the text is visible against any map color
+    constexpr double PAD_X = 16.0;
+    constexpr double PAD_Y = 6.0;
+    const double bg_w = text_w + PAD_X * 2.0;
+    const double bg_h = text_h + PAD_Y * 2.0;
+    const double bg_cy = y_baseline + text_h * 0.5 - 2.0;
+    // Background alpha pulses with text but starts darker
+    const uint8_t bg_a = static_cast<uint8_t>(std::clamp(a * 0.65, 0.0, 1.0) * 255.0);
+    const uint32_t bg_fill   = 0x1a0a0000U | static_cast<uint32_t>(bg_a);
+    const uint32_t bg_border = 0xffcb0000U | static_cast<uint32_t>(bg_a);
+
+    Math::TransformationMatrix bg =
+        Math::TranslationMatrix(Math::vec2{ cx, bg_cy }) *
+        Math::ScaleMatrix(Math::vec2{ bg_w, bg_h });
+    renderer->DrawRectangle(bg, bg_fill, bg_border, 1.5, DrawDepth::UI + 0.001f);
+
+    textMgr.DrawText(text,
+        Math::vec2{ cx - text_w * 0.5, y_baseline },
+        Fonts::Kings, { SCALE, SCALE }, tint, DrawDepth::UI);
 }
