@@ -29,8 +29,8 @@ class Splash : public CS230::GameState
   std::shared_ptr<CS230::Texture> texture;
 
   static constexpr double CUTSCENE_DURATION = 1.5;
-  static constexpr int    CUTSCENE_COUNT    = 3;
+  static constexpr int    CUTSCENE_COUNT    = 4;
   std::vector<std::shared_ptr<CS230::Texture>> m_cutscene_textures_;
-  int    m_cutscene_idx_   = -1;  // -1 = DigiPen phase, 0~2 = 컷신 진행
+  int    m_cutscene_idx_   = -1;  // -1 = DigiPen phase, 0~3 = 컷신 진행
   double m_cutscene_timer_ = 0.0;
 };

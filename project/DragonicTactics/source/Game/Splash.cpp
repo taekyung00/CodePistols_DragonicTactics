@@ -31,6 +31,7 @@ void Splash::Load()
   m_cutscene_textures_[0] = Engine::GetTextureManager().Load("Assets/images/cut1.png");
   m_cutscene_textures_[1] = Engine::GetTextureManager().Load("Assets/images/cut2.png");
   m_cutscene_textures_[2] = Engine::GetTextureManager().Load("Assets/images/cut3.png");
+  m_cutscene_textures_[3] = Engine::GetTextureManager().Load("Assets/images/cut4.png");
   m_cutscene_idx_   = -1;
   m_cutscene_timer_ = 0.0;
 }
