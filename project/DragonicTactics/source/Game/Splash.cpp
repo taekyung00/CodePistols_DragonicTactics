@@ -37,8 +37,9 @@ void Splash::Load()
 
 void Splash::Update(double dt)
 {
+  dt = std::min(dt, 0.05); // 초기 로딩 스파이크로 인한 페이즈 즉시 전환 방지
 #if defined(DEVELOPER_VERSION)
-  constexpr double SPLASH_DURATION = 0.3;
+  constexpr double SPLASH_DURATION = 1.0;
 #else
   constexpr double SPLASH_DURATION = 2.0;
 #endif
@@ -93,7 +94,16 @@ void Splash::Draw()
 
   if (m_cutscene_idx_ < 0)
   {
-	texture->Draw(Math::TranslationMatrix({ (win - texture->GetSize()) / 2 }));
+	{
+	  auto   sz = texture->GetSize();
+	  double sx = static_cast<double>(win.x) / sz.x;
+	  double sy = static_cast<double>(win.y) / sz.y;
+	  double s  = std::min(sx, sy);
+	  double bx = (win.x - sz.x * s) * 0.5;
+	  double by = (win.y - sz.y * s) * 0.5;
+	  texture->Draw(Math::TranslationMatrix(Math::vec2{ bx, by }) *
+	                Math::ScaleMatrix(Math::vec2{ s, s }));
+	}
   }
   else
   {
