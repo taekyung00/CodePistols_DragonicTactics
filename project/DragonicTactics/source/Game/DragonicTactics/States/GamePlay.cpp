@@ -424,6 +424,7 @@ void GamePlay::Load()
   m_cutscene_textures_[0] = Engine::GetTextureManager().Load("Assets/images/cut1.png");
   m_cutscene_textures_[1] = Engine::GetTextureManager().Load("Assets/images/cut2.png");
   m_cutscene_textures_[2] = Engine::GetTextureManager().Load("Assets/images/cut3.png");
+  m_cutscene_textures_[3] = Engine::GetTextureManager().Load("Assets/images/cut4.png");
   m_cutscene_index_ = 0;
   m_cutscene_timer_ = 0.0;
 }
@@ -498,7 +499,10 @@ void GamePlay::Update(double dt)
 	  m_cutscene_index_ = CUTSCENE_COUNT;
 	  return;
 	}
-	if (inp.MouseJustPressed(0) || inp.KeyJustPressed(CS230::Input::Keys::Space))
+	if (inp.MouseJustPressed(0) || 
+      inp.KeyJustPressed(CS230::Input::Keys::Space)||
+      inp.KeyJustPressed(CS230::Input::Keys::Z)||
+      inp.KeyJustPressed(CS230::Input::Keys::Enter))
 	  m_cutscene_timer_ = CUTSCENE_DURATION;
 
 	m_cutscene_timer_ += dt;
@@ -566,12 +570,12 @@ void GamePlay::Update(double dt)
     }
   }
 
-  TurnManager*				turnMgr		 = GetGSComponent<TurnManager>();
-  GridSystem*				grid		 = GetGSComponent<GridSystem>();
-  CombatSystem*				combatSystem = GetGSComponent<CombatSystem>();
-  AISystem*					aiSystem	 = GetGSComponent<AISystem>();
+  TurnManager*				      turnMgr		 = GetGSComponent<TurnManager>();
+  GridSystem*				        grid		 = GetGSComponent<GridSystem>();
+  CombatSystem*				      combatSystem = GetGSComponent<CombatSystem>();
+  AISystem*					        aiSystem	 = GetGSComponent<AISystem>();
   CS230::GameObjectManager* goMgr		 = GetGSComponent<CS230::GameObjectManager>();
-  DebugManager*				debugMgr	 = GetGSComponent<DebugManager>();
+  DebugManager*				      debugMgr	 = GetGSComponent<DebugManager>();
 
   if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Escape))
   {

@@ -86,7 +86,7 @@ class GamePlay : public CS230::GameState
 
   // Cutscene
   static constexpr double CUTSCENE_DURATION = 1.5;
-  static constexpr int    CUTSCENE_COUNT    = 3;
+  static constexpr int    CUTSCENE_COUNT    = 4;
   int    m_cutscene_index_ = 0;
   double m_cutscene_timer_ = 0.0;
   std::vector<std::shared_ptr<CS230::Texture>> m_cutscene_textures_;
