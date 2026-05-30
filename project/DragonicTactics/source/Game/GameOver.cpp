@@ -132,8 +132,8 @@ void GameOver::Draw()
 
     // ── 타이틀 ──
     const std::string title_str   = s_player_won ? "PLAYER WIN" : "INVADER WIN";
-    CS200::RGBA       title_color = s_player_won ? 0xFFC800FF   : 0xCC2200FF;
-    CS200::RGBA       shadow_color = 0x1a1a1aFF;
+    CS200::RGBA       title_color = 0xCC2200FF;
+    CS200::RGBA       shadow_color = 0xFFC800FF;
     Math::vec2        title_scale = { 1.5, 1.5 };
 
     Math::ivec2 title_size = tm.CalculateTextSize(title_str, Fonts::Kings);
