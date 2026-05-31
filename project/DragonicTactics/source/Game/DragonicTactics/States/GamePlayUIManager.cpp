@@ -228,9 +228,16 @@ void GamePlayUIManager::Update(double dt)
             if (button_manager_.IsHovered(std::string("slot_") + SPELL_IDS[i]))
             {
                 hovered_spell_id_ = SPELL_IDS[i];
-                hovered_slot_cx_  = slot_bar_x_[i + 1] + 32.0; 
+                hovered_slot_cx_  = slot_bar_x_[i + 1] + 32.0;
                 break;
             }
+        }
+
+        hovered_attack_slot_ = false;
+        if (hovered_spell_id_.empty() && button_manager_.IsHovered("slot_attack"))
+        {
+            hovered_attack_slot_ = true;
+            hovered_slot_cx_     = slot_bar_x_[0] + 32.0;
         }
     }
 
@@ -349,6 +356,7 @@ void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_
     DrawCancelHint();
     DrawHoverTooltip();
     DrawSpellTooltip();
+    DrawAttackTooltip();
     DrawDragonHUD();
     DrawStatusEffectPanel();
     DrawStatusEffectTooltip();
@@ -1136,6 +1144,54 @@ void GamePlayUIManager::DrawSpellTooltip()
     ty -= LH;
 
     // 이후 줄: 효과 설명 (흰색)
+    for (size_t i = 1; i < lines.size(); ++i)
+    {
+        textMgr.DrawText(lines[i], Math::vec2{ tip_x + PAD, ty },
+            Fonts::Kings, { 0.4, 0.4 }, CS200::WHITE, DrawDepth::UI);
+        ty -= LH;
+    }
+}
+
+void GamePlayUIManager::DrawAttackTooltip()
+{
+    if (!hovered_attack_slot_ || !m_player_) return;
+
+    std::string dice = "?";
+    if (auto* st = m_player_->GetStatsComponent())
+        dice = st->GetAttackDice();
+
+    const std::vector<std::string> lines = {
+        "Basic Attack",
+        "Deals " + dice + " damage",
+        "Costs 1 AP"
+    };
+
+    auto& textMgr  = Engine::GetTextManager();
+    auto* renderer = CS230::TextureManager::GetRenderer2D();
+    constexpr double PAD = 10.0;
+    constexpr double LH  = 24.0;
+
+    double max_w = textMgr.CalculateTextSize(lines[0], Fonts::Kings).x * 0.5;
+    for (size_t i = 1; i < lines.size(); ++i)
+        max_w = std::max(max_w, textMgr.CalculateTextSize(lines[i], Fonts::Kings).x * 0.4);
+    double TT_W = std::min(max_w + PAD * 2.0, static_cast<double>(VW) - 20.0);
+    double TT_H = PAD * 2.0 + static_cast<double>(lines.size()) * LH;
+
+    double tip_x = hovered_slot_cx_ - TT_W * 0.5;
+    if (tip_x < 4.0) tip_x = 4.0;
+    if (tip_x + TT_W > static_cast<double>(VW) - 4.0)
+        tip_x = static_cast<double>(VW) - TT_W - 4.0;
+    double tip_top = slot_bar_center_y_ + 32.0 + 8.0 + TT_H;
+
+    Math::TransformationMatrix bg =
+        Math::TranslationMatrix(Math::vec2{ tip_x + TT_W * 0.5, tip_top - TT_H * 0.5 }) *
+        Math::ScaleMatrix(Math::vec2{ TT_W, TT_H });
+    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5f, DrawDepth::UI + 0.001f);
+
+    double ty = tip_top - PAD - 22;
+    textMgr.DrawText(lines[0], Math::vec2{ tip_x + PAD, ty },
+        Fonts::Kings, { 0.5, 0.5 }, CS200::GOLD, DrawDepth::UI);
+    ty -= LH;
     for (size_t i = 1; i < lines.size(); ++i)
     {
         textMgr.DrawText(lines[i], Math::vec2{ tip_x + PAD, ty },

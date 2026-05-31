@@ -97,6 +97,7 @@ class GamePlayUIManager
   // Spell hover tooltip
   std::string  hovered_spell_id_;
   double       hovered_slot_cx_ = 0.0;
+  bool         hovered_attack_slot_ = false;
   std::unordered_map<std::string, std::vector<std::string>> spell_tooltip_cache_;
   std::unordered_map<std::string, double>                  spell_tooltip_widths_;
 
@@ -164,6 +165,7 @@ class GamePlayUIManager
   void DrawTurnIndicator();
   void DrawHoverTooltip();
   void DrawSpellTooltip();
+  void DrawAttackTooltip();
   void DrawStatusEffectTooltip();
   void DrawStatusEffectPanel();
   void DrawActionLabel();
