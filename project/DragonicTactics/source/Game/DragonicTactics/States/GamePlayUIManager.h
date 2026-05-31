@@ -89,7 +89,6 @@ class GamePlayUIManager
   bool        popup_open_           = false;
   std::string popup_spell_id_;
   int         popup_slot_index_     = -1;
-  bool        popup_hit_this_frame_ = false;
 
   // Character hover tooltip
   Character* hovered_character_ = nullptr;
@@ -144,10 +143,6 @@ class GamePlayUIManager
 
   double log_scroll_offset_{ 0.0 };
   bool   log_scrollbar_dragging_{ false };
-  double log_drag_start_mouse_y_{ 0.0 };
-  double log_drag_start_offset_{ 0.0 };
-
-  double end_turn_click_timer_ = 0.0;
 
   // Notice toast
   std::string m_notice_text_;

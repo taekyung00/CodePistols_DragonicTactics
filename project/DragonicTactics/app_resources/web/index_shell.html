@@ -19,39 +19,39 @@
 
     <style>
         body {
-            overflow-y: hidden;
-            overflow-x: hidden;
+            overflow: hidden;
             margin: 0;
-            background-color: #FFFFFF;
-            -webkit-font-smoothing: subpixel-antialiased;
-            font-smoothing: subpixel-antialiased;
+            padding: 0;
+            background-color: #000000;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         #main-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
             font-size: 12px;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
         }
 
-        .emscripten {
+        canvas.emscripten {
+            display: block;
+            border: 0;
             padding: 0;
             margin: 0;
-            display: block;
-            width: 100%;
-            height: 100%;
-            background: transparent;
-            background-color: #00000000;
-        }
-
-        canvas.emscripten {
-            border: 0px none;
-            background: transparent;
-            background-color: #00000000;
         }
 
         #description {
+            position: absolute;
             margin: 10px;
             padding: 10px;
-            color: #000000;
+            color: #ffffff;
         }
     </style>
 </head>
@@ -91,13 +91,22 @@ PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbDpzcGFjZT0icHJlc2VydmUi
         var failedToInitialize = false;
 
         function updateWindowSize() {
-            var w = window,
-                d = document,
-                e = d.documentElement,
-                g = d.getElementsByTagName('body')[0],
-                x = w.innerWidth || e.clientWidth || g.clientWidth,
-                y = w.innerHeight || e.clientHeight || g.clientHeight;
-            Module.setWindowSize(x, y);
+            var MAX_W = 1600, MAX_H = 900;
+            var RATIO = MAX_W / MAX_H;
+
+            var viewW = window.innerWidth  || document.documentElement.clientWidth  || document.body.clientWidth;
+            var viewH = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+
+            var w, h;
+            if (viewW / viewH > RATIO) {
+                h = Math.min(viewH, MAX_H);
+                w = Math.round(h * RATIO);
+            } else {
+                w = Math.min(viewW, MAX_W);
+                h = Math.round(w / RATIO);
+            }
+
+            Module.setWindowSize(w, h);
         }
 
         window.setInterval(function () {

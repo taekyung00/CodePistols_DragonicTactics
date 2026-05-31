@@ -108,7 +108,7 @@ void Splash::Draw()
   }
   else
   {
-	auto& tex = m_cutscene_textures_[m_cutscene_idx_];
+	auto& tex = m_cutscene_textures_[static_cast<size_t>(m_cutscene_idx_)];
 	if (tex)
 	{
 	  auto   sz = tex->GetSize();

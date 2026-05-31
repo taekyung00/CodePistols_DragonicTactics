@@ -52,7 +52,7 @@ static constexpr int VH = TacticalCamera::VIRTUAL_H;
 
 static Math::vec2 to_virtual(Math::vec2 actual, Math::ivec2 actual_win) noexcept
 {
-    double scale = std::min((double)actual_win.x / VW, (double)actual_win.y / VH);
+    double scale = std::min(static_cast<double>(actual_win.x) / VW, static_cast<double>(actual_win.y) / VH);
     double ox    = (actual_win.x - VW * scale) * 0.5;
     double oy    = (actual_win.y - VH * scale) * 0.5;
     return { (actual.x - ox) / scale, (actual.y - oy) / scale };
@@ -164,7 +164,7 @@ void GamePlayUIManager::Update(double dt)
 
         double bar_top      = slot_bar_center_y_ + 32.0;
         double popup_bottom = bar_top + BTN_H + 8.0;
-        double start_x      = slot_bar_x_[popup_slot_index_] + 32.0
+        double start_x      = slot_bar_x_[static_cast<size_t>(popup_slot_index_)] + 32.0
                               - (num_levels * BTN_W + (num_levels - 1) * GAP) * 0.5;
 
         bool hit = false;
@@ -223,7 +223,7 @@ void GamePlayUIManager::Update(double dt)
             "S_ENH_040","S_ENH_050","S_DEB_020","S_GEO_010","S_GEO_020"
         };
         hovered_spell_id_.clear();
-        for (int i = 0; i < 9; ++i)
+        for (size_t i = 0; i < 9; ++i)
         {
             if (button_manager_.IsHovered(std::string("slot_") + SPELL_IDS[i]))
             {
@@ -270,9 +270,9 @@ void GamePlayUIManager::Update(double dt)
 
             double icon_y = row_bot + (PORT_H - ICON_S) * 0.5;
             const auto& effects = ch->GetActiveEffects();
-            for (int ei = 0; ei < static_cast<int>(effects.size()); ++ei)
+            for (size_t ei = 0; ei < effects.size(); ++ei)
             {
-                double icon_x = ICON_X0 + ei * ICON_S;
+                double icon_x = ICON_X0 + static_cast<double>(ei) * ICON_S;
                 if (virt_mouse.x >= icon_x && virt_mouse.x < icon_x + ICON_S &&
                     virt_mouse.y >= icon_y && virt_mouse.y < icon_y + ICON_S)
                 {
@@ -292,7 +292,7 @@ void GamePlayUIManager::Update(double dt)
             constexpr double ICON_Y_D  = PAN_BOT_D + 10.0;                       // 550
 
             const auto& dragon_effects = m_player_->GetActiveEffects();
-            for (int ei = 0; ei < static_cast<int>(dragon_effects.size()); ++ei)
+            for (size_t ei = 0; ei < dragon_effects.size(); ++ei)
             {
                 double icon_x = 8.0 + 16.0 + static_cast<double>(ei) * (ICON_S + 4.0);
                 if (virt_mouse.x >= icon_x && virt_mouse.x < icon_x + ICON_S &&
@@ -434,9 +434,9 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
 
     slot_bar_center_y_ = bar_bot + bar_h * 0.5; // = 64 + 48 = 112
 
-    for (int i = 0; i < N; ++i)
-        slot_bar_x_[i] = box_x + offset + i * (TILE + offset);
-    slot_bar_x_[N] = slot_bar_x_[N - 1] + TILE + offset;
+    for (size_t i = 0; i < static_cast<size_t>(N); ++i)
+        slot_bar_x_[i] = box_x + offset + static_cast<double>(i) * (TILE + offset);
+    slot_bar_x_[static_cast<size_t>(N)] = slot_bar_x_[static_cast<size_t>(N) - 1] + TILE + offset;
 
     // 아이콘 텍스처 로드
     const std::array<std::string, 10> ICON_PATHS = {
@@ -452,7 +452,7 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
         "Assets/images/dragon_wall_creation.png",
     };
     slot_icons_.resize(11, nullptr);
-    for (int i = 0; i < 10; ++i)
+    for (size_t i = 0; i < 10; ++i)
         slot_icons_[i] = Engine::GetTextureManager().Load(ICON_PATHS[i]);
     slot_icons_[10] = Engine::GetTextureManager().Load("Assets/images/turn_end.png");
 
@@ -492,8 +492,8 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
     {
         int idx = 1;
         Button b;
-        b.id       = SLOT_IDS[idx];
-        b.position = { slot_bar_x_[idx], slot_bar_center_y_ + TILE * 0.5 };
+        b.id       = SLOT_IDS[static_cast<size_t>(idx)];
+        b.position = { slot_bar_x_[static_cast<size_t>(idx)], slot_bar_center_y_ + TILE * 0.5 };
         b.size     = { TILE, TILE };
         b.label    = "";
         b.on_click = [this, idx, inputHandler]() {
@@ -513,8 +513,8 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
     {
         int idx = 2;
         Button b;
-        b.id       = SLOT_IDS[idx];
-        b.position = { slot_bar_x_[idx], slot_bar_center_y_ + TILE * 0.5 };
+        b.id       = SLOT_IDS[static_cast<size_t>(idx)];
+        b.position = { slot_bar_x_[static_cast<size_t>(idx)], slot_bar_center_y_ + TILE * 0.5 };
         b.size     = { TILE, TILE };
         b.label    = "";
         b.on_click = [inputHandler, get_current_char, this]() {
@@ -528,8 +528,8 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
     {
         int idx = 3;
         Button b;
-        b.id       = SLOT_IDS[idx];
-        b.position = { slot_bar_x_[idx], slot_bar_center_y_ + TILE * 0.5 };
+        b.id       = SLOT_IDS[static_cast<size_t>(idx)];
+        b.position = { slot_bar_x_[static_cast<size_t>(idx)], slot_bar_center_y_ + TILE * 0.5 };
         b.size     = { TILE, TILE };
         b.label    = "";
         b.on_click = [this, idx, inputHandler]() {
@@ -549,8 +549,8 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
     {
         int idx = 4;
         Button b;
-        b.id       = SLOT_IDS[idx];
-        b.position = { slot_bar_x_[idx], slot_bar_center_y_ + TILE * 0.5 };
+        b.id       = SLOT_IDS[static_cast<size_t>(idx)];
+        b.position = { slot_bar_x_[static_cast<size_t>(idx)], slot_bar_center_y_ + TILE * 0.5 };
         b.size     = { TILE, TILE };
         b.label    = "";
         b.on_click = [this, idx, inputHandler]() {
@@ -570,8 +570,8 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
     {
         int idx = 5;
         Button b;
-        b.id       = SLOT_IDS[idx];
-        b.position = { slot_bar_x_[idx], slot_bar_center_y_ + TILE * 0.5 };
+        b.id       = SLOT_IDS[static_cast<size_t>(idx)];
+        b.position = { slot_bar_x_[static_cast<size_t>(idx)], slot_bar_center_y_ + TILE * 0.5 };
         b.size     = { TILE, TILE };
         b.label    = "";
         b.on_click = [this, idx, inputHandler]() {
@@ -591,8 +591,8 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
     {
         int idx = 6;
         Button b;
-        b.id       = SLOT_IDS[idx];
-        b.position = { slot_bar_x_[idx], slot_bar_center_y_ + TILE * 0.5 };
+        b.id       = SLOT_IDS[static_cast<size_t>(idx)];
+        b.position = { slot_bar_x_[static_cast<size_t>(idx)], slot_bar_center_y_ + TILE * 0.5 };
         b.size     = { TILE, TILE };
         b.label    = "";
         b.on_click = [inputHandler, get_current_char, this]() {
@@ -606,8 +606,8 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
     {
         int idx = 7;
         Button b;
-        b.id       = SLOT_IDS[idx];
-        b.position = { slot_bar_x_[idx], slot_bar_center_y_ + TILE * 0.5 };
+        b.id       = SLOT_IDS[static_cast<size_t>(idx)];
+        b.position = { slot_bar_x_[static_cast<size_t>(idx)], slot_bar_center_y_ + TILE * 0.5 };
         b.size     = { TILE, TILE };
         b.label    = "";
         b.on_click = [inputHandler, get_current_char, this]() {
@@ -621,8 +621,8 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
     {
         int idx = 8;
         Button b;
-        b.id       = SLOT_IDS[idx];
-        b.position = { slot_bar_x_[idx], slot_bar_center_y_ + TILE * 0.5 };
+        b.id       = SLOT_IDS[static_cast<size_t>(idx)];
+        b.position = { slot_bar_x_[static_cast<size_t>(idx)], slot_bar_center_y_ + TILE * 0.5 };
         b.size     = { TILE, TILE };
         b.label    = "";
         b.on_click = [this, idx, inputHandler]() {
@@ -642,8 +642,8 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
     {
         int idx = 9;
         Button b;
-        b.id       = SLOT_IDS[idx];
-        b.position = { slot_bar_x_[idx], slot_bar_center_y_ + TILE * 0.5 };
+        b.id       = SLOT_IDS[static_cast<size_t>(idx)];
+        b.position = { slot_bar_x_[static_cast<size_t>(idx)], slot_bar_center_y_ + TILE * 0.5 };
         b.size     = { TILE, TILE };
         b.label    = "";
         b.on_click = [this, idx, inputHandler]() {
@@ -664,7 +664,7 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
         Button end;
         end.id         = "slot_end_turn";
         // 레이아웃 위치는 전혀 건드리지 않고 그대로 유지합니다.
-        end.position   = { slot_bar_x_[N], slot_bar_center_y_ + TILE * 0.5 };
+        end.position   = { slot_bar_x_[static_cast<size_t>(N)], slot_bar_center_y_ + TILE * 0.5 };
         
         // [수정된 부분] 히트박스의 크기(size)를 하드코딩하지 않고, 실제 에셋 이미지의 해상도로 딱 맞게 동기화합니다.
         if (slot_icons_[10] != nullptr)
@@ -845,7 +845,7 @@ void GamePlayUIManager::DrawSlotBar()
     renderer->DrawRectangle(bg, 0x1a1a2e99, 0x5555aaff, 1.5, DrawDepth::UI + 0.001f);
 
     // 아이콘은 버튼(UI=0.01f)보다 앞에 와야 보임 → UI - 0.005f = 0.005f
-    for (int i = 0; i < static_cast<int>(slot_icons_.size()); ++i)
+    for (size_t i = 0; i < slot_icons_.size(); ++i)
     {
         if (!slot_icons_[i]) continue;
         slot_icons_[i]->Draw(
@@ -876,12 +876,12 @@ void GamePlayUIManager::DrawUicastPopup()
     double bar_top      = slot_bar_center_y_ + 32.0;
     double popup_bottom = bar_top + BTN_H + 8.0;  // button top is fully above slot bar
 
-    double start_x = slot_bar_x_[popup_slot_index_] + 32.0
+    double start_x = slot_bar_x_[static_cast<size_t>(popup_slot_index_)] + 32.0
                      - (num_levels * BTN_W + (num_levels - 1) * GAP) * 0.5;
 
     // 배경 패널
     double panel_w  = num_levels * BTN_W + (num_levels - 1) * GAP + 8.0;
-    double panel_cx = slot_bar_x_[popup_slot_index_] + 32.0;
+    double panel_cx = slot_bar_x_[static_cast<size_t>(popup_slot_index_)] + 32.0;
     double panel_cy = popup_bottom - BTN_H * 0.5;  // centered on buttons
 
     auto* renderer = CS230::TextureManager::GetRenderer2D();
@@ -1134,7 +1134,7 @@ void GamePlayUIManager::DrawSpellTooltip()
     Math::TransformationMatrix bg =
         Math::TranslationMatrix(Math::vec2{ tip_x + TT_W * 0.5, tip_top - TT_H * 0.5 }) *
         Math::ScaleMatrix(Math::vec2{ TT_W, TT_H });
-    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5f, DrawDepth::UI + 0.001f);
+    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5, DrawDepth::UI + 0.001f);
 
     double ty = tip_top - PAD - 22;
 
@@ -1186,7 +1186,7 @@ void GamePlayUIManager::DrawAttackTooltip()
     Math::TransformationMatrix bg =
         Math::TranslationMatrix(Math::vec2{ tip_x + TT_W * 0.5, tip_top - TT_H * 0.5 }) *
         Math::ScaleMatrix(Math::vec2{ TT_W, TT_H });
-    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5f, DrawDepth::UI + 0.001f);
+    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5, DrawDepth::UI + 0.001f);
 
     double ty = tip_top - PAD - 22;
     textMgr.DrawText(lines[0], Math::vec2{ tip_x + PAD, ty },
@@ -1388,11 +1388,11 @@ void GamePlayUIManager::DrawStatusEffectPanel()
 
         const auto& effects = ch->GetActiveEffects();
         double icon_y = row_bot + (PORT_D - ICON_S) * 0.5;
-        for (int ei = 0; ei < static_cast<int>(effects.size()); ++ei)
+        for (size_t ei = 0; ei < effects.size(); ++ei)
         {
             auto iit = status_icon_textures_.find(effects[ei].name);
             if (iit == status_icon_textures_.end() || !iit->second) continue;
-            double icon_x = ICON_X0 + ei * ICON_S;
+            double icon_x = ICON_X0 + static_cast<double>(ei) * ICON_S;
             iit->second->Draw(
                 Math::TranslationMatrix(Math::vec2{ icon_x, icon_y }),
                 0xFFFFFFFF, DrawDepth::UI + 0.01f);
@@ -1424,7 +1424,7 @@ void GamePlayUIManager::DrawStatusEffectTooltip()
     Math::TransformationMatrix bg =
         Math::TranslationMatrix(Math::vec2{ tip_x + TT_W * 0.5, tip_top - TT_H * 0.5 }) *
         Math::ScaleMatrix(Math::vec2{ TT_W, TT_H });
-    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5f, DrawDepth::UI - 0.003f);
+    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5, DrawDepth::UI - 0.003f);
 
     double ty = tip_top - PAD - 22;
     textMgr.DrawText(hovered_effect_name_,
@@ -1673,7 +1673,7 @@ void GamePlayUIManager::DrawDisableReasonTooltip()
         Math::TranslationMatrix(Math::vec2{ tip_x + TT_W * 0.5, box_center_y }) *
         Math::ScaleMatrix(Math::vec2{ TT_W, TT_H });
     
-    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5f, DrawDepth::UI + 0.001f);
+    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5, DrawDepth::UI + 0.001f);
 
     // 2. 텍스트 렌더링 (텍스트 중앙 정렬)
     double ty = (box_center_y - TT_H * 0.5) + PAD + 1.0; 
@@ -1733,7 +1733,7 @@ void GamePlayUIManager::DrawDragonWorldHoverTooltip()
             Math::TransformationMatrix bg =
                 Math::TranslationMatrix(Math::vec2{ tip_x + TT_W * 0.5, tip_top - TT_H * 0.5 }) *
                 Math::ScaleMatrix(Math::vec2{ TT_W, TT_H });
-            renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5f, DrawDepth::UI + 0.001f);
+            renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5, DrawDepth::UI + 0.001f);
             
             double ty = tip_top - PAD - 22;
             textMgr.DrawText(reason_text,
@@ -2033,11 +2033,11 @@ void GamePlayUIManager::DrawDragonHUD()
     {
         constexpr double ICON_S = 32.0;
         constexpr double ICON_Y = PAN_BOT + 10.0;                     // 550
-        for (int ei = 0; ei < static_cast<int>(effects.size()); ++ei)
+        for (size_t ei = 0; ei < effects.size(); ++ei)
         {
             auto iit = status_icon_textures_.find(effects[ei].name);
             if (iit == status_icon_textures_.end() || !iit->second) continue;
-            const double icon_x = PAN_X + 16.0 + ei * (ICON_S + 4.0);
+            const double icon_x = PAN_X + 16.0 + static_cast<double>(ei) * (ICON_S + 4.0);
             iit->second->Draw(
                 Math::TranslationMatrix(Math::vec2{ icon_x, ICON_Y }),
                 0xFFFFFFFF, DrawDepth::UI + 0.01f);

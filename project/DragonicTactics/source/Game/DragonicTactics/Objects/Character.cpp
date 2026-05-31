@@ -97,7 +97,7 @@ void Character::Draw(Math::TransformationMatrix camera_matrix , unsigned int col
     Math::vec2 shakeOffset = GetShakeComponent()->GetOffset();
 
     // 2. 흔들림 오프셋이 0이 아니라면 (진동 중이라면)
-    if (shakeOffset.x != 0.0f || shakeOffset.y != 0.0f)
+    if (shakeOffset.x != 0.0 || shakeOffset.y != 0.0)
     {
         // 현재 캐릭터의 진짜 위치 임시 저장
         Math::vec2 originalPos = GetPosition(); 

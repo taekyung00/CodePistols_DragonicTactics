@@ -49,8 +49,8 @@ std::string Settings::GetCurrentMapId()
 void Settings::ApplySettings()
 {
     auto& sound = Engine::GetSoundManager();
-    sound.SetBGMVolume(s_is_bgm_muted ? 0.0f : (s_bgm_volume / 100.0f));
-    sound.SetSFXVolume(s_is_sfx_muted ? 0.0f : (s_sfx_volume / 100.0f));
+    sound.SetBGMVolume(s_is_bgm_muted ? 0.0f : (static_cast<float>(s_bgm_volume) / 100.0f));
+    sound.SetSFXVolume(s_is_sfx_muted ? 0.0f : (static_cast<float>(s_sfx_volume) / 100.0f));
 }
 
 void Settings::DrawImGui()
@@ -153,9 +153,9 @@ void Settings::Update(double dt)
         m_dragging_slider = Option::COUNT;
 
     // 마우스 호버 + 클릭
-    for (int i = 0; i < static_cast<int>(rows.size()); ++i)
+    for (size_t i = 0; i < rows.size(); ++i)
     {
-        Math::vec2 p = { menu_start_pos.x, menu_start_pos.y - i * row_spacing };
+        Math::vec2 p = { menu_start_pos.x, menu_start_pos.y - static_cast<double>(i) * row_spacing };
 
         if (mouse_pos.y > p.y - 30.0 && mouse_pos.y < p.y + 30.0)
         {
@@ -259,11 +259,11 @@ void Settings::Draw()
     text_manager.DrawText("SETTINGS", t_adj,                                      Fonts::Kings, { 1.5, 1.5 }, title_main_color);
 
     // 설정 항목 렌더링
-    for (int i = 0; i < static_cast<int>(rows.size()); ++i)
+    for (size_t i = 0; i < rows.size(); ++i)
     {
         const auto& row     = rows[i];
         bool        is_sel  = (row.option == current_option);
-        Math::vec2  p       = { menu_start_pos.x, menu_start_pos.y - i * row_spacing };
+        Math::vec2  p       = { menu_start_pos.x, menu_start_pos.y - static_cast<double>(i) * row_spacing };
 
         // 3. Update 함수와 동일한 호버링 충돌 검사 로직 적용
         bool is_hovering = (mouse_pos.y > p.y - 30.0 && mouse_pos.y < p.y + 30.0);
@@ -287,28 +287,31 @@ void Settings::Draw()
             int vol = (row.option == Option::BGMVolume) ? s_bgm_volume : s_sfx_volume;
 
             // 슬라이더 배경
-            Math::vec2 bg_pos   = { slider_x_start + slider_width / 2.0f, p.y + 15.0 };
-            Math::vec2 bg_scale = { slider_width, slider_height };
+            const double dslider_x = static_cast<double>(slider_x_start);
+            const double dslider_w = static_cast<double>(slider_width);
+            const double dslider_h = static_cast<double>(slider_height);
+            Math::vec2 bg_pos   = { dslider_x + dslider_w / 2.0, p.y + 15.0 };
+            Math::vec2 bg_scale = { dslider_w, dslider_h };
             renderer_2d->DrawRectangle(Math::TranslationMatrix(bg_pos) * Math::ScaleMatrix(bg_scale), 0x333333FF);
 
             // 슬라이더 채움
-            float      fill_ratio = vol / 100.0f;
-            float      fill_width = slider_width * fill_ratio;
-            Math::vec2 fill_pos   = { slider_x_start + fill_width / 2.0f, p.y + 15.0 };
-            Math::vec2 fill_scale = { fill_width, slider_height };
+            double fill_ratio = static_cast<double>(vol) / 100.0;
+            double fill_width = dslider_w * fill_ratio;
+            Math::vec2 fill_pos   = { dslider_x + fill_width / 2.0, p.y + 15.0 };
+            Math::vec2 fill_scale = { fill_width, dslider_h };
             renderer_2d->DrawRectangle(Math::TranslationMatrix(fill_pos) * Math::ScaleMatrix(fill_scale), title_main_color);
 
             // 슬라이더 노브
-            float      knob_x    = slider_x_start + fill_width;
-            float      knob_size = slider_height * 1.5f;
-            Math::vec2 knob_pos  = { static_cast<double>(knob_x), p.y + 15.0 };
+            double     knob_x    = dslider_x + fill_width;
+            double     knob_size = dslider_h * 1.5;
+            Math::vec2 knob_pos  = { knob_x, p.y + 15.0 };
             renderer_2d->DrawCircle(
                 Math::TranslationMatrix(knob_pos) * Math::ScaleMatrix(Math::vec2{ knob_size, knob_size }),
                 selected_color, title_main_color, 0, 0);
 
             // 퍼센트 텍스트 렌더링 (동적으로 변하는 color 적용)
             text_manager.DrawText(std::to_string(vol) + "%",
-                Math::vec2{ slider_x_start + slider_width + 30.0f, p.y },
+                Math::vec2{ dslider_x + dslider_w + 30.0, p.y },
                 Fonts::Kings, { 0.6, 0.6 }, color);
         }
         else

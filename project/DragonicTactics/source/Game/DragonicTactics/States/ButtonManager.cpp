@@ -21,8 +21,8 @@ void ButtonManager::AddButton(const Button& button)
     Math::vec2 textSize = text_mgr.CalculateTextSize(button.label, Fonts::Kings);
 
     // 스케일 축소 비율 적용 (Draw 함수와 동일하게 0.4배)
-    textSize.x *= 0.4f;
-    textSize.y *= 0.4f;
+    textSize.x *= 0.4;
+    textSize.y *= 0.4;
 
     // 크기 비교 검사
     if (textSize.x > button.size.x || textSize.y > button.size.y)

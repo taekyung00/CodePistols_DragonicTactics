@@ -15,7 +15,7 @@ private:
     Math::vec2 offset;
 
 public:
-    ShakeComponent() : initialIntensity(0.0f), duration(0.0f), timer(0.0f), offset(0.0f, 0.0f) {}
+    ShakeComponent() : initialIntensity(0.0f), duration(0.0f), timer(0.0f), offset(0.0, 0.0) {}
 
     void StartShake(float intensity, float durationSeconds) {
         initialIntensity = intensity;

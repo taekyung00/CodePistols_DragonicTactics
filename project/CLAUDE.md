@@ -795,6 +795,105 @@ int dmg = spells->GetLavaDamageAt(tile_pos);  // 없으면 0
 
 ---
 
+## 웹 빌드 호환 규칙 (Emscripten `-Werror` 위반 방지)
+
+웹 빌드(`web-release`, `web-developer-release`)는 Windows보다 엄격한 경고 플래그를 `-Werror`로 적용한다. 아래 규칙을 지키지 않으면 **웹 빌드만 깨지고 Windows 빌드는 통과**하는 현상이 발생한다.
+
+### `-Wdouble-promotion` : float → double 암묵 변환 금지
+
+`Math::vec2`, `Math::TranslationMatrix`, `Math::ScaleMatrix` 등 엔진 수학 타입은 내부적으로 `double`을 사용한다. 여기에 `float` 리터럴(`f` 접미사)이나 `float` 변수를 직접 전달하면 경고가 에러로 처리된다.
+
+```cpp
+// ❌ 금지
+Math::vec2{ 0.0f, 0.0f }           // float → double 암묵 변환
+Math::vec2{ slider_width, 0.0 }    // const float slider_width → double
+
+// ✅ 올바른 패턴
+Math::vec2{ 0.0, 0.0 }             // double 리터럴
+Math::vec2{ static_cast<double>(slider_width), 0.0 }  // 명시적 캐스트
+```
+
+**주요 적용 지점:**
+- `DrawRectangle` 4번째 인수(border_width)는 `double` → `1.5f` 대신 `1.5` 사용
+- `ParticleManager::Emit()` 마지막 각도 인수는 `double` → `3.14159265f` 대신 `3.14159265` 사용
+- `std::numbers::pi_v<float>` 대신 `std::numbers::pi_v<double>` 사용
+- `ShakeComponent`, `Settings` 등의 로컬 `float` 변수를 `Math::vec2`에 넣을 때 반드시 `static_cast<double>()` 적용
+
+### `-Wimplicit-int-float-conversion` : int → float 암묵 변환 금지
+
+```cpp
+// ❌ 금지 — int를 float 연산에 직접 사용
+float x = vol / 100.0f;       // vol은 int
+float y = std::rand() / 1.0f; // std::rand()는 int
+
+// ✅ 올바른 패턴
+float x = static_cast<float>(vol) / 100.0f;
+float y = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX);
+```
+
+### `-Wsign-conversion` : int → size_t 암묵 변환 금지 (컨테이너 인덱싱)
+
+`std::vector`, `std::array`의 `operator[]`는 `size_t` 인덱스를 받는다. `int` 변수로 직접 인덱싱하면 경고가 발생한다.
+
+```cpp
+// ❌ 금지
+for (int i = 0; i < vec.size(); ++i) vec[i]; // int → size_t 변환
+vec[popup_slot_index_];                       // int → size_t 변환
+
+// ✅ 올바른 패턴 A: 루프 변수를 size_t로 선언
+for (size_t i = 0; i < vec.size(); ++i) vec[i];
+
+// ✅ 올바른 패턴 B: int 변수는 인덱싱 시 캐스트
+vec[static_cast<size_t>(popup_slot_index_)];
+```
+
+**루프 범위 비교 주의**: `constexpr int N = 10`을 `size_t` 루프와 비교할 때는 `static_cast<size_t>(N)` 사용.
+
+### `-Wold-style-cast` : C 스타일 캐스트 금지
+
+```cpp
+// ❌ 금지
+(double)actual.x
+(float)someValue
+
+// ✅ 올바른 패턴
+static_cast<double>(actual.x)
+static_cast<float>(someValue)
+```
+
+### `-Wunused-private-field` : 선언만 하고 사용하지 않는 private 멤버 금지
+
+클래스에 private 멤버를 선언했다면 반드시 사용해야 한다. 미래를 위해 남겨두는 필드는 웹 빌드를 깨뜨린다. 완전히 사용하지 않을 경우 제거할 것.
+
+### 에셋 파일명 대소문자 일치 필수 (런타임 크래시 방지)
+
+Windows는 파일시스템이 대소문자를 구분하지 않아 `Wall.png`와 `wall.png`를 동일하게 취급하지만, **Emscripten(Linux)은 대소문자를 구분**한다. 코드의 경로와 실제 파일명이 다르면 `assets::locate_asset`이 `std::runtime_error`를 throw하고 해당 GameState가 즉시 크래시된다.
+
+```cpp
+// ❌ 실제 파일이 wall.png인데 코드에서 Wall.png 참조 → Windows OK, 웹 크래시
+Engine::GetTextureManager().Load("Assets/images/Wall.png");
+
+// ✅ 실제 파일명 그대로 사용
+Engine::GetTextureManager().Load("Assets/images/wall.png");
+```
+
+**규칙**: 새 에셋을 추가하거나 경로를 코드에 입력할 때 실제 파일명의 대소문자를 그대로 복사할 것. 관례상 `Assets/` 하위 파일은 모두 소문자로 이름 짓는 것을 권장한다 (`DigiPen.png`은 예외 — 실제 파일이 대문자).
+
+### 웹 빌드 테스트 방법
+
+```bash
+# DragonicTactics/ 디렉토리에서:
+wsl cmake --preset web-release          # configure (최초 1회 또는 CMake 변경 시)
+wsl cmake --build build/web-release     # 빌드 (에러만 확인)
+```
+
+에러 출력이 대량으로 나올 경우, 에러만 추출:
+```powershell
+wsl cmake --build build/web-release 2>&1 | Where-Object { $_ -match 'error:' }
+```
+
+---
+
 ## 새 파일 추가 규칙
 
 1. 헤더: `.h` 확장자 (`.hpp` 아님)

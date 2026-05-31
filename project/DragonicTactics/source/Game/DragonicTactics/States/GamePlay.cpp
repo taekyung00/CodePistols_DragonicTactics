@@ -101,8 +101,8 @@ namespace
 static void cam_virt_layout(Math::ivec2 actual, double& scale, double& ox, double& oy) noexcept
 {
     scale = std::min(
-        (double)actual.x / TacticalCamera::VIRTUAL_W,
-        (double)actual.y / TacticalCamera::VIRTUAL_H);
+        static_cast<double>(actual.x) / TacticalCamera::VIRTUAL_W,
+        static_cast<double>(actual.y) / TacticalCamera::VIRTUAL_H);
     ox = (actual.x - TacticalCamera::VIRTUAL_W * scale) * 0.5;
     oy = (actual.y - TacticalCamera::VIRTUAL_H * scale) * 0.5;
 }
@@ -436,8 +436,8 @@ void GamePlay::DisplayDamageAmount(const CharacterDamagedEvent& event)
   }
   Math::ivec2 grid_pos = event.target->GetGridPosition()->Get();
   Math::vec2 text_position = {
-      grid_pos.x * (double)GridSystem::TILE_SIZE,
-      grid_pos.y * (double)GridSystem::TILE_SIZE + GridSystem::TILE_SIZE
+      grid_pos.x * static_cast<double>(GridSystem::TILE_SIZE),
+      grid_pos.y * static_cast<double>(GridSystem::TILE_SIZE) + GridSystem::TILE_SIZE
   };
   m_ui_manager->ShowDamageText(event.damageAmount, text_position, size);
 }
@@ -554,7 +554,7 @@ void GamePlay::Update(double dt)
 
 // 수정됨: if (game_end) return; 를 여기서 바로 호출하지 않습니다.
 
-    double scaledDt = dt * debugMgr->timeScale;
+    double scaledDt = dt * static_cast<double>(debugMgr->timeScale);
 
     // 1. 게임이 끝나더라도 메모리 해제(Destroy 처리)와 파티클, UI 갱신을 위해 기본 시스템 업데이트는 계속 실행합니다.
     if (goMgr) goMgr->UpdateAll(scaledDt);

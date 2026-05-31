@@ -12,16 +12,15 @@ void ShakeComponent::Update(double deltaTime) {
         
         if (timer <= 0.0f) {
             timer = 0.0f;
-            offset = Math::vec2(0.0f, 0.0f);
+            offset = Math::vec2(0.0, 0.0);
         } else {
-            float damping = timer / duration; 
+            float damping = timer / duration;
             float currentIntensity = initialIntensity * damping;
 
-            // C++ 스타일의 안전한 형변환 사용
-            float randX = ((std::rand() / static_cast<float>(RAND_MAX)) * 2.0f - 1.0f) * currentIntensity;
-            float randY = ((std::rand() / static_cast<float>(RAND_MAX)) * 2.0f - 1.0f) * currentIntensity;
-            
-            offset = Math::vec2(randX, randY);
+            float randX = ((static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX)) * 2.0f - 1.0f) * currentIntensity;
+            float randY = ((static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX)) * 2.0f - 1.0f) * currentIntensity;
+
+            offset = Math::vec2(static_cast<double>(randX), static_cast<double>(randY));
         }
     }
 }

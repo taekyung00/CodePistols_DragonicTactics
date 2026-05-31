@@ -493,7 +493,7 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
 					// 피격 대상의 위치(tgt->GetPosition())에 파티클 생성
 					// 위치 그대로 생성하면 좌측 하단으로 파티클이 쏠림
 					// particleManager->Emit(5, { tgt->GetPosition().x + 30, tgt->GetPosition().y + 30 }, { 0, 0 }, { 0, 100 }, 3.14159265f / 2.0f);
-					particleManager->Emit(10, tgt->GetPosition() + Math::vec2{ GridSystem::TILE_SIZE / 2.0, GridSystem::TILE_SIZE / 2.0 }, { 0, 0 }, { 0, 100 }, 3.14159265f);
+					particleManager->Emit(10, tgt->GetPosition() + Math::vec2{ GridSystem::TILE_SIZE / 2.0, GridSystem::TILE_SIZE / 2.0 }, { 0, 0 }, { 0, 100 }, 3.14159265);
 				}
 				//}
 			}
@@ -610,7 +610,7 @@ bool SpellSystem::CastSpell(Character* caster, const std::string& spell_id, Math
 		auto* particleManager = Engine::GetGameStateManager().GetGSComponent<CS230::ParticleManager<Particles::Hit>>();
 		if (particleManager)
 		{
-			particleManager->Emit(10, caster->GetPosition() + Math::vec2{ GridSystem::TILE_SIZE / 2.0, GridSystem::TILE_SIZE / 2.0 }, { 0, 0 }, { 0, 100 }, 3.14159265f / 2.0f);
+			particleManager->Emit(10, caster->GetPosition() + Math::vec2{ GridSystem::TILE_SIZE / 2.0, GridSystem::TILE_SIZE / 2.0 }, { 0, 0 }, { 0, 100 }, 3.14159265 / 2.0);
 		}
 	}
 

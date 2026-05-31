@@ -60,7 +60,7 @@ void RenderingTest::Update([[maybe_unused]] double dt)
 		auto* particleManager = Engine::GetGameStateManager().GetGSComponent<CS230::ParticleManager<Particles::Hit>>();
 		if (particleManager)
 		{
-			particleManager->Emit(5, { 50.0, 50.0 }, { 0, 0 }, { 0, 100 }, 3.14159265f / 2.0f);
+			particleManager->Emit(5, { 50.0, 50.0 }, { 0, 0 }, { 0, 100 }, 3.14159265 / 2.0);
 			Engine::GetLogger().LogEvent("Emitted particles at (50,50)");
 		}
 	}

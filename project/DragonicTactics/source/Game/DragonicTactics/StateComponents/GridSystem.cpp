@@ -39,7 +39,7 @@ GridSystem::GridSystem()
 	stone_tile_bright = Engine::GetTextureManager().Load("Assets/images/stone_tile_bright.png");
 	stone_tile_dark	  = Engine::GetTextureManager().Load("Assets/images/stone_tile_dark.png");
 	lava_tile         = Engine::GetTextureManager().Load("Assets/images/lava.png");
-	wall_tile         = Engine::GetTextureManager().Load("Assets/images/Wall.png");
+	wall_tile         = Engine::GetTextureManager().Load("Assets/images/wall.png");
 }
 
 void GridSystem::ResizeGrid(int w, int h)
