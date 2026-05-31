@@ -6,7 +6,6 @@
  */
 #pragma once
 #include "../Objects/Character.h"
-#include "../Test/Week1TestMocks.h"
 #include "../Types/Events.h"
 #include "./EventBus.h"
 #include <queue>
@@ -19,17 +18,10 @@ class EventBus;
 // Initiative tracking structure
 struct InitiativeEntry
 {
-  Character*	 character;
-  MockCharacter* mockCharacter; // For testing
-  int			 speed;
+  Character* character;
+  int        speed;
 
-  // Constructor for real characters
-  InitiativeEntry(Character* ch, int sp) : character(ch), mockCharacter(nullptr), speed(sp)
-  {
-  }
-
-  // Constructor for mock characters (testing)
-  InitiativeEntry(MockCharacter* ch, int sp) : character(nullptr), mockCharacter(ch), speed(sp)
+  InitiativeEntry(Character* ch, int sp) : character(ch), speed(sp)
   {
   }
 };
@@ -56,7 +48,6 @@ class TurnManager : public CS230::Component
 
   // Turn management
   void InitializeTurnOrder(const std::vector<Character*>& characters);
-  void InitializeTurnOrder(const std::vector<MockCharacter*>& characters);
   void StartNextTurn();
   void EndCurrentTurn();
 
