@@ -209,12 +209,12 @@ bool DataRegistry::LoadAllCharacterData(const std::string& filepath)
 	  }
 	  Cdata.max_hp = charData["max_hp"].get<int>();
 
-	  if (!charData.contains("speed") || !charData["speed"].is_number_integer())
+	  if (!charData.contains("mov") || !charData["mov"].is_number_integer())
 	  {
-		Engine::GetLogger().LogError(characterName + ": Missing or invalid 'speed'");
+		Engine::GetLogger().LogError(characterName + ": Missing or invalid 'mov'");
 		continue;
 	  }
-	  Cdata.speed = charData["speed"].get<int>();
+	  Cdata.speed = charData["mov"].get<int>();
 
 	  if (!charData.contains("max_action_points") || !charData["max_action_points"].is_number_integer())
 	  {
@@ -287,7 +287,7 @@ bool DataRegistry::LoadAllCharacterData(const std::string& filepath)
 	  // save to database
 	  characterDatabase[characterName] = Cdata;
 
-	  Engine::GetLogger().LogEvent("Loaded " + characterName + ": HP=" + std::to_string(Cdata.max_hp) + ", Speed=" + std::to_string(Cdata.speed));
+	  Engine::GetLogger().LogEvent("Loaded " + characterName + ": HP=" + std::to_string(Cdata.max_hp) + ", MOV=" + std::to_string(Cdata.speed));
 	}
 
 	return true;

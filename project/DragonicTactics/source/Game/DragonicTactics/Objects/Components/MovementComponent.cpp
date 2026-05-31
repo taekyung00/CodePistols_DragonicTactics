@@ -99,7 +99,7 @@ void MovementComponent::Update(double dt)
 
 	if (m_stats->GetSpeed() <= 0)
 	{
-	  Engine::GetLogger().LogEvent(m_owner->TypeName() + " is out of speed.");
+	  Engine::GetLogger().LogEvent(m_owner->TypeName() + " is out of MOV.");
 	  m_current_path.clear();
 	  return;
 	}
@@ -131,7 +131,7 @@ void MovementComponent::Update(double dt)
 	    Engine::GetSoundManager().PlaySFX(walk_sfx);
 	  }
 
-	  Engine::GetLogger().LogEvent(m_owner->TypeName() + " moved. Speed remaining: " + std::to_string(m_stats->GetSpeed()));
+	  Engine::GetLogger().LogEvent(m_owner->TypeName() + " moved. MOV remaining: " + std::to_string(m_stats->GetSpeed()));
 
 	  // 용암 이동 피해
 	  if (tile_type == GridSystem::TileType::Lava)

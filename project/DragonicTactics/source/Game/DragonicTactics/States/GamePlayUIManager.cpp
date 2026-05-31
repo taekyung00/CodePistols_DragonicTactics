@@ -993,7 +993,7 @@ void GamePlayUIManager::DrawHoverTooltip()
         { 0.4, 0.4 }, CS200::YELLOW, DrawDepth::UI);
     ty -= LH;
 
-    std::string spd_str = "Speed: " + std::to_string(hovered_character_->GetMovementRange());
+    std::string spd_str = "MOV: " + std::to_string(hovered_character_->GetMovementRange());
     textMgr.DrawText(spd_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Kings,
         { 0.4, 0.4 }, CS200::GREEN, DrawDepth::UI);
     ty -= LH;
@@ -1064,7 +1064,7 @@ void GamePlayUIManager::DrawCharacterStatsPanel([[maybe_unused]] Math::Transform
 	    Math::vec2{ text_x_pos + 50.0, current_y + panel_height_per_char - (first_line_y + line_height * 2.0) },
 	    Fonts::Kings, text_scale, CS200::YELLOW);
 
-	std::string speed_text = "Speed: " + std::to_string(character->GetMovementRange());
+	std::string speed_text = "MOV: " + std::to_string(character->GetMovementRange());
 	Engine::GetTextManager().DrawText(speed_text,
 	    Math::vec2{ text_x_pos + 30.0, current_y + panel_height_per_char - (first_line_y + line_height * 3.0) },
 	    Fonts::Kings, text_scale, CS200::GREEN);
@@ -1163,13 +1163,13 @@ void GamePlayUIManager::InitStatusEffectIcons()
     effect_descriptions_ = {
         {"Lifesteal",  "Recover 50% of damage dealt this turn (round down)"},
         {"Frenzy",     "If next attack deals 10+ damage, target receives random debuff; otherwise, the Fighter receives it."},
-        {"Exhaustion", "Speed and Action points become 0 next turn"},
+        {"Exhaustion", "MOV and Action points become 0 next turn"},
         {"Purify",     "Removes all status effects from self"},
         {"Blessing",   "All damage taken -3, all damage dealt +3"},
         {"Curse",      "All damage taken +3, all damage dealt -3"},
-        {"Haste",      "Speed +1, Actions +1"},
+        {"Haste",      "MOV +1, Actions +1"},
         {"Stealth",    "Untargetable. First damage next turn doubled. Removed on attack."},
-        {"Fear",       "All damage dealt -3, speed -1"},
+        {"Fear",       "All damage dealt -3, MOV -1"},
     };
 
     // 효과별 툴팁 폭 사전 계산
@@ -1637,7 +1637,7 @@ void GamePlayUIManager::DrawDragonWorldHoverTooltip()
             auto& textMgr = Engine::GetTextManager();
             auto* renderer = CS230::TextureManager::GetRenderer2D();
             
-            std::string reason_text = "No Speed.";
+            std::string reason_text = "No MOV.";
             
             // [핵심] 드래곤의 월드 위치를 가져와 화면 위치로 변환합니다.
             Math::vec2 target_pos = m_virtual_mouse_; // (변환 실패 시 마우스 위치를 임시 백업으로 사용)

@@ -133,7 +133,7 @@ void Character::OnTurnStart()
   if (stats)
   {
 	stats->RefreshSpeed();
-	Engine::GetLogger().LogEvent(TypeName() + " Speed refreshed to " + std::to_string(stats->GetSpeed()));
+	Engine::GetLogger().LogEvent(TypeName() + " MOV refreshed to " + std::to_string(stats->GetSpeed()));
   }
 
   Engine::GetLogger().LogDebug(std::string(FUNC_NAME) + " - END");

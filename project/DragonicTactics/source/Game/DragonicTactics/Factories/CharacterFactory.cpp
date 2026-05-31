@@ -103,7 +103,7 @@ std::unique_ptr<Cleric> CharacterFactory::CreateCleric(Math::ivec2 position)
 
     Engine::GetLogger().LogDebug(
       "CharacterFactory: Created Cleric from JSON at (" + std::to_string(position.x) + ", " + std::to_string(position.y) + ") - HP: " + std::to_string(data.max_hp) +
-      ", Speed: " + std::to_string(data.speed));
+      ", MOV: " + std::to_string(data.speed));
   }
   else
   {
@@ -150,7 +150,7 @@ std::unique_ptr<Dragon> CharacterFactory::CreateDragon(Math::ivec2 position)
 
 	Engine::GetLogger().LogDebug(
 	  "CharacterFactory: Created Dragon from JSON at (" + std::to_string(position.x) + ", " + std::to_string(position.y) + ") - HP: " + std::to_string(data.max_hp) +
-	  ", Speed: " + std::to_string(data.speed));
+	  ", MOV: " + std::to_string(data.speed));
   }
   else
   {
@@ -197,7 +197,7 @@ std::unique_ptr<Fighter> CharacterFactory::CreateFighter(Math::ivec2 position)
 
 	Engine::GetLogger().LogDebug(
 	  "CharacterFactory: Created Fighter from JSON at (" + std::to_string(position.x) + ", " + std::to_string(position.y) + ") - HP: " + std::to_string(data.max_hp) +
-	  ", Speed: " + std::to_string(data.speed));
+	  ", MOV: " + std::to_string(data.speed));
   }
   else
   {
@@ -237,7 +237,7 @@ std::unique_ptr<Rogue> CharacterFactory::CreateRogue(Math::ivec2 position)
 
     Engine::GetLogger().LogDebug(
       "CharacterFactory: Created Rogue from JSON at (" + std::to_string(position.x) + ", " + std::to_string(position.y) + ") - HP: " + std::to_string(data.max_hp) +
-      ", Speed: " + std::to_string(data.speed));
+      ", MOV: " + std::to_string(data.speed));
   }
   else
   {
@@ -277,7 +277,7 @@ std::unique_ptr<Wizard> CharacterFactory::CreateWizard(Math::ivec2 position)
 
     Engine::GetLogger().LogDebug(
       "CharacterFactory: Created Wizard from JSON at (" + std::to_string(position.x) + ", " + std::to_string(position.y) + ") - HP: " + std::to_string(data.max_hp) +
-      ", Speed: " + std::to_string(data.speed));
+      ", MOV: " + std::to_string(data.speed));
   }
   else
   {
