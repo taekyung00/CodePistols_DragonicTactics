@@ -28,7 +28,7 @@ struct TacticalCamera;
 class GamePlayUIManager
 {
   public:
-  void ShowDamageText(int damage, Math::vec2 position, Math::vec2 size);
+  void ShowDamageText(int damage, Math::vec2 position, Math::vec2 size, double delay = 0.0);
   void ShowGameEnd(std::string&& text);
   void Update(double dt);
   void Draw(Math::TransformationMatrix camera_matrix);
@@ -60,6 +60,7 @@ class GamePlayUIManager
     Math::vec2  position;
     Math::vec2  size;
     double      lifetime;
+    double      delay;   // 이 시간만큼 대기 후 표시 (delay > 0 이면 숨김)
   };
 
   std::string popup_hover_reason_;

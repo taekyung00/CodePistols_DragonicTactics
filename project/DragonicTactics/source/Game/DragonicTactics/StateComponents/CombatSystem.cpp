@@ -19,8 +19,37 @@
 #include "Game/DragonicTactics/Debugger/DebugManager.h"
 #include "Game/DragonicTactics/StateComponents/StatusEffectHandler.h"
 #include "CombatSystem.h"
+#include "Engine/GameObjectManager.h"
+#include "Game/GameObjectTypes.h"
 
-// #include "../SpellSlots.h"
+namespace
+{
+// SpellDelayObject와 동일한 패턴 — AI 공격 데미지를 N초 뒤에 적용
+static constexpr double AI_ATTACK_DELAY = 0.3;
+
+class AttackDelayObject : public CS230::GameObject
+{
+    double                m_delay;
+    std::function<void()> m_callback;
+
+public:
+    AttackDelayObject(double delay, std::function<void()> cb)
+        : CS230::GameObject({ 0, 0 }), m_delay(delay), m_callback(std::move(cb))
+    {
+    }
+    std::string     TypeName() override { return "AttackDelayObject"; }
+    GameObjectTypes Type() override { return static_cast<GameObjectTypes>(0); }
+    void            Update(double dt) override
+    {
+        m_delay -= dt;
+        if (m_delay <= 0.0)
+        {
+            m_callback();
+            Destroy();
+        }
+    }
+};
+} // namespace
 
 int CombatSystem::CalculateDamage(Character* attacker, Character* defender, const std::string& damageDice, int baseDamage)
 {
@@ -164,10 +193,30 @@ bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender)
 	eventBus->Publish(CharacterAttackedEvent{ attacker, defender, damage });
   }
 
-  ApplyDamage(attacker, defender, damage);
-
-  if (handler)
-	handler->OnAfterAttack(attacker, defender, damage);
+  if (attacker->IsAIControlled())
+  {
+	// AI 공격: 0.3초 후 데미지 적용 → SFX와 이펙트가 함께 등장
+	auto* gom = Engine::GetGameStateManager().GetGSComponent<CS230::GameObjectManager>();
+	if (gom)
+	{
+	  gom->Add(std::unique_ptr<CS230::GameObject>(new AttackDelayObject(
+		AI_ATTACK_DELAY,
+		[this, attacker, defender, damage, handler]()
+		{
+		  if (!defender->IsAlive()) return; // 다른 경로로 이미 사망 시 skip
+		  ApplyDamage(attacker, defender, damage);
+		  if (handler)
+			handler->OnAfterAttack(attacker, defender, damage);
+		})));
+	}
+  }
+  else
+  {
+	// 플레이어 공격: 즉시 데미지 적용
+	ApplyDamage(attacker, defender, damage);
+	if (handler)
+	  handler->OnAfterAttack(attacker, defender, damage);
+  }
 
   attacker->SetHasAttackedThisTurn(true);
 

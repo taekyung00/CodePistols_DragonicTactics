@@ -458,11 +458,6 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
 	{
 		auto* dice = Engine::GetGameStateManager().GetGSComponent<DiceManager>();
 
-		// [추가] 파티클 매니저 가져오기
-		// 다른 파티클 사용 시 CS230::ParticleManager<Particles::Hit> 에서 Hit을 다른 파티클로 수정
-		// EX) CS230::ParticleManager<Particles::Spell>
-		auto* particleManager = Engine::GetGameStateManager().GetGSComponent<CS230::ParticleManager<Particles::Hit>>();
-
 		for (auto* tgt : targets)
 		{
 			int damage = CalculateSpellDamage(spell, upcast_level);
@@ -484,18 +479,7 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
 				auto* seh = Engine::GetGameStateManager().GetGSComponent<StatusEffectHandler>();
 				if (seh && caster)
 					seh->OnAfterAttack(caster, tgt, damage);
-
-				// [추가] 피격당한 타겟이 드래곤이 아닐 경우 파티클 발생
-				// if (tgt != nullptr && tgt->GetCharacterType() != CharacterTypes::Dragon)
-				//{
-				if (particleManager)
-				{
-					// 피격 대상의 위치(tgt->GetPosition())에 파티클 생성
-					// 위치 그대로 생성하면 좌측 하단으로 파티클이 쏠림
-					// particleManager->Emit(5, { tgt->GetPosition().x + 30, tgt->GetPosition().y + 30 }, { 0, 0 }, { 0, 100 }, 3.14159265f / 2.0f);
-					particleManager->Emit(10, tgt->GetPosition() + Math::vec2{ GridSystem::TILE_SIZE / 2.0, GridSystem::TILE_SIZE / 2.0 }, { 0, 0 }, { 0, 100 }, 3.14159265);
-				}
-				//}
+				// 파티클·셰이크는 CharacterDamagedEvent 핸들러(GamePlay)에서 딜레이 후 처리
 			}
 			else if (damage < 0)
 			{

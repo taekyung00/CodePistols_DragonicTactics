@@ -63,9 +63,9 @@ void GamePlayUIManager::SetCamera(const TacticalCamera* camera)
     m_camera_ = camera;
 }
 
-void GamePlayUIManager::ShowDamageText(int damage, Math::vec2 position, Math::vec2 size)
+void GamePlayUIManager::ShowDamageText(int damage, Math::vec2 position, Math::vec2 size, double delay)
 {
-  m_damage_texts.push_back({ std::to_string(damage), position, size, 0.5 });
+  m_damage_texts.push_back({ std::to_string(damage), position, size, 0.5, delay });
 }
 
 void GamePlayUIManager::ShowGameEnd(std::string&& text)
@@ -339,10 +339,15 @@ void GamePlayUIManager::Update(double dt)
         m_notice_timer_ -= dt;
 
     for (auto& text : m_damage_texts)
-        text.lifetime -= dt;
+    {
+        if (text.delay > 0.0)
+            text.delay -= dt;
+        else
+            text.lifetime -= dt;
+    }
     m_damage_texts.erase(
         std::remove_if(m_damage_texts.begin(), m_damage_texts.end(),
-                       [](const DamageText& t) { return t.lifetime <= 0.0; }),
+                       [](const DamageText& t) { return t.delay <= 0.0 && t.lifetime <= 0.0; }),
         m_damage_texts.end());
 }
 
@@ -369,6 +374,7 @@ void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_
 
     for (const auto& text : m_damage_texts)
     {
+        if (text.delay > 0.0) continue;
         Math::vec2 screen_pos = text.position;
         if (m_camera_)
             screen_pos = m_camera_->WorldToScreen(text.position, Engine::GetWindow().GetSize());

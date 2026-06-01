@@ -16,6 +16,7 @@
 #include "DebugVisualizer.h"
 #include "Game/DragonicTactics/Objects/Character.h"
 #include "Game/DragonicTactics/Objects/Components/SpellSlots.h"
+#include "Game/DragonicTactics/StateComponents/CombatSystem.h"
 #include "Game/DragonicTactics/StateComponents/GridSystem.h"
 #include "Game/DragonicTactics/StateComponents/TurnManager.h"
 
@@ -200,6 +201,17 @@ void DebugManager::DrawDebugControlPanel()
 	ImGui::PushStyleColor(ImGuiCol_Text, god_mode ? ImVec4(1.0f, 0.3f, 0.3f, 1.0f) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
 	ImGui::Checkbox("God Mode", &god_mode);
 	ImGui::PopStyleColor();
+
+	ImGui::Spacing();
+	ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.7f, 0.1f, 0.1f, 1.0f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.9f, 0.2f, 0.2f, 1.0f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.5f, 0.05f, 0.05f, 1.0f));
+	if (ImGui::Button("Kill All Enemies", ImVec2(-1, 28)))
+	{
+	  if (console_)
+		console_->ExecuteCommand("killall");
+	}
+	ImGui::PopStyleColor(3);
 
 	ImGui::Spacing();
 	ImGui::Separator();
@@ -408,19 +420,33 @@ void DebugManager::RegisterGameCommands()
   if (!console_)
 	return;
 
-  // set_hp dragon 30
+  // set_hp dragon 30  /  set_hp fighter 0 → 즉사 처리
   console_->RegisterCommand(
 	"set_hp",
 	[](std::vector<std::string> args)
 	{
 	  if (args.size() < 2)
 		return;
-	  try {
-		if (auto* ch = FindCharacterByName(args[0]))
-		  ch->SetHP(std::stoi(args[1]));
-	  } catch (...) { Engine::GetLogger().LogError("set_hp: invalid value: " + args[1]); }
+	  try
+	  {
+		auto* ch    = FindCharacterByName(args[0]);
+		int   value = std::stoi(args[1]);
+		if (!ch) return;
+		if (value <= 0)
+		{
+		  // 0 이하: CombatSystem 경로로 전체 사망 체인 발동
+		  auto* combat = Engine::GetGameStateManager().GetGSComponent<CombatSystem>();
+		  if (combat)
+			combat->ApplyDamage(nullptr, ch, ch->GetHP() + 1);
+		}
+		else
+		{
+		  ch->SetHP(value);
+		}
+	  }
+	  catch (...) { Engine::GetLogger().LogError("set_hp: invalid args"); }
 	},
-	"set_hp <target> <value> — HP 직접 설정");
+	"set_hp <target> <value> — HP 직접 설정 (0 이하: 즉사 처리)");
 
   // set_ap dragon 3
   console_->RegisterCommand(
@@ -455,10 +481,40 @@ void DebugManager::RegisterGameCommands()
 	  if (args.empty())
 		return;
 	  auto* ch = FindCharacterByName(args[0]);
-	  if (ch && ch->IsAlive())
-		ch->TakeDamage(ch->GetHP() + 1, nullptr);
+	  if (!ch || !ch->IsAlive()) return;
+	  auto* combat = Engine::GetGameStateManager().GetGSComponent<CombatSystem>();
+	  if (combat)
+		combat->ApplyDamage(nullptr, ch, ch->GetHP() + 1);
 	},
-	"kill <target> — 즉사 (DeathEvent 발행됨)");
+	"kill <target> — 즉사 (CharacterDeathEvent 발행됨)");
+
+  // killall — 모든 AI 적 즉사
+  console_->RegisterCommand(
+	"killall",
+	[]([[maybe_unused]] std::vector<std::string> args)
+	{
+	  auto* combat = Engine::GetGameStateManager().GetGSComponent<CombatSystem>();
+	  auto* grid   = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+	  if (!combat || !grid) return;
+
+	  // Dragon을 attacker로 사용, 복사본 순회로 그리드 변경과 충돌 방지
+	  Character*              dragon = nullptr;
+	  std::vector<Character*> all    = grid->GetAllCharacters();
+	  for (auto* ch : all)
+		if (ch && ch->GetCharacterType() == CharacterTypes::Dragon)
+		{
+		  dragon = ch;
+		  break;
+		}
+
+	  for (auto* ch : all)
+	  {
+		if (!ch || !ch->IsAlive()) continue;
+		if (ch->GetCharacterType() == CharacterTypes::Dragon) continue;
+		combat->ApplyDamage(dragon, ch, ch->GetHP() + 1);
+	  }
+	},
+	"killall — 모든 AI 적 즉사 (전체 사망 체인 발동)");
 
   // add_effect dragon Fear 3
   console_->RegisterCommand(

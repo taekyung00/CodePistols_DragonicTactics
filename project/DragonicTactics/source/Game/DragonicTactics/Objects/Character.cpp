@@ -211,7 +211,6 @@ void Character::TakeDamage(int damage, [[maybe_unused]] Character* attacker)
   if (GetStatsComponent() != nullptr)
   {
 	  GetStatsComponent()->TakeDamage(damage);
-    GetShakeComponent()->StartShake(10.0f, 0.3f);
   }
 
   if (IsAlive() == false)

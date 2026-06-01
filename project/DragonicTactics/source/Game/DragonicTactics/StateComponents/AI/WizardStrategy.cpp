@@ -144,7 +144,7 @@ AIDecision WizardStrategy::MakeMoveDecision(
 		// 텔레포트 (AP-1, 슬롯 불필요) — target=nullptr, destination=sweet_tile
 		// AISystem::ExecuteDecision에서 target==nullptr → destination 사용
 		return { AIDecisionType::UseAbility, nullptr, sweet_tile, "S_GEO_030",
-		         "Move: Teleport to sweet spot", 0, TELEPORT_UPCAST };
+		         "Move: Teleport to sweet spot", 0, 0 };
 	}
 	else
 	{
@@ -262,9 +262,9 @@ Math::ivec2 WizardStrategy::FindSweetSpotTile(
 	if (cur_dist >= SWEET_SPOT_MIN && cur_dist <= SWEET_SPOT_MAX)
 		return myPos;
 
-	// 텔레포트 범위(유효 사거리 = 1 + TELEPORT_UPCAST = 5) 내 타일 중
+	// 텔레포트 사거리(TELEPORT_RANGE = CSV Empty:Point:4) 내 타일 중
 	// Dragon에서 SWEET_SPOT_MIN~SWEET_SPOT_MAX 거리인 가장 가까운 빈 타일 탐색
-	int           teleport_range = 1 + TELEPORT_UPCAST;
+	int           teleport_range = TELEPORT_RANGE;
 	auto          candidates     = grid->GetReachableTiles(myPos, teleport_range);
 	Math::ivec2   best           = myPos;
 	int           best_priority  = -1; // 높을수록 선호 (Sweet Spot 내: 2, 더 멀리: 1)
@@ -288,11 +288,16 @@ Math::ivec2 WizardStrategy::FindSweetSpotTile(
 				best          = tile;
 			}
 		}
-		// Sweet Spot 밖이지만 Dragon에서 더 멀어지는 방향 (후퇴)
-		else if (best_priority < 0 && d > cur_dist)
+		// Sweet Spot 밖: 너무 가까우면 후퇴, 너무 멀면 접근
+		else if (best_priority < 0)
 		{
-			best_priority = 1;
-			best          = tile;
+			bool should_pick = (cur_dist < SWEET_SPOT_MIN && d > cur_dist)
+			                || (cur_dist > SWEET_SPOT_MAX && d < cur_dist);
+			if (should_pick)
+			{
+				best_priority = 1;
+				best          = tile;
+			}
 		}
 	}
 

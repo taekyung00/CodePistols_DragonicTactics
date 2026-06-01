@@ -61,10 +61,11 @@ public:
     void SetSfxCallback(SfxCallback cb) { sfx_callback_ = std::move(cb); }
     void ClearSfxCallback() { sfx_callback_ = nullptr; }
 
-    float GetBGMVolume() const;
-    float GetSFXVolume() const;
-    bool  IsBGMPlaying() const;
-    bool  IsBGMPaused() const;
+    float  GetBGMVolume() const;
+    float  GetSFXVolume() const;
+    bool   IsBGMPlaying() const;
+    bool   IsBGMPaused() const;
+    double GetSFXDuration(const std::string& wav_path) const;  // 로드된 WAV의 재생 시간(초)
 private:
     ALCdevice*  al_device_  = nullptr;
     ALCcontext* al_context_ = nullptr;

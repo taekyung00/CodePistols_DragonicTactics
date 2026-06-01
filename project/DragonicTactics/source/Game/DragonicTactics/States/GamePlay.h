@@ -64,9 +64,21 @@ class GamePlay : public CS230::GameState
   std::unique_ptr<GamePlayUIManager>  m_ui_manager;
   std::unique_ptr<BattleOrchestrator> m_orchestrator;
 
-  void DisplayDamageAmount(const CharacterDamagedEvent& event);
+  void DisplayDamageAmount(const CharacterDamagedEvent& event, double delay);
 	void CheckGameEnd(const CharacterDeathEvent& event);
 
+
+  // 직전 공격/스펠 SFX 재생 시간 → CharacterDamagedEvent의 데미지 텍스트·피격음 딜레이에 사용
+  double m_pending_damage_delay_ = 0.0;
+
+  // 딜레이 후 실행할 피격 이펙트 (셰이크 + 파티클)
+  struct PendingHitEffect
+  {
+    Character*  target;    // 셰이크 대상 — m_confirmed_dead_ 체크 후 사용
+    Math::vec2  world_pos; // 파티클 위치 — 이벤트 시점에 캡처
+    double      timer;
+  };
+  std::vector<PendingHitEffect> m_pending_hit_effects_;
 
   Character* player  = nullptr;
   std::vector<Character*> enemys {};

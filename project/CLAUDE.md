@@ -18,6 +18,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## 목차
+
+- [프로젝트 개요](#프로젝트-개요)
+- [게임 부팅 & 상태 흐름](#게임-부팅--상태-흐름)
+- [빌드](#빌드)
+- [핵심 아키텍처 원칙](#핵심-아키텍처-원칙)
+- [SpellSystem](#spellsystem)
+- [StatusEffect 두 레이어 구조](#statuseffect-두-레이어-구조)
+- [코드 스타일](#코드-스타일)
+- [웹 빌드 호환 규칙](#웹-빌드-호환-규칙-emscripten--werror-위반-방지)
+- [새 파일 추가 규칙](#새-파일-추가-규칙)
+- [테스트](#테스트)
+- [데이터 주도 설계](#데이터-주도-설계)
+- [SoundManager](#soundmanager-엔진-서비스)
+- [렌더링 패턴](#렌더링-패턴)
+- [문서 참조](#문서-참조)
+
+---
+
 ## 프로젝트 개요
 
 **Dragonic Tactics**: D&D 스타일 턴제 전술 RPG — 커스텀 C++20 OpenGL 엔진 (CMake), 5명 팀, 26주 개발.
@@ -176,6 +195,18 @@ CS230::ParticleManager<Particles::Hit>
 - `DiceManager` — `Roll("2d6")`, `Roll("1d20+5")` 형식으로 주사위 굴림. `RollEntry { notation, rolls, total }` 구조체를 `roll_log_`(최대 200개)에 누적 — `GetRollLog()`로 전체 로그 조회. DebugVisualizer의 Dice History 탭은 `last_dice_log_read_` 인덱스로 새 항목만 읽음 (업캐스트처럼 한 프레임에 여러 번 굴리는 경우도 전부 기록)
 - `CombatSystem` — 공격/방어 주사위 굴림 + 최종 데미지 계산 (StatusEffectHandler 훅 연동)
 - `util::Timer` — 엔진 제공 타이머 (`Engine/Timer.h`). BattleOrchestrator는 이를 사용하지 않음 — AI 대기는 `m_wait_timer` (double, dt 카운트다운)로 처리
+
+### ⚠️ 미수정 크래시 위험 (상세: `docs/Detailed Implementations/features/crash_risks.md`)
+
+CombatSystem / DiceManager 관련 코드를 수정할 때 반드시 확인할 것.
+
+| 위치 | 문제 | 심각도 |
+|---|---|---|
+| `StateComponents/CombatSystem.cpp:29` | null 체크 후 에러 메시지에서 즉시 역참조 — `attacker->TypeName()` 호출 | 🔴 CRITICAL |
+| `StateComponents/CombatSystem.cpp:184` | `RollAttackDamage`에서 `DiceManager` nullptr 체크 없이 역참조 | 🔴 CRITICAL |
+| `StateComponents/StatusEffectHandler.cpp:144` | Frenzy 발동 시 `DiceManager` nullptr 체크 없음 | 🟠 HIGH |
+| `StateComponents/SpellSystem.cpp:314,350` | upcast_dice `std::stoi` 예외 미처리 | 🟠 HIGH |
+| `StateComponents/SpellSystem.cpp:326` | `flat_per_level` `std::stoi` 예외 미처리 | 🟠 HIGH |
 
 **GameObject 컴포넌트**: `GridPosition`, `ActionPoints`, `StatsComponent`, `SpellSlots`, `MovementComponent`, `StatusEffectComponent`, `ShakeComponent`
 

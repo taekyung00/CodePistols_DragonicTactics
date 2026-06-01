@@ -52,6 +52,11 @@ Created:    November 5, 2025
 std::string GamePlay::s_next_map_id   = "first_map";
 bool		GamePlay::s_should_restart = false;
 
+// 스펠 딜레이 오브젝트가 ApplySpellEffect를 지연시키는 시간 — SpellSystem.cpp SpellDelayObject 참고
+static constexpr double SPELL_DELAY_OBJECT_SEC = 1.5;
+// SFX 종료 이 시간 전에 피격 이펙트 등장 — 값 하나로 전체 타이밍 조절
+static constexpr double EFFECT_LEAD_TIME = 0.3;
+
 namespace
 {
   std::string GetSpellSFX(const std::string& spellName) {
@@ -286,7 +291,9 @@ void GamePlay::Load()
   GetGSComponent<EventBus>()->Subscribe<CharacterDamagedEvent>(
 	  [this](const CharacterDamagedEvent& event)
 	  {
-		this->DisplayDamageAmount(event);
+		// 용암 피해(attacker==nullptr)는 SFX가 없으므로 즉시 표시
+		double delay = event.attacker ? m_pending_damage_delay_ : 0.0;
+		this->DisplayDamageAmount(event, delay);
 		std::string att = event.attacker ? event.attacker->TypeName() : "Lava";
 		m_ui_manager->AddBattleLogEntry(
 		  att + "->" + event.target->TypeName()
@@ -295,19 +302,32 @@ void GamePlay::Load()
 
 		if (event.target)
 		{
-		  // 끝 슬롯 우선 탐색 → 공격 SFX(앞 슬롯)와 다른 소스 사용 보장
+		  // 데미지 텍스트와 동일한 딜레이 후 재생 → 텍스트·피격음 동시 등장
 		  if (const char* sfx = SfxHurtFor(event.target->GetCharacterType()))
-			Engine::GetSoundManager().PlaySFXLast(sfx);
+			Engine::GetSoundManager().PlaySFXDelayed(sfx, delay);
+
+		  // 셰이크·파티클도 동일 딜레이로 큐 등록 (위치는 지금 캡처)
+		  Math::vec2 hit_pos = event.target->GetPosition()
+		                     + Math::vec2{ GridSystem::TILE_SIZE / 2.0, GridSystem::TILE_SIZE / 2.0 };
+		  m_pending_hit_effects_.push_back({ event.target, hit_pos, delay });
 		}
 	  });
 
   GetGSComponent<EventBus>()->Subscribe<CharacterAttackedEvent>(
-	  []([[maybe_unused]] const CharacterAttackedEvent& event)
+	  [this]([[maybe_unused]] const CharacterAttackedEvent& event)
 	  {
 		if (event.attacker)
 		{
 		  if (const char* sfx = SfxActionFor(event.attacker->GetCharacterType()))
+		  {
 			Engine::GetSoundManager().PlaySFX(sfx);
+			// AI 공격: AttackDelayObject가 0.3초 뒤에 CharacterDamagedEvent 발행 → 추가 딜레이 불필요
+			// 플레이어 공격: SFX 길이 기반 딜레이
+			if (event.attacker->IsAIControlled())
+			  m_pending_damage_delay_ = 0.0;
+			else
+			  m_pending_damage_delay_ = std::max(0.0, Engine::GetSoundManager().GetSFXDuration(sfx) - EFFECT_LEAD_TIME);
+		  }
 		}
 		// 미스 시 hurt 보조 — 적중 시는 CharacterDamagedEvent가 처리하므로 중복 방지
 		if (event.damageAmount == 0 && event.defender)
@@ -342,10 +362,18 @@ void GamePlay::Load()
                 std::cout << "[SOUND DEBUG] Spell Name: [" << event.spellName << "] | " 
                           << "Path: [" << (sfxPath.empty() ? "Empty(Default Sound)" : sfxPath) << "]" << std::endl;
 
+                // 스펠은 SpellDelayObject가 0.5초 후 데미지를 적용하므로
+                // 그 시간만큼 차감한 나머지가 CharacterDamagedEvent 시점의 잔여 SFX 길이
+                auto computeSpellDelay = [&](const std::string& path) {
+                    double dur = Engine::GetSoundManager().GetSFXDuration(path);
+                    m_pending_damage_delay_ = std::max(0.0, dur - SPELL_DELAY_OBJECT_SEC - EFFECT_LEAD_TIME);
+                };
                 if (!sfxPath.empty()) {
                     Engine::GetSoundManager().PlaySFX(sfxPath.c_str());
+                    computeSpellDelay(sfxPath);
                 } else if (const char* sfx = SfxActionFor(event.caster->GetCharacterType())) {
                     Engine::GetSoundManager().PlaySFX(sfx);
+                    computeSpellDelay(sfx);
                 }
             }
         });
@@ -421,7 +449,7 @@ void GamePlay::Load()
 }
 
 
-void GamePlay::DisplayDamageAmount(const CharacterDamagedEvent& event)
+void GamePlay::DisplayDamageAmount(const CharacterDamagedEvent& event, double delay)
 {
   if (event.target == nullptr) return;
   Math::vec2 size = { 1.0, 1.0 };
@@ -439,7 +467,7 @@ void GamePlay::DisplayDamageAmount(const CharacterDamagedEvent& event)
       grid_pos.x * static_cast<double>(GridSystem::TILE_SIZE),
       grid_pos.y * static_cast<double>(GridSystem::TILE_SIZE) + GridSystem::TILE_SIZE
   };
-  m_ui_manager->ShowDamageText(event.damageAmount, text_position, size);
+  m_ui_manager->ShowDamageText(event.damageAmount, text_position, size, delay);
 }
 
 void GamePlay::CheckGameEnd(const CharacterDeathEvent& event)
@@ -470,6 +498,27 @@ void GamePlay::Update(double dt)
 {
   // 지연된 SFX 큐 처리 — 컷신/종료 상태와 무관하게 매 프레임 실행
   Engine::GetSoundManager().Update(dt);
+
+  // 피격 이펙트 (셰이크·파티클) 딜레이 처리
+  {
+	auto* pm = GetGSComponent<CS230::ParticleManager<Particles::Hit>>();
+	for (auto& fx : m_pending_hit_effects_)
+	  fx.timer -= dt;
+	m_pending_hit_effects_.erase(
+	  std::remove_if(m_pending_hit_effects_.begin(), m_pending_hit_effects_.end(),
+		[&](const PendingHitEffect& fx)
+		{
+		  if (fx.timer > 0.0) return false;
+		  // 셰이크: 사망해서 메모리가 해제된 캐릭터는 건너뜀
+		  if (m_confirmed_dead_.count(fx.target) == 0)
+			fx.target->GetShakeComponent()->StartShake(10.0f, 0.3f);
+		  // 파티클: 위치는 이벤트 시점에 캡처했으므로 항상 유효
+		  if (pm)
+			pm->Emit(10, fx.world_pos, { 0, 0 }, { 0, 100 }, 3.14159265);
+		  return true;
+		}),
+	  m_pending_hit_effects_.end());
+  }
 
   if (s_should_restart)
   {

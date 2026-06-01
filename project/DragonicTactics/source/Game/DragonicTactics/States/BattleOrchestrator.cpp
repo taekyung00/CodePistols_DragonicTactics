@@ -106,8 +106,11 @@ void BattleOrchestrator::HandleAITurn(Character* ai_character, TurnManager* turn
 	ai_system->ExecuteDecision(ai_character, decision);
 
 	// 스펠은 SpellDelayObject가 0.5s 후 효과 적용 → 0.6s 대기로 상태 반영 보장
-	// 이동·공격은 시각적 간격 0.3s
+	// 공격은 AttackDelayObject(0.3s) + 이펙트 확인 여유(0.3s) = 0.6s
+	// 이동은 시각적 간격 0.3s
 	if (decision.type == AIDecisionType::UseAbility)
+	  m_wait_timer = 0.6;
+	else if (decision.type == AIDecisionType::Attack)
 	  m_wait_timer = 0.6;
 	else
 	  m_wait_timer = 0.3;

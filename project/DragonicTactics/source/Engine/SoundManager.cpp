@@ -343,8 +343,23 @@ void SoundManager::Update(double dt)
     pending_sfx_.erase(it, pending_sfx_.end());
 }
 
-float SoundManager::GetBGMVolume() const 
-{ 
+double SoundManager::GetSFXDuration(const std::string& wav_path) const
+{
+    auto it = sfx_cache_.find(wav_path);
+    if (it == sfx_cache_.end()) return 0.0;
+
+    ALint size_bytes = 0, channels = 0, bits = 0, freq = 0;
+    alGetBufferi(it->second, AL_SIZE,      &size_bytes);
+    alGetBufferi(it->second, AL_CHANNELS,  &channels);
+    alGetBufferi(it->second, AL_BITS,      &bits);
+    alGetBufferi(it->second, AL_FREQUENCY, &freq);
+
+    if (channels == 0 || bits == 0 || freq == 0) return 0.0;
+    return static_cast<double>(size_bytes) / (channels * (bits / 8) * freq);
+}
+
+float SoundManager::GetBGMVolume() const
+{
     return bgm_volume_;
 }
 float SoundManager::GetSFXVolume() const 

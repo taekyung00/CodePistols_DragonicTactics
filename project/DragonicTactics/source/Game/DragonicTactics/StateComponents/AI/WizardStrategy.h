@@ -31,7 +31,7 @@ class WizardStrategy : public IAIStrategy
   static constexpr int   SWEET_SPOT_MIN         = 3;
   static constexpr int   SWEET_SPOT_MAX         = 4;  // Fire Bolt 최대 사거리
   static constexpr int   FIRE_BOLT_RANGE        = 4;  // S_ATK_010 Enemy:Single:4
-  static constexpr int   TELEPORT_UPCAST        = 4;  // 유효 텔레포트 사거리 1+4=5
+  static constexpr int   TELEPORT_RANGE         = 4;  // S_GEO_030 CSV Empty:Point:4 와 일치
   static constexpr float SLOT_THRESHOLD         = 0.5f;
   static constexpr float MANA_CONV_HP_THRESHOLD = 0.30f;
   static constexpr int   AVG_FIRE_BOLT_DAMAGE   = 9;  // avg 2d8
