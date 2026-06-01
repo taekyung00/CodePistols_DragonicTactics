@@ -69,7 +69,7 @@ main.cpp → Splash → MainMenu ┬─ Settings (오디오·맵 크기 설정 �
 
 - **GameOver 상태**: `source/Game/GameOver.h` / `GameOver.cpp` — `source/Game/` 직하위 (MainMenu·Settings와 동일 레벨). `GameOver::s_player_won` (static bool)으로 결과를 전달받아 "PLAYER WIN"(금색) / "INVADER WIN"(빨간색) 타이틀 표시. 전환 타이밍은 `GamePlay.h`의 `static constexpr double GAME_OVER_DELAY = 0.5` (초) — 값 변경 시 이 상수만 수정.
 - **셸 레이어 위치 주의**: `Splash`·`MainMenu`·`Settings`·`GameOver`·`Score`·`Background`·`Particles` 는 `source/Game/` **직하위**에 있다 — `source/Game/DragonicTactics/` 하위가 **아니다**. 전투 본편 코드만 `DragonicTactics/` 서브트리에 있다.
-- **Splash 지속시간**: `#if defined(DEVELOPER_VERSION)` → 0.3초, `#else` → 2.0초 (`source/Game/Splash.cpp`). 릴리즈 빌드에서 2초 스플래시를 표시.
+- **Splash 지속시간**: `#if defined(DEVELOPER_VERSION)` → **0.3초**, `#else` → 2.0초 (`source/Game/Splash.cpp`). 릴리즈 빌드에서 2초 스플래시를 표시.
 - ⚠️ `source/Game/States.h`의 `enum class State { Splash, MainMenu, Final }`는 **레거시·미사용**이다. 실제 내비게이션은 이 enum이 아니라 `GameStateManager`의 push/pop으로 동작 — 혼동 주의.
 - **Settings → GamePlay 연결**: `Settings`의 맵 크기 선택이 아래 [데이터 주도 설계](#데이터-주도-설계)의 `GamePlay::s_next_map_id` / `s_should_restart` 정적 필드를 통해 로드할 맵을 결정한다.
 
@@ -202,9 +202,10 @@ CombatSystem / DiceManager 관련 코드를 수정할 때 반드시 확인할 �
 
 | 위치 | 문제 | 심각도 |
 |---|---|---|
-| `StateComponents/CombatSystem.cpp:29` | null 체크 후 에러 메시지에서 즉시 역참조 — `attacker->TypeName()` 호출 | 🔴 CRITICAL |
-| `StateComponents/CombatSystem.cpp:184` | `RollAttackDamage`에서 `DiceManager` nullptr 체크 없이 역참조 | 🔴 CRITICAL |
+| `StateComponents/CombatSystem.cpp` `ExecuteAttack` 첫 null 체크 | 에러 메시지에서 `attacker->TypeName()` 역참조 — attacker=null이면 crash | 🔴 CRITICAL |
 | `StateComponents/StatusEffectHandler.cpp:144` | Frenzy 발동 시 `DiceManager` nullptr 체크 없음 | 🟠 HIGH |
+
+✅ **수정 완료** (이전 :29 `CalculateDamage` null 역참조, :184 `RollAttackDamage` DiceManager nullptr — 현재 코드에서 모두 수정됨)
 | `StateComponents/SpellSystem.cpp:314,350` | upcast_dice `std::stoi` 예외 미처리 | 🟠 HIGH |
 | `StateComponents/SpellSystem.cpp:326` | `flat_per_level` `std::stoi` 예외 미처리 | 🟠 HIGH |
 
@@ -985,8 +986,15 @@ god mode·`timeScale`(빨리감기)·각종 오버레이 토글을 보유한다.
 
 **God Mode 구현 상태** (`docs/Detailed Implementations/features/갓모드 — Dragon 데미지 무효 + AP 무제한.md`):
 - 데미지 차단: ✅ `CombatSystem::ApplyDamage()` 내 early return으로 구현 완료
-- AP 소모 차단: ❌ **미구현** — `CombatSystem.cpp:161`(공격), `SpellSystem.cpp:542/802/837`(스펠 3곳) 수정 필요
+- AP 소모 차단: ❌ **미구현** — `CombatSystem.cpp` ExecuteAttack 하단(공격), `SpellSystem.cpp:542/802/837`(스펠 3곳) 수정 필요
 - `DebugManager::IsGodModeEnabled()` → `debug_mode && god_mode` (Dragon에만 적용)
+
+**디버그 콘솔 주요 명령어 (DebugManager::RegisterGameCommands)**:
+- `set_hp <target> <value>` — value ≤ 0이면 `CombatSystem::ApplyDamage`로 즉사 처리 (CharacterDeathEvent 발행)
+- `kill <target>` — `ApplyDamage`로 즉사 (DeathEvent 포함 전체 사망 체인)
+- `killall` — 모든 AI 적 즉사 (Dragon을 attacker로 전체 사망 체인 발동)
+
+**Debug Tools 패널 (F1 → Tab)** Cheats 섹션에 **Kill All Enemies** 버튼 — `killall` 콘솔 명령어 실행.
 
 ---
 
@@ -1053,9 +1061,40 @@ OpenAL 소스 풀 8개를 공격 SFX와 피격 SFX가 항상 다른 슬롯을 �
 | 순서 | 이벤트 | SFX | 메서드 |
 |---|---|---|---|
 | 1 | `CharacterAttackedEvent` | 공격자 action SFX (`SfxActionFor`) | `PlaySFX` |
-| 2 | `CharacterDamagedEvent` | 피격자 hurt SFX (`SfxHurtFor`) | `PlaySFXLast` |
+| 2 | `CharacterDamagedEvent` | 피격자 hurt SFX (`SfxHurtFor`) | `PlaySFXDelayed(sfx, delay)` |
 
-`CombatSystem::ExecuteAttack`에서 `CharacterAttackedEvent`를 `ApplyDamage` **전에** 발행해 순서 보장. `PlaySFXLast`는 끝 슬롯부터 탐색하므로 `PlaySFX`(앞 슬롯)와 소스 충돌 없음.
+`CombatSystem::ExecuteAttack`에서 `CharacterAttackedEvent`를 `ApplyDamage` **전에** 발행해 순서 보장.
+
+### 이펙트 타이밍 시스템 (`States/GamePlay.cpp`)
+
+피격 이펙트(데미지 텍스트·피격음·셰이크·파티클)가 공격 SFX와 동기화되도록 딜레이를 계산한다.
+
+**핵심 상수** (파일 상단 file-scope):
+```cpp
+static constexpr double SPELL_DELAY_OBJECT_SEC = 1.5; // 스펠 데미지 지연 — 조정 가능
+static constexpr double EFFECT_LEAD_TIME        = 0.3; // SFX 종료 이 시간 전에 이펙트 등장
+```
+
+**`m_pending_damage_delay_`** (GamePlay 멤버) — `CharacterAttackedEvent` / `SpellCastEvent` 핸들러에서 계산:
+```
+플레이어 공격: max(0, SFX길이 - EFFECT_LEAD_TIME)
+AI 공격:       0.0  (AttackDelayObject가 0.3초 뒤 CharacterDamagedEvent를 발행하므로 추가 딜레이 불필요)
+스펠:          max(0, SFX길이 - SPELL_DELAY_OBJECT_SEC - EFFECT_LEAD_TIME)
+용암 피해:     0.0  (attacker == nullptr)
+```
+
+**AI 공격 딜레이 오브젝트** (`StateComponents/CombatSystem.cpp`):
+- `AttackDelayObject` — `SpellDelayObject`와 동일한 패턴. `ExecuteAttack` 내에서 AI 공격 시 `ApplyDamage` 즉시 호출 대신 `AI_ATTACK_DELAY(=0.3)초` 뒤에 실행.
+- `BattleOrchestrator`의 Attack wait_timer = 0.6s (AttackDelayObject 0.3s + 이펙트 확인 여유 0.3s).
+
+**`PendingHitEffect` 큐** (GamePlay):
+```cpp
+struct PendingHitEffect { Character* target; Math::vec2 world_pos; double timer; };
+std::vector<PendingHitEffect> m_pending_hit_effects_;
+```
+`CharacterDamagedEvent` 핸들러에서 큐에 추가 → `GamePlay::Update()` 맨 앞에서 tick → timer ≤ 0이면 `StartShake` + `ParticleManager::Emit`. 사망한 target은 `m_confirmed_dead_` 체크로 skip.
+
+**`SoundManager::GetSFXDuration(path)`** — OpenAL 버퍼 메타데이터(`AL_SIZE / (채널 × 비트 × freq)`)로 WAV 재생 시간(초) 반환. 파일 교체 시 자동 반영.
 
 ⚠️ **Settings SFX 볼륨 반영**: `Settings::ApplySettings()`가 BGM 볼륨과 함께 `SetSFXVolume()`도 호출한다. SFX 볼륨·뮤트 변경 시 반드시 `ApplySettings()`를 통할 것 — SoundManager를 직접 호출하면 Settings UI와 동기화가 깨진다.
 
