@@ -231,3 +231,9 @@ struct AIDecisionEvent
   std::string	 decision_reasoning;
   Math::ivec2	 destination{ -1, -1 }; // Move 타입일 때 목적지 타일
 };
+
+// [추가] 텍스트를 배틀 로그 UI로 직접 전송하기 위한 전용 이벤트
+struct BattleLogMessageEvent 
+{
+    std::string message;
+};

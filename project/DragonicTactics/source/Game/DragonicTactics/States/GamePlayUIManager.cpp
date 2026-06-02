@@ -414,6 +414,11 @@ void GamePlayUIManager::SetCharacters(const std::vector<Character*>& characters)
         m_player_ = nullptr;
       }
     });
+
+    // [여기에 추가!] 텍스트 메시지 이벤트를 받으면 배틀 로그에 띄웁니다.
+        bus->Subscribe<BattleLogMessageEvent>([this](const BattleLogMessageEvent& e) {
+            this->AddBattleLogEntry(e.message);
+        });
   }
 }
 
@@ -1292,14 +1297,26 @@ void GamePlayUIManager::DrawWorld()
             Character* cur = turnMgr->GetCurrentCharacter();
             if (cur && cur->GetCharacterType() != CharacterTypes::Dragon)
             {
-                Math::vec2 pos = cur->GetPosition();
-                int gx = static_cast<int>(std::floor(pos.x / ts));
-                int gy = static_cast<int>(std::floor(pos.y / ts));
-                double cx = gx * ts + ts * 0.5;
-                double cy = gy * ts + ts * 0.5;
-                renderer->DrawRectangle(
-                    Math::TranslationMatrix(Math::vec2{ cx, cy }) * Math::ScaleMatrix(Math::vec2{ ts, ts }),
-                    0x00000000u, 0xFF0000FFu, 3.0, DrawDepth::OVERLAY);
+                // [수정] 은신 상태일 때 릴리즈 모드면 UI 테두리 렌더링 스킵!
+                bool skip_render = false;
+                if (cur->Has("Stealth"))
+                {
+                #ifndef _DEBUG
+                    skip_render = true; 
+                #endif
+                }
+
+                if (!skip_render)
+                {
+                    Math::vec2 pos = cur->GetPosition();
+                    int gx = static_cast<int>(std::floor(pos.x / ts));
+                    int gy = static_cast<int>(std::floor(pos.y / ts));
+                    double cx = gx * ts + ts * 0.5;
+                    double cy = gy * ts + ts * 0.5;
+                    renderer->DrawRectangle(
+                        Math::TranslationMatrix(Math::vec2{ cx, cy }) * Math::ScaleMatrix(Math::vec2{ ts, ts }),
+                        0x00000000u, 0xFF0000FFu, 3.0, DrawDepth::OVERLAY);
+                }
             }
         }
     }
@@ -1310,6 +1327,14 @@ void GamePlayUIManager::DrawWorld()
     {
         // 살아있는 캐릭터만 확인
         if (!ch || !ch->IsAlive()) continue;
+
+        // [추가] 은신 상태인 캐릭터는 상태이상 아이콘도 띄우지 않고 건너뜁니다!
+        if (ch->Has("Stealth"))
+        {
+        #ifndef _DEBUG
+            continue; 
+        #endif
+        }
 
         const auto& effects = ch->GetActiveEffects();
         if (effects.empty()) continue;

@@ -5,6 +5,7 @@
 class Rogue : public Character
 {
 public:
+  //void Draw(Math::TransformationMatrix camera_matrix, unsigned int color = 0xFFFFFFFF, float depth = DrawDepth::CHARACTER) override;
   Rogue(Math::ivec2 start_coordinates);
 
   std::string TypeName() override

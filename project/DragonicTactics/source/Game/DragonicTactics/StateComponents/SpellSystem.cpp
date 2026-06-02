@@ -28,6 +28,7 @@
 #include "Game/DragonicTactics/StateComponents/TurnManager.h"
 #include "Game/Particles.h"
 #include "SpellSystem.h"
+#include "Game/DragonicTactics/States/GamePlayUIManager.h"
 
 std::vector<std::string> SpellSystem::SplitByDelimiter(const std::string& str, char delim) const
 {
@@ -534,6 +535,11 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
 			grid->SetTileType(target_tile, GridSystem::TileType::Wall);
 			m_terrain_effects.push_back({ { target_tile }, 0, current_round, spell.effect_duration });
 			Engine::GetLogger().LogEvent("SpellSystem: Wall created at (" + std::to_string(target_tile.x) + "," + std::to_string(target_tile.y) + ")");
+		
+			// [UI 배틀 로그 추가]
+            if (auto* ui_mgr = Engine::GetGameStateManager().GetGSComponent<GamePlayUIManager>()) {
+                ui_mgr->AddBattleLogEntry("- Created Wall at (" + std::to_string(target_tile.x) + ", " + std::to_string(target_tile.y) + ")");
+            }
 		}
 	}
 	else if (spell.summon_type == "Lava Zone")
@@ -551,6 +557,11 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
 		m_terrain_effects.push_back({ { target_tile }, damage, current_round, duration });
 		Engine::GetLogger().LogEvent(
 			"SpellSystem: Lava Zone created at (" + std::to_string(target_tile.x) + "," + std::to_string(target_tile.y) + ") dmg=" + std::to_string(damage) + " duration=" + std::to_string(duration));
+	
+			// [UI 배틀 로그 추가]
+        if (auto* ui_mgr = Engine::GetGameStateManager().GetGSComponent<GamePlayUIManager>()) {
+            ui_mgr->AddBattleLogEntry("- Created Lava Zone at (" + std::to_string(target_tile.x) + ", " + std::to_string(target_tile.y) + ")");
+        }
 	}
 
 	ApplyMoveEffect(caster, targets, spell, target_tile);
@@ -872,81 +883,103 @@ int SpellSystem::GetLavaDamageAt(Math::ivec2 tile) const
 
 bool SpellSystem::CastWalls(Character* caster, const std::string& spell_id, const std::vector<Math::ivec2>& tiles, int upcast_level)
 {
-	if (!caster || tiles.empty())
-		return false;
+    if (!caster || tiles.empty())
+        return false;
 
-	auto it = spells_.find(spell_id);
-	if (it == spells_.end())
-		return false;
-	const SpellData& spell = it->second;
+    auto it = spells_.find(spell_id);
+    if (it == spells_.end())
+        return false;
+    const SpellData& spell = it->second;
 
-	auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
-	auto* tm   = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
-	if (!grid || !tm)
-		return false;
+    auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    auto* tm   = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
+    if (!grid || !tm)
+        return false;
 
-	int consume_level = (upcast_level > 0) ? upcast_level : spell.spell_level;
-	if (consume_level > 0)
-		caster->ConsumeSpell(consume_level);
-	{
-		auto* debug_mgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
-		if (!(debug_mgr && debug_mgr->IsGodModeEnabled() && caster->GetCharacterType() == CharacterTypes::Dragon))
-			caster->GetActionPointsComponent()->Consume(1);
-	}
+    int consume_level = (upcast_level > 0) ? upcast_level : spell.spell_level;
+    if (consume_level > 0)
+        caster->ConsumeSpell(consume_level);
+    {
+        auto* debug_mgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
+        if (!(debug_mgr && debug_mgr->IsGodModeEnabled() && caster->GetCharacterType() == CharacterTypes::Dragon))
+            caster->GetActionPointsComponent()->Consume(1);
+    }
 
-	int current_round = tm->GetRoundNumber();
+    int current_round = tm->GetRoundNumber();
 
-	for (const auto& tile : tiles)
-	{
-		if (grid->IsValidTile(tile) && grid->GetTileType(tile) == GridSystem::TileType::Empty && !grid->IsOccupied(tile))
-		{
-			grid->SetTileType(tile, GridSystem::TileType::Wall);
-			m_terrain_effects.push_back({ { tile }, 0, current_round, spell.effect_duration });
-		}
-	}
+    // [UI 배틀 로그: 스펠 시전 문구 추가]
+    auto* ui_mgr = Engine::GetGameStateManager().GetGSComponent<GamePlayUIManager>();
+    if (ui_mgr) {
+        ui_mgr->AddBattleLogEntry(caster->TypeName() + " cast " + spell.spell_name + "!");
+    }
 
-	Engine::GetLogger().LogEvent(caster->TypeName() + " cast Wall Creation: " + std::to_string(tiles.size()) + " wall(s)");
-	return true;
+    for (const auto& tile : tiles)
+    {
+        if (grid->IsValidTile(tile) && grid->GetTileType(tile) == GridSystem::TileType::Empty && !grid->IsOccupied(tile))
+        {
+            grid->SetTileType(tile, GridSystem::TileType::Wall);
+            m_terrain_effects.push_back({ { tile }, 0, current_round, spell.effect_duration });
+            
+            // [추가] 타일에 벽이 생성되었다고 배틀 로그로 전송!
+			if (auto* eventBus = Engine::GetGameStateManager().GetGSComponent<EventBus>()) {
+				eventBus->Publish(BattleLogMessageEvent{"- Created Wall at (" + std::to_string(tile.x) + ", " + std::to_string(tile.y) + ")"});
+			}
+        }
+    }
+
+    Engine::GetLogger().LogEvent(caster->TypeName() + " cast Wall Creation: " + std::to_string(tiles.size()) + " wall(s)");
+    return true;
 }
 
 bool SpellSystem::CastLavaZones(Character* caster, const std::string& spell_id, const std::vector<Math::ivec2>& tiles, int upcast_level)
 {
-	if (!caster || tiles.empty())
-		return false;
+    if (!caster || tiles.empty())
+        return false;
 
-	auto it = spells_.find(spell_id);
-	if (it == spells_.end())
-		return false;
-	const SpellData& spell = it->second;
+    auto it = spells_.find(spell_id);
+    if (it == spells_.end())
+        return false;
+    const SpellData& spell = it->second;
 
-	auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
-	auto* tm   = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
-	if (!grid || !tm)
-		return false;
+    auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+    auto* tm   = Engine::GetGameStateManager().GetGSComponent<TurnManager>();
+    if (!grid || !tm)
+        return false;
 
-	int consume_level = (upcast_level > 0) ? upcast_level : spell.spell_level;
-	if (consume_level > 0)
-		caster->ConsumeSpell(consume_level);
-	{
-		auto* debug_mgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
-		if (!(debug_mgr && debug_mgr->IsGodModeEnabled() && caster->GetCharacterType() == CharacterTypes::Dragon))
-			caster->GetActionPointsComponent()->Consume(1);
-	}
+    int consume_level = (upcast_level > 0) ? upcast_level : spell.spell_level;
+    if (consume_level > 0)
+        caster->ConsumeSpell(consume_level);
+    {
+        auto* debug_mgr = Engine::GetGameStateManager().GetGSComponent<DebugManager>();
+        if (!(debug_mgr && debug_mgr->IsGodModeEnabled() && caster->GetCharacterType() == CharacterTypes::Dragon))
+            caster->GetActionPointsComponent()->Consume(1);
+    }
 
-	int current_round = tm->GetRoundNumber();
-	int damage		  = CalculateSpellDamage(spell, upcast_level);
+    int current_round = tm->GetRoundNumber();
+    int damage        = CalculateSpellDamage(spell, upcast_level);
 
-	for (const auto& tile : tiles)
-	{
-		if (grid->IsValidTile(tile) && grid->GetTileType(tile) == GridSystem::TileType::Empty && !grid->IsOccupied(tile))
-		{
-			grid->SetTileType(tile, GridSystem::TileType::Lava);
-			m_terrain_effects.push_back({ { tile }, damage, current_round, spell.effect_duration });
-		}
-	}
+    // [UI 배틀 로그: 스펠 시전 문구 추가]
+    auto* ui_mgr = Engine::GetGameStateManager().GetGSComponent<GamePlayUIManager>();
+    if (ui_mgr) {
+        ui_mgr->AddBattleLogEntry(caster->TypeName() + " cast " + spell.spell_name + "!");
+    }
 
-	Engine::GetLogger().LogEvent(caster->TypeName() + " cast Magma Blast: " + std::to_string(tiles.size()) + " lava zone(s)");
-	return true;
+    for (const auto& tile : tiles)
+    {
+        if (grid->IsValidTile(tile) && grid->GetTileType(tile) == GridSystem::TileType::Empty && !grid->IsOccupied(tile))
+        {
+            grid->SetTileType(tile, GridSystem::TileType::Lava);
+            m_terrain_effects.push_back({ { tile }, damage, current_round, spell.effect_duration });
+            
+            // [추가] 타일에 용암이 생성되었다고 배틀 로그로 전송!
+			if (auto* eventBus = Engine::GetGameStateManager().GetGSComponent<EventBus>()) {
+				eventBus->Publish(BattleLogMessageEvent{"- Created Lava Zone at (" + std::to_string(tile.x) + ", " + std::to_string(tile.y) + ")"});
+			}
+        }
+    }
+
+    Engine::GetLogger().LogEvent(caster->TypeName() + " cast Magma Blast: " + std::to_string(tiles.size()) + " lava zone(s)");
+    return true;
 }
 
 void SpellSystem::ApplyMoveEffect(Character* caster, const std::vector<Character*>& targets, const SpellData& spell, Math::ivec2 target_tile)

@@ -23,6 +23,7 @@ Updated:    Oct 10, 2025
 #include "./Game/DragonicTactics/StateComponents/GridSystem.h"
 #include "Character.h"
 #include "Components/GridPosition.h"
+#include "../Types/Events.h"
 
 Character::Character(CharacterTypes charType, Math::ivec2 start_coordinates, int max_action_points, const std::map<int, int>& max_slots_per_level)
 	: CS230::GameObject({static_cast<double>(start_coordinates.x * GridSystem::TILE_SIZE), static_cast<double>(start_coordinates.y * GridSystem::TILE_SIZE)}), m_character_type(charType)
@@ -93,6 +94,13 @@ void Character::Update(double dt)
 
 void Character::Draw(Math::TransformationMatrix camera_matrix , unsigned int color, float depth)
 {
+    if (Has("Stealth"))
+    {
+    #ifndef _DEBUG
+        // [릴리즈 모드] 은신 상태이므로 그리기 코드를 실행하지 않고 바로 빠져나갑니다. (렌더링 차단)
+        return;
+    #endif
+    }
     // 1. ShakeComponent에서 현재 프레임의 흔들림 오프셋 가져오기
     Math::vec2 shakeOffset = GetShakeComponent()->GetOffset();
 
