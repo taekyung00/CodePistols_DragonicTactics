@@ -20,6 +20,7 @@
 #include "GameStateManager.h"
 #include "Input.h"
 #include "Logger.h"
+#include "Screenshot.h"
 #include "TextManager.h"
 #include "TextureManager.h"
 #include "SoundManager.h"
@@ -263,6 +264,12 @@ void Engine::Update()
   impl->viewport = ImGuiHelper::Begin();
   state_manager.DrawImGui();
   ImGuiHelper::End();
+
+  // Global screenshot hotkey: capture the just-rendered back buffer to a PNG.
+  if (impl->input.KeyJustPressed(CS230::Input::Keys::F2))
+  {
+    CS230::CaptureScreenshot();
+  }
 }
 
 bool Engine::HasGameEnded()
