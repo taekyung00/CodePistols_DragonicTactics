@@ -7,6 +7,7 @@ Project:     CS230 Engine
 Author:      Seungju Song
 Created:     November 24, 2025
 */
+#include <algorithm>
 #include "./CS200/IRenderer2D.h"
 #include "./CS200/NDC.h"
 #include "./Engine/Engine.h"
@@ -86,6 +87,7 @@ void GamePlayUIManager::Update(double dt)
     // Feature 3: Cancel hint alpha pulse timer
     m_cancel_hint_time_ += dt;
 
+
     // 매 프레임 팝업창 슬롯 부족 호버 텍스트 초기화
     popup_hover_reason_ = "";
 
@@ -107,7 +109,11 @@ void GamePlayUIManager::Update(double dt)
             };
 
             set_disabled("slot_attack", no_ap || is_ai, is_ai ? "Enemy's turn." : "No AP.");
-            set_disabled("slot_end_turn", is_ai || game_end_text != nullptr, is_ai ? "Enemy's turn." : "");
+            bool effects_pending = std::any_of(m_damage_texts.begin(), m_damage_texts.end(),
+                [](const DamageText& t) { return t.delay > 0.0; });
+            set_disabled("slot_end_turn",
+                is_ai || game_end_text != nullptr || effects_pending,
+                is_ai ? "Enemy's turn." : "");
 
             // 요구 AP를 파라미터로 추가 (기본값 1)
             auto spell_disabled = [&](const std::string& id, int min_lv, bool is_fixed, int req_ap = 1) {
@@ -332,6 +338,38 @@ void GamePlayUIManager::Update(double dt)
                 }
             }
         }
+    }
+
+    // ── 4b. 배틀 로그 패널 드래그 스크롤 ─────────────────────────
+    if (show_battle_log_)
+    {
+        bool mouse_down = Engine::GetInput().MouseDown(0);
+
+        if (mouse_click && IsMouseOverLogPanel())
+        {
+            log_drag_active_ = true;
+            log_drag_prev_y_ = virt_mouse.y;
+        }
+
+        if (log_drag_active_)
+        {
+            if (mouse_down)
+            {
+                double delta_y    = virt_mouse.y - log_drag_prev_y_;
+                double visible_h  = LOG_PANEL_H - LOG_TITLE_H;
+                double max_scroll = std::max(0.0, ComputeLogContentHeight() - visible_h);
+                log_scroll_offset_ = std::clamp(log_scroll_offset_ - delta_y, 0.0, max_scroll);
+                log_drag_prev_y_   = virt_mouse.y;
+            }
+            else
+            {
+                log_drag_active_ = false;
+            }
+        }
+    }
+    else
+    {
+        log_drag_active_ = false;
     }
 
     // ── 5. 데미지 텍스트 수명 감소 및 만료 제거 ───────────────────

@@ -40,7 +40,7 @@ void Splash::Update(double dt)
 {
   dt = std::min(dt, 0.05); // 초기 로딩 스파이크로 인한 페이즈 즉시 전환 방지
 #if defined(DEVELOPER_VERSION)
-  constexpr double SPLASH_DURATION = 0.3;
+  constexpr double SPLASH_DURATION = 0.1;
 #else
   constexpr double SPLASH_DURATION = 2.0;
 #endif

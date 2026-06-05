@@ -928,6 +928,10 @@ bool SpellSystem::CastWalls(Character* caster, const std::string& spell_id, cons
     }
 
     Engine::GetLogger().LogEvent(caster->TypeName() + " cast Wall Creation: " + std::to_string(tiles.size()) + " wall(s)");
+
+	if (auto* eventBus = Engine::GetGameStateManager().GetGSComponent<EventBus>())
+		eventBus->Publish(SpellCastEvent{ caster, spell.spell_name, upcast_level > 0 ? upcast_level : spell.spell_level, tiles[0], upcast_level > 0 ? upcast_level : spell.spell_level });
+
     return true;
 }
 
@@ -979,6 +983,10 @@ bool SpellSystem::CastLavaZones(Character* caster, const std::string& spell_id, 
     }
 
     Engine::GetLogger().LogEvent(caster->TypeName() + " cast Magma Blast: " + std::to_string(tiles.size()) + " lava zone(s)");
+
+	if (auto* eventBus = Engine::GetGameStateManager().GetGSComponent<EventBus>())
+		eventBus->Publish(SpellCastEvent{ caster, spell.spell_name, upcast_level > 0 ? upcast_level : spell.spell_level, tiles[0], upcast_level > 0 ? upcast_level : spell.spell_level });
+
     return true;
 }
 

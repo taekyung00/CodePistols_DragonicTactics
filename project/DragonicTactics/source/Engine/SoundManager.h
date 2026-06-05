@@ -52,6 +52,7 @@ public:
     void PlaySFX(const std::string& wav_path);           // 앞에서 round-robin — 공격/스펠 SFX용
     void PlaySFXLast(const std::string& wav_path);       // 끝에서 역방향 탐색 — hurt SFX 전용
     void PlaySFXDelayed(const std::string& wav_path, double delay_seconds);
+    void ClearPendingDelayedSFX() { pending_sfx_.clear(); }
     void StopAllSFX();
     void SetSFXVolume(float volume);
     void Update(double dt);

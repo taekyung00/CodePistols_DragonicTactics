@@ -144,6 +144,8 @@ class GamePlayUIManager
 
   double log_scroll_offset_{ 0.0 };
   bool   log_scrollbar_dragging_{ false };
+  bool   log_drag_active_{ false };
+  double log_drag_prev_y_{ 0.0 };
 
   // Notice toast
   std::string m_notice_text_;

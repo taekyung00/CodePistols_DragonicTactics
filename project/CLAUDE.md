@@ -60,18 +60,53 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **진입점**: `source/main.cpp` → `Engine::Instance().Start("Dragonic Tactics")` → `Engine::GetGameStateManager().PushState<Splash>()` 가 **유일한** 시작점. 이후 모든 화면 전환은 `GameStateManager`의 `PushState<T>()` / `PopState()`.
 
 ```
-main.cpp → Splash → MainMenu ┬─ Settings (오디오·맵 크기 설정 → GamePlay 로드 맵에 반영)
-                             ├─ DragonicTactics  → GamePlay ──[게임 종료]──→ GameOver
-                             ├─ Exit                                         ├─ PLAY AGAIN → GamePlay
-                             └─ [DEVELOPER_VERSION 전용] ConsoleTest /       └─ MAIN MENU  → MainMenu
-                                RenderingTest
+main.cpp → Splash → MainMenu ┬─ LevelGame → LevelSelect ┬─ Level 1/2/3 → GamePlay ──[게임 종료]──→ GameOver
+                             ├─ Settings                 └─ Back → MainMenu                         ├─ PLAY AGAIN → GamePlay
+                             ├─ Exit                                                                 └─ MAIN MENU  → MainMenu
+                             └─ [DEVELOPER_VERSION 전용] DragonicTactics → GamePlay (s_level_id=0, 스펠 제한 없음)
+                                                         ConsoleTest / RenderingTest
 ```
 
 - **GameOver 상태**: `source/Game/GameOver.h` / `GameOver.cpp` — `source/Game/` 직하위 (MainMenu·Settings와 동일 레벨). `GameOver::s_player_won` (static bool)으로 결과를 전달받아 "PLAYER WIN"(금색) / "INVADER WIN"(빨간색) 타이틀 표시. 전환 타이밍은 `GamePlay.h`의 `static constexpr double GAME_OVER_DELAY = 0.5` (초) — 값 변경 시 이 상수만 수정.
-- **셸 레이어 위치 주의**: `Splash`·`MainMenu`·`Settings`·`GameOver`·`Score`·`Background`·`Particles` 는 `source/Game/` **직하위**에 있다 — `source/Game/DragonicTactics/` 하위가 **아니다**. 전투 본편 코드만 `DragonicTactics/` 서브트리에 있다.
+- **셸 레이어 위치 주의**: `Splash`·`MainMenu`·`Settings`·`GameOver`·`Score`·`Background`·`Particles`·`LevelSelect` 는 `source/Game/` **직하위**에 있다 — `source/Game/DragonicTactics/` 하위가 **아니다**. 전투 본편 코드만 `DragonicTactics/` 서브트리에 있다.
 - **Splash 지속시간**: `#if defined(DEVELOPER_VERSION)` → **0.3초**, `#else` → 2.0초 (`source/Game/Splash.cpp`). 릴리즈 빌드에서 2초 스플래시를 표시.
 - ⚠️ `source/Game/States.h`의 `enum class State { Splash, MainMenu, Final }`는 **레거시·미사용**이다. 실제 내비게이션은 이 enum이 아니라 `GameStateManager`의 push/pop으로 동작 — 혼동 주의.
 - **Settings → GamePlay 연결**: `Settings`의 맵 크기 선택이 아래 [데이터 주도 설계](#데이터-주도-설계)의 `GamePlay::s_next_map_id` / `s_should_restart` 정적 필드를 통해 로드할 맵을 결정한다.
+
+### LevelSelect & Level Mode
+
+`LevelSelect` (`source/Game/LevelSelect.h/.cpp`) — 레벨 선택 화면. MainMenu의 기본 옵션(LevelGame)에서 진입.
+
+- **레벨 수**: Level 1 · 2 · 3 (Option enum 0~2), Back(3)
+- **순차 잠금** (릴리즈 빌드만): `LevelSelect::s_max_unlocked_level` (기본 1) — 레벨 클리어 시 `GamePlay::CheckGameEnd`에서 `min(3, s_level_id + 1)`로 다음 레벨 해금. DEVELOPER_VERSION에서는 잠금 없음.
+- **진입**: `LevelSelect::SelectOption()` → `GamePlay::s_level_id = N` (1·2·3) 설정 → `PushState<GamePlay>()`
+
+`GamePlay::s_level_id` — 현재 레벨 모드 식별:
+- `0`: 자유 모드 (DEVELOPER_VERSION 전용 DragonicTactics 메뉴), `maps.json` + 모든 스펠 허용
+- `1/2/3`: 레벨 모드, `Assets/Data/Level_Map.json`에서 해당 레벨 로드 + `s_allowed_spells` 제한
+
+`GamePlay::s_allowed_spells` (`vector<string>`) — 레벨 모드에서 허용된 스펠 ID 목록. 빈 배열이면 모든 스펠 허용. `Level_Map.json`의 `"allowed_spells"` 배열에서 로드됨.
+
+**Level_Map.json 구조** (`Assets/Data/Level_Map.json`):
+
+```json
+{
+  "levels": [
+    {
+      "id": "level_1",
+      "name": "Level 1 (5x7)",
+      "width": 5, "height": 7,
+      "tiles": ["#####", "#...#", ...],
+      "legend": { "#": "wall", ".": "floor" },
+      "enemies": ["fighter"],
+      "allowed_spells": ["S_ATK_010", "S_GEO_020"],
+      "spawn_points": { "dragon": {"x":2,"y":1}, "fighter": {"x":2,"y":5} }
+    }, ...
+  ]
+}
+```
+
+`LoadLevelMap(int level_id)` (`GamePlay.cpp:883`) — `maps.json` 대신 `Level_Map.json`을 읽어 맵을 구성하고 `enemies` 배열의 캐릭터 타입만 스폰한다.
 
 ### 컷신 시스템 (GamePlay 진입 후 전투 시작 전)
 
@@ -969,33 +1004,9 @@ wsl cmake --build build/web-release 2>&1 | Where-Object { $_ -match 'error:' }
 
 ## 테스트
 
-**자체 테스트 프레임워크** (외부 라이브러리 없음): `Test/TestAssert.h` + 목 객체 (`Week1TestMocks`, `Week3TestMocks`). 테스트 파일은 `source/Game/DragonicTactics/Test/` 아래.
+⚠️ **ConsoleTest의 모든 단위 테스트가 제거됐다.** `States/ConsoleTest.cpp`의 `DrawImGui()`는 현재 "All tests removed." 텍스트만 표시한다. `source/Game/DragonicTactics/Test/` 디렉토리도 존재하지 않는다. ConsoleTest 자체(DEVELOPER_VERSION 전용 GameState)는 남아있으나 기능이 없다.
 
-⚠️ **별도 테스트 실행파일·CTest 타깃은 없다.** 단위 테스트는 게임 바이너리에 컴파일되어 **`ConsoleTest` GameState에서 런타임 실행**된다 — `DEVELOPER_VERSION` 빌드 전용, MainMenu 개발자 메뉴 → ConsoleTest 진입 (위 [Developer vs Release 빌드](#developer-vs-release-빌드) 참고).
-
-실행 메커니즘 (`States/ConsoleTest.cpp`): `DrawImGui()`의 `#if defined(DEVELOPER_VERSION)` ImGui 버튼 클릭 → 전역 `bool` 플래그 set → **다음 프레임** `ConsoleTest::Update()`가 해당 스위트를 실행하고 결과를 `Engine::GetLogger()`(콘솔창)에 출력한 뒤 플래그 reset. Escape → MainMenu 복귀.
-
-ConsoleTest에 **실제 와이어링된 버튼** (= 현재 실행 가능한 집합): `TestAStar`, `TestEventBus`, `TestSpellSystem`(빈 스텁), `TestCombatSystem`, `TestDiceManager`, `TestDataRegistry`, `TestTrunManager`(원문 철자), `TestAI`, `TestNewFile`, `TestMemory`. ⚠️ `Test/` 디렉토리에 다른 테스트 파일(예: `TestAbility`, `TestTurnInit`)이 더 있어도 ConsoleTest 버튼에 연결돼 있지 않으면 이 경로로는 실행되지 않는다 — UI에 노출된 것이 실행 가능한 집합이다.
-
-**단일 테스트 실행 방법** (CLI 진입점 없음 — 모두 런타임 UI로 실행):
-1. `cmake --preset windows-debug && cmake --build --preset windows-debug` 로 빌드
-2. `DragonicTactics/` 에서 `build/windows-debug/dragonic_tactics.exe` 실행
-3. Main Menu → **ConsoleTest** (개발자 메뉴) → 원하는 버튼 클릭
-4. 결과는 콘솔창(stdout)에 출력됨
-
-| ConsoleTest 버튼 | 실행되는 파일 |
-| -------------- | ---------- |
-| TestAStar | `Test/TestAStar.cpp` |
-| TestEventBus | `Test/TestEventBus.cpp` |
-| TestCombatSystem | `Test/TestCombatSystem.cpp` |
-| TestDiceManager | `Test/TestDiceManager.cpp` |
-| TestDataRegistry | `Test/TestDataRegistry.cpp` |
-| TestTrunManager | `Test/TestTurnManager.cpp` |
-| TestAI | `Test/TestAI.cpp` |
-| TestNewFile | `Test/TestNewFile.cpp` |
-| TestMemory | `Test/TestMemory.cpp` |
-
-**런타임 테스트 단축키 (GamePlay 상태 — ConsoleTest와 별개의 인게임 점검 기능)**:
+**런타임 테스트 단축키 (GamePlay 상태 — 인게임 점검 기능, 별도 콘솔창 출력)**:
 
 | 키     | 동작                     |
 | ----- | ---------------------- |
@@ -1036,7 +1047,8 @@ god mode·`timeScale`(빨리감기)·각종 오버레이 토글을 보유한다.
 게임 밸런스 파라미터는 코드가 아닌 데이터 파일에서 로드 (`DataRegistry` / `MapDataRegistry`):
 
 - `Assets/Data/characters.json` — 캐릭터 스탯 (`CharacterData`: hp, speed, ap, attack_dice, spell_slots 등)
-- `Assets/Data/maps.json` — 맵 구성
+- `Assets/Data/maps.json` — 자유 모드 맵 구성 (`s_level_id=0`일 때 `LoadJSONMap`이 사용)
+- `Assets/Data/Level_Map.json` — 레벨 모드 맵 + 허용 스펠 + 적 목록 (`s_level_id>0`일 때 `LoadLevelMap`이 사용, 상세: [LevelSelect & Level Mode](#levelselect--level-mode))
 - `Assets/Data/spell_table.csv` — 스펠 정의 (`SpellData`: Targeting + Effect 템플릿)
 - `Assets/Data/status_effect.csv` — 상태 이상 설정
 

@@ -89,7 +89,12 @@ void Character::RefreshActionPoints()
 void Character::Update(double dt)
 {
   CS230::GameObject::Update(dt);
-  //GetShakeComponent()->Update(dt);
+  if (m_death_delay_ >= 0.0)
+  {
+    m_death_delay_ -= dt;
+    if (m_death_delay_ < 0.0)
+      Destroy();
+  }
 }
 
 void Character::Draw(Math::TransformationMatrix camera_matrix , unsigned int color, float depth)
@@ -218,20 +223,19 @@ void Character::TakeDamage(int damage, [[maybe_unused]] Character* attacker)
 {
   if (GetStatsComponent() != nullptr)
   {
-	  GetStatsComponent()->TakeDamage(damage);
+    GetStatsComponent()->TakeDamage(damage);
   }
 
-  if (IsAlive() == false)
+  if (IsAlive() == false && m_death_delay_ < 0.0)
   {
-	// Die();
-  // 1. 그리드 맵 상에서 해당 캐릭터의 데이터를 비워줍니다.
-        if (m_gridSystem != nullptr && GetGridPosition() != nullptr)
-        {
-            m_gridSystem->RemoveCharacter(GetGridPosition()->Get());
-        }
-        
-        // 2. 엔진의 GameObjectManager가 이 오브젝트를 메모리에서 파괴하도록 예약합니다.
-        Destroy();
+    // 그리드에서 즉시 제거 (AI 경로탐색 차단)
+    if (m_gridSystem != nullptr && GetGridPosition() != nullptr)
+    {
+      m_gridSystem->RemoveCharacter(GetGridPosition()->Get());
+    }
+
+    // 시각적 제거는 0.8초 후 (데미지 텍스트가 사라진 뒤)
+    m_death_delay_ = 0.8;
   }
 }
 

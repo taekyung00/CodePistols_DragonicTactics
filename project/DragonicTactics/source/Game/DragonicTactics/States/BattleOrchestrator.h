@@ -26,6 +26,8 @@ class BattleOrchestrator
 
   private:
   void HandleAITurn(Character* ai_character, TurnManager* turn_manager, AISystem* ai_system, double dt);
-  int    m_previous_round = 0;
-  double m_wait_timer     = 0.0;
+  int        m_previous_round      = 0;
+  double     m_wait_timer          = 0.0;
+  Character* m_last_ai_character_  = nullptr;  // 새 AI 턴 감지용
+  double     m_think_timer_        = 0.0;      // 턴 시작 "생각 중" 대기
 };

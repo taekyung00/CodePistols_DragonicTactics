@@ -79,6 +79,19 @@ void BattleOrchestrator::Update(double dt, TurnManager* turn_manager, AISystem* 
 
 void BattleOrchestrator::HandleAITurn(Character* ai_character, TurnManager* turn_manager, AISystem* ai_system, double dt)
 {
+  // 0. 새 AI 캐릭터 턴 시작 감지 → "생각 중" 딜레이
+  if (ai_character != m_last_ai_character_)
+  {
+	m_last_ai_character_ = ai_character;
+	m_think_timer_       = 1.2;
+  }
+
+  if (m_think_timer_ > 0.0)
+  {
+	m_think_timer_ -= dt;
+	return;
+  }
+
   // 1. 이동 애니메이션 완료 대기
   MovementComponent* move_comp = ai_character->GetGOComponent<MovementComponent>();
   if (move_comp && move_comp->IsMoving())

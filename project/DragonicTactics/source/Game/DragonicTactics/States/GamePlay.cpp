@@ -306,6 +306,10 @@ void GamePlay::Load()
 		// 용암 피해(attacker==nullptr)는 SFX가 없으므로 즉시 표시
 		double delay = event.attacker ? m_pending_damage_delay_ : 0.0;
 		this->DisplayDamageAmount(event, delay);
+
+		// 사망 캐릭터 소멸 타이밍을 데미지 텍스트와 동기화
+		if (!event.target->IsAlive())
+		  event.target->SetDeathDelay(delay);
 		std::string att = event.attacker ? event.attacker->TypeName() : "Lava";
 		m_ui_manager->AddBattleLogEntry(
 		  att + "->" + event.target->TypeName()
@@ -648,6 +652,7 @@ void GamePlay::Update(double dt)
 void GamePlay::Unload()
 {
   Engine::GetSoundManager().StopBGM();
+  Engine::GetSoundManager().ClearPendingDelayedSFX();
   
   if (auto goMgr = GetGSComponent<CS230::GameObjectManager>())
   {
@@ -700,10 +705,10 @@ void GamePlay::Draw()
 
 void GamePlay::DrawImGui()
 {
-#if defined(DEVELOPER_VERSION)
   GridSystem* grid_system = GetGSComponent<GridSystem>();
   GetGSComponent<DebugManager>()->DrawImGui(grid_system);
 
+#if defined(DEVELOPER_VERSION)
   ImGui::Begin("Map Selection");
 
   if (selected_json_map_index_ >= 0 && selected_json_map_index_ < static_cast<int>(available_json_maps_.size()))

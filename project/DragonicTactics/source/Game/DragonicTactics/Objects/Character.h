@@ -95,6 +95,7 @@ class Character : public CS230::GameObject
   void SetAttackRange(int new_range);
   void SetHP(int HP);
   bool HasSpell(std::string spell_name);
+  void SetDeathDelay(double delay) { m_death_delay_ = delay; }
 
   // ========================================
   // 상태 쿼리 메서드 (Fact Queries)
@@ -174,6 +175,7 @@ class Character : public CS230::GameObject
 
 
   private:
-  bool has_attacked_this_turn_ = false;
-  bool has_treasure_		   = false; // 보물 소유 여부
+  bool   has_attacked_this_turn_ = false;
+  bool   has_treasure_           = false;
+  double m_death_delay_          = -1.0; // >= 0: 사망 후 시각 제거까지 남은 시간
 };
