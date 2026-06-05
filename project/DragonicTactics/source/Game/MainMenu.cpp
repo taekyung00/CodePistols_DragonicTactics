@@ -20,6 +20,7 @@ Created:    May 6, 2025
 #include "Engine/TextManager.h"
 #include "Engine/Window.h"
 #include "Game/DragonicTactics/States/GamePlay.h"
+#include "LevelSelect.h"
 #include "MainMenu.h"
 #include "Settings.h"
 #if defined(DEVELOPER_VERSION)
@@ -30,7 +31,7 @@ Created:    May 6, 2025
 #include "States.h"
 #include <cmath>
 
-MainMenu::MainMenu() : current_option(Option::DragonicTactics)
+MainMenu::MainMenu() : current_option(Option::LevelGame)
 {
 }
 
@@ -42,9 +43,17 @@ void MainMenu::SelecetOption()
 {
     switch (current_option)
     {
+#if defined(DEVELOPER_VERSION)
         case Option::DragonicTactics:
+            GamePlay::s_level_id = 0;
             Engine::GetGameStateManager().PopState();
             Engine::GetGameStateManager().PushState<GamePlay>();
+            break;
+#endif
+
+        case Option::LevelGame:
+            Engine::GetGameStateManager().PopState();
+            Engine::GetGameStateManager().PushState<LevelSelect>();
             break;
 
         case Option::Settings:
@@ -96,9 +105,12 @@ void MainMenu::Load()
         Engine::GetWindow().SetWindowPosition(SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
     }
 
-    main_menu_items.push_back({ "SETTINGS",   Option::Settings });
-    main_menu_items.push_back({ "GAME START", Option::DragonicTactics });
-    main_menu_items.push_back({ "QUIT",       Option::Exit });
+    main_menu_items.push_back({ "SETTINGS",    Option::Settings });
+#if defined(DEVELOPER_VERSION)
+    main_menu_items.push_back({ "GAME START",  Option::DragonicTactics });
+#endif
+    main_menu_items.push_back({ "LEVEL GAME",  Option::LevelGame });
+    main_menu_items.push_back({ "QUIT",        Option::Exit });
 
 #if defined(DEVELOPER_VERSION)
     dev_menu_items.push_back({ "Console test",   Option::ConsoleTest });

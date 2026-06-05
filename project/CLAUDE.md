@@ -102,6 +102,21 @@ build/windows-debug/dragonic_tactics.exe  # 실행 (반드시 DragonicTactics/�
 
 프리셋: `windows-debug`, `windows-developer-release`, `windows-release`, `linux-debug`, `web-debug-on-windows` (그 외 `linux-developer-release`, `linux-release`, `web-debug`, `web-developer-release`, `web-release`)
 
+### 코드 포맷 (clang-format)
+
+포맷 규칙은 `DragonicTactics/.clang-format`에 정의되어 있다. 모든 명령은 **`DragonicTactics/` 디렉토리**에서 실행.
+
+```bash
+# 단일 파일 포맷 검사 (변경 없음 — 오류 시 exit 1)
+clang-format --dry-run --Werror source/Game/DragonicTactics/States/GamePlay.cpp
+
+# 단일 파일 자동 포맷 (인플레이스)
+clang-format -i source/Game/DragonicTactics/States/GamePlay.cpp
+
+# source/ 전체 일괄 포맷 (Windows PowerShell)
+Get-ChildItem -Recurse -Path source -Include *.cpp,*.h | ForEach-Object { clang-format -i $_.FullName }
+```
+
 ### Developer vs Release 빌드
 
 `CMakePresets.json`의 프리셋 캐시 변수 `IS_DEVELOPER_VERSION`이 빌드 변형을 가른다. **테스트·디버그 도구의 존재 여부 자체가 여기서 결정된다.**
@@ -961,6 +976,24 @@ wsl cmake --build build/web-release 2>&1 | Where-Object { $_ -match 'error:' }
 실행 메커니즘 (`States/ConsoleTest.cpp`): `DrawImGui()`의 `#if defined(DEVELOPER_VERSION)` ImGui 버튼 클릭 → 전역 `bool` 플래그 set → **다음 프레임** `ConsoleTest::Update()`가 해당 스위트를 실행하고 결과를 `Engine::GetLogger()`(콘솔창)에 출력한 뒤 플래그 reset. Escape → MainMenu 복귀.
 
 ConsoleTest에 **실제 와이어링된 버튼** (= 현재 실행 가능한 집합): `TestAStar`, `TestEventBus`, `TestSpellSystem`(빈 스텁), `TestCombatSystem`, `TestDiceManager`, `TestDataRegistry`, `TestTrunManager`(원문 철자), `TestAI`, `TestNewFile`, `TestMemory`. ⚠️ `Test/` 디렉토리에 다른 테스트 파일(예: `TestAbility`, `TestTurnInit`)이 더 있어도 ConsoleTest 버튼에 연결돼 있지 않으면 이 경로로는 실행되지 않는다 — UI에 노출된 것이 실행 가능한 집합이다.
+
+**단일 테스트 실행 방법** (CLI 진입점 없음 — 모두 런타임 UI로 실행):
+1. `cmake --preset windows-debug && cmake --build --preset windows-debug` 로 빌드
+2. `DragonicTactics/` 에서 `build/windows-debug/dragonic_tactics.exe` 실행
+3. Main Menu → **ConsoleTest** (개발자 메뉴) → 원하는 버튼 클릭
+4. 결과는 콘솔창(stdout)에 출력됨
+
+| ConsoleTest 버튼 | 실행되는 파일 |
+| -------------- | ---------- |
+| TestAStar | `Test/TestAStar.cpp` |
+| TestEventBus | `Test/TestEventBus.cpp` |
+| TestCombatSystem | `Test/TestCombatSystem.cpp` |
+| TestDiceManager | `Test/TestDiceManager.cpp` |
+| TestDataRegistry | `Test/TestDataRegistry.cpp` |
+| TestTrunManager | `Test/TestTurnManager.cpp` |
+| TestAI | `Test/TestAI.cpp` |
+| TestNewFile | `Test/TestNewFile.cpp` |
+| TestMemory | `Test/TestMemory.cpp` |
 
 **런타임 테스트 단축키 (GamePlay 상태 — ConsoleTest와 별개의 인게임 점검 기능)**:
 

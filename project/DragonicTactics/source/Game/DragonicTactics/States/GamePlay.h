@@ -57,6 +57,8 @@ class GamePlay : public CS230::GameState
 
   static std::string s_next_map_id;
   static bool s_should_restart;
+  static int s_level_id;                        // 0 = 일반 모드, 1/2/3 = 레벨 모드
+  static std::vector<std::string> s_allowed_spells;  // 빈 배열 = 모든 스펠 허용
 
   private:
   static constexpr Math::ivec2				  default_window_size = { TacticalCamera::VIRTUAL_W, TacticalCamera::VIRTUAL_H };
@@ -99,6 +101,7 @@ class GamePlay : public CS230::GameState
   bool           m_right_mouse_was_down  = false;
 
   void LoadJSONMap(const std::string& map_id);
+  void LoadLevelMap(int level_id);
 };
 
 namespace CS230

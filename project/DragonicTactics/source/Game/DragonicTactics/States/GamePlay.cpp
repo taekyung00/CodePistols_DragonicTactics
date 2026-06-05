@@ -11,11 +11,13 @@ Created:    November 5, 2025
 */
 #include "CS200/IRenderer2D.h"
 #include "CS200/NDC.h"
+#include "Engine/Path.h"
 #include "Engine/Timer.h"
 #include "GamePlay.h"
 #include "OpenGL/Environment.h"
 
 #include "Game/GameOver.h"
+#include "Game/LevelSelect.h"
 #include "Game/MainMenu.h"
 
 #include "Game/DragonicTactics/Objects/Components/GridPosition.h"
@@ -49,8 +51,10 @@ Created:    November 5, 2025
 #include "Game/Particles.h"
 #include "./Engine/Particle.h"
 
-std::string GamePlay::s_next_map_id   = "first_map";
-bool		GamePlay::s_should_restart = false;
+std::string              GamePlay::s_next_map_id    = "first_map";
+bool                     GamePlay::s_should_restart = false;
+int                      GamePlay::s_level_id       = 0;
+std::vector<std::string> GamePlay::s_allowed_spells = {};
 
 // 스펠 딜레이 오브젝트가 ApplySpellEffect를 지연시키는 시간 — SpellSystem.cpp SpellDelayObject 참고
 static constexpr double SPELL_DELAY_OBJECT_SEC = 1.5;
@@ -210,40 +214,48 @@ void GamePlay::Load()
   m_ui_manager->InitStatusEffectIcons();
   // GetGSComponent<SpellSystem>()->SetEventBus(GetGSComponent<EventBus>());
 
-  auto* map_registry = GetGSComponent<MapDataRegistry>();
-  map_registry->LoadMaps("Assets/Data/maps.json");
-  available_json_maps_ = map_registry->GetAllMapIds();
-
-  Engine::GetLogger().LogEvent("Available maps: " + std::to_string(available_json_maps_.size()));
-
-  if (available_json_maps_.empty())
+  if (s_level_id > 0)
   {
-	Engine::GetLogger().LogError("No maps loaded from maps.json - returning to MainMenu");
-	Engine::GetGameStateManager().PopState();
-	Engine::GetGameStateManager().PushState<MainMenu>();
-	return;
+	Engine::GetLogger().LogEvent("Loading level map: " + std::to_string(s_level_id));
+	LoadLevelMap(s_level_id);
   }
-
-  // Resolve s_next_map_id → index in available_json_maps_
-  selected_json_map_index_ = -1;
-  for (int i = 0; i < static_cast<int>(available_json_maps_.size()); ++i)
+  else
   {
-	if (available_json_maps_[static_cast<std::size_t>(i)] == s_next_map_id)
+	auto* map_registry = GetGSComponent<MapDataRegistry>();
+	map_registry->LoadMaps("Assets/Data/maps.json");
+	available_json_maps_ = map_registry->GetAllMapIds();
+
+	Engine::GetLogger().LogEvent("Available maps: " + std::to_string(available_json_maps_.size()));
+
+	if (available_json_maps_.empty())
 	{
-	  selected_json_map_index_ = i;
-	  break;
+	  Engine::GetLogger().LogError("No maps loaded from maps.json - returning to MainMenu");
+	  Engine::GetGameStateManager().PopState();
+	  Engine::GetGameStateManager().PushState<MainMenu>();
+	  return;
 	}
-  }
-  if (selected_json_map_index_ < 0)
-  {
-	Engine::GetLogger().LogError("Map id '" + s_next_map_id + "' not found, defaulting to first available");
-	selected_json_map_index_ = 0;
-	s_next_map_id			 = available_json_maps_[0];
-  }
 
-  const std::string& selected_map_id = available_json_maps_[static_cast<std::size_t>(selected_json_map_index_)];
-  Engine::GetLogger().LogEvent("Loading map: " + selected_map_id);
-  LoadJSONMap(selected_map_id);
+	// Resolve s_next_map_id → index in available_json_maps_
+	selected_json_map_index_ = -1;
+	for (int i = 0; i < static_cast<int>(available_json_maps_.size()); ++i)
+	{
+	  if (available_json_maps_[static_cast<std::size_t>(i)] == s_next_map_id)
+	  {
+		selected_json_map_index_ = i;
+		break;
+	  }
+	}
+	if (selected_json_map_index_ < 0)
+	{
+	  Engine::GetLogger().LogError("Map id '" + s_next_map_id + "' not found, defaulting to first available");
+	  selected_json_map_index_ = 0;
+	  s_next_map_id            = available_json_maps_[0];
+	}
+
+	const std::string& selected_map_id = available_json_maps_[static_cast<std::size_t>(selected_json_map_index_)];
+	Engine::GetLogger().LogEvent("Loading map: " + selected_map_id);
+	LoadJSONMap(selected_map_id);
+  }
 
   if (player == nullptr || enemys.empty())
   {
@@ -491,6 +503,12 @@ void GamePlay::CheckGameEnd(const CharacterDeathEvent& event)
 	game_end_player_won_ = true;
 	game_end_timer_      = GAME_OVER_DELAY;
 	game_end             = true;
+
+	// 릴리즈 모드 순차 잠금: 현재 레벨 클리어 시 다음 레벨 해금
+#if !defined(DEVELOPER_VERSION)
+	if (s_level_id > 0 && s_level_id >= LevelSelect::s_max_unlocked_level)
+	  LevelSelect::s_max_unlocked_level = std::min(3, s_level_id + 1);
+#endif
   }
 }
 
@@ -860,6 +878,109 @@ void GamePlay::LoadJSONMap(const std::string& map_id)
   }
 
   Engine::GetLogger().LogEvent("LoadJSONMap - END: " + map_data.name);
+}
 
-  
+void GamePlay::LoadLevelMap(int level_id)
+{
+  s_allowed_spells.clear();
+
+  const std::filesystem::path level_path = assets::locate_asset("Assets/Data/Level_Map.json");
+  std::ifstream               f(level_path);
+  if (!f.is_open())
+  {
+	Engine::GetLogger().LogError("Failed to open Level_Map.json at: " + level_path.string());
+	return;
+  }
+  nlohmann::json root;
+  f >> root;
+
+  std::string    target_id  = "level_" + std::to_string(level_id);
+  nlohmann::json level_json;
+  bool           found = false;
+  for (auto& lv : root["levels"])
+  {
+	if (lv["id"].get<std::string>() == target_id)
+	{
+	  level_json = lv;
+	  found      = true;
+	  break;
+	}
+  }
+  if (!found)
+  {
+	Engine::GetLogger().LogError("Level not found in Level_Map.json: " + target_id);
+	return;
+  }
+
+  // MapData 구성
+  MapData map_data;
+  map_data.id     = level_json["id"].get<std::string>();
+  map_data.name   = level_json["name"].get<std::string>();
+  map_data.width  = level_json["width"].get<int>();
+  map_data.height = level_json["height"].get<int>();
+  for (auto& row : level_json["tiles"])
+	map_data.tiles.push_back(row.get<std::string>());
+  for (auto& [sym, type] : level_json["legend"].items())
+	map_data.legend[sym[0]] = type.get<std::string>();
+  for (auto& [key, pos] : level_json["spawn_points"].items())
+	map_data.spawn_points[key] = { pos["x"].get<int>(), pos["y"].get<int>() };
+
+  // 허용 스펠 설정 (빈 배열 = 모든 스펠 허용)
+  for (auto& sp : level_json["allowed_spells"])
+	s_allowed_spells.push_back(sp.get<std::string>());
+
+  // 적 목록
+  std::vector<std::string> enemy_list;
+  for (auto& e : level_json["enemies"])
+	enemy_list.push_back(e.get<std::string>());
+
+  CS230::GameObjectManager* go_manager       = GetGSComponent<CS230::GameObjectManager>();
+  GridSystem*               grid_system      = GetGSComponent<GridSystem>();
+  CharacterFactory*         character_factory = GetGSComponent<CharacterFactory>();
+
+  grid_system->LoadMap(map_data);
+
+  // Dragon 스폰
+  auto dragon_it = map_data.spawn_points.find("dragon");
+  if (dragon_it != map_data.spawn_points.end())
+  {
+	Math::ivec2 spawn = dragon_it->second;
+	auto        ptr   = character_factory->Create(CharacterTypes::Dragon, spawn);
+	player            = ptr.get();
+	player->SetGridSystem(grid_system);
+	go_manager->Add(std::move(ptr));
+	grid_system->AddCharacter(player, spawn);
+	Engine::GetLogger().LogEvent("Dragon spawned at: " + std::to_string(spawn.x) + "," + std::to_string(spawn.y));
+  }
+  else
+  {
+	Engine::GetLogger().LogError("No dragon spawn in level " + target_id);
+  }
+
+  // 적 스폰 (enemies 배열 순서대로)
+  static const std::map<std::string, CharacterTypes> name_to_type = {
+	{ "fighter", CharacterTypes::Fighter },
+	{ "cleric",  CharacterTypes::Cleric  },
+	{ "rogue",   CharacterTypes::Rogue   },
+	{ "wizard",  CharacterTypes::Wizard  }
+  };
+
+  for (const auto& enemy_name : enemy_list)
+  {
+	auto type_it  = name_to_type.find(enemy_name);
+	auto spawn_it = map_data.spawn_points.find(enemy_name);
+	if (type_it == name_to_type.end() || spawn_it == map_data.spawn_points.end())
+	  continue;
+
+	Math::ivec2 spawn     = spawn_it->second;
+	auto        enemy_ptr = character_factory->Create(type_it->second, spawn);
+	auto*       enemy_raw = enemy_ptr.get();
+	enemy_raw->SetGridSystem(grid_system);
+	go_manager->Add(std::move(enemy_ptr));
+	grid_system->AddCharacter(enemy_raw, spawn);
+	enemys.push_back(enemy_raw);
+	Engine::GetLogger().LogEvent(enemy_name + " spawned at: " + std::to_string(spawn.x) + "," + std::to_string(spawn.y));
+  }
+
+  Engine::GetLogger().LogEvent("LoadLevelMap done: level " + std::to_string(level_id));
 }

@@ -38,7 +38,10 @@ class MainMenu : public CS230::GameState
   enum class Option
   {
     Settings,
+#if defined(DEVELOPER_VERSION)
     DragonicTactics,
+#endif
+    LevelGame,
     Exit,
 #if defined(DEVELOPER_VERSION)
     ConsoleTest,

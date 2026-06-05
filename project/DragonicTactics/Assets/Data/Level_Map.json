@@ -1,0 +1,87 @@
+{
+    "levels": [
+        {
+            "id": "level_1",
+            "name": "Level 1 (5x7)",
+            "width": 5,
+            "height": 7,
+            "tiles": [
+                "#####",
+                "#...#",
+                "#...#",
+                "#...#",
+                "#...#",
+                "#...#",
+                "#####"
+            ],
+            "legend": {
+                "#": "wall",
+                ".": "floor"
+            },
+            "enemies": ["fighter"],
+            "allowed_spells": ["S_ATK_010", "S_GEO_020"],
+            "spawn_points": {
+                "dragon":  {"x": 2, "y": 1},
+                "fighter": {"x": 2, "y": 5}
+            }
+        },
+        {
+            "id": "level_2",
+            "name": "Level 2 (8x8)",
+            "width": 8,
+            "height": 8,
+            "tiles": [
+                "########",
+                "#......#",
+                "#......#",
+                "#......#",
+                "#......#",
+                "#......#",
+                "#......#",
+                "########"
+            ],
+            "legend": {
+                "#": "wall",
+                ".": "floor"
+            },
+            "enemies": ["fighter", "cleric"],
+            "allowed_spells": ["S_ATK_010", "S_GEO_020", "S_ATK_030", "S_DEB_020", "S_ENH_050", "S_ATK_020"],
+            "spawn_points": {
+                "dragon":  {"x": 3, "y": 1},
+                "fighter": {"x": 3, "y": 6},
+                "cleric":  {"x": 4, "y": 6}
+            }
+        },
+        {
+            "id": "level_3",
+            "name": "Level 3 (10x10)",
+            "width": 10,
+            "height": 10,
+            "tiles": [
+                "##########",
+                "#........#",
+                "#........#",
+                "#........#",
+                "#........#",
+                "#........#",
+                "#........#",
+                "#........#",
+                "#........#",
+                "##########"
+            ],
+            "legend": {
+                "#": "wall",
+                ".": "floor"
+            },
+            "enemies": ["fighter", "cleric", "rogue", "wizard"],
+            "allowed_spells": [],
+            "spawn_points": {
+                "dragon":  {"x": 4, "y": 1},
+                "fighter": {"x": 3, "y": 8},
+                "cleric":  {"x": 4, "y": 8},
+                "rogue":   {"x": 5, "y": 8},
+                "wizard":  {"x": 6, "y": 8}
+            }
+        }
+    ]
+}

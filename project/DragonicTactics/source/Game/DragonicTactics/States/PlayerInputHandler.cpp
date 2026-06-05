@@ -409,6 +409,26 @@ void PlayerInputHandler::CancelCurrentAction()
 
 void PlayerInputHandler::SelectSpell(const std::string& spell_id, Character* caster, int upcast_level, ButtonManager& btns)
 {
+    // 레벨 모드에서 허용되지 않은 스펠 차단
+    if (!GamePlay::s_allowed_spells.empty())
+    {
+        bool allowed = false;
+        for (const auto& id : GamePlay::s_allowed_spells)
+        {
+            if (id == spell_id)
+            {
+                allowed = true;
+                break;
+            }
+        }
+        if (!allowed)
+        {
+            if (auto* bus = Engine::GetGameStateManager().GetGSComponent<EventBus>())
+                bus->Publish(UINoticeEvent{ "Not available in this level." });
+            return;
+        }
+    }
+
     CancelCurrentAction();
 
     m_selected_spell_id     = spell_id;
