@@ -674,13 +674,16 @@ GamePlay (GameState)
 
 ```
 매 Update 프레임:
+  0. ai_character != m_last_ai_character_ → 새 턴 감지: m_think_timer_ = 1.2s (생각 중 딜레이)
+     m_think_timer_ > 0 → dt 감산 후 return
   1. MovementComponent::IsMoving() → true면 즉시 return (이동 애니메이션 완료 대기)
   2. m_wait_timer > 0 → dt 감산 후 return (비차단 대기)
   3. AISystem::MakeDecision() → AIDecision 획득
   4. EndTurn → TurnManager::EndCurrentTurn() (대기 없음)
      그 외  → AISystem::ExecuteDecision() 후 m_wait_timer 설정:
               UseAbility → 0.6s (SpellDelayObject 0.5s 보장 + 여유)
-              Move/Attack → 0.3s (시각적 피드백 간격)
+              Attack     → 0.6s (AttackDelayObject 0.3s + 여유 0.3s)
+              Move       → 0.3s (시각적 피드백 간격)
   5. 다음 프레임에 다시 HandleAITurn 진입 → 또 MakeDecision 반복
 ```
 
@@ -699,6 +702,19 @@ std::vector<Character*> enemys {};        // 모든 AI 캐릭터 (Fighter, Cleri
 - ⚠️ `LoadJSONMap`은 `maps.json`의 `spawn_points` 키(`"fighter"`, `"cleric"`, ...)를 찾아 스폰 — 새 캐릭터는 maps.json에 spawn_point 추가 필요
 - ⚠️ **`m_confirmed_dead_` 패턴** (`GamePlay.h`): `unique_ptr`로 소유된 캐릭터가 `GameObjectManager`에서 삭제된 후 `CharacterDeathEvent` 핸들러가 뒤늦게 호출되어 댕글링 포인터가 생기는 use-after-free를 방지한다. `CheckGameEnd`는 `enemys` 포인터 값을 `m_confirmed_dead_` set에 기록해 두고, 이후 `IsAlive()` 대신 set 포함 여부로 사망 판정한다. 새 캐릭터 추가 시 동일 패턴 준수 필수 (자세한 내용: `docs/Detailed Implementations/features/character_death_crash_fix.md`).
 
+**캐릭터 사망 시각 딜레이** (`Character.cpp`):
+
+`TakeDamage()` → HP=0이면 그리드에서 **즉시** 제거(AI 경로탐색 차단) 후 `m_death_delay_ = 0.8` 설정. `Update()`에서 매 프레임 카운트다운 → 0 이하 시 `Destroy()`. `GamePlay`의 `CharacterDamagedEvent` 핸들러에서 `SetDeathDelay(delay)`로 덮어써 데미지 텍스트 등장 타이밍과 동기화된다.
+
+```cpp
+// CharacterDamagedEvent 핸들러 (GamePlay.cpp)
+if (!event.target->IsAlive())
+    event.target->SetDeathDelay(delay);  // delay = m_pending_damage_delay_ (SFX 기반)
+```
+
+- AI 공격(delay=0): `CharacterDamagedEvent` 수신 즉시 사라짐
+- 플레이어 공격(delay≈0.2s): 데미지 숫자와 동시에 사라짐
+
 **PlayerInputHandler.ActionState** (입력 상태 머신):
 
 ```
@@ -711,6 +727,10 @@ None ──[Dragon 타일 클릭]──→ SelectingMove → Moving
 
 `SelectingAction` 상태는 enum에 남아있지만 실제로는 미사용. Dragon 타일 클릭으로 이동 선택 진입 (Move 버튼 없음).
 Dragon(플레이어) 턴에서만 동작. AI(Fighter) 턴은 `BattleOrchestrator`가 처리.
+
+**End Turn 이펙트 대기 잠금** (`GamePlayUIManager.cpp`):
+
+`m_damage_texts` 중 `delay > 0`인 항목이 있으면(데미지 텍스트가 아직 화면에 나타나기 전) `slot_end_turn` 버튼을 비활성화한다. 플레이어가 공격 직후 턴을 넘기면 데미지 숫자가 적 이동 중에 나오는 현상을 방지한다. 딜레이가 만료되어 숫자가 표시되는 순간 버튼이 자동 활성화된다.
 
 **`SoundManager::Update(dt)` 호출 위치**: `GamePlay::Update()`의 **맨 첫 줄**에서 `Engine::GetSoundManager().Update(dt)` 호출 — 컷신·게임 종료 early return 이전에 실행되어 지연 SFX 큐(`PlaySFXDelayed`)를 매 프레임 처리한다.
 
@@ -1028,6 +1048,8 @@ wsl cmake --build build/web-release 2>&1 | Where-Object { $_ -match 'error:' }
 
 god mode·`timeScale`(빨리감기)·각종 오버레이 토글을 보유한다. 위치: `source/Game/DragonicTactics/Debugger/` (`DebugManager` / `DebugConsole` / `DebugVisualizer`). 콘솔 명령어 전체 목록은 아래 [문서 참조](#문서-참조)의 `docs/debug/commands.md` 참고.
 
+**⚠️ F1 디버그 도구는 DEVELOPER_VERSION 없이도 동작**: `DebugManager::DrawImGui()`의 `#if defined(DEVELOPER_VERSION)` 컴파일 게이트가 제거됨 — 릴리즈 빌드에서도 F1으로 진입 가능. `GamePlay::DrawImGui()`에서 DEVELOPER_VERSION 블록 **앞에** 호출됨. 런타임 가드(`debug_mode`, `F1`·`Tab` 키체크)는 그대로 유지.
+
 **God Mode 구현 상태** (`docs/Detailed Implementations/features/갓모드 — Dragon 데미지 무효 + AP 무제한.md`):
 - 데미지 차단: ✅ `CombatSystem::ApplyDamage()` 내 early return으로 구현 완료
 - AP 소모 차단: ❌ **미구현** — `CombatSystem.cpp` ExecuteAttack 하단(공격), `SpellSystem.cpp:542/802/837`(스펠 3곳) 수정 필요
@@ -1083,12 +1105,13 @@ Engine::GetSoundManager().StopBGM();
 Engine::GetSoundManager().PlaySFX(SoundManager::SFX_HIT);      // 단발 SFX (앞 소스 slot round-robin)
 Engine::GetSoundManager().PlaySFXLast(SoundManager::SFX_HIT);  // hurt SFX 전용 — 끝 소스 slot 역방향
 Engine::GetSoundManager().PlaySFXDelayed(path, 0.15);          // 지연 재생 (초 단위)
+Engine::GetSoundManager().ClearPendingDelayedSFX();            // 대기 중인 지연 SFX 전체 취소 (Unload 시 호출)
 Engine::GetSoundManager().Update(dt);                          // GamePlay::Update 첫 줄에서 호출
 Engine::GetSoundManager().SetBGMVolume(0.7f);                  // 0.0 ~ 1.0
 Engine::GetSoundManager().SetSFXVolume(0.8f);                  // 0.0 ~ 1.0 (Settings::ApplySettings()에서 호출)
 ```
 
-`GamePlay::Load()`에서 `PlayBGM`, `GamePlay::Unload()`에서 `StopBGM` 호출 패턴을 따른다.
+`GamePlay::Load()`에서 `PlayBGM`, `GamePlay::Unload()`에서 `StopBGM` + `ClearPendingDelayedSFX()` 호출 패턴을 따른다. `ClearPendingDelayedSFX()`를 생략하면 직전 게임플레이의 피격음이 재시작 시 재생된다.
 
 **SFX 소스 풀 분리** (`Engine/SoundManager.cpp`):
 
@@ -1270,7 +1293,7 @@ tex->Draw(Math::TranslationMatrix(Math::ivec2{screen_x - TILE_SIZE, screen_y - T
 - **UINoticeEvent 토스트**: `bus->Publish(UINoticeEvent{ "message" })` 로 발행하면 `GamePlayUIManager::ShowNotice()`가 화면 상단 중앙에 1.5초 표시. 행동 차단 이유(은신·사거리 초과 등)를 플레이어에게 알릴 때 사용. 폰트가 ASCII만 지원하므로 em dash(—) 등 특수문자 사용 금지.
 - **이벤트 타이밍 제약** (`TurnManager.cpp`): `PublishTurnStartEvent()`를 반드시 용암 피해 `ApplyDamage` **전에** 호출해야 함 — 배틀 로그가 `TurnStartedEvent`를 받아 새 턴 섹션을 열기 때문. 순서가 바뀌면 피해 항목이 이전 캐릭터의 섹션에 들어간다.
 - **패널 레이아웃 상수**: `GamePlayUIManager.h`의 `LOG_PANEL_X/Y/W/H`, `LOG_TITLE_H`, `LOG_LINE_H`, `LOG_INDENT`, `LOG_SB_W/X`에 집중 관리됨 — 패널 위치·크기 변경 시 이 상수들만 수정.
-- **스크롤**: 패널 위 마우스 휠(`GetMouseScroll()`) + 스크롤바 드래그. 패널 위에서는 카메라 줌 차단 (`IsMouseOverLogPanel()`).
+- **스크롤**: 패널 위 마우스 휠(`GetMouseScroll()`) + 스크롤바 드래그 + **좌클릭 드래그** (`log_drag_active_`, `log_drag_prev_y_`). 패널 위에서는 카메라 줌 차단 (`IsMouseOverLogPanel()`).
 - **헤더 색상**: Player 턴 = 하늘색 `0x88ccffff`, Enemy 턴 = 주황색 `0xff8844ff`.
 
 ### 슬롯 바 아이콘 (`States/GamePlayUIManager`)
