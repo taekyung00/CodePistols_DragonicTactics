@@ -20,12 +20,26 @@
 #include "Game/DragonicTactics/StateComponents/StatusEffectHandler.h"
 #include "CombatSystem.h"
 #include "Engine/GameObjectManager.h"
+#include "Engine/SoundManager.h"
 #include "Game/GameObjectTypes.h"
 
 namespace
 {
 // SpellDelayObject와 동일한 패턴 — AI 공격 데미지를 N초 뒤에 적용
 static constexpr double AI_ATTACK_DELAY = 0.3;
+
+static const char* ActionSFXFor(CharacterTypes type)
+{
+	switch (type)
+	{
+		case CharacterTypes::Fighter: return SoundManager::SFX_FIGHTER_ACTION;
+		case CharacterTypes::Cleric:  return SoundManager::SFX_CLERIC_ACTION;
+		case CharacterTypes::Rogue:   return SoundManager::SFX_ROGUE_ACTION;
+		case CharacterTypes::Wizard:  return SoundManager::SFX_WIZARD_ACTION;
+		case CharacterTypes::Dragon:  return SoundManager::SFX_DRAGON_ACTION;
+		default:                      return nullptr;
+	}
+}
 
 class AttackDelayObject : public CS230::GameObject
 {
@@ -199,8 +213,15 @@ bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender)
 	auto* gom = Engine::GetGameStateManager().GetGSComponent<CS230::GameObjectManager>();
 	if (gom)
 	{
+	  double actualDelay = AI_ATTACK_DELAY;
+	  if (const char* sfx = ActionSFXFor(attacker->GetCharacterType()))
+	  {
+		double sfxDur = Engine::GetSoundManager().GetSFXDuration(sfx);
+		if (sfxDur > 0.0)
+		  actualDelay = std::min(AI_ATTACK_DELAY, sfxDur);
+	  }
 	  gom->Add(std::unique_ptr<CS230::GameObject>(new AttackDelayObject(
-		AI_ATTACK_DELAY,
+		actualDelay,
 		[this, attacker, defender, damage, handler]()
 		{
 		  if (!defender->IsAlive()) return; // 다른 경로로 이미 사망 시 skip

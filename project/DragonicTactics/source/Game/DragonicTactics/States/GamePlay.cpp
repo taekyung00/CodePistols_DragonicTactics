@@ -56,7 +56,7 @@ bool                     GamePlay::s_should_restart = false;
 int                      GamePlay::s_level_id       = 0;
 std::vector<std::string> GamePlay::s_allowed_spells = {};
 
-// 스펠 딜레이 오브젝트가 ApplySpellEffect를 지연시키는 시간 — SpellSystem.cpp SpellDelayObject 참고
+// SpellDelayObject(0.5s) + 스펠 SFX 앞부분 침묵(~1s) 합산값 — 스펠 이펙트를 SFX 충격음 타이밍에 맞춤
 static constexpr double SPELL_DELAY_OBJECT_SEC = 1.5;
 // SFX 종료 이 시간 전에 피격 이펙트 등장 — 값 하나로 전체 타이밍 조절
 static constexpr double EFFECT_LEAD_TIME = 0.3;
@@ -564,7 +564,8 @@ void GamePlay::Update(double dt)
 	}
   }
 
-  // Camera pan (right-drag) and zoom (scroll wheel) — runs every frame
+  // Camera pan (right-drag) and zoom (scroll wheel) — blocked while pause menu is open
+  if (!m_ui_manager->IsPauseMenuOpen())
   {
     auto&      inp    = Engine::GetInput();
     auto       win    = Engine::GetWindow().GetSize();
@@ -615,25 +616,34 @@ void GamePlay::Update(double dt)
   DebugManager*				      debugMgr	 = GetGSComponent<DebugManager>();
 
   if (Engine::GetInput().KeyJustPressed(CS230::Input::Keys::Escape))
-  {
-	if (turnMgr)
-	  turnMgr->EndCombat();
-	Engine::GetGameStateManager().PopState();
-	Engine::GetGameStateManager().PushState<MainMenu>();
-	return;
-  }
+	m_ui_manager->TogglePauseMenu();
 
 // 수정됨: if (game_end) return; 를 여기서 바로 호출하지 않습니다.
 
     double scaledDt = dt * static_cast<double>(debugMgr->timeScale);
 
-    // 1. 게임이 끝나더라도 메모리 해제(Destroy 처리)와 파티클, UI 갱신을 위해 기본 시스템 업데이트는 계속 실행합니다.
-    if (goMgr) goMgr->UpdateAll(scaledDt);
+    // UI는 항상 업데이트 (팝업 입력 처리 포함)
     if (m_ui_manager) m_ui_manager->Update(dt);
+
+    // Pause menu: QUIT 요청 처리
+    if (m_ui_manager->IsPauseQuitRequested())
+    {
+        if (turnMgr) turnMgr->EndCombat();
+        Engine::GetGameStateManager().PopState();
+        Engine::GetGameStateManager().PushState<MainMenu>();
+        return;
+    }
+
+    // 일시정지 중에는 게임 로직 전체 정지 (AI, 타이머, 이동 애니메이션)
+    if (m_ui_manager->IsPauseMenuOpen())
+        return;
+
+    // 1. 게임이 끝나더라도 메모리 해제(Destroy 처리)와 파티클 갱신을 위해 기본 시스템 업데이트는 계속 실행합니다.
+    if (goMgr) goMgr->UpdateAll(scaledDt);
     UpdateGSComponents(scaledDt);
 
     // 2. 파괴 처리를 완료한 후, 게임이 끝났다면 여기서 끊어줍니다. (추가 조작 및 AI 턴 진행 방지)
-    if (game_end) return; 
+    if (game_end) return;
 
     // 3. 게임이 진행 중일 때만 플레이어 조작 및 전투 흐름(Orchestrator) 로직을 실행합니다.
     Character* current = nullptr;

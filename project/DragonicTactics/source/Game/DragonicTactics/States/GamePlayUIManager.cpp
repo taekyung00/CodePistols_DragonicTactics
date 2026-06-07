@@ -45,11 +45,41 @@ Created:     November 24, 2025
 #include "../Objects/Components/StatsComponent.h"
 
 #include "PlayerInputHandler.h"
+#include "Engine/SoundManager.h"
+#include "Game/Settings.h"
 #include <sstream>
 
 // Virtual resolution helpers — mirrors the demo's letterbox approach
 static constexpr int VW = TacticalCamera::VIRTUAL_W;
 static constexpr int VH = TacticalCamera::VIRTUAL_H;
+
+// ── Pause Menu 레이아웃 상수 ────────────────────────────────────────────────
+// PW/PH 두 줄만 바꾸면 모든 좌표가 자동 연동된다.
+struct PauseLayout
+{
+	static constexpr double PW         = VW * 2.0 / 3.0;               // 팝업 폭 (~1067)
+	static constexpr double PH         = VH * 2.0 / 3.0;               // 팝업 높이 (600)
+	static constexpr double CX         = VW * 0.5;                     // 팝업 중심 X (800)
+	static constexpr double CY         = VH * 0.5;                     // 팝업 중심 Y (450)
+	static constexpr double LEFT       = CX - PW * 0.5;
+	static constexpr double RIGHT      = CX + PW * 0.5;
+	static constexpr double BOTTOM     = CY - PH * 0.5;
+	static constexpr double TOP        = CY + PH * 0.5;
+
+	static constexpr double LABEL_X    = LEFT + 40;
+	static constexpr double SLIDER_X   = LEFT + 220;
+	static constexpr double SLIDER_W   = PW - 350;
+	static constexpr double SLIDER_H   = 15.0;
+	static constexpr double BGM_Y      = CY + 130;
+	static constexpr double SFX_Y      = CY + 40;
+	static constexpr double PCT_X      = SLIDER_X + SLIDER_W + 30;
+
+	static constexpr double BTN_W      = 200.0;
+	static constexpr double BTN_H      = 50.0;
+	static constexpr double BTN_GAP    = 20.0;
+	static constexpr double BTN_Y      = BOTTOM + 90;
+	static constexpr double BTN_START_X = CX - (3 * BTN_W + 2 * BTN_GAP) * 0.5;
+};
 
 static Math::vec2 to_virtual(Math::vec2 actual, Math::ivec2 actual_win) noexcept
 {
@@ -74,6 +104,13 @@ void GamePlayUIManager::ShowGameEnd(std::string&& text)
   game_end_text = std::make_unique<std::string>(text);
 }
 
+void GamePlayUIManager::TogglePauseMenu()
+{
+	m_pause_open_     = !m_pause_open_;
+	m_quit_requested_ = false;
+	m_pause_drag_     = PauseDrag::None;
+}
+
 void GamePlayUIManager::Update(double dt)
 {
     Math::vec2 mouse_pos   = Engine::GetInput().GetMousePos();
@@ -83,6 +120,13 @@ void GamePlayUIManager::Update(double dt)
     auto actual_win       = Engine::GetWindow().GetSize();
     Math::vec2 virt_mouse = to_virtual(mouse_pos, actual_win);
     m_virtual_mouse_      = virt_mouse;
+
+    // 팝업이 열려있으면 팝업 입력만 처리하고 나머지 UI 입력 차단
+    if (m_pause_open_)
+    {
+        UpdatePauseMenu(virt_mouse, mouse_click, Engine::GetInput().MouseDown(0));
+        return;
+    }
 
     // Feature 3: Cancel hint alpha pulse timer
     m_cancel_hint_time_ += dt;
@@ -428,6 +472,7 @@ void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_
                          CS200::WHITE);
     }
 
+    DrawPauseMenu();
 }
 
 void GamePlayUIManager::SetCharacters(const std::vector<Character*>& characters)
@@ -2173,4 +2218,192 @@ void GamePlayUIManager::DrawCancelHint()
     textMgr.DrawText(text,
         Math::vec2{ cx - text_w * 0.5, y_baseline },
         Fonts::Kings, { SCALE, SCALE }, tint, DrawDepth::UI);
+}
+
+// ── Pause Menu ───────────────────────────────────────────────────────────────
+
+void GamePlayUIManager::UpdatePauseMenu(Math::vec2 virt_mouse, bool just_pressed, bool mouse_down)
+{
+	using L = PauseLayout;
+
+	// Release drag
+	if (!mouse_down)
+		m_pause_drag_ = PauseDrag::None;
+
+	// Active drag update — runs every frame while button held
+	if (mouse_down && m_pause_drag_ != PauseDrag::None)
+	{
+		double rel_x = std::clamp(virt_mouse.x - L::SLIDER_X, 0.0, L::SLIDER_W);
+		int    vol   = static_cast<int>(rel_x / L::SLIDER_W * 100.0);
+		if (m_pause_drag_ == PauseDrag::BGM)
+		{
+			Settings::s_bgm_volume = vol;
+			Engine::GetSoundManager().SetBGMVolume(Settings::s_is_bgm_muted ? 0.0f : (static_cast<float>(Settings::s_bgm_volume) / 100.0f));
+		}
+		else
+		{
+			Settings::s_sfx_volume = vol;
+			Engine::GetSoundManager().SetSFXVolume(Settings::s_is_sfx_muted ? 0.0f : (static_cast<float>(Settings::s_sfx_volume) / 100.0f));
+		}
+		return;
+	}
+
+	if (!just_pressed)
+		return;
+
+	// Outside popup → close
+	if (virt_mouse.x < L::LEFT || virt_mouse.x > L::RIGHT || virt_mouse.y < L::BOTTOM || virt_mouse.y > L::TOP)
+	{
+		m_pause_open_ = false;
+		return;
+	}
+
+	// Slider hit tests — click to jump + begin drag
+	if (virt_mouse.x >= L::SLIDER_X && virt_mouse.x <= L::SLIDER_X + L::SLIDER_W)
+	{
+		if (std::abs(virt_mouse.y - L::BGM_Y) <= L::SLIDER_H * 1.5)
+		{
+			m_pause_drag_          = PauseDrag::BGM;
+			double rel_x           = std::clamp(virt_mouse.x - L::SLIDER_X, 0.0, L::SLIDER_W);
+			Settings::s_bgm_volume = static_cast<int>(rel_x / L::SLIDER_W * 100.0);
+			Engine::GetSoundManager().SetBGMVolume(Settings::s_is_bgm_muted ? 0.0f : (static_cast<float>(Settings::s_bgm_volume) / 100.0f));
+			return;
+		}
+		if (std::abs(virt_mouse.y - L::SFX_Y) <= L::SLIDER_H * 1.5)
+		{
+			m_pause_drag_          = PauseDrag::SFX;
+			double rel_x           = std::clamp(virt_mouse.x - L::SLIDER_X, 0.0, L::SLIDER_W);
+			Settings::s_sfx_volume = static_cast<int>(rel_x / L::SLIDER_W * 100.0);
+			Engine::GetSoundManager().SetSFXVolume(Settings::s_is_sfx_muted ? 0.0f : (static_cast<float>(Settings::s_sfx_volume) / 100.0f));
+			return;
+		}
+	}
+
+	// Button hit tests
+	for (int i = 0; i < 3; ++i)
+	{
+		double bcx = L::BTN_START_X + static_cast<double>(i) * (L::BTN_W + L::BTN_GAP) + L::BTN_W * 0.5;
+		double bcy = L::BTN_Y;
+		if (virt_mouse.x >= bcx - L::BTN_W * 0.5 && virt_mouse.x <= bcx + L::BTN_W * 0.5 &&
+		    virt_mouse.y >= bcy - L::BTN_H * 0.5 && virt_mouse.y <= bcy + L::BTN_H * 0.5)
+		{
+			Engine::GetSoundManager().PlaySFX(SoundManager::SFX_BUTTON_CLICK);
+			switch (i)
+			{
+				case 0: // RETURN
+					m_pause_open_ = false;
+					break;
+				case 1: // RESTART
+					GamePlay::s_should_restart = true;
+					m_pause_open_              = false;
+					break;
+				case 2: // QUIT
+					m_quit_requested_ = true;
+					break;
+				default:
+					break;
+			}
+			return;
+		}
+	}
+}
+
+void GamePlayUIManager::DrawPauseMenu()
+{
+	if (!m_pause_open_)
+		return;
+
+	using L        = PauseLayout;
+	auto* renderer = CS230::TextureManager::GetRenderer2D();
+	auto& textMgr  = Engine::GetTextManager();
+
+	// 1. Full-screen dimming overlay
+	renderer->DrawRectangle(
+	    Math::TranslationMatrix(Math::vec2{ VW * 0.5, VH * 0.5 }) *
+	        Math::ScaleMatrix(Math::vec2{ static_cast<double>(VW), static_cast<double>(VH) }),
+	    0x00000099, 0x00000000, 0.0, 0.005f);
+
+	// 2. Popup box
+	renderer->DrawRectangle(
+	    Math::TranslationMatrix(Math::vec2{ L::CX, L::CY }) * Math::ScaleMatrix(Math::vec2{ L::PW, L::PH }),
+	    0x1a1a2eee, 0x5588aaff, 1.5, 0.004f);
+
+	// 3. Title "PAUSE"
+	constexpr double TITLE_SCALE = 1.0;
+	Math::vec2       title_size  = textMgr.CalculateTextSize("PAUSE", Fonts::Kings);
+	double           title_w     = title_size.x * TITLE_SCALE;
+	double           title_h     = title_size.y * TITLE_SCALE;
+	textMgr.DrawText("PAUSE",
+	    Math::vec2{ L::CX - title_w * 0.5, L::TOP - title_h - 8.0 },
+	    Fonts::Kings, { TITLE_SCALE, TITLE_SCALE }, 0xFFD700FF, 0.003f);
+
+	// 4. Volume sliders
+	auto draw_slider = [&](double cy, int vol, const char* label)
+	{
+		constexpr double LABEL_SCALE = 0.5;
+		constexpr double PCT_SCALE   = 0.45;
+		Math::vec2       lbl_size    = textMgr.CalculateTextSize(label, Fonts::Kings);
+		double           lbl_h       = lbl_size.y * LABEL_SCALE;
+
+		textMgr.DrawText(label,
+		    Math::vec2{ L::LABEL_X, cy - lbl_h * 0.5 },
+		    Fonts::Kings, { LABEL_SCALE, LABEL_SCALE }, 0xCCCCCCFF, 0.003f);
+
+		// Track background
+		renderer->DrawRectangle(
+		    Math::TranslationMatrix(Math::vec2{ L::SLIDER_X + L::SLIDER_W * 0.5, cy }) *
+		        Math::ScaleMatrix(Math::vec2{ L::SLIDER_W, L::SLIDER_H }),
+		    0x333333FF, 0x555555FF, 1.0, 0.003f);
+
+		// Filled portion
+		double fill_ratio = static_cast<double>(vol) / 100.0;
+		double fill_w     = L::SLIDER_W * fill_ratio;
+		if (fill_w > 0.0)
+		{
+			renderer->DrawRectangle(
+			    Math::TranslationMatrix(Math::vec2{ L::SLIDER_X + fill_w * 0.5, cy }) *
+			        Math::ScaleMatrix(Math::vec2{ fill_w, L::SLIDER_H }),
+			    0x960000FF, 0x960000FF, 0.0, 0.003f);
+		}
+
+		// Knob — depth 0.002f 로 트랙(0.003f)보다 앞에 렌더링
+		double knob_size = L::SLIDER_H * 1.5;
+		renderer->DrawCircle(
+		    Math::TranslationMatrix(Math::vec2{ L::SLIDER_X + fill_w, cy }) *
+		        Math::ScaleMatrix(Math::vec2{ knob_size, knob_size }),
+		    0xFFC800FF, 0x960000FF, 0.0, 0.002f);
+
+		textMgr.DrawText(std::to_string(vol) + "%",
+		    Math::vec2{ L::PCT_X, cy - lbl_h * 0.5 },
+		    Fonts::Kings, { PCT_SCALE, PCT_SCALE }, 0xCCCCCCFF, 0.003f);
+	};
+
+	draw_slider(L::BGM_Y, Settings::s_bgm_volume, "BGM VOLUME");
+	draw_slider(L::SFX_Y, Settings::s_sfx_volume, "SFX VOLUME");
+
+	// 5. Buttons
+	static const char* BTN_LABELS[3] = { "RETURN", "RESTART", "QUIT" };
+	for (int i = 0; i < 3; ++i)
+	{
+		double bcx = L::BTN_START_X + static_cast<double>(i) * (L::BTN_W + L::BTN_GAP) + L::BTN_W * 0.5;
+		double bcy = L::BTN_Y;
+
+		bool hovered = (m_virtual_mouse_.x >= bcx - L::BTN_W * 0.5 && m_virtual_mouse_.x <= bcx + L::BTN_W * 0.5 &&
+		                m_virtual_mouse_.y >= bcy - L::BTN_H * 0.5 && m_virtual_mouse_.y <= bcy + L::BTN_H * 0.5);
+
+		uint32_t fill   = hovered ? 0x5588aaff : 0x222244ff;
+		uint32_t border = hovered ? 0xFFD700FF : 0x5588aaff;
+
+		renderer->DrawRectangle(
+		    Math::TranslationMatrix(Math::vec2{ bcx, bcy }) * Math::ScaleMatrix(Math::vec2{ L::BTN_W, L::BTN_H }),
+		    fill, border, 1.5, 0.003f);
+
+		constexpr double BTN_TEXT_SCALE = 0.5;
+		Math::vec2       lbl_size       = textMgr.CalculateTextSize(BTN_LABELS[i], Fonts::Kings);
+		double           lbl_w          = lbl_size.x * BTN_TEXT_SCALE;
+		double           lbl_h          = lbl_size.y * BTN_TEXT_SCALE;
+		textMgr.DrawText(BTN_LABELS[i],
+		    Math::vec2{ bcx - lbl_w * 0.5, bcy - lbl_h * 0.5 },
+		    Fonts::Kings, { BTN_TEXT_SCALE, BTN_TEXT_SCALE }, hovered ? 0xFFD700FF : 0xCCCCCCFF, 0.002f);
+	}
 }

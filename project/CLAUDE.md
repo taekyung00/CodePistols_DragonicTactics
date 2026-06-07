@@ -73,6 +73,21 @@ main.cpp → Splash → MainMenu ┬─ LevelGame → LevelSelect ┬─ Level 1
 - ⚠️ `source/Game/States.h`의 `enum class State { Splash, MainMenu, Final }`는 **레거시·미사용**이다. 실제 내비게이션은 이 enum이 아니라 `GameStateManager`의 push/pop으로 동작 — 혼동 주의.
 - **Settings → GamePlay 연결**: `Settings`의 맵 크기 선택이 아래 [데이터 주도 설계](#데이터-주도-설계)의 `GamePlay::s_next_map_id` / `s_should_restart` 정적 필드를 통해 로드할 맵을 결정한다.
 
+### 사용자 설정 저장 (user_settings.json)
+
+창 크기와 BGM 설정을 `user_settings.json` (실행 파일 옆)에 영구 저장한다. 자세한 구현은 [복원 기능.md](docs/Detailed%20Implementations/features/%EB%B3%B5%EC%9B%90%20%EA%B8%B0%EB%8A%A5.md) 참고.
+
+**흐름**:
+```
+[앱 시작] main.cpp → engine.Start() → Settings::LoadUserSettings() → ForceResize(s_window_size) → PushState<Splash>
+[창 리사이즈] SDL_WINDOWEVENT_SIZE_CHANGED → Window::ResizeCallback → Settings::s_window_size 갱신 + SaveUserSettings()
+```
+
+- `Settings::s_window_size` (static, 기본 1600×900) — 창 크기 공유 정적 필드
+- `Settings::LoadUserSettings()` / `SaveUserSettings()` — nlohmann/json으로 `user_settings.json` 읽기/쓰기. 저장 항목: `window_width`, `window_height`, `bgm_enabled`, `bgm_volume_pct`
+- `Window::SetResizeCallback(fn)` — main.cpp에서 단 1회 등록, engine→game 단방향 의존 유지
+- BGM On/Off·볼륨 변경 시 `Settings::SelectOption()`이 자동으로 `SaveUserSettings()` 호출
+
 ### LevelSelect & Level Mode
 
 `LevelSelect` (`source/Game/LevelSelect.h/.cpp`) — 레벨 선택 화면. MainMenu의 기본 옵션(LevelGame)에서 진입.
@@ -1424,4 +1439,6 @@ double TT_W = (wit != widths_map.end()) ? wit->second : 340.0;
 - [docs/Detailed Implementations/features/depth.md](docs/Detailed%20Implementations/features/depth.md) — DrawDepth 렌더 순서 가이드
 - [docs/debug/](docs/debug/) — 디버그 가이드 모음 (commands.md 외 tools.md, ui.md, ARCHITECTURE_COVERAGE_ANALYSIS.md, SEPARATE_CONSOLE_WINDOW_GUIDE.md)
 - [DragonicTactics/docs/DevEnvironment.md](DragonicTactics/docs/DevEnvironment.md) / [DebuggingWeb.md](DragonicTactics/docs/DebuggingWeb.md) — 개발 환경 셋업·웹 빌드 디버깅
+- [docs/Detailed Implementations/features/복원 기능.md](docs/Detailed%20Implementations/features/%EB%B3%B5%EC%9B%90%20%EA%B8%B0%EB%8A%A5.md) — 창 크기·BGM 설정 user_settings.json 영구 저장 구현 (Window ResizeCallback, Settings::LoadUserSettings/SaveUserSettings)
+- [docs/Detailed Implementations/features/level_game.md](docs/Detailed%20Implementations/features/level_game.md) — Level Game 모드 설계 (레벨별 적 구성·허용 스펠·맵 크기 상세)
 - ⚠️ `docs/Detailed Implementations/features/`에 `rogue_strategy.md`와 `rouge_strategy.md`가 모두 존재 — **`rogue_strategy.md`가 정본**(위에서 링크 중), `rouge_strategy.md`는 구 철자 잔재이므로 참조 금지

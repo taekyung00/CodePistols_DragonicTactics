@@ -171,4 +171,18 @@ class GamePlayUIManager
   void DrawDragonWorldHoverTooltip();
   void DrawDragonHUD();
   void DrawCancelHint();
+
+  // ── Pause Menu ──────────────────────────────────────────────────────────────
+  public:
+  void TogglePauseMenu();
+  bool IsPauseMenuOpen()      const { return m_pause_open_; }
+  bool IsPauseQuitRequested() const { return m_quit_requested_; }
+
+  private:
+  bool      m_pause_open_      = false;
+  bool      m_quit_requested_  = false;
+  enum class PauseDrag { None, BGM, SFX } m_pause_drag_ = PauseDrag::None;
+
+  void UpdatePauseMenu(Math::vec2 virt_mouse, bool just_pressed, bool mouse_down);
+  void DrawPauseMenu();
 };
