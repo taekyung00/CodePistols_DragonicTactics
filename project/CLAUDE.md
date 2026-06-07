@@ -68,7 +68,7 @@ main.cpp → Splash → MainMenu ┬─ LevelGame → LevelSelect ┬─ Level 1
 ```
 
 - **GameOver 상태**: `source/Game/GameOver.h` / `GameOver.cpp` — `source/Game/` 직하위 (MainMenu·Settings와 동일 레벨). `GameOver::s_player_won` (static bool)으로 결과를 전달받아 "PLAYER WIN"(금색) / "INVADER WIN"(빨간색) 타이틀 표시. 전환 타이밍은 `GamePlay.h`의 `static constexpr double GAME_OVER_DELAY = 0.5` (초) — 값 변경 시 이 상수만 수정.
-- **셸 레이어 위치 주의**: `Splash`·`MainMenu`·`Settings`·`GameOver`·`Score`·`Background`·`Particles`·`LevelSelect` 는 `source/Game/` **직하위**에 있다 — `source/Game/DragonicTactics/` 하위가 **아니다**. 전투 본편 코드만 `DragonicTactics/` 서브트리에 있다.
+- **셸 레이어 위치 주의**: `Splash`·`MainMenu`·`Settings`·`GameOver`·`LevelSelect` (GameState)와 `Score`·`Background`·`Particles` (CS230::Component — GameState 아님)는 모두 `source/Game/` **직하위**에 있다 — `source/Game/DragonicTactics/` 하위가 **아니다**. 전투 본편 코드만 `DragonicTactics/` 서브트리에 있다.
 - **Splash 지속시간**: `#if defined(DEVELOPER_VERSION)` → **0.3초**, `#else` → 2.0초 (`source/Game/Splash.cpp`). 릴리즈 빌드에서 2초 스플래시를 표시.
 - ⚠️ `source/Game/States.h`의 `enum class State { Splash, MainMenu, Final }`는 **레거시·미사용**이다. 실제 내비게이션은 이 enum이 아니라 `GameStateManager`의 push/pop으로 동작 — 혼동 주의.
 - **Settings → GamePlay 연결**: `Settings`의 맵 크기 선택이 아래 [데이터 주도 설계](#데이터-주도-설계)의 `GamePlay::s_next_map_id` / `s_should_restart` 정적 필드를 통해 로드할 맵을 결정한다.
@@ -123,19 +123,9 @@ main.cpp → Splash → MainMenu ┬─ LevelGame → LevelSelect ┬─ Level 1
 
 `LoadLevelMap(int level_id)` (`GamePlay.cpp:883`) — `maps.json` 대신 `Level_Map.json`을 읽어 맵을 구성하고 `enemies` 배열의 캐릭터 타입만 스폰한다.
 
-### 컷신 시스템 (GamePlay 진입 후 전투 시작 전)
+### 컷신 시스템
 
-`GamePlay::Load()` 완료 직후 전투가 시작되기 전에 컷신 3장을 순서대로 표시한다. 컷신 진행 중에는 모든 게임 로직 · 입력이 차단된다.
-
-| 상수 | 값 | 의미 |
-|---|---|---|
-| `CUTSCENE_DURATION` | 1.5s | 컷당 자동 전환 시간 |
-| `CUTSCENE_COUNT` | 3 | 총 컷 수 |
-
-- **이미지**: `Assets/images/cut1.png`, `cut2.png`, `cut3.png` (가상 1600×900 풀스크린 렌더)
-- **조작**: 좌클릭 또는 `Space` → 현재 컷 즉시 넘기기; `Escape` → 전체 스킵
-- **렌더**: `Draw()`에서 컷신 페이즈 시 Pass 2 UI NDC만 사용 (월드 패스 없음)
-- ⚠️ 새 컷 추가 시 `CUTSCENE_COUNT` 상수와 `m_cutscene_textures_` 로드 라인 양쪽 수정 필요
+⚠️ **미구현 (에셋만 존재)** — `Assets/images/cut1.png` ~ `cut4.png` 파일은 있으나 `GamePlay.cpp/h`에 컷신 코드가 없다. 구현 시 `GamePlay::Load()` 직후 컷신 페이즈를 추가하고 이 섹션을 갱신할 것.
 
 ---
 
@@ -1067,7 +1057,7 @@ god mode·`timeScale`(빨리감기)·각종 오버레이 토글을 보유한다.
 
 **God Mode 구현 상태** (`docs/Detailed Implementations/features/갓모드 — Dragon 데미지 무효 + AP 무제한.md`):
 - 데미지 차단: ✅ `CombatSystem::ApplyDamage()` 내 early return으로 구현 완료
-- AP 소모 차단: ❌ **미구현** — `CombatSystem.cpp` ExecuteAttack 하단(공격), `SpellSystem.cpp:542/802/837`(스펠 3곳) 수정 필요
+- AP 소모 차단: ✅ `CombatSystem.cpp:246` (공격), `SpellSystem.cpp:597/904/958` (스펠 3곳) 구현 완료
 - `DebugManager::IsGodModeEnabled()` → `debug_mode && god_mode` (Dragon에만 적용)
 
 **디버그 콘솔 주요 명령어 (DebugManager::RegisterGameCommands)**:

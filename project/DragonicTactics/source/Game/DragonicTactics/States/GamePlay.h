@@ -10,6 +10,7 @@ Created:    November 5, 2025
 #pragma once
 #include "Engine/GameState.h"
 #include "Engine/Matrix.h"
+#include "Engine/Texture.h"
 #include "Engine/Vec2.h"
 #include <memory>
 #include <set>
@@ -81,6 +82,41 @@ class GamePlay : public CS230::GameState
     double      timer;
   };
   std::vector<PendingHitEffect> m_pending_hit_effects_;
+
+  // 스프라이트 시트 애니메이션 이펙트
+  struct SpriteEffect
+  {
+    enum class Mode { Static, Projectile } mode = Mode::Static;
+    std::shared_ptr<CS230::Texture> tex;
+    int        frame_count  = 1;
+    double     fps          = 10.0;
+    double     elapsed      = 0.0;
+    double     delay        = 0.0;
+    double     angle        = 0.0;   // 회전 각도 (라디안). 0 = 오른쪽 방향
+    Math::vec2 world_pos;            // Static: 표시 위치(fallback 포함) | Projectile: 목적지
+    Math::vec2 proj_origin;          // Projectile 출발 위치
+    double     proj_duration   = 0.4;
+    Character* follow_char = nullptr; // non-null 이면 매 프레임 이 캐릭터의 현재 위치 사용
+    bool IsDone() const { return elapsed >= delay + static_cast<double>(frame_count) / fps; }
+  };
+  std::vector<SpriteEffect> m_sprite_effects_;
+
+  // Meteor 전체화면 이펙트
+  bool   m_meteor_active_  = false;
+  double m_meteor_elapsed_ = 0.0;
+
+  // 레벨3 환경 용암: 라운드당 1회만 체크하기 위한 마지막 처리 라운드
+  int m_lava_spawn_last_round_ = -1;
+
+  // 스프라이트 이펙트 텍스처
+  std::shared_ptr<CS230::Texture> m_tex_hit2_;
+  std::shared_ptr<CS230::Texture> m_tex_hit3_;
+  std::shared_ptr<CS230::Texture> m_tex_hit4_;
+  std::shared_ptr<CS230::Texture> m_tex_purify_;
+  std::shared_ptr<CS230::Texture> m_tex_meteor_;
+  std::shared_ptr<CS230::Texture> m_tex_magic_;
+  std::shared_ptr<CS230::Texture> m_tex_cry_;
+  std::shared_ptr<CS230::Texture> m_tex_magic_hit_;
 
   Character* player  = nullptr;
   std::vector<Character*> enemys {};

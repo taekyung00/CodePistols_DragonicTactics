@@ -881,6 +881,32 @@ int SpellSystem::GetLavaDamageAt(Math::ivec2 tile) const
 	return 0;
 }
 
+void SpellSystem::SpawnEnvironmentalLava(Math::ivec2 tile, int created_round)
+{
+	auto* grid = Engine::GetGameStateManager().GetGSComponent<GridSystem>();
+	if (!grid || !grid->IsValidTile(tile))
+		return;
+	if (grid->GetTileType(tile) != GridSystem::TileType::Empty || grid->IsOccupied(tile))
+		return;
+
+	// Magma Blast(S_GEO_010)와 동일한 데미지·지속 시간 사용
+	int damage   = 6;
+	int duration = 3;
+	auto it      = spells_.find("S_GEO_010");
+	if (it != spells_.end())
+	{
+		damage   = CalculateSpellDamage(it->second, 0);
+		duration = it->second.effect_duration;
+	}
+
+	grid->SetTileType(tile, GridSystem::TileType::Lava);
+	m_terrain_effects.push_back({ { tile }, damage, created_round, duration });
+
+	if (auto* bus = Engine::GetGameStateManager().GetGSComponent<EventBus>())
+		bus->Publish(BattleLogMessageEvent{
+			"- Lava erupted at (" + std::to_string(tile.x) + ", " + std::to_string(tile.y) + ")" });
+}
+
 bool SpellSystem::CastWalls(Character* caster, const std::string& spell_id, const std::vector<Math::ivec2>& tiles, int upcast_level)
 {
     if (!caster || tiles.empty())

@@ -108,6 +108,7 @@ void GamePlayUIManager::TogglePauseMenu()
 {
 	m_pause_open_     = !m_pause_open_;
 	m_quit_requested_ = false;
+	m_quit_btn_held_  = false;
 	m_pause_drag_     = PauseDrag::None;
 }
 
@@ -124,7 +125,7 @@ void GamePlayUIManager::Update(double dt)
     // 팝업이 열려있으면 팝업 입력만 처리하고 나머지 UI 입력 차단
     if (m_pause_open_)
     {
-        UpdatePauseMenu(virt_mouse, mouse_click, Engine::GetInput().MouseDown(0));
+        UpdatePauseMenu(virt_mouse, mouse_click, Engine::GetInput().MouseDown(0), Engine::GetInput().MouseJustReleased(0));
         return;
     }
 
@@ -2058,12 +2059,12 @@ void GamePlayUIManager::DrawDragonHUD()
     constexpr double NAME_Y    = 866.0;                               // name baseline
     constexpr double HP_BAR_CY = 826.0;                               // bar center
     constexpr double HP_BAR_W  = 200.0;
-    constexpr double HP_BAR_H  = 18.0;                                // bar 817-835
+    constexpr double HP_BAR_H  = 26.0;                                // bar
     constexpr double APMOV_Y   = 786.0;                               // text baseline (text top ≈ 808)
 
     textMgr.DrawText(m_player_->TypeName(),
         Math::vec2{ STAT_X, NAME_Y },
-        Fonts::Kings, { 0.45, 0.45 }, CS200::GOLD, DrawDepth::UI);
+        Fonts::Kings, { 0.55, 0.55 }, CS200::GOLD, DrawDepth::UI);
 
     const int hp     = m_player_->GetHP();
     const int hp_max = m_player_->GetMaxHP();
@@ -2086,7 +2087,7 @@ void GamePlayUIManager::DrawDragonHUD()
     // HP value text centered INSIDE the bar
     {
         std::string hp_text = "HP " + std::to_string(hp) + " / " + std::to_string(hp_max);
-        constexpr double HP_TEXT_SCALE = 0.3;
+        constexpr double HP_TEXT_SCALE = 0.4;
         Math::vec2 sz = textMgr.CalculateTextSize(hp_text, Fonts::Kings);
         const double tx = STAT_X + HP_BAR_W * 0.5 - sz.x * HP_TEXT_SCALE * 0.5;
         const double ty = HP_BAR_CY - sz.y * HP_TEXT_SCALE * 0.5;
@@ -2109,7 +2110,7 @@ void GamePlayUIManager::DrawDragonHUD()
                        + "    MOV " + std::to_string(mov_cur) + "/" + std::to_string(mov_max);
     textMgr.DrawText(ap_mov,
         Math::vec2{ STAT_X, APMOV_Y },
-        Fonts::Kings, { 0.38, 0.38 }, CS200::WHITE, DrawDepth::UI);
+        Fonts::Kings, { 0.45, 0.45 }, CS200::WHITE, DrawDepth::UI);
 
     // ── Divider line under header ──────────────────────────────────
     constexpr double DIV_Y = 770.0;
@@ -2120,7 +2121,7 @@ void GamePlayUIManager::DrawDragonHUD()
 
     // ── Spell slots: one line per level, scale 0.4 (well clear of portrait) ──
     constexpr double SLOT_FIRST_Y = 738.0;
-    constexpr double SLOT_STEP    = 30.0;
+    constexpr double SLOT_STEP    = 38.0;
     double slot_y = SLOT_FIRST_Y;
     if (auto* slots = m_player_->GetSpellSlots())
     {
@@ -2222,9 +2223,27 @@ void GamePlayUIManager::DrawCancelHint()
 
 // ── Pause Menu ───────────────────────────────────────────────────────────────
 
-void GamePlayUIManager::UpdatePauseMenu(Math::vec2 virt_mouse, bool just_pressed, bool mouse_down)
+void GamePlayUIManager::UpdatePauseMenu(Math::vec2 virt_mouse, bool just_pressed, bool mouse_down, bool just_released)
 {
 	using L = PauseLayout;
+
+	// Quit button: release 시 실행 (press 시 held 플래그만 세움)
+	if (just_released)
+	{
+		if (m_quit_btn_held_)
+		{
+			m_quit_btn_held_ = false;
+			using L2         = PauseLayout;
+			double bcx       = L2::BTN_START_X + 2.0 * (L2::BTN_W + L2::BTN_GAP) + L2::BTN_W * 0.5;
+			double bcy       = L2::BTN_Y;
+			if (virt_mouse.x >= bcx - L2::BTN_W * 0.5 && virt_mouse.x <= bcx + L2::BTN_W * 0.5 &&
+			    virt_mouse.y >= bcy - L2::BTN_H * 0.5 && virt_mouse.y <= bcy + L2::BTN_H * 0.5)
+			{
+				m_quit_requested_ = true;
+				return;
+			}
+		}
+	}
 
 	// Release drag
 	if (!mouse_down)
@@ -2297,9 +2316,9 @@ void GamePlayUIManager::UpdatePauseMenu(Math::vec2 virt_mouse, bool just_pressed
 					GamePlay::s_should_restart = true;
 					m_pause_open_              = false;
 					break;
-				case 2: // QUIT
-					m_quit_requested_ = true;
-					break;
+				case 2: // QUIT — press 시 held 플래그만, release 시 실제 전환 (위 just_released 블록)
+					m_quit_btn_held_ = true;
+					return;
 				default:
 					break;
 			}
