@@ -57,8 +57,8 @@ static constexpr int VH = TacticalCamera::VIRTUAL_H;
 // PW/PH 두 줄만 바꾸면 모든 좌표가 자동 연동된다.
 struct PauseLayout
 {
-	static constexpr double PW         = VW * 2.0 / 3.0;               // 팝업 폭 (~1067)
-	static constexpr double PH         = VH * 2.0 / 3.0;               // 팝업 높이 (600)
+	static constexpr double PW         = VW * 0.5;                     // 팝업 폭 (800)
+	static constexpr double PH         = VH * 0.5;                     // 팝업 높이 (450)
 	static constexpr double CX         = VW * 0.5;                     // 팝업 중심 X (800)
 	static constexpr double CY         = VH * 0.5;                     // 팝업 중심 Y (450)
 	static constexpr double LEFT       = CX - PW * 0.5;
