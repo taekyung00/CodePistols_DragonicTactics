@@ -20,6 +20,8 @@ class SoundManager
 public:
     static constexpr const char* BGM_MAIN_MENU = "Assets/Audio/BGM/BGM_Main.ogg";
     static constexpr const char* BGM_BATTLE    = "Assets/Audio/BGM/BGM_test.ogg";
+    static constexpr const char* BGM_WIN       = "Assets/Audio/BGM/BGM_win.ogg";
+    static constexpr const char* BGM_LOSE      = "Assets/Audio/BGM/BGM_lose.ogg";
     static constexpr const char* SFX_HIT       = "Assets/Audio/SFX/SFX_test.wav";
 
     static constexpr const char* SFX_DRAGON_ACTION  = "Assets/Audio/SFX/dragon_action.wav";

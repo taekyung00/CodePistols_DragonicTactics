@@ -28,6 +28,7 @@ Created:    May 6, 2025
 #include "Game/DragonicTactics/States/RenderingTest.h"
 #endif
 #include "OpenGL/Environment.h"
+#include "GameCursor.h"
 #include "States.h"
 #include <cmath>
 
@@ -127,6 +128,7 @@ void MainMenu::Load()
     for (auto& f : flames) InitFlame(f, true);
 
     Engine::GetSoundManager().PlayBGM(SoundManager::BGM_MAIN_MENU);
+    GameCursor::Enable();
 }
 
 void MainMenu::Update(double dt)
@@ -290,6 +292,7 @@ void MainMenu::Draw()
     draw_items(dev_menu_items, menu_center_pos.y - 120.0);
 #endif
 
+    GameCursor::Draw();
     renderer_2d->EndScene();
 }
 

@@ -96,6 +96,8 @@ class Character : public CS230::GameObject
   void SetHP(int HP);
   bool HasSpell(std::string spell_name);
   void SetDeathDelay(double delay) { m_death_delay_ = delay; }
+  void SetHideSprite(bool hide)    { m_hide_sprite_ = hide; }
+  bool IsHideSprite() const        { return m_hide_sprite_; }
 
   // ========================================
   // 상태 쿼리 메서드 (Fact Queries)
@@ -178,4 +180,5 @@ class Character : public CS230::GameObject
   bool   has_attacked_this_turn_ = false;
   bool   has_treasure_           = false;
   double m_death_delay_          = -1.0; // >= 0: 사망 후 시각 제거까지 남은 시간
+  bool   m_hide_sprite_          = false; // true이면 Draw()를 스킵 (Teleport 애니메이션 중 사용)
 };

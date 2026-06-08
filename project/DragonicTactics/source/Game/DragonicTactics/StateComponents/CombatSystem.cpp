@@ -19,14 +19,14 @@
 #include "Game/DragonicTactics/Debugger/DebugManager.h"
 #include "Game/DragonicTactics/StateComponents/StatusEffectHandler.h"
 #include "CombatSystem.h"
+#include "Game/DragonicTactics/Types/GameTimings.h"
 #include "Engine/GameObjectManager.h"
 #include "Engine/SoundManager.h"
 #include "Game/GameObjectTypes.h"
 
 namespace
 {
-// SpellDelayObject와 동일한 패턴 — AI 공격 데미지를 N초 뒤에 적용
-static constexpr double AI_ATTACK_DELAY = 0.3;
+// SpellDelayObject와 동일한 패턴 — AI 공격 데미지를 N초 뒤에 적용 (GameTimings::ATTACK_APPLY)
 
 static const char* ActionSFXFor(CharacterTypes type)
 {
@@ -213,12 +213,12 @@ bool CombatSystem::ExecuteAttack(Character* attacker, Character* defender)
 	auto* gom = Engine::GetGameStateManager().GetGSComponent<CS230::GameObjectManager>();
 	if (gom)
 	{
-	  double actualDelay = AI_ATTACK_DELAY;
+	  double actualDelay = GameTimings::ATTACK_APPLY;
 	  if (const char* sfx = ActionSFXFor(attacker->GetCharacterType()))
 	  {
 		double sfxDur = Engine::GetSoundManager().GetSFXDuration(sfx);
 		if (sfxDur > 0.0)
-		  actualDelay = std::min(AI_ATTACK_DELAY, sfxDur);
+		  actualDelay = std::min(GameTimings::ATTACK_APPLY, sfxDur);
 	  }
 	  gom->Add(std::unique_ptr<CS230::GameObject>(new AttackDelayObject(
 		actualDelay,

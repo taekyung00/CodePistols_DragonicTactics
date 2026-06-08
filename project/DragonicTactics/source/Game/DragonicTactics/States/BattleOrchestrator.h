@@ -30,4 +30,8 @@ class BattleOrchestrator
   double     m_wait_timer          = 0.0;
   Character* m_last_ai_character_  = nullptr;  // 새 AI 턴 감지용
   double     m_think_timer_        = 0.0;      // 턴 시작 "생각 중" 대기
+
+  public:
+  double     GetThinkTimer()         const { return m_think_timer_; }
+  Character* GetCurrentAICharacter() const { return m_last_ai_character_; }
 };

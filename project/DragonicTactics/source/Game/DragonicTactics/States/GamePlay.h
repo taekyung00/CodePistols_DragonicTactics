@@ -97,7 +97,17 @@ class GamePlay : public CS230::GameState
     Math::vec2 proj_origin;          // Projectile 출발 위치
     double     proj_duration   = 0.4;
     Character* follow_char = nullptr; // non-null 이면 매 프레임 이 캐릭터의 현재 위치 사용
-    bool IsDone() const { return elapsed >= delay + static_cast<double>(frame_count) / fps; }
+    bool       reverse      = false;   // true = 역방향 프레임 재생 (last→0)
+    double     custom_scale = -1.0;   // 양수면 이 값으로 scale 직접 지정, 음수면 기본 EFFECT_SCALE 사용
+    Character* hide_char    = nullptr; // non-null이면 완료 시 SetHideSprite(false) 호출
+    double     hold_time    = 0.0;    // 마지막 프레임을 이 시간(초) 동안 추가로 유지
+    bool IsDone() const
+    {
+        double anim_end = static_cast<double>(frame_count) / fps + hold_time;
+        if (mode == Mode::Projectile)
+            anim_end = std::max(anim_end, proj_duration);
+        return elapsed >= delay + anim_end;
+    }
   };
   std::vector<SpriteEffect> m_sprite_effects_;
 
@@ -117,10 +127,14 @@ class GamePlay : public CS230::GameState
   std::shared_ptr<CS230::Texture> m_tex_magic_;
   std::shared_ptr<CS230::Texture> m_tex_cry_;
   std::shared_ptr<CS230::Texture> m_tex_magic_hit_;
+  std::shared_ptr<CS230::Texture> m_tex_teleport_;
+  std::shared_ptr<CS230::Texture> m_tex_think_;
 
   Character* player  = nullptr;
   std::vector<Character*> enemys {};
-  static constexpr double GAME_OVER_DELAY = 0.5;  // 게임 종료 후 GameOver 화면 전환까지 대기 시간(초)
+  static constexpr double GAME_OVER_DELAY  = 0.5;  // 게임 종료 후 GameOver 화면 전환까지 대기 시간(초)
+  static constexpr int    THINK_FRAMES     = 3;    // think.png 프레임 수 (•, ••, •••)
+  static constexpr int    TELEPORT_FRAMES  = 6;    // Teleport.png 프레임 수
 
   bool   game_end             = false;
   bool   game_end_player_won_ = false;

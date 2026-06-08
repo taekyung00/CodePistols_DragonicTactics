@@ -12,6 +12,7 @@ Created:    Nov 16, 2025
 
 #include "Engine/Component.h"
 #include "Engine/Matrix.h"
+#include "Game/DragonicTactics/Types/GameTimings.h"
 #include <vector>
 
 class GridSystem;
@@ -41,7 +42,7 @@ class MovementComponent : public CS230::Component
   private:
   std::vector<Math::ivec2> m_current_path;
   double				   m_moveTimer		  = 0.0;
-  static constexpr double  MOVE_TIME_PER_TILE = 0.2;
+  static constexpr double  MOVE_TIME_PER_TILE = GameTimings::MOVE_PER_TILE;
   CS230::GameObject*	   m_owner			  = nullptr;
   GridPosition*			   m_gridPosition	  = nullptr;
   StatsComponent*		   m_stats			  = nullptr;

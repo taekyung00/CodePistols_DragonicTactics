@@ -17,6 +17,7 @@ Project:    CS230 Engine
 #include "Engine/TextManager.h"
 #include "Engine/Window.h"
 #include "Game/DragonicTactics/States/GamePlay.h"
+#include "GameCursor.h"
 #include "LevelSelect.h"
 #include "MainMenu.h"
 #include "OpenGL/Environment.h"
@@ -103,6 +104,7 @@ void LevelSelect::Load()
 
 	flames.resize(100);
 	for (auto& f : flames) InitFlame(f, true);
+	GameCursor::Enable();
 }
 
 void LevelSelect::Update(double dt)
@@ -261,6 +263,7 @@ void LevelSelect::Draw()
 		}
 	}
 
+	GameCursor::Draw();
 	renderer_2d->EndScene();
 }
 

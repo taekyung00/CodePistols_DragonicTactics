@@ -47,6 +47,8 @@ Created:    November 5, 2025
 #include "BattleOrchestrator.h"
 #include "GamePlayUIManager.h"
 #include "PlayerInputHandler.h"
+#include "Game/DragonicTactics/Types/GameTimings.h"
+#include "Game/GameCursor.h"
 
 #include "Game/Particles.h"
 #include "./Engine/Particle.h"
@@ -56,25 +58,25 @@ bool                     GamePlay::s_should_restart = false;
 int                      GamePlay::s_level_id       = 0;
 std::vector<std::string> GamePlay::s_allowed_spells = {};
 
-// SpellDelayObject(0.5s) + 스펠 SFX 앞부분 침묵(~1s) 합산값 — 스펠 이펙트를 SFX 충격음 타이밍에 맞춤
-static constexpr double SPELL_DELAY_OBJECT_SEC = 1.5;
-// SFX 종료 이 시간 전에 피격 이펙트 등장 — 값 하나로 전체 타이밍 조절
-static constexpr double EFFECT_LEAD_TIME = 0.3;
+// 타이밍 별칭 (GameTimings.h 값을 file-scope 상수로 노출)
+static constexpr double SPELL_PRE_IMPACT_SEC = GameTimings::SPELL_PRE_IMPACT;
+static constexpr double EFFECT_LEAD_TIME     = GameTimings::EFFECT_LEAD;
+static constexpr double PROJ_DURATION        = GameTimings::PROJ_DURATION;
+static constexpr double AI_HIT_DELAY         = GameTimings::ATTACK_APPLY;
+static constexpr double SPELL_APPLY_SEC      = GameTimings::SPELL_APPLY;
+static constexpr double SLOW_SPELL_EXTRA     = GameTimings::SLOW_SPELL_EXTRA; // Fire/MagicMissile/Meteor SFX 스펠
 
 // 스프라이트 이펙트 상수
 static constexpr int    HIT2_FRAMES   = 5;   // Hit2.png  160×32, 32px/frame
 static constexpr int    HIT3_FRAMES   = 6;   // Hit3.png  192×32, 32px/frame
 static constexpr int    HIT4_FRAMES   = 4;   // Hit4.png  128×32, 32px/frame
 static constexpr int    PURIFY_FRAMES = 6;   // Purify_spt.png 시각 추정
-static constexpr int    METEOR_FRAMES = 4;   // Meteor.png 세로 스트립
+static constexpr int    METEOR_FRAMES = 17;  // Meteor.png 수평 스트립 1600×900 × 17프레임
 static constexpr int    MAGIC_FRAMES  = 8;   // Magic.png  시각 추정
 static constexpr int    CRY_FRAMES      = 5;   // cry.png    640×128, 128px/frame
 static constexpr int    MAGICHIT_FRAMES = 4;   // MagicHit.png 128×32, 32px/frame
 static constexpr double SPRITE_FPS      = 10.0;
 static constexpr double EFFECT_SCALE    = 1.5; // 이펙트 크기: TILE_SIZE × EFFECT_SCALE px
-static constexpr double PROJ_DURATION   = 0.4; // 투사체 이동 시간(초)
-static constexpr double AI_HIT_DELAY    = 0.3; // AI 기본공격 AttackDelayObject 타이밍
-static constexpr double SPELL_APPLY_SEC = 0.5; // SpellDelayObject 실제 발화 시각 — AoE 타격 이펙트 딜레이
 
 namespace
 {
@@ -358,9 +360,13 @@ void GamePlay::Load()
 		double delay = event.attacker ? m_pending_damage_delay_ : 0.0;
 		this->DisplayDamageAmount(event, delay);
 
-		// 사망 캐릭터 소멸 타이밍을 데미지 텍스트와 동기화
+		// 사망 캐릭터 소멸 타이밍: hurt SFX가 끝난 뒤 사라지도록 딜레이 설정
 		if (!event.target->IsAlive())
-		  event.target->SetDeathDelay(delay);
+		{
+		  const char* hurt_sfx = SfxHurtFor(event.target->GetCharacterType());
+		  double      sfx_dur  = hurt_sfx ? Engine::GetSoundManager().GetSFXDuration(hurt_sfx) : 0.0;
+		  event.target->SetDeathDelay(delay + sfx_dur);
+		}
 		std::string att = event.attacker ? event.attacker->TypeName() : "Lava";
 		m_ui_manager->AddBattleLogEntry(
 		  att + "->" + event.target->TypeName()
@@ -456,7 +462,7 @@ void GamePlay::Load()
                 // 그 시간만큼 차감한 나머지가 CharacterDamagedEvent 시점의 잔여 SFX 길이
                 auto computeSpellDelay = [&](const std::string& path) {
                     double dur = Engine::GetSoundManager().GetSFXDuration(path);
-                    m_pending_damage_delay_ = std::max(0.0, dur - SPELL_DELAY_OBJECT_SEC - EFFECT_LEAD_TIME);
+                    m_pending_damage_delay_ = std::max(0.0, dur - SPELL_PRE_IMPACT_SEC - EFFECT_LEAD_TIME);
                 };
                 if (!sfxPath.empty()) {
                     Engine::GetSoundManager().PlaySFX(sfxPath.c_str());
@@ -474,7 +480,43 @@ void GamePlay::Load()
                     Math::vec2 caster_center = event.caster->GetPosition()
                                              + Math::vec2{ GridSystem::TILE_SIZE * 0.5, GridSystem::TILE_SIZE * 0.5 };
 
-                    if (sn == "Fire Bolt" || sn == "Dragon's Fury")
+                    if (sn == "Teleport" && m_tex_teleport_)
+                    {
+                        // Wizard 화면 렌더 크기 = 128px (wizard.spt: 256x256, Scale=0.5)
+                        // Teleport.png: 1536x256, 6프레임 수평 스트립, 각 256x256
+                        static constexpr double TELEPORT_SCALE = 128.0 / 256.0;
+                        Math::vec2 target_center = {
+                            static_cast<double>(event.targetGrid.x) * GridSystem::TILE_SIZE + GridSystem::TILE_SIZE * 0.5,
+                            static_cast<double>(event.targetGrid.y) * GridSystem::TILE_SIZE + GridSystem::TILE_SIZE * 0.5
+                        };
+                        // 출발지: 역방향(구체화 해제) — Wizard 숨기기
+                        event.caster->SetHideSprite(true);
+                        {
+                            SpriteEffect fx;
+                            fx.tex          = m_tex_teleport_;
+                            fx.frame_count  = TELEPORT_FRAMES;
+                            fx.fps          = SPRITE_FPS;
+                            fx.delay        = 0.0;
+                            fx.world_pos    = caster_center;
+                            fx.reverse      = true;
+                            fx.custom_scale = TELEPORT_SCALE;
+                            fx.hide_char    = event.caster; // 완료 시 hide 해제
+                            m_sprite_effects_.push_back(fx);
+                        }
+                        // 도착지: 정방향(구체화) — 출발지와 동시에 시작
+                        {
+                            SpriteEffect fx;
+                            fx.tex          = m_tex_teleport_;
+                            fx.frame_count  = TELEPORT_FRAMES;
+                            fx.fps          = SPRITE_FPS;
+                            fx.delay        = 0.0;
+                            fx.world_pos    = target_center;
+                            fx.reverse      = false;
+                            fx.custom_scale = TELEPORT_SCALE;
+                            m_sprite_effects_.push_back(fx);
+                        }
+                    }
+                    else if (sn == "Fire Bolt")
                     {
                         // 투사체: Dragon 위치 → targetGrid 방향으로 날아감
                         Math::vec2 target_center = {
@@ -489,14 +531,56 @@ void GamePlay::Load()
                         fx.fps           = SPRITE_FPS;
                         fx.proj_origin   = caster_center;
                         fx.world_pos     = target_center;
-                        fx.proj_duration = PROJ_DURATION;
-                        // 4방향 스냅 (스프라이트 기본 방향 = 아래)
-                        // 아래:0  위:π  오른쪽:-π/2  왼쪽:+π/2
-                        if (std::abs(dir.x) >= std::abs(dir.y))
-                            fx.angle = (dir.x >= 0) ? -1.5707963267948966 : 1.5707963267948966;
-                        else
-                            fx.angle = (dir.y >= 0) ? 0.0 : 3.14159265358979323846;
+                        fx.proj_duration = PROJ_DURATION + SLOW_SPELL_EXTRA;
+                        fx.angle         = std::atan2(-dir.x, dir.y);
                         m_sprite_effects_.push_back(fx);
+                    }
+                    else if (sn == "Dragon's Fury")
+                    {
+                        // Line geometry: 시전자 중심에서 상하좌우 4방향으로 동시 발사
+                        // 벽을 만나면 그 직전 타일까지만 날아감 (최대 4칸)
+                        static constexpr double FURY_RANGE = 4.0;
+                        struct DirAngle
+                        {
+                            Math::vec2 dir;
+                            double     angle;
+                        };
+                        const DirAngle dirs[4] = {
+                            { {  1.0,  0.0 }, -1.5707963267948966 }, // 오른쪽 (-π/2)
+                            { { -1.0,  0.0 },  1.5707963267948966 }, // 왼쪽   (+π/2)
+                            { {  0.0,  1.0 },  0.0                }, // 아래   (0, 스프라이트 기본)
+                            { {  0.0, -1.0 },  3.14159265358979   }  // 위     (π)
+                        };
+                        for (const auto& d : dirs)
+                        {
+                            // 방향별 마지막 통과 가능 타일 계산
+                            Math::vec2 end_pos = caster_center;
+                            for (int step = 1; step <= static_cast<int>(FURY_RANGE); ++step)
+                            {
+                                Math::vec2 probe = caster_center + d.dir * (step * static_cast<double>(GridSystem::TILE_SIZE));
+                                Math::ivec2 tile = {
+                                    static_cast<int>(probe.x / GridSystem::TILE_SIZE),
+                                    static_cast<int>(probe.y / GridSystem::TILE_SIZE)
+                                };
+                                GridSystem::TileType tt = grid_se ? grid_se->GetTileType(tile) : GridSystem::TileType::Empty;
+                                if (tt == GridSystem::TileType::Wall || tt == GridSystem::TileType::Invalid)
+                                    break;
+                                end_pos = probe;
+                            }
+                            if (end_pos.x == caster_center.x && end_pos.y == caster_center.y)
+                                continue; // 첫 타일이 벽 → 투사체 생략
+
+                            SpriteEffect fx;
+                            fx.mode          = SpriteEffect::Mode::Projectile;
+                            fx.tex           = m_tex_hit3_;
+                            fx.frame_count   = HIT3_FRAMES;
+                            fx.fps           = SPRITE_FPS;
+                            fx.proj_origin   = caster_center;
+                            fx.world_pos     = end_pos;
+                            fx.proj_duration = PROJ_DURATION + SLOW_SPELL_EXTRA;
+                            fx.angle         = d.angle;
+                            m_sprite_effects_.push_back(fx);
+                        }
                     }
                     else if (sn == "Tail Swipe")
                     {
@@ -520,10 +604,12 @@ void GamePlay::Load()
                     else if (sn == "Purify")
                     {
                         SpriteEffect fx;
-                        fx.tex         = m_tex_purify_;
-                        fx.frame_count = PURIFY_FRAMES;
-                        fx.fps         = SPRITE_FPS;
-                        fx.world_pos   = caster_center;
+                        fx.tex          = m_tex_purify_;
+                        fx.frame_count  = PURIFY_FRAMES;
+                        fx.fps          = SPRITE_FPS;
+                        fx.world_pos    = caster_center;
+                        // Dragon 화면 크기(64px = TILE_SIZE) / Purify 프레임 크기(128px) = 0.5
+                        fx.custom_scale = static_cast<double>(GridSystem::TILE_SIZE) / 128.0;
                         m_sprite_effects_.push_back(fx);
                     }
                     else if (sn == "Meteor")
@@ -563,6 +649,7 @@ void GamePlay::Load()
                         fx.frame_count = MAGICHIT_FRAMES;
                         fx.fps         = SPRITE_FPS;
                         fx.delay       = SPELL_APPLY_SEC;
+                        fx.hold_time   = SLOW_SPELL_EXTRA;
                         fx.world_pos   = target_center;
                         m_sprite_effects_.push_back(fx);
                     }
@@ -662,6 +749,8 @@ void GamePlay::Load()
     m_tex_magic_  = tm.Load("Assets/images/Magic.png");
     m_tex_cry_       = tm.Load("Assets/images/cry.png");
     m_tex_magic_hit_ = tm.Load("Assets/MagicHit.png");
+    m_tex_teleport_  = tm.Load("Assets/images/Teleport.png");
+    m_tex_think_     = tm.Load("Assets/images/think.png");
   }
 }
 
@@ -748,14 +837,20 @@ void GamePlay::Update(double dt)
     fx.elapsed += dt;
   m_sprite_effects_.erase(
     std::remove_if(m_sprite_effects_.begin(), m_sprite_effects_.end(),
-      [](const SpriteEffect& fx) { return fx.IsDone(); }),
+      [this](const SpriteEffect& fx)
+      {
+        if (fx.IsDone() && fx.hide_char
+            && m_confirmed_dead_.count(fx.hide_char) == 0)
+          fx.hide_char->SetHideSprite(false);
+        return fx.IsDone();
+      }),
     m_sprite_effects_.end());
 
   // Meteor 경과 업데이트 + 완료 감지
   if (m_meteor_active_)
   {
     m_meteor_elapsed_ += dt;
-    if (m_meteor_elapsed_ >= static_cast<double>(METEOR_FRAMES) / SPRITE_FPS)
+    if (m_meteor_elapsed_ >= static_cast<double>(METEOR_FRAMES) / SPRITE_FPS + SLOW_SPELL_EXTRA)
     {
       m_meteor_active_  = false;
       m_meteor_elapsed_ = 0.0;
@@ -885,6 +980,7 @@ void GamePlay::Unload()
 {
   Engine::GetSoundManager().StopBGM();
   Engine::GetSoundManager().ClearPendingDelayedSFX();
+  GameCursor::Disable();
   
   if (auto goMgr = GetGSComponent<CS230::GameObjectManager>())
   {
@@ -928,11 +1024,17 @@ void GamePlay::Draw()
     if (!fx.tex) continue;
     if (fx.elapsed < fx.delay) continue;
     double play_time = fx.elapsed - fx.delay;
-    int    frame     = std::min(static_cast<int>(play_time * fx.fps), fx.frame_count - 1);
+    int    frame;
+    if (fx.reverse)
+        frame = std::max(0, fx.frame_count - 1 - static_cast<int>(play_time * fx.fps));
+    else
+        frame = std::min(static_cast<int>(play_time * fx.fps), fx.frame_count - 1);
     Math::ivec2 tex_size = fx.tex->GetSize();
     Math::ivec2 fs{ tex_size.x / fx.frame_count, tex_size.y };
-    double scale = EFFECT_SCALE * static_cast<double>(GridSystem::TILE_SIZE)
-                 / static_cast<double>(fs.x);
+    double scale = (fx.custom_scale > 0.0)
+                 ? fx.custom_scale
+                 : EFFECT_SCALE * static_cast<double>(GridSystem::TILE_SIZE)
+                   / static_cast<double>(fs.x);
 
     // 스프라이트 중심 월드 좌표 결정
     Math::vec2 center_pos;
@@ -966,6 +1068,30 @@ void GamePlay::Draw()
 
   GetGSComponent<DebugManager>()->Draw(grid_system);
 
+  // think.png: AI 턴 시작 시 해당 캐릭터 머리 위에 말풍선 표시 (1.2초)
+  if (m_tex_think_ && m_orchestrator)
+  {
+      double     think_t  = m_orchestrator->GetThinkTimer();
+      Character* ai_char  = m_orchestrator->GetCurrentAICharacter();
+      if (think_t > 0.0 && ai_char && m_confirmed_dead_.count(ai_char) == 0)
+      {
+          double      elapsed_think = 1.2 - think_t;
+          Math::ivec2 tex_size      = m_tex_think_->GetSize();
+          Math::ivec2 tfs{ tex_size.x / THINK_FRAMES, tex_size.y };
+          int         frame         = static_cast<int>(elapsed_think * SPRITE_FPS) % THINK_FRAMES;
+          double      tscale        = static_cast<double>(GridSystem::TILE_SIZE) / static_cast<double>(tfs.x);
+          Math::vec2  half_t{ tfs.x * tscale * 0.5, tfs.y * tscale * 0.5 };
+          // 캐릭터 타일 상단(TILE_SIZE) + 말풍선 반높이 + 여백 4px = 캐릭터 바로 위에 표시
+          Math::vec2  center        = ai_char->GetPosition()
+                                      + Math::vec2{ static_cast<double>(GridSystem::TILE_SIZE) * 0.5,
+                                                    static_cast<double>(GridSystem::TILE_SIZE) + half_t.y + 4.0 };
+          m_tex_think_->Draw(
+              Math::TranslationMatrix(center - half_t) * Math::ScaleMatrix(tscale),
+              Math::ivec2{ frame * tfs.x, 0 }, tfs,
+              0xFFFFFFFF, DrawDepth::PARTICLE);
+      }
+  }
+
   renderer_2d->EndScene();
 
   // Pass 2: UI — virtual 1600x900 coordinates, letterboxed to actual window
@@ -979,15 +1105,15 @@ void GamePlay::Draw()
   if (m_meteor_active_ && m_tex_meteor_)
   {
     Math::ivec2 tex_size = m_tex_meteor_->GetSize();
-    // Meteor.png 세로 스트립: 프레임당 높이 = 전체 높이 / 프레임 수
-    Math::ivec2 fs{ tex_size.x, tex_size.y / METEOR_FRAMES };
+    // Meteor.png 수평 스트립: 프레임당 폭 = 전체 폭 / 프레임 수
+    Math::ivec2 fs{ tex_size.x / METEOR_FRAMES, tex_size.y };
     int    frame = std::min(static_cast<int>(m_meteor_elapsed_ * SPRITE_FPS), METEOR_FRAMES - 1);
     double sx    = static_cast<double>(TacticalCamera::VIRTUAL_W) / static_cast<double>(fs.x);
     double sy    = static_cast<double>(TacticalCamera::VIRTUAL_H) / static_cast<double>(fs.y);
     m_tex_meteor_->Draw(
       Math::TranslationMatrix(Math::vec2{ 0.0, 0.0 })
           * Math::ScaleMatrix(Math::vec2{ sx, sy }),
-      Math::ivec2{ 0, frame * fs.y }, fs,
+      Math::ivec2{ frame * fs.x, 0 }, fs,
       0xFFFFFFFF, 0.005f);
   }
 

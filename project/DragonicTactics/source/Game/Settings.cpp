@@ -18,6 +18,7 @@ Project:    CS230 Engine
 #include "Engine/TextManager.h"
 #include "Engine/Window.h"
 #include "Game/DragonicTactics/States/GamePlay.h"
+#include "GameCursor.h"
 #include "Settings.h"
 #include "OpenGL/Environment.h"
 #include "States.h"
@@ -98,6 +99,7 @@ void Settings::Load()
     for (auto& f : flames) InitFlame(f, true);
 
     ApplySettings();
+    GameCursor::Enable();
 }
 
 void Settings::Update(double dt)
@@ -342,6 +344,7 @@ void Settings::Draw()
         }
     }
 
+    GameCursor::Draw();
     renderer_2d->EndScene();
 }
 

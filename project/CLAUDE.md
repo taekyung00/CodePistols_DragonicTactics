@@ -33,6 +33,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [데이터 주도 설계](#데이터-주도-설계)
 - [SoundManager](#soundmanager-엔진-서비스)
 - [렌더링 패턴](#렌더링-패턴)
+  - [SpriteEffect 애니메이션 시스템](#spriteeffect-애니메이션-시스템-statesgameplay)
 - [문서 참조](#문서-참조)
 
 ---
@@ -99,6 +100,7 @@ main.cpp → Splash → MainMenu ┬─ LevelGame → LevelSelect ┬─ Level 1
 `GamePlay::s_level_id` — 현재 레벨 모드 식별:
 - `0`: 자유 모드 (DEVELOPER_VERSION 전용 DragonicTactics 메뉴), `maps.json` + 모든 스펠 허용
 - `1/2/3`: 레벨 모드, `Assets/Data/Level_Map.json`에서 해당 레벨 로드 + `s_allowed_spells` 제한
+- **레벨 3 환경 용암**: `s_level_id == 3`일 때 `TurnStartedEvent`에서 라운드별 최초 1회, 50% 확률로 랜덤 빈 타일에 용암 생성 (`SpellSystem::SpawnEnvironmentalLava(pos, round)` + `UINoticeEvent{"Lava erupts!"}` 발행). 중복 발생 방지는 `m_lava_spawn_last_round_` (GamePlay 멤버)로 처리.
 
 `GamePlay::s_allowed_spells` (`vector<string>`) — 레벨 모드에서 허용된 스펠 ID 목록. 빈 배열이면 모든 스펠 허용. `Level_Map.json`의 `"allowed_spells"` 배열에서 로드됨.
 
@@ -365,13 +367,17 @@ MakeDecision
 MakeDecision
   ├── CanReachThisTurn && CanKillDragonThisTurn → MakeKillLoopDecision (기본 공격, 공격 스펠 없음)
   └── Phase_Decision
-        ├── AP = 0 & MP > 0 → TacticalMove → EndTurn
-        ├── AP = 0 & MP = 0 → EndTurn
+        ├── AP = 0 → TacticalMove (드래곤 방향 접근 X — 지원 포지셔닝만)
+        │     ├── 부상 아군(HP < 45%) 거리 > HEAL_RANGE → 이동
+        │     ├── Blessing 없는 아군 거리 > BLESSING_RANGE → 이동
+        │     └── 없으면 → EndTurn
         ├── [2순위] 힐 대상 HP < 30% + 슬롯 + 거리 ≤ 5 → S_ENH_030 Healing Touch (범위 밖이면 아군에게 이동)
         ├── 슬롯 있음 → MakeSupportDecision
+        │     ├── !Blessed 아군(파이터>로그>위자드) 거리 ≤ 4 → S_BUF_010 Divine Shield (자신 제외)
+        │     ├── !Blessed 아군 거리 > 4 → 아군에게 이동
         │     ├── !Cursed && 거리 ≤ 5 → S_DEB_010 Curse
-        │     ├── !Blessed 아군(파이터>로그>위자드) && 거리 ≤ 4 → S_BUF_010 Divine Shield (자신 제외)
-        │     └── 지원 불필요 → MakeMeleePhaseDecision
+        │     ├── !Cursed && 거리 > 5 → 드래곤에게 이동 (저주 사거리 진입)
+        │     └── 유효 대상 없음 → EndTurn (드래곤 접근 X)
         └── 슬롯 없음 → MakeMeleePhaseDecision
               ├── 인접 → 기본 공격
               └── 비인접 & MP > 0 → 이동
@@ -465,9 +471,9 @@ MakeDecision
         │     ├── [1] 이동력 범위 내 Sweet Spot 도달 가능 → 걷기 (AP 절약 우선)
         │     └── [2] 걷기 불가 → 텔레포트(!공포) or 걷기(공포)
         └── Sweet Spot 도달
-              ├── 슬롯 > 50% → 최적 마법 시전 (Fire Bolt/Magic Missile)
+              ├── 슬롯 > 50% → 최적 마법 시전 (Magic Missile Lv2 우선 → Fire Bolt Lv1 fallback)
               └── 슬롯 ≤ 50% → EvalConv(HP > 30%) → Mana Conversion
-                              실패 → 원거리 캔트립 (Fire Bolt)
+                              실패 → 원거리 캔트립 (Magic Missile 우선 → Fire Bolt fallback)
 ```
 
 - **Walk-first 최적화** (`MakeMoveDecision`): `GetReachableTiles(myPos, move_range)`로 걸어서 Sweet Spot 도달 가능한지 먼저 확인 → 가능하면 이동(AP 불소모), 불가능할 때만 Teleport(AP 1 소모). Wizard는 max AP = 1이므로 AP를 아껴야 Sweet Spot 도착 후 공격 가능.
@@ -709,16 +715,21 @@ std::vector<Character*> enemys {};        // 모든 AI 캐릭터 (Fighter, Cleri
 
 **캐릭터 사망 시각 딜레이** (`Character.cpp`):
 
-`TakeDamage()` → HP=0이면 그리드에서 **즉시** 제거(AI 경로탐색 차단) 후 `m_death_delay_ = 0.8` 설정. `Update()`에서 매 프레임 카운트다운 → 0 이하 시 `Destroy()`. `GamePlay`의 `CharacterDamagedEvent` 핸들러에서 `SetDeathDelay(delay)`로 덮어써 데미지 텍스트 등장 타이밍과 동기화된다.
+`TakeDamage()` → HP=0이면 그리드에서 **즉시** 제거(AI 경로탐색 차단) 후 `m_death_delay_ = 0.8` 설정. `Update()`에서 매 프레임 카운트다운 → 0 이하 시 `Destroy()`. `GamePlay`의 `CharacterDamagedEvent` 핸들러에서 `SetDeathDelay(delay + sfx_dur)`로 덮어써 **hurt SFX가 끝날 때까지** 캐릭터가 남아있도록 동기화된다.
 
 ```cpp
 // CharacterDamagedEvent 핸들러 (GamePlay.cpp)
 if (!event.target->IsAlive())
-    event.target->SetDeathDelay(delay);  // delay = m_pending_damage_delay_ (SFX 기반)
+{
+    const char* hurt_sfx = SfxHurtFor(event.target->GetCharacterType());
+    double      sfx_dur  = hurt_sfx ? Engine::GetSoundManager().GetSFXDuration(hurt_sfx) : 0.0;
+    event.target->SetDeathDelay(delay + sfx_dur);  // SFX 시작(delay) + SFX 재생(sfx_dur)
+}
 ```
 
-- AI 공격(delay=0): `CharacterDamagedEvent` 수신 즉시 사라짐
-- 플레이어 공격(delay≈0.2s): 데미지 숫자와 동시에 사라짐
+- t=`delay`: hurt SFX 시작, 캐릭터 시각적으로 유지
+- t=`delay + sfx_dur`: SFX 종료 & 캐릭터 소멸 → `CharacterDeathEvent` 발행 → `game_end_timer_ = 0.5`
+- t=`delay + sfx_dur + 0.5`: GameOver 화면 전환
 
 **PlayerInputHandler.ActionState** (입력 상태 머신):
 
@@ -840,6 +851,9 @@ spells->TickTerrainEffects(current_round);
 
 // 특정 타일의 용암 피해량 조회 (SpellSystem 내부 + knockback 피해 계산)
 int dmg = spells->GetLavaDamageAt(tile_pos);  // 없으면 0
+
+// 레벨3 환경 용암 즉시 스폰 (플레이어 스펠 없이 게임 로직에서 직접 호출)
+spells->SpawnEnvironmentalLava(tile_pos, current_round);
 ```
 
 `TerrainEffect` 구조체 (`SpellSystem.h`): `affected_tiles`, `damage_per_turn`(0이면 Wall), `created_round`, `duration_rounds`.
@@ -1100,7 +1114,9 @@ GameState 컴포넌트가 아닌 **엔진 레벨 서비스**. `Engine::GetSoundM
 - **BGM**: OGG 파일 (`Assets/Audio/BGM/`) → 루프 재생
 - **SFX**: WAV 파일 (`Assets/Audio/SFX/`) → 단발, 8채널 소스 풀
 
-상수 경로가 헤더에 정의되어 있음: `SoundManager::BGM_MAIN_MENU`, `SoundManager::BGM_BATTLE`, `SFX_DRAGON_ACTION`, `SFX_DRAGON_HURT`, `SFX_DRAGON_WALK`, `SFX_FIGHTER_ACTION`, `SFX_FIGHTER_HURT`, `SFX_CLERIC_ACTION`, `SFX_CLERIC_HURT`, `SFX_ROGUE_ACTION`, `SFX_ROGUE_HURT`, `SFX_WIZARD_ACTION`, `SFX_WIZARD_HURT`, `SFX_HUMAN_WALK`
+상수 경로가 헤더에 정의되어 있음: `SoundManager::BGM_MAIN_MENU`, `SoundManager::BGM_BATTLE`, `SoundManager::BGM_WIN`, `SoundManager::BGM_LOSE`, `SFX_DRAGON_ACTION`, `SFX_DRAGON_HURT`, `SFX_DRAGON_WALK`, `SFX_FIGHTER_ACTION`, `SFX_FIGHTER_HURT`, `SFX_CLERIC_ACTION`, `SFX_CLERIC_HURT`, `SFX_ROGUE_ACTION`, `SFX_ROGUE_HURT`, `SFX_WIZARD_ACTION`, `SFX_WIZARD_HURT`, `SFX_HUMAN_WALK`
+
+`BGM_WIN` / `BGM_LOSE`는 `GameOver::Load()`에서 `LoadBGM` → `PlayBGM` 순서로 호출 (`PlayBGM`만 호출하면 캐시 미스로 무음 처리됨). `GameOver::Unload()`에서 `StopBGM()` 호출.
 
 ⚠️ **Rogue 에셋 파일명 철자 함정**: 코드 상수는 `SFX_ROGUE_*`("rog**ue**")이지만, 이 상수가 가리키는 디스크상 실제 파일은 "rou**ge**" 철자다 — `Assets/Audio/SFX/rouge_action.wav`, `rouge_hurt.wav` (`Engine/SoundManager.h`). 플로우차트 `architecture/character_flowchart/rouge.mmd`·`rouge.jpg`도 동일하게 "rouge". 따라서 **코드에서는 상수 `SFX_ROGUE_*`를 그대로 사용**(상수가 올바른 "rouge" 경로를 담고 있음), **에셋 파일을 새로 추가·교체할 때만 파일명을 "rouge"로** 작성할 것. (참조 문서는 `rogue_strategy.md`가 정본 — 아래 [문서 참조](#문서-참조) 참고.)
 
@@ -1117,6 +1133,15 @@ Engine::GetSoundManager().SetSFXVolume(0.8f);                  // 0.0 ~ 1.0 (Set
 ```
 
 `GamePlay::Load()`에서 `PlayBGM`, `GamePlay::Unload()`에서 `StopBGM` + `ClearPendingDelayedSFX()` 호출 패턴을 따른다. `ClearPendingDelayedSFX()`를 생략하면 직전 게임플레이의 피격음이 재시작 시 재생된다.
+
+**⚠️ SoundManager 사용 시 알려진 함정**:
+
+| 증상 | 원인 | 해결 |
+|---|---|---|
+| `PlayBGM()` 호출했는데 BGM 무음 | `bgm_cache_`에 없으면 silently 실패 (에러 없음) | `Load()` 전에 반드시 `LoadBGM(path)` 선행 호출 |
+| GameState 전환 후 이전 hurt SFX 재생 | `Unload()`에서 `ClearPendingDelayedSFX()` 미호출 | `Unload()` 내 `StopBGM()` 다음 줄에 추가 |
+| 새 스펠 SFX가 첫 재생 시 끊기거나 지연 | `GamePlay::Load()`에서 `LoadSFX(path)` 미리 호출하지 않음 | `Load()` 텍스처 블록 근처에 `LoadSFX` 추가 |
+| 다른 GameState에서 BGM 변경이 Settings에 미반영 | `SoundManager::SetBGMVolume` 직접 호출 | `Settings::ApplySettings()`를 통해 변경 |
 
 **SFX 소스 풀 분리** (`Engine/SoundManager.cpp`):
 
@@ -1142,10 +1167,14 @@ OpenAL 소스 풀 8개를 공격 SFX와 피격 SFX가 항상 다른 슬롯을 �
 
 피격 이펙트(데미지 텍스트·피격음·셰이크·파티클)가 공격 SFX와 동기화되도록 딜레이를 계산한다.
 
+**⚠️ 전투 타이밍 상수는 `Types/GameTimings.h`에 집중 관리된다** — `AI_THINK`, `AI_WAIT_SPELL`, `AI_WAIT_ATTACK`, `AI_WAIT_MOVE`, `ATTACK_APPLY`, `SPELL_APPLY`, `SPELL_PRE_IMPACT`, `EFFECT_LEAD`, `PROJ_DURATION`, `SLOW_SPELL_EXTRA`, `MOVE_PER_TILE`. 타이밍을 변경할 때는 이 파일만 수정하면 된다. `GamePlay.cpp` 상단의 `file-scope constexpr`들은 이 파일에서 alias로 가져온다.
+
+- `SLOW_SPELL_EXTRA` — Fire Bolt·Dragon's Fury·Magic Missile·Meteor 애니메이션 추가 지속 시간 (초). Fire/Dragon's Fury는 `proj_duration`에 더해지고, Magic Missile은 `hold_time`으로 사용됨. BattleOrchestrator도 해당 스펠의 `m_wait_timer`에 이 값을 가산한다.
+
 **핵심 상수** (파일 상단 file-scope):
 ```cpp
-static constexpr double SPELL_DELAY_OBJECT_SEC = 1.5; // 스펠 데미지 지연 — 조정 가능
-static constexpr double EFFECT_LEAD_TIME        = 0.3; // SFX 종료 이 시간 전에 이펙트 등장
+static constexpr double SPELL_PRE_IMPACT_SEC = 1.5; // 스펠 데미지 지연 — 조정 가능
+static constexpr double EFFECT_LEAD_TIME     = 0.3; // SFX 종료 이 시간 전에 이펙트 등장
 ```
 
 **`m_pending_damage_delay_`** (GamePlay 멤버) — `CharacterAttackedEvent` / `SpellCastEvent` 핸들러에서 계산:
@@ -1268,6 +1297,16 @@ tex->Draw(Math::TranslationMatrix(Math::ivec2{screen_x - TILE_SIZE, screen_y - T
 
 ⚠️ 모든 타일(Wall, Lava, Difficult, Empty)은 `DrawDepth::TILE`을 명시적으로 전달해야 한다. `DrawRectangle`의 기본 depth는 `DrawDepth::CHARACTER`(0.5f)로 캐릭터와 겹친다.
 
+**⚠️ Texture/DrawDepth 사용 시 알려진 함정**:
+
+| 증상 | 원인 | 해결 |
+|---|---|---|
+| ESC 일시정지 화면에서 UI 요소가 어둡게 안 됨 | depth 값이 dimming overlay(0.005f)보다 작음(앞) | depth를 `> 0.005f`로 설정 (예: 0.006f, 0.007f) |
+| ESC 일시정지 팝업이 보이지 않거나 어두워짐 | depth 값이 dimming(0.005f)보다 크거나 같음 | 팝업 내용은 `0.003f~0.004f`로 유지 |
+| UI 텍스트/아이콘이 깜빡이거나 렌더 순간 틀린 위치 | UI Pass 전에 `SaveCurrentScene(ui_ndc)` 미호출 | `renderer_2d->BeginScene(ui_ndc)` 직전에 `Engine::GetTextureManager().SaveCurrentScene(ui_ndc)` 추가 |
+| 타일 텍스처가 캐릭터 앞에 렌더됨 | `DrawDepth::TILE` 명시 누락 → 기본값 `CHARACTER(0.5f)` 사용됨 | 타일 Draw 호출에 `DrawDepth::TILE` 명시 |
+| 웹 빌드에서 텍스처 로드 크래시, Windows는 정상 | 경로 대소문자 불일치 (`Wall.png` vs `wall.png`) | 실제 파일명 대소문자 그대로 사용 |
+
 **DrawDepth 전체 값** (`Engine/DrawDepth.h`, 값이 작을수록 앞에 렌더링):
 
 | 상수 | 값 | 용도 |
@@ -1279,17 +1318,32 @@ tex->Draw(Math::TranslationMatrix(Math::ivec2{screen_x - TILE_SIZE, screen_y - T
 | `DrawDepth::OVERLAY` | 0.8f | 이동/스펠 범위 오버레이 |
 | `DrawDepth::TILE` | 0.9f | 그리드 배경 타일 |
 
+**ESC 일시정지 dimming 계층** (0.005f가 기준선 — 이보다 작으면 dimming 앞 = 항상 밝음, 크면 어둡게 됨):
+
+| 레이어 | depth | ESC 메뉴 시 |
+|---|---|---|
+| 커서 | `0.001f` | 항상 밝음 |
+| 일시정지 팝업 내용 | `0.003f` | 밝음 (dimming 앞) |
+| 일시정지 팝업 배경 | `0.004f` | 밝음 (dimming 앞) |
+| **ESC dimming 오버레이** | **`0.005f`** | ← 기준선 |
+| Locked.png 오버레이 | `0.006f` | **어둡게 됨** |
+| 슬롯바 아이콘 | `0.007f` | **어둡게 됨** |
+| upcast 팝업 버튼 | `DrawDepth::UI - 0.002f = 0.008f` | 어둡게 됨 |
+| `DrawDepth::UI` 이상 | `≥ 0.01f` | 어둡게 됨 |
+
+⚠️ **새 UI 요소를 추가할 때**: ESC 메뉴 중에 보여야 하면 `< 0.005f`, 어둡게 처리돼야 하면 `> 0.005f`로 설정할 것. 슬롯 아이콘 위에 얹는 오버레이(Locked 등)는 슬롯 아이콘(0.007f)보다 앞이어야 하므로 `0.006f` 사용.
+
 **UI 레이어 내부 depth 계층** (상태이상 패널 ↔ 툴팁 겹침 방지):
 
 | 레이어 | depth 식 | 값 |
 |---|---|---|
-| 툴팁 텍스트 | `DrawDepth::UI` | 0.01f ← 가장 앞 |
-| 툴팁 배경 | `DrawDepth::UI + 0.001f` | 0.011f |
+| 툴팁 텍스트 | `DrawDepth::UI - 0.004f` | 0.006f |
+| 툴팁 배경 | `DrawDepth::UI - 0.003f` | 0.007f |
 | 상태이상 아이콘 | `DrawDepth::UI + 0.01f` | 0.02f |
 | 포트레이트 | `DrawDepth::UI + 0.015f` | 0.025f |
 | 패널 배경 | `DrawDepth::UI + 0.02f` | 0.03f ← 가장 뒤 |
 
-⚠️ 슬롯바 아이콘은 `DrawDepth::UI - 0.005f = 0.005f` — 툴팁보다 앞이지만 슬롯바 위에는 툴팁이 표시되지 않으므로 충돌 없음. 상태이상 패널 아이콘을 이 값으로 설정하면 툴팁을 가리므로 반드시 `UI + 0.01f` 이상 사용.
+⚠️ 상태이상 패널 아이콘을 `DrawDepth::UI - 0.003f (0.007f)` 이하로 설정하면 툴팁 배경과 z-fighting 가능. 반드시 `UI + 0.01f` 이상 사용.
 
 ### 배틀 로그 (`States/GamePlayUIManager`)
 
@@ -1358,6 +1412,50 @@ double TT_W = (wit != widths_map.end()) ? wit->second : 340.0;
 **호버 감지**: Update()의 블록 3c에서 `virt_mouse`(가상 좌표)를 직접 비교. `DrawStatusEffectPanel()`의 `pan_cy`/`row_bot` 계산식과 **정확히 동일한 공식**을 사용해야 픽셀 정확도 보장.
 
 **⚠️ `m_characters` 댕글링 포인터 방지**: `GamePlayUIManager::SetCharacters()`는 `CharacterDeathEvent`를 구독해서 사망 시 해당 슬롯을 `nullptr`로 교체한다. `DrawStatusEffectPanel()`·Update 블록 3c·`DrawCharacterStatsPanel()` 세 곳의 루프는 모두 `!ch` / `ch == nullptr` 가드를 가지므로 안전하게 skip한다. 캐릭터 사망 후 `GetActiveEffects()` 등 컴포넌트 접근 전에 이 가드가 반드시 있어야 access violation이 발생하지 않는다.
+
+### SpriteEffect 애니메이션 시스템 (`States/GamePlay`)
+
+`GamePlay`는 스펠·공격 시각 이펙트를 `SpriteEffect` 구조체(`GamePlay.h`)로 관리한다. Pass 1 월드 공간에서 `DrawDepth::CHARACTER`(0.5f)로 렌더링.
+
+```cpp
+struct SpriteEffect {
+    enum class Mode { Static, Projectile } mode = Mode::Static;
+    // Static: world_pos에 고정 or follow_char 실시간 추적
+    // Projectile: proj_origin → world_pos 방향으로 proj_duration초 이동
+    std::shared_ptr<CS230::Texture> tex;
+    int     frame_count;    // 스프라이트 시트 가로 프레임 수
+    double  fps;            // 재생 FPS
+    double  elapsed;        // 경과 시간 (delay 포함)
+    double  delay;          // 이 시간 이후부터 렌더링 시작
+    double  angle;          // 라디안 (Projectile: 4방향 스냅)
+    Math::vec2 world_pos;   // Static=표시 위치 / Projectile=목적지
+    Math::vec2 proj_origin; // Projectile 출발 위치
+    double  proj_duration;  // 투사체 이동 시간(초)
+    Character* follow_char; // 비null 이면 캐릭터 위치 실시간 추적 (넉백·이동 대응)
+    bool IsDone() const;    // Static: elapsed >= delay + frames/fps + hold_time
+                            // Projectile: elapsed >= delay + max(frames/fps + hold_time, proj_duration)
+                            // ⚠️ proj_duration이 frames/fps보다 길면 투사체 도달 전 스프라이트가 삭제되므로 반드시 Projectile 모드 수식 유지
+};
+std::vector<SpriteEffect> m_sprite_effects_;  // GamePlay 멤버
+```
+
+**스펠별 이펙트 매핑** (`SpellCastEvent` 구독 내에서 분기, 텍스처는 `GamePlay::Load()`에서 로드):
+
+| 스펠 | 모드 | 텍스처 | 비고 |
+|---|---|---|---|
+| Fire Bolt, Dragon's Fury | Projectile | `m_tex_hit3_` (Hit3.png) | `proj_duration = PROJ_DURATION + SLOW_SPELL_EXTRA`초 이동, 도착 후 `hold_time = SLOW_SPELL_EXTRA`초 잔류 |
+| Tail Swipe | Static | `m_tex_hit4_` (Hit4.png) | 범위 내 전원, `follow_char` 넉백 추적 |
+| Fearful Cry | Static | `m_tex_cry_` (cry.png) | 범위 내 적군, `follow_char` 이동 추적 |
+| Purify | Static | `m_tex_purify_` (Purify_spt.png) | 시전자 중심 |
+| Meteor | (전용) | `m_tex_meteor_` (Meteor.png) | `m_meteor_active_` 플래그 + 전체화면 오버레이 |
+| Magic Missile | Static | `m_tex_magic_hit_` | `delay = SPELL_APPLY_SEC` |
+| 그 외 스펠 | Static | `m_tex_magic_` (Magic.png) | 시전자 중심 |
+| Dragon 기본공격 피격 | Static | `m_tex_hit2_` (Hit2.png) | `CharacterAttackedEvent`에서 트리거 |
+| AI 기본공격 피격 | Static | `m_tex_hit4_` (Hit4.png) | `AI_HIT_DELAY`초 후 등장 |
+
+**Meteor 전체화면 오버레이**: `m_meteor_active_ = true`로 설정하면 `GamePlay::Draw()`의 Pass 1 마지막에 화면 전체를 `m_tex_meteor_` 텍스처로 덮는다. `m_meteor_elapsed_`가 일정 시간 이후 `m_meteor_active_ = false`로 자동 해제.
+
+---
 
 ### 폰트 (`Engine/TextManager`, `Engine/Fonts.h`)
 

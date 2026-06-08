@@ -8,6 +8,7 @@ Author:      Seungju Song
 Created:     November 24, 2025
 */
 #include <algorithm>
+#include "pch.h"
 #include "./CS200/IRenderer2D.h"
 #include "./CS200/NDC.h"
 #include "./Engine/Engine.h"
@@ -46,6 +47,7 @@ Created:     November 24, 2025
 
 #include "PlayerInputHandler.h"
 #include "Engine/SoundManager.h"
+#include "Game/GameCursor.h"
 #include "Game/Settings.h"
 #include <sstream>
 
@@ -171,14 +173,25 @@ void GamePlayUIManager::Update(double dt)
                         }
                     }
                 }
-                
+
+                // 레벨 스펠 제한 체크 (id = "slot_S_XXX_YYY", spell_id = id.substr(5))
+                bool level_locked = false;
+                const auto& allowed = GamePlay::s_allowed_spells;
+                if (!allowed.empty() && id.size() > 5)
+                {
+                    const std::string spell_id = id.substr(5);
+                    level_locked = std::none_of(allowed.begin(), allowed.end(),
+                        [&spell_id](const std::string& a) { return a == spell_id; });
+                }
+
                 // 현재 AP가 요구 AP보다 적은지 확인
                 bool not_enough_ap = (current->GetActionPoints() < req_ap);
-                bool disabled = is_ai || not_enough_ap || (is_fixed && !has_any_slot);
+                bool disabled = is_ai || level_locked || not_enough_ap || (is_fixed && !has_any_slot);
 
                 std::string reason = "";
                 if (disabled) {
                     if (is_ai) reason = "Enemy's turn.";
+                    else if (level_locked) reason = "Not available in this level.";
                     else if (not_enough_ap) reason = "Not enough AP.";
                     else if (is_fixed && !has_any_slot) reason = "No Spell slot.";
                 }
@@ -289,6 +302,17 @@ void GamePlayUIManager::Update(double dt)
         {
             hovered_attack_slot_ = true;
             hovered_slot_cx_     = slot_bar_x_[0] + 32.0;
+        }
+
+        // 커서 호버 상태: 활성화된 버튼 위에 있으면 hover 커서로 전환
+        m_cursor_hovering_ = false;
+        for (const auto& btn : button_manager_.GetButtons())
+        {
+            if (btn.visible && !btn.disabled && btn.hovered)
+            {
+                m_cursor_hovering_ = true;
+                break;
+            }
         }
     }
 
@@ -474,6 +498,7 @@ void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_
     }
 
     DrawPauseMenu();
+    DrawCursor();
 }
 
 void GamePlayUIManager::SetCharacters(const std::vector<Character*>& characters)
@@ -550,6 +575,8 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
     for (size_t i = 0; i < 10; ++i)
         slot_icons_[i] = Engine::GetTextureManager().Load(ICON_PATHS[i]);
     slot_icons_[10] = Engine::GetTextureManager().Load("Assets/images/turn_end.png");
+    m_tex_locked_ = Engine::GetTextureManager().Load("Assets/images/Locked.png");
+    GameCursor::Enable();
 
     // 슬롯 ID 및 스펠 ID 매핑
     const std::array<std::string, 10> SLOT_IDS = {
@@ -939,14 +966,36 @@ void GamePlayUIManager::DrawSlotBar()
         Math::ScaleMatrix(Math::vec2{ bar_w, TILE * 1.5 });
     renderer->DrawRectangle(bg, 0x1a1a2e99, 0x5555aaff, 1.5, DrawDepth::UI + 0.001f);
 
-    // 아이콘은 버튼(UI=0.01f)보다 앞에 와야 보임 → UI - 0.005f = 0.005f
+    // 슬롯 아이콘: 0.007f — dimming(0.005f)보다 뒤라 ESC 메뉴 시 어둡게 됨
     for (size_t i = 0; i < slot_icons_.size(); ++i)
     {
         if (!slot_icons_[i]) continue;
         slot_icons_[i]->Draw(
             Math::TranslationMatrix(Math::vec2{ slot_bar_x_[i], slot_bar_center_y_ - 32.0 }),
             0xFFFFFFFF,
-            DrawDepth::UI - 0.005f);
+            0.007f);
+    }
+
+    // Locked.png 오버레이: 레벨에서 비허용된 스펠 버튼 위에 자물쇠 아이콘 표시
+    // s_allowed_spells를 직접 체크 — 적 턴에도 항상 표시
+    if (m_tex_locked_ && !GamePlay::s_allowed_spells.empty())
+    {
+        static const std::array<std::string, 9> SPELL_IDS = {
+            "S_ATK_010", "S_ATK_020", "S_ATK_030", "S_ATK_040",
+            "S_ENH_040", "S_ENH_050", "S_DEB_020", "S_GEO_010", "S_GEO_020"
+        };
+        const auto& allowed = GamePlay::s_allowed_spells;
+        for (size_t i = 0; i < SPELL_IDS.size(); ++i)
+        {
+            const std::string& sid = SPELL_IDS[i];
+            bool locked = std::none_of(allowed.begin(), allowed.end(),
+                [&sid](const std::string& a) { return a == sid; });
+            if (!locked) continue;
+            m_tex_locked_->Draw(
+                Math::TranslationMatrix(Math::vec2{ slot_bar_x_[i + 1], slot_bar_center_y_ - 32.0 }),
+                0xFFFFFFFF,
+                0.006f);  // 슬롯 아이콘(0.007f)보다 앞, dimming(0.005f)보다 뒤 → ESC 메뉴 시 어둡게 됨
+        }
     }
 }
 
@@ -2425,4 +2474,12 @@ void GamePlayUIManager::DrawPauseMenu()
 		    Math::vec2{ bcx - lbl_w * 0.5, bcy - lbl_h * 0.5 },
 		    Fonts::Kings, { BTN_TEXT_SCALE, BTN_TEXT_SCALE }, hovered ? 0xFFD700FF : 0xCCCCCCFF, 0.002f);
 	}
+}
+
+// ─── 커스텀 마우스 커서 ──────────────────────────────────────────────────
+void GamePlayUIManager::DrawCursor()
+{
+    // 호버 상태를 전달하여 GameCursor가 적절한 텍스처를 선택
+    // depth 0.001f — 슬롯 아이콘(0.005f) 등 모든 UI 레이어 앞에 렌더링
+    GameCursor::Draw(m_cursor_hovering_);
 }

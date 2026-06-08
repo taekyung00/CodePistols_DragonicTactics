@@ -19,6 +19,7 @@ Project:    CS230 Engine
 #include "Engine/TextManager.h"
 #include "Engine/Window.h"
 #include "Game/DragonicTactics/States/GamePlay.h"
+#include "GameCursor.h"
 #include "GameOver.h"
 #include "MainMenu.h"
 #include "OpenGL/Environment.h"
@@ -47,7 +48,13 @@ void GameOver::Load()
 
     flames_.resize(100);
     for (auto& f : flames_) InitFlame(f, true);
+    GameCursor::Enable();
+    auto& snd = Engine::GetSoundManager();
+    snd.LoadBGM(SoundManager::BGM_WIN);
+    snd.LoadBGM(SoundManager::BGM_LOSE);
+    snd.PlayBGM(s_player_won ? SoundManager::BGM_WIN : SoundManager::BGM_LOSE);
 }
+
 
 void GameOver::Update(double dt)
 {
@@ -190,12 +197,16 @@ void GameOver::Draw()
         }
     }
 
+    GameCursor::Draw();
     renderer_2d->EndScene();
 }
 
 void GameOver::DrawImGui() {}
 
-void GameOver::Unload() {}
+void GameOver::Unload()
+{
+    Engine::GetSoundManager().StopBGM();
+}
 
 gsl::czstring GameOver::GetName() const { return "GameOver"; }
 

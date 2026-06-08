@@ -170,15 +170,15 @@ AIDecision WizardStrategy::MakeAttackDecision(
 	int dist = grid->ManhattanDistance(actor->GetGridPosition()->Get(),
 	                                    dragon->GetGridPosition()->Get());
 
-	// Fire Bolt (사거리 4)
-	if (dist <= FIRE_BOLT_RANGE && HasSpellSlot(actor, 1))
-		return { AIDecisionType::UseAbility, dragon, {}, "S_ATK_010",
-		         "Attack: Fire Bolt", 0, 1 };
-
-	// Magic Missile (무한 사거리)
+	// Magic Missile (무한 사거리) 우선 — 슬롯 Lv2 있으면 항상 사용
 	if (HasSpellSlot(actor, 2))
 		return { AIDecisionType::UseAbility, dragon, {}, "S_ATK_060",
 		         "Attack: Magic Missile", 0, 2 };
+
+	// Fire Bolt (사거리 4) — Lv2 슬롯 없을 때 fallback
+	if (dist <= FIRE_BOLT_RANGE && HasSpellSlot(actor, 1))
+		return { AIDecisionType::UseAbility, dragon, {}, "S_ATK_010",
+		         "Attack: Fire Bolt", 0, 1 };
 
 	// 슬롯 없음 → 턴 종료
 	return { AIDecisionType::EndTurn, nullptr, {}, "", "Attack: No spell slots" };
@@ -263,11 +263,11 @@ Math::ivec2 WizardStrategy::FindSweetSpotTile(
 		return myPos;
 
 	// 텔레포트 사거리(TELEPORT_RANGE = CSV Empty:Point:4) 내 타일 중
-	// Dragon에서 SWEET_SPOT_MIN~SWEET_SPOT_MAX 거리인 가장 가까운 빈 타일 탐색
-	int           teleport_range = TELEPORT_RANGE;
-	auto          candidates     = grid->GetReachableTiles(myPos, teleport_range);
-	Math::ivec2   best           = myPos;
-	int           best_priority  = -1; // 높을수록 선호 (Sweet Spot 내: 2, 더 멀리: 1)
+	// Dragon에서 SWEET_SPOT_MIN~SWEET_SPOT_MAX 거리인 최적 빈 타일 탐색
+	auto        candidates      = grid->GetReachableTiles(myPos, TELEPORT_RANGE);
+	Math::ivec2 best            = myPos;
+	int         best_priority   = -1; // 3=비용암 sweet, 2=용암 sweet, 1=fallback
+	int         best_fallback_d = -1; // fallback 최적 거리 (스윗스팟에 가장 가까운 거리)
 
 	for (const auto& tile : candidates)
 	{
@@ -280,7 +280,6 @@ Math::ivec2 WizardStrategy::FindSweetSpotTile(
 		// Sweet Spot 정확히 맞는 타일 최우선
 		if (d >= SWEET_SPOT_MIN && d <= SWEET_SPOT_MAX)
 		{
-			// 용암 타일 회피 우선, 같은 조건이면 더 가까운 위치 선호
 			int priority = (t == GridSystem::TileType::Lava) ? 2 : 3;
 			if (priority > best_priority)
 			{
@@ -288,15 +287,25 @@ Math::ivec2 WizardStrategy::FindSweetSpotTile(
 				best          = tile;
 			}
 		}
-		// Sweet Spot 밖: 너무 가까우면 후퇴, 너무 멀면 접근
-		else if (best_priority < 0)
+		// Sweet Spot 밖: 스윗스팟에 가장 가깝게 이동하는 최적 타일 선택
+		// (첫 번째 발견 타일이 아닌 거리 기준 최선 타일 — 1칸 텔레포트 버그 수정)
+		else if (best_priority < 2)
 		{
-			bool should_pick = (cur_dist < SWEET_SPOT_MIN && d > cur_dist)
-			                || (cur_dist > SWEET_SPOT_MAX && d < cur_dist);
-			if (should_pick)
+			bool approaching = (cur_dist > SWEET_SPOT_MAX && d < cur_dist);
+			bool retreating  = (cur_dist < SWEET_SPOT_MIN && d > cur_dist);
+			if (approaching || retreating)
 			{
-				best_priority = 1;
-				best          = tile;
+				// 접근: 드래곤에 최대한 가까워야 → 최솟값 d 선호
+				// 후퇴: 드래곤에서 최대한 멀어야 → 최댓값 d 선호
+				bool better = (best_priority < 1)
+				            || (approaching && d < best_fallback_d)
+				            || (retreating  && d > best_fallback_d);
+				if (better)
+				{
+					best_priority   = 1;
+					best_fallback_d = d;
+					best            = tile;
+				}
 			}
 		}
 	}

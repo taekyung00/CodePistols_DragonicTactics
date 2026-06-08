@@ -50,13 +50,37 @@ AIDecision ClericStrategy::MakeDecision(Character* actor)
   // ── Phase_Decision ────────────────────────────────────────
   if (actor->GetActionPoints() <= 0)
   {
-    // AP 없음. MP 남아있으면 다음 턴 대비 전술 이동.
+    // AP 없음: 다음 턴 지원 대비 포지셔닝 (드래곤 방향 접근 금지)
     if (actor->GetMovementRange() > 0)
     {
-      Math::ivec2 movePos = FindNextMovePos(actor, dragon, grid);
-      if (movePos != actor->GetGridPosition()->Get())
+      Math::ivec2 myPos = actor->GetGridPosition()->Get();
+
+      // 1순위: 부상 아군(힐 임계값 1.5배까지 여유 포함)에게 접근
+      Character* preHeal = FindAllyNeedingHeal(HEAL_THRESHOLD * 1.5f);
+      if (preHeal)
       {
-        return { AIDecisionType::Move, nullptr, movePos, "", "Tactical positioning (no AP)", LAVA_TILE_PENALTY };
+        int dist = grid->ManhattanDistance(myPos, preHeal->GetGridPosition()->Get());
+        if (dist > HEAL_RANGE)
+        {
+          Math::ivec2 movePos = FindNextMovePos(actor, preHeal, grid, 0);
+          if (movePos != myPos)
+            return { AIDecisionType::Move, nullptr, movePos, "",
+                     "Tactical: pre-position for heal on " + preHeal->TypeName(), 0 };
+        }
+      }
+
+      // 2순위: Blessing 없는 아군에게 접근 (다음 턴 버프 대비)
+      Character* preBuff = FindAllyNeedingBuff();
+      if (preBuff)
+      {
+        int dist = grid->ManhattanDistance(myPos, preBuff->GetGridPosition()->Get());
+        if (dist > BLESSING_RANGE)
+        {
+          Math::ivec2 movePos = FindNextMovePos(actor, preBuff, grid, LAVA_TILE_PENALTY);
+          if (movePos != myPos)
+            return { AIDecisionType::Move, nullptr, movePos, "",
+                     "Tactical: pre-position for buff on " + preBuff->TypeName(), LAVA_TILE_PENALTY };
+        }
       }
     }
     return { AIDecisionType::EndTurn, nullptr, {}, "", "No AP remaining" };
@@ -188,12 +212,21 @@ AIDecision ClericStrategy::MakeSupportDecision(Character* actor, Character* drag
   }
 
   // [4순위] 고통의 저주(Curse of Suffering) — 업캐스트 불가(FALSE) → Lv1 슬롯만
-  if (!IsCurseActive(dragon) && actor->GetAvailableSpellSlots(1) > 0 && dist_to_dragon <= CURSE_RANGE)
+  if (!IsCurseActive(dragon) && actor->GetAvailableSpellSlots(1) > 0)
   {
-    return { AIDecisionType::UseAbility, dragon, {}, "S_DEB_010", "Support: Curse of Suffering on Dragon" };
+    if (dist_to_dragon <= CURSE_RANGE)
+      return { AIDecisionType::UseAbility, dragon, {}, "S_DEB_010", "Support: Curse of Suffering on Dragon" };
+    // 사거리 밖: 드래곤에게 접근
+    if (actor->GetMovementRange() > 0)
+    {
+      Math::ivec2 movePos = FindNextMovePos(actor, dragon, grid);
+      if (movePos != actor->GetGridPosition()->Get())
+        return { AIDecisionType::Move, nullptr, movePos, "", "Support: Move to curse range", LAVA_TILE_PENALTY };
+    }
   }
 
-  return MakeMeleePhaseDecision(actor, dragon, grid);
+  // 슬롯 있지만 유효한 지원 대상 없음 → 드래곤에게 접근하지 않고 대기
+  return { AIDecisionType::EndTurn, nullptr, {}, "", "Support: No valid targets, holding position" };
 }
 
 // ============================================================

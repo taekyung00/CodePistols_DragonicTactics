@@ -9,6 +9,7 @@ Created:    November 24, 2025
 */
 
 #include "BattleOrchestrator.h"
+#include "Game/DragonicTactics/Types/GameTimings.h"
 #include "./CS200/IRenderer2D.h"
 #include "./CS200/NDC.h"
 #include "GamePlay.h"
@@ -83,7 +84,7 @@ void BattleOrchestrator::HandleAITurn(Character* ai_character, TurnManager* turn
   if (ai_character != m_last_ai_character_)
   {
 	m_last_ai_character_ = ai_character;
-	m_think_timer_       = 1.2;
+	m_think_timer_       = GameTimings::AI_THINK;
   }
 
   if (m_think_timer_ > 0.0)
@@ -118,15 +119,18 @@ void BattleOrchestrator::HandleAITurn(Character* ai_character, TurnManager* turn
 	// 실행 후 다음 프레임에 다시 HandleAITurn 진입 → MakeDecision 반복
 	ai_system->ExecuteDecision(ai_character, decision);
 
-	// 스펠은 SpellDelayObject가 0.5s 후 효과 적용 → 0.6s 대기로 상태 반영 보장
-	// 공격은 AttackDelayObject(0.3s) + 이펙트 확인 여유(0.3s) = 0.6s
-	// 이동은 시각적 간격 0.3s
 	if (decision.type == AIDecisionType::UseAbility)
-	  m_wait_timer = 0.6;
+	{
+	  // Fire/MagicMissile/Meteor SFX 스펠은 0.5초 추가 대기 (애니메이션 길이 연장과 동기화)
+	  const std::string& id = decision.abilityName;
+	  bool slow_spell = (id == "S_ATK_010" || id == "S_ATK_030" ||
+	                     id == "S_ATK_060" || id == "S_ATK_040");
+	  m_wait_timer = GameTimings::AI_WAIT_SPELL + (slow_spell ? GameTimings::SLOW_SPELL_EXTRA : 0.0);
+	}
 	else if (decision.type == AIDecisionType::Attack)
-	  m_wait_timer = 0.6;
+	  m_wait_timer = GameTimings::AI_WAIT_ATTACK;
 	else
-	  m_wait_timer = 0.3;
+	  m_wait_timer = GameTimings::AI_WAIT_MOVE;
   }
 }
 

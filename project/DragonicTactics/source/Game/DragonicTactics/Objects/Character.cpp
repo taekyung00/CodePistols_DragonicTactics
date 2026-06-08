@@ -99,6 +99,8 @@ void Character::Update(double dt)
 
 void Character::Draw(Math::TransformationMatrix camera_matrix , unsigned int color, float depth)
 {
+    if (m_hide_sprite_) return;
+
     if (Has("Stealth"))
     {
     #ifndef _DEBUG

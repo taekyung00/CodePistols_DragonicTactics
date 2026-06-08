@@ -81,6 +81,8 @@ class GamePlayUIManager
 
   // Slot icons (index 0~9: spells, 10: End Turn)
   std::vector<std::shared_ptr<CS230::Texture>> slot_icons_;
+  std::shared_ptr<CS230::Texture> m_tex_locked_;  // Locked.png — 레벨에서 비허용된 스펠 위에 오버레이
+  bool                            m_cursor_hovering_ = false;
 
   // Slot coordinate cache ([0..9]=slots, [10]=End Turn)
   std::array<double, 11> slot_bar_x_{};
@@ -171,6 +173,7 @@ class GamePlayUIManager
   void DrawDragonWorldHoverTooltip();
   void DrawDragonHUD();
   void DrawCancelHint();
+  void DrawCursor();
 
   // ── Pause Menu ──────────────────────────────────────────────────────────────
   public:
