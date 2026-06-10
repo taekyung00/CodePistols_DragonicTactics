@@ -245,6 +245,10 @@ Windows 빌드에 `SetUnhandledExceptionFilter` 기반 크래시 핸들러가 �
 - **조건**: `.pdb` 파일이 `.exe`와 같은 폴더에 있어야 심볼(함수명·라인 번호) 표시됨. `windows-debug` 빌드는 자동 생성.
 - `#if defined(_WIN32)` 게이팅 — Emscripten/Linux 빌드 영향 없음
 
+### 스크린샷 (`Engine/Screenshot.h` / `.cpp`)
+
+**F2 = 전역 스크린샷 단축키**. `Engine::Draw()` 말미(`Engine/Engine.cpp:269`)에서 `KeyJustPressed(F2)` 감지 시 `CS230::CaptureScreenshot()`를 호출 → 방금 렌더된 백버퍼를 읽어 `screenshots/screenshot_<timestamp>.png`로 저장한다. 아래 [테스트](#테스트)의 GamePlay 전용 런타임 단축키와 달리, F2(스크린샷)·F1(디버그 도구)은 **엔진 레벨이라 모든 GameState에서 동작**한다.
+
 ---
 
 ## 핵심 아키텍처 원칙
@@ -1081,6 +1085,8 @@ wsl cmake --build build/web-release 2>&1 | Where-Object { $_ -match 'error:' }
 | P     | TurnManager 테스트        |
 | J/R/L | JSON 로드 / 리로드 / 로그     |
 | Enter | 전체 전투 시스템 테스트          |
+
+⚠️ 위 표는 **`GamePlay` 상태 전용**이다. 반면 **F1**(디버그 도구)·**F2**(스크린샷, [빌드 §스크린샷](#스크린샷-enginescreenshoth--cpp) 참고)은 엔진 레벨이라 **모든 GameState에서 동작**한다.
 
 ### 디버그 서브시스템
 

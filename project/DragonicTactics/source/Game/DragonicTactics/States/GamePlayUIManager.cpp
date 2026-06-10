@@ -567,10 +567,10 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
 
     const Math::ivec2 win = { VW, VH };
     constexpr int    TILE = 64;
-    const double box_x    = TILE / 2;
+    const double box_x    = 8.0 + TILE;                          // 상태이상 패널 좌측(8) + 한 타일(64) = 72
     const double bar_bot  = TILE;
     const double bar_h    = TILE * 1.5;
-    const double bar_w    = static_cast<double>(win.x) - TILE;
+    const double bar_w    = static_cast<double>(win.x) - 2.0 * box_x; // 중앙정렬 대칭 (좌우 여백 72)
     constexpr int N       = 10;
     const double end_btn_w = static_cast<double>(TILE);
     const double remaining = bar_w - N * TILE - end_btn_w;
@@ -580,7 +580,11 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
 
     for (size_t i = 0; i < static_cast<size_t>(N); ++i)
         slot_bar_x_[i] = box_x + offset + static_cast<double>(i) * (TILE + offset);
-    slot_bar_x_[static_cast<size_t>(N)] = slot_bar_x_[static_cast<size_t>(N) - 1] + TILE + offset;
+    // End Turn 버튼은 실제 폭이 128px(turn_end.png)이라 64px 슬롯처럼 배치하면 바 우측으로 삐져나온다.
+    // 슬롯은 그대로 두고, 버튼만 바 우측 안쪽으로 정렬한다.
+    constexpr double END_BTN_REAL_W = 128.0; // turn_end.png 실제 폭
+    constexpr double END_BTN_MARGIN = 24.0;  // 바 우측 엣지로부터의 여백
+    slot_bar_x_[static_cast<size_t>(N)] = box_x + bar_w - END_BTN_REAL_W - END_BTN_MARGIN;
 
     // 아이콘 텍스처 로드
     const std::array<std::string, 10> ICON_PATHS = {
@@ -987,7 +991,7 @@ void GamePlayUIManager::DrawSlotBar()
     constexpr Math::ivec2 win = { VW, VH };
     constexpr double TILE = 64.0;
 
-    double bar_w = static_cast<double>(win.x) - TILE;
+    double bar_w = static_cast<double>(win.x) - 2.0 * (8.0 + TILE); // 좌측 엣지 72 대칭 (InitButtons box_x와 일치)
     Math::TransformationMatrix bg =
         Math::TranslationMatrix(Math::vec2{ win.x * 0.5, slot_bar_center_y_ }) *
         Math::ScaleMatrix(Math::vec2{ bar_w, TILE * 1.5 });
@@ -1551,7 +1555,7 @@ void GamePlayUIManager::DrawStatusEffectPanel()
     double ROW_STEP   = PORT_D + 4.0;
 
     double pan_h   = reserve * PORT_D + (reserve - 1) * 4.0 + 8.0;
-    double pan_w   = 300.0;
+    double pan_w   = 320.0;   // Dragon HUD(PAN_W=320)와 우측 엣지 정렬 (8+320=328)
     double pan_top = PANEL_TOP;
     double pan_cy  = pan_top - pan_h * 0.5;
 
