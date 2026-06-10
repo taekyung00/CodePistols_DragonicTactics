@@ -57,7 +57,7 @@ Applies ""Basic"" status for 0 turns.
 Move to current location.
 Summons NULL at current location.
 Special: Recover a Spell Slot of (Spell Level - Required Spell Level + 1) level."
-S_ATK_020,Tail Swipe,Attack,Dragon,2,Enemy:Around:2,FALSE,"Deals 2d10d8 damage.
+S_ATK_020,Tail Swipe,Attack,Dragon,2,Enemy:Around:2,FALSE,"Deals 2d10 damage.
 Applies ""Basic"" status for 0 turns.
 Move to target:knockback:2.
 Summons NULL at current location."
@@ -65,7 +65,7 @@ S_ATK_030,Dragon's Fury,Attack,Dragon,3,Enemy:Line:4,TRUE,"Deals 4d8 + (Spell Le
 Applies ""Basic"" status for 0 turns.
 Move to target:knockback:2.
 Summons NULL at current location."
-S_ATK_040,Meteor,Attack,Dragon,3,Any:OddEven:-1,TRUE,"Deals 4d10 + (Spell Level - Required Spell Level) * 1d10 damage.
+S_ATK_040,Meteor,Attack,Dragon,3,Enemy:Around:3,TRUE,"Deals 4d10 + (Spell Level - Required Spell Level) * 1d10 damage.
 Applies ""Exhaustion"" status for 1 turn to self.
 Move to current location.
 Summons NULL at current location."
