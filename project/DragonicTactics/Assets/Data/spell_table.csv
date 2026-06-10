@@ -31,7 +31,7 @@ S_GEO_030,Teleport,,Wizard,0,Empty:Point:4,TRUE,"Deals 0 damage.
 Applies ""Basic"" status for 0 turns.
 Move to self:teleport:selected.
 Summons NULL at current location."
-S_ATK_070,Weakpoint Strike,,Rogue,2,Enemy:Single:1,FALSE,"Deals 4d8 damage.
+S_ATK_070,Weakpoint Strike,,Rogue,2,Enemy:Single:1,FALSE,"Deals 3d10 damage.
 Applies ""Basic"" status for 0 turns.
 Move to current location.
 Summons NULL at current location.
