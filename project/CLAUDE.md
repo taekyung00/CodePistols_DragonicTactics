@@ -2,6 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **⚠️ CLAUDE CODE QUICK RULES — 반드시 먼저 읽을 것**
+> - 빌드·실행은 반드시 `DragonicTactics/` 디렉토리에서 실행 (`cd DragonicTactics`)
+> - 들여쓰기는 **탭** (스페이스 아님) — Allman 스타일 중괄호 (여는 `{`는 항상 새 줄)
+> - `UpdateGSComponents(dt)` 이후 개별 컴포넌트 `Update()` **명시 호출 금지** → 같은 프레임 이중 실행 버그 (`KeyJustPressed` 즉시 토글)
+> - `Math::vec2` 등 엔진 수학 타입에 `float` 리터럴(`0.0f`) 전달 금지 → 웹 빌드 `-Wdouble-promotion` 에러
+> - 새 캐릭터는 `new X()` 직접 생성 금지 → `CharacterFactory::Create()` 사용
+> - 모든 `.cpp` 첫 줄: `#include "pch.h"`
+
 ## 코드 탐색 출발점
 
 **`DragonicTactics/source/Game/DragonicTactics/States/GamePlay.cpp`가 이 프로젝트의 중심 파일이다.**
@@ -257,14 +265,14 @@ CS230::ParticleManager<Particles::Hit>
 
 CombatSystem / DiceManager 관련 코드를 수정할 때 반드시 확인할 것.
 
-| 위치 | 문제 | 심각도 |
-|---|---|---|
-| `StateComponents/CombatSystem.cpp` `ExecuteAttack` 첫 null 체크 | 에러 메시지에서 `attacker->TypeName()` 역참조 — attacker=null이면 crash | 🔴 CRITICAL |
-| `StateComponents/StatusEffectHandler.cpp:144` | Frenzy 발동 시 `DiceManager` nullptr 체크 없음 | 🟠 HIGH |
-
-✅ **수정 완료** (이전 :29 `CalculateDamage` null 역참조, :184 `RollAttackDamage` DiceManager nullptr — 현재 코드에서 모두 수정됨)
-| `StateComponents/SpellSystem.cpp:314,350` | upcast_dice `std::stoi` 예외 미처리 | 🟠 HIGH |
-| `StateComponents/SpellSystem.cpp:326` | `flat_per_level` `std::stoi` 예외 미처리 | 🟠 HIGH |
+| 위치 | 문제 | 심각도 | 상태 |
+|---|---|---|---|
+| `StateComponents/CombatSystem.cpp` `ExecuteAttack` 첫 null 체크 | 에러 메시지에서 `attacker->TypeName()` 역참조 — attacker=null이면 crash | 🔴 CRITICAL | 미수정 |
+| `StateComponents/StatusEffectHandler.cpp:144` | Frenzy 발동 시 `DiceManager` nullptr 체크 없음 | 🟠 HIGH | 미수정 |
+| `StateComponents/SpellSystem.cpp:314,350` | `upcast_dice` `std::stoi` 예외 미처리 | 🟠 HIGH | 미수정 |
+| `StateComponents/SpellSystem.cpp:326` | `flat_per_level` `std::stoi` 예외 미처리 | 🟠 HIGH | 미수정 |
+| `StateComponents/CombatSystem.cpp` `:29` `CalculateDamage` | null 역참조 | ~~🔴~~ | ✅ 수정 완료 |
+| `StateComponents/CombatSystem.cpp` `:184` `RollAttackDamage` | DiceManager nullptr | ~~🟠~~ | ✅ 수정 완료 |
 
 **GameObject 컴포넌트**: `GridPosition`, `ActionPoints`, `StatsComponent`, `SpellSlots`, `MovementComponent`, `StatusEffectComponent`, `ShakeComponent`
 
@@ -1043,9 +1051,9 @@ wsl cmake --build build/web-release 2>&1 | Where-Object { $_ -match 'error:' }
 
 ## 테스트
 
-⚠️ **ConsoleTest의 모든 단위 테스트가 제거됐다.** `States/ConsoleTest.cpp`의 `DrawImGui()`는 현재 "All tests removed." 텍스트만 표시한다. `source/Game/DragonicTactics/Test/` 디렉토리도 존재하지 않는다. ConsoleTest 자체(DEVELOPER_VERSION 전용 GameState)는 남아있으나 기능이 없다.
+⚠️ **이 프로젝트에는 자동화 단위 테스트가 없다.** `States/ConsoleTest.cpp`의 `DrawImGui()`는 현재 "All tests removed." 텍스트만 표시하고, `source/Game/DragonicTactics/Test/` 디렉토리도 존재하지 않는다. ConsoleTest 자체(DEVELOPER_VERSION 전용 GameState)는 남아있으나 기능이 없다.
 
-**런타임 테스트 단축키 (GamePlay 상태 — 인게임 점검 기능, 별도 콘솔창 출력)**:
+**런타임 점검 단축키** — `GamePlay` 상태 인게임에서 별도 콘솔창에 출력. 자동화 테스트가 아님:
 
 | 키     | 동작                     |
 | ----- | ---------------------- |
@@ -1071,7 +1079,7 @@ god mode·`timeScale`(빨리감기)·각종 오버레이 토글을 보유한다.
 
 **God Mode 구현 상태** (`docs/Detailed Implementations/features/갓모드 — Dragon 데미지 무효 + AP 무제한.md`):
 - 데미지 차단: ✅ `CombatSystem::ApplyDamage()` 내 early return으로 구현 완료
-- AP 소모 차단: ✅ `CombatSystem.cpp:246` (공격), `SpellSystem.cpp:597/904/958` (스펠 3곳) 구현 완료
+- AP 소모 차단: ✅ `CombatSystem::ExecuteAttack` (공격), `SpellSystem::CastSpell`·`ConsumeSpell` (스펠 3곳) — god_mode 가드로 Consume 생략
 - `DebugManager::IsGodModeEnabled()` → `debug_mode && god_mode` (Dragon에만 적용)
 
 **디버그 콘솔 주요 명령어 (DebugManager::RegisterGameCommands)**:

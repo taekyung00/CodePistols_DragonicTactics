@@ -27,9 +27,10 @@ class GameOver : public CS230::GameState
 
   // GamePlay이 전환 전에 설정
   static bool s_player_won;
+  static int  s_current_level_id;  // 0 = 자유 모드, 1~3 = 레벨 모드
 
   private:
-  enum class Option { PlayAgain, MainMenu, COUNT };
+  enum class Option { NextLevel, PlayAgain, MainMenu, COUNT };
   Option current_option = Option::PlayAgain;
 
   struct MenuItem { std::string text; Option option; };

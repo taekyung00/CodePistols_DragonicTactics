@@ -238,6 +238,7 @@ void GamePlay::Load()
   }
   else
   {
+	s_allowed_spells.clear();  // 레벨 모드에서 남은 스펠 제한 초기화
 	auto* map_registry = GetGSComponent<MapDataRegistry>();
 	map_registry->LoadMaps("Assets/Data/maps.json");
 	available_json_maps_ = map_registry->GetAllMapIds();
@@ -773,7 +774,7 @@ void GamePlay::DisplayDamageAmount(const CharacterDamagedEvent& event, double de
       grid_pos.x * static_cast<double>(GridSystem::TILE_SIZE),
       grid_pos.y * static_cast<double>(GridSystem::TILE_SIZE) + GridSystem::TILE_SIZE
   };
-  m_ui_manager->ShowDamageText(event.damageAmount, text_position, size, delay);
+  m_ui_manager->ShowDamageText(event.damageAmount, text_position, event.target, size, delay);
 }
 
 void GamePlay::CheckGameEnd(const CharacterDeathEvent& event)
@@ -821,12 +822,16 @@ void GamePlay::Update(double dt)
 		[&](const PendingHitEffect& fx)
 		{
 		  if (fx.timer > 0.0) return false;
-		  // 셰이크: 사망해서 메모리가 해제된 캐릭터는 건너뜀
+		  // 캐릭터가 살아있으면 현재 위치(넉백 이후) 사용, 사망 시 캡처 위치 사용
+		  Math::vec2 emit_pos = fx.world_pos;
 		  if (m_confirmed_dead_.count(fx.target) == 0)
+		  {
 			fx.target->GetShakeComponent()->StartShake(10.0f, 0.3f);
-		  // 파티클: 위치는 이벤트 시점에 캡처했으므로 항상 유효
+			emit_pos = fx.target->GetPosition()
+			           + Math::vec2{ GridSystem::TILE_SIZE / 2.0, GridSystem::TILE_SIZE / 2.0 };
+		  }
 		  if (pm)
-			pm->Emit(10, fx.world_pos, { 0, 0 }, { 0, 100 }, 3.14159265);
+			pm->Emit(10, emit_pos, { 0, 0 }, { 0, 100 }, 3.14159265);
 		  return true;
 		}),
 	  m_pending_hit_effects_.end());
@@ -872,7 +877,8 @@ void GamePlay::Update(double dt)
 	game_end_timer_ -= dt;
 	if (game_end_timer_ < 0.0)
 	{
-	  GameOver::s_player_won = game_end_player_won_;
+	  GameOver::s_player_won       = game_end_player_won_;
+	  GameOver::s_current_level_id = s_level_id;
 	  Engine::GetGameStateManager().PopState();
 	  Engine::GetGameStateManager().PushState<GameOver>();
 	  return;

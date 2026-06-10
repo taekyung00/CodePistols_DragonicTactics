@@ -96,9 +96,9 @@ void GamePlayUIManager::SetCamera(const TacticalCamera* camera)
     m_camera_ = camera;
 }
 
-void GamePlayUIManager::ShowDamageText(int damage, Math::vec2 position, Math::vec2 size, double delay)
+void GamePlayUIManager::ShowDamageText(int damage, Math::vec2 position, Character* follow_char, Math::vec2 size, double delay)
 {
-  m_damage_texts.push_back({ std::to_string(damage), position, size, 0.5, delay });
+  m_damage_texts.push_back({ std::to_string(damage), position, follow_char, size, 0.5, delay });
 }
 
 void GamePlayUIManager::ShowGameEnd(std::string&& text)
@@ -482,9 +482,23 @@ void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_
     for (const auto& text : m_damage_texts)
     {
         if (text.delay > 0.0) continue;
-        Math::vec2 screen_pos = text.position;
+        // 캐릭터가 살아있으면 현재 그리드 위치로 재계산 (넉백 이후 위치 반영)
+        Math::vec2 world_pos = text.position;
+        if (text.follow_char != nullptr)
+        {
+            auto* gp = text.follow_char->GetGridPosition();
+            if (gp)
+            {
+                auto grid = gp->Get();
+                world_pos = {
+                    grid.x * static_cast<double>(GridSystem::TILE_SIZE),
+                    grid.y * static_cast<double>(GridSystem::TILE_SIZE) + GridSystem::TILE_SIZE
+                };
+            }
+        }
+        Math::vec2 screen_pos = world_pos;
         if (m_camera_)
-            screen_pos = m_camera_->WorldToScreen(text.position, Engine::GetWindow().GetSize());
+            screen_pos = m_camera_->WorldToScreen(world_pos, Engine::GetWindow().GetSize());
         textMng.DrawText(text.text, screen_pos, Fonts::Kings, text.size, CS200::VIOLET);
     }
 
@@ -522,6 +536,9 @@ void GamePlayUIManager::SetCharacters(const std::vector<Character*>& characters)
       {
         m_player_ = nullptr;
       }
+      // 사망 캐릭터를 추적하는 데미지 텍스트 포인터를 해제 (dangling 방지)
+      for (auto& dt : m_damage_texts)
+        if (dt.follow_char == e.character) dt.follow_char = nullptr;
     });
 
     // [여기에 추가!] 텍스트 메시지 이벤트를 받으면 배틀 로그에 띄웁니다.
@@ -865,6 +882,9 @@ void GamePlayUIManager::InitSpellTooltips()
             if (line == "Deals 0 damage.") continue;
             lines.push_back(line);
         }
+
+        if (data->ap_cost > 1)
+            lines.push_back("Costs " + std::to_string(data->ap_cost) + " AP");
 
         spell_tooltip_cache_[id] = std::move(lines);
 

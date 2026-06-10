@@ -28,7 +28,7 @@ struct TacticalCamera;
 class GamePlayUIManager
 {
   public:
-  void ShowDamageText(int damage, Math::vec2 position, Math::vec2 size, double delay = 0.0);
+  void ShowDamageText(int damage, Math::vec2 position, Character* follow_char, Math::vec2 size, double delay = 0.0);
   void ShowGameEnd(std::string&& text);
   void Update(double dt);
   void Draw(Math::TransformationMatrix camera_matrix);
@@ -57,7 +57,8 @@ class GamePlayUIManager
   struct DamageText
   {
     std::string text;
-    Math::vec2  position;
+    Math::vec2  position;   // 사망 캐릭터나 follow_char=null일 때의 fallback 위치
+    Character*  follow_char;  // 살아있는 동안 현재 위치 추적; 사망 시 null로 교체됨
     Math::vec2  size;
     double      lifetime;
     double      delay;   // 이 시간만큼 대기 후 표시 (delay > 0 이면 숨김)

@@ -25,27 +25,11 @@ Project:    CS230 Engine
 #include <algorithm>
 #include <cmath>
 
-Settings::MapSize Settings::s_current_map_size = Settings::MapSize::Medium;
-int              Settings::s_bgm_volume        = 80;
+int Settings::s_bgm_volume = 80;
 int              Settings::s_sfx_volume        = 80;
 bool             Settings::s_is_bgm_muted      = false;
 bool             Settings::s_is_sfx_muted      = false;
 
-std::string Settings::OptionToMapId(MapSize size)
-{
-    switch (size)
-    {
-        case MapSize::Small:  return "first_map";
-        case MapSize::Medium: return "medium_map";
-        case MapSize::Large:  return "large_map";
-        default:              return "medium_map";
-    }
-}
-
-std::string Settings::GetCurrentMapId()
-{
-    return OptionToMapId(s_current_map_size);
-}
 
 void Settings::ApplySettings()
 {
@@ -70,7 +54,7 @@ void Settings::InitFlame(Flame& f, bool random_y)
     f.color          = (cp == 0) ? 0xFFD20000 : (cp == 1 ? 0xFF640000 : 0xFF190000);
 }
 
-Settings::Settings() : current_option(Option::MapSize)
+Settings::Settings() : current_option(Option::BGMVolume)
 {
 }
 
@@ -82,18 +66,11 @@ void Settings::Load()
     menu_start_pos = { 800.0, 600.0 };
 
     rows.clear();
-    rows.push_back({ "MAP SIZE",   Option::MapSize });
     rows.push_back({ "BGM VOLUME", Option::BGMVolume });
     rows.push_back({ "SFX VOLUME", Option::SFXVolume });
     rows.push_back({ "BGM MUTE",   Option::BGMMute });
     rows.push_back({ "SFX MUTE",   Option::SFXMute });
     rows.push_back({ "BACK",       Option::Back });
-
-    // GamePlay::s_next_map_id와 동기화
-    const std::string& active_id = GamePlay::s_next_map_id;
-    if      (active_id == "first_map")  s_current_map_size = MapSize::Small;
-    else if (active_id == "medium_map") s_current_map_size = MapSize::Medium;
-    else if (active_id == "large_map")  s_current_map_size = MapSize::Large;
 
     flames.resize(80);
     for (auto& f : flames) InitFlame(f, true);
@@ -112,16 +89,23 @@ void Settings::Update(double dt)
 
     int wheel = static_cast<int>(input.GetMouseScroll());
 
-    // 상하 옵션 이동
+    // 상하 옵션 이동 — rows 기반 순환 (조건부 항목 대응)
+    auto find_row_idx = [&]() -> int {
+        for (int i = 0; i < static_cast<int>(rows.size()); ++i)
+            if (rows[static_cast<size_t>(i)].option == current_option) return i;
+        return 0;
+    };
     if (input.KeyJustReleased(CS230::Input::Keys::Up) || input.KeyJustReleased(CS230::Input::Keys::W))
     {
-        current_option = static_cast<Option>(
-            (static_cast<int>(current_option) - 1 + static_cast<int>(Option::COUNT)) % static_cast<int>(Option::COUNT));
+        int count      = static_cast<int>(rows.size());
+        int cur        = find_row_idx();
+        current_option = rows[static_cast<size_t>((cur - 1 + count) % count)].option;
     }
     if (input.KeyJustReleased(CS230::Input::Keys::Down) || input.KeyJustReleased(CS230::Input::Keys::S))
     {
-        current_option = static_cast<Option>(
-            (static_cast<int>(current_option) + 1) % static_cast<int>(Option::COUNT));
+        int count      = static_cast<int>(rows.size());
+        int cur        = find_row_idx();
+        current_option = rows[static_cast<size_t>((cur + 1) % count)].option;
     }
 
     // 좌우 / 휠 값 조정
@@ -132,13 +116,7 @@ void Settings::Update(double dt)
 
     if (dir != 0)
     {
-        if (current_option == Option::MapSize)
-        {
-            s_current_map_size = static_cast<MapSize>(
-                (static_cast<int>(s_current_map_size) + dir + static_cast<int>(MapSize::COUNT)) % static_cast<int>(MapSize::COUNT));
-            GamePlay::s_next_map_id = GetCurrentMapId();
-        }
-        else if (current_option == Option::BGMVolume)
+        if (current_option == Option::BGMVolume)
         {
             s_bgm_volume = std::clamp(s_bgm_volume + dir * wheel_sensitivity, 0, 100);
             ApplySettings();
@@ -168,14 +146,7 @@ void Settings::Update(double dt)
             // 클릭: 토글/전환 처리
             if (input.MouseJustPressed(0))
             {
-                if (current_option == Option::MapSize)
-                {
-                    Engine::GetSoundManager().PlaySFX(SoundManager::SFX_BUTTON_CLICK);
-                    s_current_map_size = static_cast<MapSize>(
-                        (static_cast<int>(s_current_map_size) + 1) % static_cast<int>(MapSize::COUNT));
-                    GamePlay::s_next_map_id = GetCurrentMapId();
-                }
-                else if (current_option == Option::BGMMute)
+                if (current_option == Option::BGMMute)
                 {
                     Engine::GetSoundManager().PlaySFX(SoundManager::SFX_BUTTON_CLICK);
                     s_is_bgm_muted = !s_is_bgm_muted;
@@ -321,11 +292,6 @@ void Settings::Draw()
             std::string val;
             switch (row.option)
             {
-                case Option::MapSize:
-                    if      (s_current_map_size == MapSize::Small)  val = "< SMALL >";
-                    else if (s_current_map_size == MapSize::Medium) val = "< MEDIUM >";
-                    else                                            val = "< LARGE >";
-                    break;
                 case Option::BGMMute: val = s_is_bgm_muted ? "[MUTED]"  : "[ACTIVE]"; break;
                 case Option::SFXMute: val = s_is_sfx_muted ? "[MUTED]"  : "[ACTIVE]"; break;
                 case Option::Back:    val = "GO MENU"; break;

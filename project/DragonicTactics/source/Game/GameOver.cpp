@@ -25,7 +25,8 @@ Project:    CS230 Engine
 #include "OpenGL/Environment.h"
 #include <cmath>
 
-bool GameOver::s_player_won = false;
+bool GameOver::s_player_won    = false;
+int  GameOver::s_current_level_id = 0;
 
 void GameOver::Load()
 {
@@ -37,9 +38,12 @@ void GameOver::Load()
     }
 
     menu_items_.clear();
+    bool show_next_level = s_player_won && s_current_level_id > 0 && s_current_level_id < 3;
+    if (show_next_level)
+        menu_items_.push_back({ "NEXT LEVEL", Option::NextLevel });
     menu_items_.push_back({ "PLAY AGAIN", Option::PlayAgain });
     menu_items_.push_back({ "MAIN MENU",  Option::MainMenu  });
-    current_option = Option::PlayAgain;
+    current_option = show_next_level ? Option::NextLevel : Option::PlayAgain;
 
     title_pos_         = { WINDOW_SIZE.x * 0.5, WINDOW_SIZE.y * 0.72 };
     menu_center_pos_   = { WINDOW_SIZE.x * 0.5, WINDOW_SIZE.y * 0.35 };
@@ -64,18 +68,25 @@ void GameOver::Update(double dt)
     auto          window_size = Engine::GetWindow().GetSize();
     Math::vec2    mouse_pos   = TacticalCamera::ScreenToVirtual(input.GetMousePos(), window_size);
 
-    // 키보드 좌우/상하 이동
+    // 키보드 좌우/상하 이동 — menu_items_ 기반 순환 (조건부 버튼 대응)
+    auto find_cur_idx = [&]() -> int {
+        for (int i = 0; i < static_cast<int>(menu_items_.size()); ++i)
+            if (menu_items_[static_cast<size_t>(i)].option == current_option) return i;
+        return 0;
+    };
     if (input.KeyJustReleased(CS230::Input::Keys::Left)  || input.KeyJustReleased(CS230::Input::Keys::A) ||
         input.KeyJustReleased(CS230::Input::Keys::Up)    || input.KeyJustReleased(CS230::Input::Keys::W))
     {
-        int count      = static_cast<int>(Option::COUNT);
-        current_option = static_cast<Option>((static_cast<int>(current_option) - 1 + count) % count);
+        int count      = static_cast<int>(menu_items_.size());
+        int cur        = find_cur_idx();
+        current_option = menu_items_[static_cast<size_t>((cur - 1 + count) % count)].option;
     }
     else if (input.KeyJustReleased(CS230::Input::Keys::Right) || input.KeyJustReleased(CS230::Input::Keys::D) ||
              input.KeyJustReleased(CS230::Input::Keys::Down)  || input.KeyJustReleased(CS230::Input::Keys::S))
     {
-        int count      = static_cast<int>(Option::COUNT);
-        current_option = static_cast<Option>((static_cast<int>(current_option) + 1) % count);
+        int count      = static_cast<int>(menu_items_.size());
+        int cur        = find_cur_idx();
+        current_option = menu_items_[static_cast<size_t>((cur + 1) % count)].option;
     }
     else if (input.KeyJustReleased(CS230::Input::Keys::Enter) ||
              input.KeyJustReleased(CS230::Input::Keys::Space) ||
@@ -110,6 +121,11 @@ void GameOver::SelectOption()
 {
     switch (current_option)
     {
+        case Option::NextLevel:
+            GamePlay::s_level_id = s_current_level_id + 1;
+            Engine::GetGameStateManager().PopState();
+            Engine::GetGameStateManager().PushState<GamePlay>();
+            break;
         case Option::PlayAgain:
             Engine::GetGameStateManager().PopState();
             Engine::GetGameStateManager().PushState<GamePlay>();

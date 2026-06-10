@@ -31,19 +31,14 @@ class Settings : public CS230::GameState
   static constexpr CS200::RGBA non_selected_color = 0x787878FF;
   static constexpr CS200::RGBA selected_color     = 0xFFC800FF;
 
-  enum class MapSize { Small, Medium, Large, COUNT };
-  static MapSize s_current_map_size;
-  static int     s_bgm_volume;
-  static int     s_sfx_volume;
-  static bool    s_is_bgm_muted;
-  static bool    s_is_sfx_muted;
-
-  static std::string GetCurrentMapId();
+  static int  s_bgm_volume;
+  static int  s_sfx_volume;
+  static bool s_is_bgm_muted;
+  static bool s_is_sfx_muted;
 
   private:
   enum class Option
   {
-    MapSize,
     BGMVolume,
     SFXVolume,
     BGMMute,
@@ -91,6 +86,5 @@ class Settings : public CS230::GameState
 
   double run_time = 0.0;
 
-  void               ApplySettings();
-  static std::string OptionToMapId(MapSize size);
+  void ApplySettings();
 };
