@@ -146,10 +146,13 @@ void StatusEffectHandler::OnAfterAttack(Character* attacker, Character* defender
 	int roll = frenzy_dice->RollDice(1, 2) - 1; // 0~1
 	const std::string&		 effect			  = FRENZY_EFFECTS[roll];
 
+	// duration=1로 적용하면 대상의 턴 시작 시 OnTurnStart 직후 TickDown으로 즉시 제거되어
+	// 효과가 한 번도 적용되지 않은 것처럼 보인다 (Exhaustion처럼 OnTurnStart 훅이 없는 효과의 경우).
+	// duration=2로 적용해 대상의 다음 턴 1회 동안 효과가 유지되도록 한다.
 	if (damage_dealt >= 10)
-	  defender->AddEffect(effect, 1);
+	  defender->AddEffect(effect, 2);
 	else
-	  attacker->AddEffect(effect, 1);
+	  attacker->AddEffect(effect, 2);
   }
 }
 

@@ -59,6 +59,7 @@ void SpellSlots::SetSpellSlots(std::map<int, int> spellSlots)
 {
   for (const auto& pair : spellSlots)
   {
+	max_slots[pair.first]     = pair.second;
 	current_slots[pair.first] = pair.second;
   }
 }

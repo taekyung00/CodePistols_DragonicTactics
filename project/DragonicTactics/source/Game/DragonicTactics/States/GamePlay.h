@@ -132,7 +132,6 @@ class GamePlay : public CS230::GameState
 
   Character* player  = nullptr;
   std::vector<Character*> enemys {};
-  static constexpr double GAME_OVER_DELAY  = 0.5;  // 게임 종료 후 GameOver 화면 전환까지 대기 시간(초)
   static constexpr int    THINK_FRAMES     = 3;    // think.png 프레임 수 (•, ••, •••)
   static constexpr int    TELEPORT_FRAMES  = 6;    // Teleport.png 프레임 수
 

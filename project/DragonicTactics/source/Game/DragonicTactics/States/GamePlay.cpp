@@ -781,11 +781,15 @@ void GamePlay::CheckGameEnd(const CharacterDeathEvent& event)
 {
   auto* turnMgr = GetGSComponent<TurnManager>();
 
+  // 사망 캐릭터가 화면에서 사라지는 시각 딜레이(hurt SFX 재생 시간 포함) 만큼은
+  // GameOver 전환을 기다려야 attack/spell SFX 직후 곧바로 종료되지 않는다.
+  double visual_delay = (event.character != nullptr) ? std::max(0.0, event.character->GetDeathDelay()) : 0.0;
+
   if (event.character == player)
   {
 	if (turnMgr) turnMgr->EndCombat();
 	game_end_player_won_ = false;
-	game_end_timer_      = GAME_OVER_DELAY;
+	game_end_timer_      = visual_delay;
 	game_end             = true;
 	return;
   }
@@ -796,7 +800,7 @@ void GamePlay::CheckGameEnd(const CharacterDeathEvent& event)
   {
 	if (turnMgr) turnMgr->EndCombat();
 	game_end_player_won_ = true;
-	game_end_timer_      = GAME_OVER_DELAY;
+	game_end_timer_      = visual_delay;
 	game_end             = true;
 
 	// 릴리즈 모드 순차 잠금: 현재 레벨 클리어 시 다음 레벨 해금
@@ -871,7 +875,7 @@ void GamePlay::Update(double dt)
 	return;
   }
 
-  // 게임 종료 타이머: 1.5초 대기 후 GameOver 상태로 전환
+  // 게임 종료 타이머: 사망 캐릭터 시각 제거(hurt SFX 포함)까지 대기 후 GameOver 상태로 전환
   if (game_end_timer_ >= 0.0)
   {
 	game_end_timer_ -= dt;
@@ -1079,7 +1083,12 @@ void GamePlay::Draw()
   {
       double     think_t  = m_orchestrator->GetThinkTimer();
       Character* ai_char  = m_orchestrator->GetCurrentAICharacter();
-      if (think_t > 0.0 && ai_char && m_confirmed_dead_.count(ai_char) == 0)
+      bool       hide_for_stealth = false;
+#ifndef _DEBUG
+      // [릴리즈 모드] 은신 중인 캐릭터의 "생각 중" 말풍선은 표시하지 않는다 (위치 노출 방지)
+      hide_for_stealth = ai_char && ai_char->Has("Stealth");
+#endif
+      if (think_t > 0.0 && ai_char && m_confirmed_dead_.count(ai_char) == 0 && !hide_for_stealth)
       {
           double      elapsed_think = 1.2 - think_t;
           Math::ivec2 tex_size      = m_tex_think_->GetSize();

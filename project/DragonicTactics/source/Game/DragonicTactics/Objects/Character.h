@@ -95,7 +95,8 @@ class Character : public CS230::GameObject
   void SetAttackRange(int new_range);
   void SetHP(int HP);
   bool HasSpell(std::string spell_name);
-  void SetDeathDelay(double delay) { m_death_delay_ = delay; }
+  void   SetDeathDelay(double delay) { m_death_delay_ = delay; }
+  double GetDeathDelay() const       { return m_death_delay_; }
   void SetHideSprite(bool hide)    { m_hide_sprite_ = hide; }
   bool IsHideSprite() const        { return m_hide_sprite_; }
 

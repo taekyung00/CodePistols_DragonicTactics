@@ -399,6 +399,10 @@ void GamePlayUIManager::Update(double dt)
         {
             if (ch && ch->IsAlive())
             {
+#ifndef _DEBUG
+                // [릴리즈 모드] 은신 중인 캐릭터는 호버 정보 패널에 노출되지 않는다
+                if (ch->Has("Stealth")) continue;
+#endif
                 auto* pos_comp = ch->GetGridPosition();
                 if (pos_comp && pos_comp->Get() == Math::ivec2{ grid_x, grid_y })
                 {
@@ -466,16 +470,10 @@ void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_
     DrawActionLabel();
     DrawTurnIndicator();
     DrawCancelHint();
-    DrawHoverTooltip();
-    DrawSpellTooltip();
-    DrawAttackTooltip();
     DrawDragonHUD();
     DrawStatusEffectPanel();
-    DrawStatusEffectTooltip();
     DrawBattleLog();
     DrawNotice();
-    DrawDisableReasonTooltip();
-    DrawDragonWorldHoverTooltip();
 
     auto& textMng = Engine::GetTextManager();
 
@@ -512,6 +510,15 @@ void GamePlayUIManager::Draw([[maybe_unused]] Math::TransformationMatrix camera_
     }
 
     DrawPauseMenu();
+
+    // 툴팁은 항상 다른 모든 UI 패널(배틀 로그·일시정지 메뉴 포함)보다 위에 그려져야 함
+    DrawHoverTooltip();
+    DrawSpellTooltip();
+    DrawAttackTooltip();
+    DrawStatusEffectTooltip();
+    DrawDisableReasonTooltip();
+    DrawDragonWorldHoverTooltip();
+
     DrawCursor();
 }
 
@@ -1145,29 +1152,29 @@ void GamePlayUIManager::DrawHoverTooltip()
     Math::TransformationMatrix bg =
         Math::TranslationMatrix(Math::vec2{ tip_cx, tip_cy }) *
         Math::ScaleMatrix(Math::vec2{ TT_W, TT_H });
-    renderer->DrawRectangle(bg, 0x1a1a2edd, 0x8888aaff, 1.0, DrawDepth::UI + 0.001f);
+    renderer->DrawRectangle(bg, 0x1a1a2edd, 0x8888aaff, 1.0, DrawDepth::TOOLTIP_BG);
 
     double ty = tip_top - 8.0;
 
     textMgr.DrawText(hovered_character_->TypeName(),
         Math::vec2{ tip_x + 8.0, ty }, Fonts::Kings,
-        { 0.5, 0.5 }, CS200::GOLD, DrawDepth::UI);
+        { 0.5, 0.5 }, CS200::GOLD, DrawDepth::TOOLTIP_TEXT);
     ty -= LH;
 
     std::string hp_str = "HP: " + std::to_string(hovered_character_->GetHP())
                        + "/" + std::to_string(hovered_character_->GetMaxHP());
     textMgr.DrawText(hp_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Kings,
-        { 0.4, 0.4 }, CS200::RED, DrawDepth::UI);
+        { 0.4, 0.4 }, CS200::RED, DrawDepth::TOOLTIP_TEXT);
     ty -= LH;
 
     std::string ap_str = "AP: " + std::to_string(hovered_character_->GetActionPoints());
     textMgr.DrawText(ap_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Kings,
-        { 0.4, 0.4 }, CS200::YELLOW, DrawDepth::UI);
+        { 0.4, 0.4 }, CS200::YELLOW, DrawDepth::TOOLTIP_TEXT);
     ty -= LH;
 
     std::string spd_str = "MOV: " + std::to_string(hovered_character_->GetMovementRange());
     textMgr.DrawText(spd_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Kings,
-        { 0.4, 0.4 }, CS200::GREEN, DrawDepth::UI);
+        { 0.4, 0.4 }, CS200::GREEN, DrawDepth::TOOLTIP_TEXT);
     ty -= LH;
 
     SpellSlots* slots = hovered_character_->GetSpellSlots();
@@ -1183,7 +1190,7 @@ void GamePlayUIManager::DrawHoverTooltip()
                       + std::to_string(cur_c) + "/" + std::to_string(max_c);
         }
         textMgr.DrawText(slot_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Kings,
-            { 0.4, 0.4 }, CS200::ORANGE, DrawDepth::UI);
+            { 0.4, 0.4 }, CS200::ORANGE, DrawDepth::TOOLTIP_TEXT);
         ty -= LH;
     }
 
@@ -1194,7 +1201,7 @@ void GamePlayUIManager::DrawHoverTooltip()
         for (const auto& e : effects)
             fx_str += " " + e.name + "(" + std::to_string(e.duration) + ")";
         textMgr.DrawText(fx_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Kings,
-            { 0.4, 0.4 }, CS200::YELLOW, DrawDepth::UI);
+            { 0.4, 0.4 }, CS200::YELLOW, DrawDepth::TOOLTIP_TEXT);
     }
 }
 
@@ -1298,20 +1305,20 @@ void GamePlayUIManager::DrawSpellTooltip()
     Math::TransformationMatrix bg =
         Math::TranslationMatrix(Math::vec2{ tip_x + TT_W * 0.5, tip_top - TT_H * 0.5 }) *
         Math::ScaleMatrix(Math::vec2{ TT_W, TT_H });
-    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5, DrawDepth::UI + 0.001f);
+    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5, DrawDepth::TOOLTIP_BG);
 
     double ty = tip_top - PAD - 22;
 
     // 첫 줄: 스펠 이름 + 레벨 (금색)
     textMgr.DrawText(lines[0], Math::vec2{ tip_x + PAD, ty },
-        Fonts::Kings, { 0.5, 0.5 }, CS200::GOLD, DrawDepth::UI);
+        Fonts::Kings, { 0.5, 0.5 }, CS200::GOLD, DrawDepth::TOOLTIP_TEXT);
     ty -= LH;
 
     // 이후 줄: 효과 설명 (흰색)
     for (size_t i = 1; i < lines.size(); ++i)
     {
         textMgr.DrawText(lines[i], Math::vec2{ tip_x + PAD, ty },
-            Fonts::Kings, { 0.4, 0.4 }, CS200::WHITE, DrawDepth::UI);
+            Fonts::Kings, { 0.4, 0.4 }, CS200::WHITE, DrawDepth::TOOLTIP_TEXT);
         ty -= LH;
     }
 }
@@ -1350,16 +1357,16 @@ void GamePlayUIManager::DrawAttackTooltip()
     Math::TransformationMatrix bg =
         Math::TranslationMatrix(Math::vec2{ tip_x + TT_W * 0.5, tip_top - TT_H * 0.5 }) *
         Math::ScaleMatrix(Math::vec2{ TT_W, TT_H });
-    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5, DrawDepth::UI + 0.001f);
+    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5, DrawDepth::TOOLTIP_BG);
 
     double ty = tip_top - PAD - 22;
     textMgr.DrawText(lines[0], Math::vec2{ tip_x + PAD, ty },
-        Fonts::Kings, { 0.5, 0.5 }, CS200::GOLD, DrawDepth::UI);
+        Fonts::Kings, { 0.5, 0.5 }, CS200::GOLD, DrawDepth::TOOLTIP_TEXT);
     ty -= LH;
     for (size_t i = 1; i < lines.size(); ++i)
     {
         textMgr.DrawText(lines[i], Math::vec2{ tip_x + PAD, ty },
-            Fonts::Kings, { 0.4, 0.4 }, CS200::WHITE, DrawDepth::UI);
+            Fonts::Kings, { 0.4, 0.4 }, CS200::WHITE, DrawDepth::TOOLTIP_TEXT);
         ty -= LH;
     }
 }
@@ -1608,21 +1615,21 @@ void GamePlayUIManager::DrawStatusEffectTooltip()
     Math::TransformationMatrix bg =
         Math::TranslationMatrix(Math::vec2{ tip_x + TT_W * 0.5, tip_top - TT_H * 0.5 }) *
         Math::ScaleMatrix(Math::vec2{ TT_W, TT_H });
-    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5, DrawDepth::UI - 0.003f);
+    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5, DrawDepth::TOOLTIP_BG);
 
     double ty = tip_top - PAD - 22;
     textMgr.DrawText(hovered_effect_name_,
-        Math::vec2{ tip_x + PAD, ty }, Fonts::Kings, {0.5, 0.5}, CS200::GOLD, DrawDepth::UI - 0.004f);
+        Math::vec2{ tip_x + PAD, ty }, Fonts::Kings, {0.5, 0.5}, CS200::GOLD, DrawDepth::TOOLTIP_TEXT);
     ty -= LH;
 
     textMgr.DrawText("Duration: " + std::to_string(hovered_effect_duration_) + " turn(s)",
-        Math::vec2{ tip_x + PAD, ty }, Fonts::Kings, {0.4, 0.4}, CS200::YELLOW, DrawDepth::UI - 0.004f);
+        Math::vec2{ tip_x + PAD, ty }, Fonts::Kings, {0.4, 0.4}, CS200::YELLOW, DrawDepth::TOOLTIP_TEXT);
     ty -= LH;
 
     auto dit = effect_descriptions_.find(hovered_effect_name_);
     if (dit != effect_descriptions_.end())
         textMgr.DrawText(dit->second, Math::vec2{ tip_x + PAD, ty },
-            Fonts::Kings, {0.35, 0.35}, CS200::WHITE, DrawDepth::UI - 0.004f);
+            Fonts::Kings, {0.35, 0.35}, CS200::WHITE, DrawDepth::TOOLTIP_TEXT);
 }
 
 void GamePlayUIManager::DrawActionLabel()
@@ -1857,13 +1864,13 @@ void GamePlayUIManager::DrawDisableReasonTooltip()
         Math::TranslationMatrix(Math::vec2{ tip_x + TT_W * 0.5, box_center_y }) *
         Math::ScaleMatrix(Math::vec2{ TT_W, TT_H });
     
-    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5, DrawDepth::UI + 0.001f);
+    renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5, DrawDepth::TOOLTIP_BG);
 
     // 2. 텍스트 렌더링 (텍스트 중앙 정렬)
-    double ty = (box_center_y - TT_H * 0.5) + PAD + 1.0; 
+    double ty = (box_center_y - TT_H * 0.5) + PAD + 1.0;
 
     textMgr.DrawText(reason_text,
-        Math::vec2{ tip_x + PAD, ty }, Fonts::Kings, {0.4, 0.4}, CS200::RED, DrawDepth::UI);
+        Math::vec2{ tip_x + PAD, ty }, Fonts::Kings, {0.4, 0.4}, CS200::RED, DrawDepth::TOOLTIP_TEXT);
 }
 
 void GamePlayUIManager::DrawDragonWorldHoverTooltip()
@@ -1917,11 +1924,11 @@ void GamePlayUIManager::DrawDragonWorldHoverTooltip()
             Math::TransformationMatrix bg =
                 Math::TranslationMatrix(Math::vec2{ tip_x + TT_W * 0.5, tip_top - TT_H * 0.5 }) *
                 Math::ScaleMatrix(Math::vec2{ TT_W, TT_H });
-            renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5, DrawDepth::UI + 0.001f);
-            
+            renderer->DrawRectangle(bg, 0x0d0d1eee, 0x6688bbff, 1.5, DrawDepth::TOOLTIP_BG);
+
             double ty = tip_top - PAD - 22;
             textMgr.DrawText(reason_text,
-                Math::vec2{ tip_x + PAD, ty }, Fonts::Kings, {0.4, 0.4}, CS200::RED, DrawDepth::UI);
+                Math::vec2{ tip_x + PAD, ty }, Fonts::Kings, {0.4, 0.4}, CS200::RED, DrawDepth::TOOLTIP_TEXT);
         }
     }
 }

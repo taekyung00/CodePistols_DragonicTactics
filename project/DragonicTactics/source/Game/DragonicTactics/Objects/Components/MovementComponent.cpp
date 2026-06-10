@@ -125,7 +125,8 @@ void MovementComponent::Update(double dt)
 
 	  m_stats->ReduceSpeed();
 
-	  if (auto* character = dynamic_cast<Character*>(m_owner))
+	  auto* character = dynamic_cast<Character*>(m_owner);
+	  if (character)
 	  {
 	    const char* walk_sfx = (character->GetCharacterType() == CharacterTypes::Dragon)
 	                           ? SoundManager::SFX_DRAGON_WALK
@@ -135,10 +136,13 @@ void MovementComponent::Update(double dt)
 
 	  Engine::GetLogger().LogEvent(m_owner->TypeName() + " moved. MOV remaining: " + std::to_string(m_stats->GetSpeed()));
 
-	  // [여기에 3줄 추가!] 배틀 로그 UI 이벤트 전송 (스텔스 상관없이 무조건 띄움)
-      if (auto* eventBus = Engine::GetGameStateManager().GetGSComponent<EventBus>()) {
-          eventBus->Publish(BattleLogMessageEvent{m_owner->TypeName() + " moved to (" + std::to_string(next_pos.x) + ", " + std::to_string(next_pos.y) + ")"});
-      }
+	  // 배틀 로그 UI 이벤트 전송 — 은신 중에는 이동을 노출하지 않음
+	  // 경로의 마지막 타일(최종 목적지)에 도달했을 때만 1회 출력
+	  if (m_current_path.empty() && (!character || !character->Has("Stealth")))
+	  {
+	    if (auto* eventBus = Engine::GetGameStateManager().GetGSComponent<EventBus>())
+	      eventBus->Publish(BattleLogMessageEvent{ m_owner->TypeName() + " moved to (" + std::to_string(next_pos.x) + ", " + std::to_string(next_pos.y) + ")" });
+	  }
 
 	  // 용암 이동 피해
 	  if (tile_type == GridSystem::TileType::Lava)

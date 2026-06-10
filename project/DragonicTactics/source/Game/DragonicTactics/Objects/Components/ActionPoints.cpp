@@ -39,9 +39,10 @@ int ActionPoints::GetMaxPoints() const
 
 void ActionPoints::SetPoints(int new_points)
 {
-  if (new_points > max_points)
-	return;
-  current_points = new_points;
+  // Haste의 OnTurnStart 보너스(AP+1)는 max_points를 넘어설 수 있어야 한다.
+  // max_points로 클램프하면 RefreshActionPoints() 직후(=max_points) 호출되는
+  // Haste 보너스가 항상 무시되어 시전 첫 턴에만 효과가 발생하는 버그가 생긴다.
+  current_points = std::max(0, new_points);
 }
 
 bool ActionPoints::HasEnough(int amount) const

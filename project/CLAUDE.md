@@ -76,9 +76,9 @@ main.cpp → Splash → MainMenu ┬─ LevelGame → LevelSelect ┬─ Level 1
                                                          ConsoleTest / RenderingTest
 ```
 
-- **GameOver 상태**: `source/Game/GameOver.h` / `GameOver.cpp` — `source/Game/` 직하위 (MainMenu·Settings와 동일 레벨). `GameOver::s_player_won` (static bool)으로 결과를 전달받아 "PLAYER WIN"(금색) / "INVADER WIN"(빨간색) 타이틀 표시. 전환 타이밍은 `GamePlay.h`의 `static constexpr double GAME_OVER_DELAY = 0.5` (초) — 값 변경 시 이 상수만 수정.
+- **GameOver 상태**: `source/Game/GameOver.h` / `GameOver.cpp` — `source/Game/` 직하위 (MainMenu·Settings와 동일 레벨). `GameOver::s_player_won` (static bool)으로 결과를 전달받아 "PLAYER WIN"(금색) / "INVADER WIN"(빨간색) 타이틀 표시. 전환 타이밍은 고정 상수가 아니라 사망 캐릭터의 시각 제거 딜레이(`Character::GetDeathDelay()`, hurt SFX 재생 시간 포함)를 그대로 사용한다 — 자세한 내용은 [캐릭터 사망 시각 딜레이](#게임-플로우-주요-클래스-협력) 참고.
 - **셸 레이어 위치 주의**: `Splash`·`MainMenu`·`Settings`·`GameOver`·`LevelSelect` (GameState)와 `Score`·`Background`·`Particles` (CS230::Component — GameState 아님)는 모두 `source/Game/` **직하위**에 있다 — `source/Game/DragonicTactics/` 하위가 **아니다**. 전투 본편 코드만 `DragonicTactics/` 서브트리에 있다.
-- **Splash 지속시간**: `#if defined(DEVELOPER_VERSION)` → **0.3초**, `#else` → 2.0초 (`source/Game/Splash.cpp`). 릴리즈 빌드에서 2초 스플래시를 표시.
+- **Splash 지속시간**: `#if defined(DEVELOPER_VERSION)` → **0.1초**, `#else` → 2.0초 (`source/Game/Splash.cpp`). 릴리즈 빌드에서 2초 스플래시를 표시.
 - ⚠️ `source/Game/States.h`의 `enum class State { Splash, MainMenu, Final }`는 **레거시·미사용**이다. 실제 내비게이션은 이 enum이 아니라 `GameStateManager`의 push/pop으로 동작 — 혼동 주의.
 - **Settings → GamePlay 연결**: `Settings`의 맵 크기 선택이 아래 [데이터 주도 설계](#데이터-주도-설계)의 `GamePlay::s_next_map_id` / `s_should_restart` 정적 필드를 통해 로드할 맵을 결정한다.
 
@@ -135,7 +135,17 @@ main.cpp → Splash → MainMenu ┬─ LevelGame → LevelSelect ┬─ Level 1
 
 ### 컷신 시스템
 
-⚠️ **미구현 (에셋만 존재)** — `Assets/images/cut1.png` ~ `cut4.png` 파일은 있으나 `GamePlay.cpp/h`에 컷신 코드가 없다. 구현 시 `GamePlay::Load()` 직후 컷신 페이즈를 추가하고 이 섹션을 갱신할 것.
+`Splash` 상태(`source/Game/Splash.cpp/h`)에서 구현됨 — `GamePlay`가 아니다. `Splash::Phase` enum (`DigiPen → Logo → Cutscene`)으로 단계를 관리한다.
+
+- **DigiPen 페이즈**: `texture`(DigiPen 로고)를 `SPLASH_DURATION`(개발: 0.1초 / 릴리즈: 2.0초) 동안 표시 후 자동 전환
+  - `#if defined(DEVELOPER_VERSION)` → `Cutscene`으로 바로 건너뜀
+  - `#else` → `Logo`(CodePistols 스튜디오 로고)로 전환
+- **Logo 페이즈** (릴리즈 빌드 전용): `Assets/images/Splash/codepistols/codepistols_00.png`~`_17.png` (`LOGO_FRAME_COUNT = 18`)을 `LOGO_FRAME_DURATIONS`(프레임별 0.04~0.29초)에 따라 순차 재생하는 프레임 애니메이션. 마우스 좌클릭/`Space`로 즉시 스킵, `Esc`로 컷신까지 전체 스킵 후 `MainMenu`. 모든 프레임 종료 시 자동으로 `Cutscene`으로 전환. 텍스처는 `Splash::Load()`에서 `#if !defined(DEVELOPER_VERSION)` 가드 내에서만 로드됨(개발 빌드는 로드하지 않음).
+- **Cutscene 페이즈**: `cut1.png`~`cut4.png` 4장을 `CUTSCENE_DURATION = 1.5`초씩 순차 표시
+  - 마우스 좌클릭 또는 `Space` → 현재 컷신 즉시 스킵 (다음 컷신으로)
+  - `Esc` → 컷신 전체 스킵 후 바로 `MainMenu`로 이동
+  - 4장 모두 끝나면 자동으로 `PopState()` + `PushState<MainMenu>()`
+  - 텍스처는 `Splash::Load()`에서 `m_cutscene_textures_`(크기 4)에 미리 로드, `Draw()`에서 창 크기에 맞춰 letterbox 비율 유지 스케일링
 
 ---
 
@@ -515,6 +525,11 @@ MakeDecision
   - `TargetingForAttack` 상태: 모든 타일 호버에서 체크
   - `TargetingForSpell` 상태: `Single`/`Point` geometry 스펠에서만 체크 (AoE는 알림 불필요)
 
+**⚠️ 릴리즈 빌드 은신 정보 노출 차단** (`#ifndef _DEBUG` + `Has("Stealth")` 패턴, `Character::Draw()`의 은신 렌더링 차단과 동일한 컨벤션):
+- `GamePlay.cpp` think.png 말풍선: AI 턴 시작 시 표시되는 "생각 중" 말풍선이 은신 중인 캐릭터(`BattleOrchestrator::GetCurrentAICharacter()`)에는 릴리즈 빌드에서 표시되지 않음 (위치 노출 방지)
+- `GamePlayUIManager.cpp` 호버 정보 패널: 호버 캐릭터 탐지 루프에서 은신 캐릭터를 `continue`로 건너뛰어 `hovered_character_`가 설정되지 않음 → `DrawHoverTooltip()` 미표시
+- 디버그 빌드에서는 두 UI 모두 그대로 표시됨 (개발/테스트 목적)
+
 ### GridSystem API
 
 ```cpp
@@ -736,8 +751,9 @@ if (!event.target->IsAlive())
 ```
 
 - t=`delay`: hurt SFX 시작, 캐릭터 시각적으로 유지
-- t=`delay + sfx_dur`: SFX 종료 & 캐릭터 소멸 → `CharacterDeathEvent` 발행 → `game_end_timer_ = 0.5`
-- t=`delay + sfx_dur + 0.5`: GameOver 화면 전환
+- t=`delay + sfx_dur`: SFX 종료 & 캐릭터 소멸 → `CharacterDeathEvent` 발행
+
+**`game_end_timer_`** (`GamePlay`) — `CheckGameEnd`가 `CharacterDeathEvent` 수신 시 `event.character->GetDeathDelay()`(0 미만이면 0으로 clamp)를 그대로 대입한다. 즉 공격/스펠 SFX 직후가 아니라, 사망 캐릭터가 화면에서 사라지는 시점(hurt SFX 재생 완료)에 맞춰 GameOver로 전환된다. 추가 대기 상수는 없음 — 변경하려면 `Character::SetDeathDelay()`로 설정되는 `m_death_delay_` 자체를 조정할 것.
 
 **PlayerInputHandler.ActionState** (입력 상태 머신):
 
