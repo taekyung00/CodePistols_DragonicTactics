@@ -32,7 +32,7 @@ Created:    May 6, 2025
 #include "States.h"
 #include <cmath>
 
-MainMenu::MainMenu() : current_option(Option::LevelGame)
+MainMenu::MainMenu() : current_option(Option::SelectLevel)
 {
 }
 
@@ -52,7 +52,7 @@ void MainMenu::SelecetOption()
             break;
 #endif
 
-        case Option::LevelGame:
+        case Option::SelectLevel:
             Engine::GetGameStateManager().PopState();
             Engine::GetGameStateManager().PushState<LevelSelect>();
             break;
@@ -110,7 +110,7 @@ void MainMenu::Load()
 #if defined(DEVELOPER_VERSION)
     main_menu_items.push_back({ "GAME START",  Option::DragonicTactics });
 #endif
-    main_menu_items.push_back({ "LEVEL GAME",  Option::LevelGame });
+    main_menu_items.push_back({ "SELECT LEVEL",  Option::SelectLevel });
     main_menu_items.push_back({ "QUIT",        Option::Exit });
 
 #if defined(DEVELOPER_VERSION)
