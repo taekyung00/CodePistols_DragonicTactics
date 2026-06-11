@@ -43,6 +43,7 @@ class Settings : public CS230::GameState
     SFXVolume,
     BGMMute,
     SFXMute,
+    Back,
     COUNT
   };
   Option current_option;
