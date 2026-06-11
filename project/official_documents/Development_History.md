@@ -12,7 +12,7 @@ Development began on 2025-10-06 with a deliberate choice: build a D&D-style turn
 ### Phase 2 — Core Loop (November–December 2025)
 The systems that make it a game came online. On 2025-11-11, **A\* pathfinding** was completed, the **SpellSystem** was mounted into the engine, and the **TurnManager** joined, giving dice-based combat a proper turn order with D&D-style initiative. December stabilized the **CharacterFactory**, wired the `OnTurnStart`/`OnTurnEnd` hooks, and began the team's signature workflow: **designing AI as Mermaid flowcharts before writing code** (`fighter.mmd`, `cleric.mmd`). `FighterStrategy` received its first decision logic on 2025-12-07. By the break, a playable turn-based loop existed.
 
-*(Winter lull, January–February 2026, omitted.)*
+
 
 ### Phase 3 — Systems Expansion (March 2026)
 Work resumed and the data-driven investment paid off. On 2026-03-08 the strategy framework for every character was consolidated ("all strategies implemented"), and the fourth AI design (`wizard.mmd`) landed on 2026-03-21. **SoundManager** arrived on 2026-03-27. Across 2026-03-28/29 the **SpellSystem** and the **two-layer StatusEffect system** were completed, and spell consumption, the Dragon's spells, status effects, and **audio** all became functional.
@@ -65,7 +65,6 @@ gantt
     CMake presets / dev-release split       :done, t1, 2025-10-22, 2025-11-15
 ```
 
-*(Winter, January-February 2026, omitted - the timeline is split here.)*
 
 ```mermaid
 gantt
