@@ -499,15 +499,11 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
 	// ─────────────────────────────────────────────────
 	if (spell.effect_status != "Basic" && spell.effect_duration > 0)
 	{
-		auto* handler = Engine::GetGameStateManager().GetGSComponent<StatusEffectHandler>();
 		// Around/Line/OddEven은 이미 targets에 대상 목록이 있음
 		// Single/Self 도 동일 루프 사용
+		// (OnApplied 즉시 효과 훅은 Character::AddEffect 내부에서 일괄 호출됨)
 		for (auto* tgt : targets)
-		{
 			tgt->AddEffect(spell.effect_status, spell.effect_duration);
-			if (handler)
-				handler->OnApplied(tgt, spell.effect_status);
-		}
 		// Around 타겟 없고 filter==Self 인 경우 (ex. Purify) 이미 Self geometry로 처리됨
 	}
 
@@ -516,10 +512,8 @@ void SpellSystem::ApplySpellEffect(Character* caster, const SpellData& spell, Ma
 	// ─────────────────────────────────────────────────
 	if (spell.caster_effect_status != "Basic" && spell.caster_effect_duration > 0 && caster)
 	{
-		auto* handler = Engine::GetGameStateManager().GetGSComponent<StatusEffectHandler>();
+		// OnApplied 즉시 효과 훅은 Character::AddEffect 내부에서 호출됨
 		caster->AddEffect(spell.caster_effect_status, spell.caster_effect_duration);
-		if (handler)
-			handler->OnApplied(caster, spell.caster_effect_status);
 	}
 
 	// ─────────────────────────────────────────────────

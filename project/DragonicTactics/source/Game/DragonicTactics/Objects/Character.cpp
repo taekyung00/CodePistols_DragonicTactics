@@ -15,6 +15,7 @@ Updated:    Oct 10, 2025
 #include "./Engine/GameObject.h"
 #include "./Engine/Logger.h"
 #include "Game/DragonicTactics/StateComponents/EventBus.h"
+#include "Game/DragonicTactics/StateComponents/StatusEffectHandler.h"
 #include "./Game/DragonicTactics/Objects/Components/ActionPoints.h"
 #include "./Game/DragonicTactics/Objects/Components/MovementComponent.h"
 #include "./Game/DragonicTactics/Objects/Components/SpellSlots.h"
@@ -379,6 +380,10 @@ void Character::AddEffect(const std::string& name, int duration, int magnitude)
     StatusEffectComponent* se = GetGOComponent<StatusEffectComponent>();
     if (!se) return;
     se->AddEffect(name, duration, magnitude);
+
+    // 즉시 실행 효과 훅 (Fear: MOV-1, Haste: speed/AP+1 등) — 모든 AddEffect 경로에서 일관 적용
+    if (auto* handler = Engine::GetGameStateManager().GetGSComponent<StatusEffectHandler>())
+        handler->OnApplied(this, name);
 
     EventBus* bus = Engine::GetGameStateManager().GetGSComponent<EventBus>();
     if (bus)

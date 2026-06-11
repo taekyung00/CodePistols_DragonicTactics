@@ -1406,7 +1406,7 @@ void GamePlayUIManager::InitStatusEffectIcons()
         {"Blessing",   "All damage taken -3, all damage dealt +3"},
         {"Curse",      "All damage taken +3, all damage dealt -3"},
         {"Haste",      "MOV +1, Actions +1"},
-        {"Stealth",    "Untargetable. First damage next turn doubled. Removed on attack."},
+        {"Stealth",    "Untargetable. First damage next turn doubled. Removed on attack or when hit."},
         {"Fear",       "All damage dealt -3, MOV -1"},
     };
 

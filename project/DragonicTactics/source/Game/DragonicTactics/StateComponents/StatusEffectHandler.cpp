@@ -22,7 +22,7 @@ const std::pair<std::string, std::string> StatusEffectHandler::KNOWN_EFFECTS[NUM
   {	"Blessing",						 "All damage taken -3, all damage dealt +3" },
   {	  "Curse",						 "All damage taken +3, all damage dealt -3" },
   {	  "Haste",						"MOV +1, Actions +1" },
-  {	"Stealth",					  "Untargetable. The first damage dealt next turn is doubled. Cannot be used after attacking. Stealth is removed upon attacking." },
+  {	"Stealth",					  "Untargetable. The first damage dealt next turn is doubled. Cannot be used after attacking. Stealth is removed upon attacking or being attacked." },
   {	   "Fear",						 "all damage dealt -3, MOV -1" }
 };
 
@@ -121,6 +121,10 @@ void StatusEffectHandler::OnAfterAttack(Character* attacker, Character* defender
   // ── Stealth: 공격 즉시 소모 ──
   if (attacker->Has("Stealth"))
 	attacker->RemoveEffect("Stealth");
+
+  // ── Stealth: 공격받은 대상도 해제 (AoE 등으로 피해를 입으면 은신 풀림) ──
+  if (damage_dealt > 0 && defender->Has("Stealth"))
+	defender->RemoveEffect("Stealth");
 
   // ── Lifesteal: 피해의 50% 회복 (내림) ──
   if (attacker->Has("Lifesteal"))
