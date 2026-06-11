@@ -182,16 +182,6 @@ void PlayerInputHandler::HandleDragonInput([[maybe_unused]] double dt, Dragon* d
 	}
   }
 
-  // 공격·단일 스펠 타겟팅 중 스텔스 호버 알림
-  if (m_state == ActionState::TargetingForAttack || m_state == ActionState::TargetingForSpell)
-  {
-	Math::ivec2 hover_pos = ConvertScreenToGrid(input.GetMousePos());
-	CheckStealthHoverNotice(dragon, grid, hover_pos);
-  }
-  else
-  {
-	m_last_stealth_notice_tile_ = { -1, -1 };
-  }
 
   // 우클릭 처리
   if (input.MouseJustPressed(2))
@@ -507,35 +497,3 @@ void PlayerInputHandler::SelectSpell(const std::string& spell_id, Character* cas
     m_ignore_next_click = true;
 }
 
-void PlayerInputHandler::CheckStealthHoverNotice(Dragon* dragon, GridSystem* grid, Math::ivec2 hover_tile)
-{
-  // TargetingForSpell 상태에서는 Single/Point geometry 스펠에만 적용
-  // Around·Line·OddEven은 AoE라 스텔스를 무시하므로 알림 불필요
-  if (m_state == ActionState::TargetingForSpell)
-  {
-	auto* spell_sys = Engine::GetGameStateManager().GetGSComponent<SpellSystem>();
-	if (!spell_sys)
-	  return;
-	const SpellData* data = spell_sys->GetSpellData(m_selected_spell_id);
-	if (!data)
-	  return;
-	const std::string& geo = data->targeting.geometry;
-	if (geo != "Single" && geo != "Point")
-	  return;
-  }
-
-  // 이전과 같은 타일이면 중복 발행 생략
-  if (hover_tile == m_last_stealth_notice_tile_)
-	return;
-  m_last_stealth_notice_tile_ = hover_tile;
-
-  if (!grid->IsValidTile(hover_tile))
-	return;
-
-  Character* hit = grid->GetCharacterAt(hover_tile);
-  if (hit && hit->Has("Stealth") && (hit->IsAIControlled() != dragon->IsAIControlled()))
-  {
-	if (auto* bus = Engine::GetGameStateManager().GetGSComponent<EventBus>())
-	  bus->Publish(UINoticeEvent{ hit->TypeName() + " is in Stealth cannot be targeted" });
-  }
-}
