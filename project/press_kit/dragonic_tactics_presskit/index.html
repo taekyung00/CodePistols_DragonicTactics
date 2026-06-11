@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Dragonic Tactics — Press Kit</title>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/uikit/2.27.5/css/uikit.gradient.min.css" rel="stylesheet">
+	<link href="./files/style.css" rel="stylesheet">
+</head>
+<body>
+	<button id="nav-toggle" title="Toggle navigation">☰</button>
+
+	<div class="uk-container uk-container-center">
+		<div class="uk-grid">
+
+			<!-- ── Left sidebar navigation ── -->
+			<div id="navigation" class="uk-width-medium-1-4">
+				<h1 class="nav-header">Dragonic Tactics</h1>
+				<span class="nav-header">press kit</span>
+				<ul class="uk-nav uk-nav-side">
+					<li><a href="#factsheet">Factsheet</a></li>
+					<li><a href="#description">Description</a></li>
+					<li><a href="#gameplay">How to Play</a></li>
+					<li><a href="#features">Features</a></li>
+					<li><a href="#demo">Demo</a></li>
+					<li><a href="#videos">Videos</a></li>
+					<li><a href="#images">Images</a></li>
+					<li><a href="#logo">Logo &amp; Icon</a></li>
+					<li><a href="#quotes">Selected Articles</a></li>
+					<li><a href="#credits">Team</a></li>
+					<li><a href="#contact">Contact</a></li>
+				</ul>
+			</div>
+
+			<!-- ── Right content area ── -->
+			<div id="content" class="uk-width-medium-3-4">
+
+				<!-- Header image — replace src when asset is ready -->
+				<img src="./files/header.png" class="header" alt="Dragonic Tactics header" onerror="this.style.display='none'">
+
+				<!-- Game Logo -->
+				<div class="todo">Game logo image (large, at the top of the page)
+Replace the header.png placeholder with the actual logo file in files/
+Optionally include a team/studio logo below the game logo</div>
+
+				<!-- Call to Action -->
+				<div class="cta">
+					<p class="pitch">You are the dragon. A party of adventurers has come to slay you in your own lair &mdash; don't let them leave.</p>
+					<p><a class="cta-button" href="#demo">Play the Demo</a></p>
+				</div>
+
+				<hr>
+
+				<section id="factsheet" class="press-section">
+					<h2>Factsheet</h2>
+					<dl class="factsheet">
+						<dt>Developer</dt>
+						<dd>CodePistols &mdash; a 5-person student team at DigiPen Institute of Technology</dd>
+
+						<dt>Elevator pitch</dt>
+						<dd>A D&amp;D-style turn-based tactics game where you play as the dragon and fend off a party of AI-controlled adventurers invading your lair.</dd>
+
+						<dt>Release date</dt>
+						<dd>In development / playtest &mdash; 2026</dd>
+
+						<dt>Platforms</dt>
+						<dd>Windows (standalone) and Web (WebAssembly, runs in the browser)</dd>
+
+						<dt>Price</dt>
+						<dd>Free (playtest demo)</dd>
+
+						<dt>System requirements</dt>
+						<dd>Windows 10 (64-bit) or a modern WebAssembly-capable browser; OpenGL-capable GPU; ~150 MB storage. Lightweight 2D engine &mdash; no high-end hardware required.</dd>
+
+						<dt>Website</dt>
+						<dd>[TODO: official website URL &mdash; if none, link the GitHub repository]</dd>
+					</dl>
+				</section>
+
+				<hr>
+
+				<section id="description" class="press-section">
+					<h2>Description</h2>
+					<p><strong>Dragonic Tactics</strong> flips the classic fantasy dungeon crawl on its head: instead of a party of heroes hunting a monster, <em>you are the monster</em>. You command a powerful dragon defending its lair against a band of adventurers &mdash; a Fighter, a Cleric, a Rogue, and a Wizard &mdash; who arrive to slay you. Hold the lair, and the invaders fall; lose the dragon, and they win.</p>
+
+					<p>Combat is a turn-based, grid-based tactics duel built on tabletop foundations. Every attack and defense is resolved with dice rolls, every move spends movement and action points, and every spell is drawn from a limited pool of leveled spell slots. The dragon is a one-versus-many powerhouse &mdash; high health, long reach, and the deepest spellbook in the game &mdash; but the adventurers coordinate, heal, buff, debuff, and flank, so raw power alone is not enough.</p>
+
+					<p>The dragon's toolkit rewards planning over button-mashing. <em>Upcasting</em> lets you spend a higher-level slot to amplify a spell, so you constantly weigh burst power against conserving resources. Terrain-altering spells let you reshape the battlefield &mdash; raise walls to cut off attackers or spit lava to deny ground &mdash; while status effects like Fear, Curse, Blessing, Haste, and Stealth swing the math of every exchange.</p>
+
+					<p>Each of the four invaders is driven by its own hand-authored AI, designed as a decision flowchart before it was ever coded: the Fighter presses the attack, the Cleric heals and buffs from the back, the Rogue strikes from stealth, and the Wizard kites from range. They read the board and react, so no two fights play out the same way.</p>
+
+					<p>The game runs across three escalating encounters &mdash; a single duel, a two-enemy skirmish, and a full four-adventurer raid &mdash; on a custom C++20 OpenGL engine that ships to both Windows and the browser via WebAssembly.</p>
+				</section>
+
+				<hr>
+
+				<section id="gameplay" class="press-section">
+					<h2>How to Play</h2>
+					<p><strong>Objective.</strong> You control the dragon. Defeat every adventurer that invades the map to win the encounter. If the dragon is killed, the invaders win.</p>
+
+					<p><strong>The turn.</strong> The dragon and the AI take alternating turns. On your turn you have <em>Movement</em> (tiles you can travel), <em>Action Points</em> (AP, spent on attacks and spells), and <em>Spell Slots</em> (by level). Movement and AP refill at the start of each turn, but spell slots do <em>not</em> recover on their own &mdash; spend them deliberately.</p>
+
+					<p><strong>Core loop.</strong> Position the dragon, pick targets, and resolve attacks via dice rolls; reshape the board with walls and lava; apply status effects to tilt the odds; then end your turn and watch the adventurers respond. <em>Upcasting</em> lets you sink a higher-level slot into a spell to boost its effect when a fight demands it.</p>
+
+					<p><strong>Controls.</strong></p>
+					<ul>
+						<li><strong>Left-click</strong> &mdash; select the dragon/tiles, move, and use skills (move by clicking a highlighted tile; cast by clicking a spell icon then a target).</li>
+						<li><strong>Right-click</strong> &mdash; cancel the current skill/range selection.</li>
+						<li><strong>Slot bar</strong> (bottom of the screen) &mdash; basic attack, spell slots, and the <em>End Turn</em> button.</li>
+						<li><strong>Hover</strong> a character &mdash; inspect HP, AP, Movement, and Spell Slots; hover the dragon to preview its movement range.</li>
+						<li><strong>Esc</strong> &mdash; pause / return to menu. &nbsp; <strong>F2</strong> &mdash; screenshot.</li>
+					</ul>
+				</section>
+
+				<hr>
+
+				<section id="features" class="press-section">
+					<h2>Features</h2>
+					<ul>
+						<li><strong>Play as the dragon.</strong> A role-reversal premise &mdash; you're the boss monster, defending your lair against the heroes.</li>
+						<li><strong>Asymmetric one-vs-many tactics.</strong> A single powerful dragon against a coordinated party of up to four adventurers.</li>
+						<li><strong>Tabletop-style combat.</strong> Dice-based attack/defense resolution, action points, movement, and leveled spell slots.</li>
+						<li><strong>Deep dragon spellbook with upcasting.</strong> Spend higher-level slots to amplify spells &mdash; trade burst power against resource conservation.</li>
+						<li><strong>Battlefield manipulation.</strong> Terrain-altering spells raise walls and spit lava to reshape the grid; knockback shoves enemies into hazards.</li>
+						<li><strong>9 status effects</strong> (Fear, Curse, Blessing, Haste, Stealth, Lifesteal, Frenzy, Exhaustion, Purify) and <strong>20+ spells</strong> across the cast.</li>
+						<li><strong>Four hand-authored AI archetypes.</strong> Fighter (aggressor), Cleric (support/healer), Rogue (stealth striker), and Wizard (ranged kiter) &mdash; each designed as a decision flowchart.</li>
+						<li><strong>Three escalating encounters.</strong> A 5&times;7 duel, an 8&times;8 two-enemy skirmish, and a 10&times;10 four-adventurer raid.</li>
+						<li><strong>Custom engine, two platforms.</strong> Built on an in-house C++20 OpenGL engine; runs on Windows and in the browser via WebAssembly.</li>
+					</ul>
+				</section>
+
+				<hr>
+
+				<section id="demo" class="press-section">
+					<h2>Demo</h2>
+					<p><strong>Play in your browser</strong> &mdash; the full game runs below via WebAssembly. Click inside the frame to give it keyboard focus. (First load is large, ~40&nbsp;MB, so allow a moment.)</p>
+					<div class="demo-embed" style="position:relative;width:100%;max-width:960px;aspect-ratio:16/9;margin:1em 0;background:#000;">
+						<iframe src="./dragonic_tactics.html" title="Dragonic Tactics &mdash; Web Demo"
+								style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
+								allowfullscreen></iframe>
+					</div>
+					<p><a href="./dragonic_tactics.html" target="_blank" rel="noopener">Open the demo in a new tab &raquo;</a></p>
+					<p>Other ways to play:</p>
+					<ul>
+						<li><strong>Windows build</strong> &mdash; download the latest playtest release from GitHub Releases: <a href="https://github.com/taekyung00/CodePistols_DragonicTactics/releases">github.com/taekyung00/CodePistols_DragonicTactics/releases</a></li>
+					</ul>
+					<p><strong>System requirements</strong></p>
+					<ul class="sysreq">
+						<li><strong>OS:</strong> Windows 10 (64-bit), or any modern browser with WebAssembly support</li>
+						<li><strong>CPU:</strong> Any modern x64 processor</li>
+						<li><strong>RAM:</strong> 2 GB</li>
+						<li><strong>GPU:</strong> OpenGL-capable integrated graphics</li>
+						<li><strong>Storage:</strong> ~150 MB</li>
+					</ul>
+				</section>
+
+				<hr>
+
+				<section id="videos" class="press-section">
+					<h2>Videos</h2>
+					<div class="iframe-container">
+						<iframe src="https://www.youtube.com/embed/SHi-bUXfeEI"
+								title="Dragonic Tactics &mdash; Gameplay Video"
+								frameborder="0"
+								allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+								allowfullscreen></iframe>
+					</div>
+					<p><a href="https://www.youtube.com/watch?v=SHi-bUXfeEI" target="_blank" rel="noopener">Watch on YouTube &raquo;</a></p>
+				</section>
+
+				<hr>
+
+				<section id="images" class="press-section">
+					<h2>Images</h2>
+					<div class="todo">Masonry grid of screenshots and animated GIFs
+Place image files in files/ and reference as:
+  &lt;div class="uk-grid images"&gt;
+    &lt;div class="uk-width-medium-1-2"&gt;&lt;img src="./files/screenshot_01.png"&gt;&lt;/div&gt;
+  &lt;/div&gt;</div>
+				</section>
+
+				<hr>
+
+				<section id="logo" class="press-section">
+					<h2>Logo &amp; Icon</h2>
+					<div class="todo">Game logo, app icon, banner image, character renders
+Provide a .zip download link for all branding assets</div>
+				</section>
+
+				<hr>
+
+				<section id="quotes" class="press-section">
+					<h2>Selected Articles</h2>
+					<p><em>No press coverage or awards to list yet.</em></p>
+					<div class="todo">When coverage exists, add awards/festival recognitions and press quotes here:
+"Quote text." — Author, Outlet (linked)</div>
+				</section>
+
+				<hr>
+
+				<section id="credits" class="press-section">
+					<h2>Team</h2>
+					<p><strong>CodePistols</strong> &mdash; a 5-person student team at DigiPen Institute of Technology.</p>
+					<ul>
+						<li><strong>Taekyung Heo</strong> &mdash; Producer</li>
+						<li><strong>Junyoung Ki</strong> &mdash; Tech Lead</li>
+						<li><strong>Seungju Song</strong> &mdash; Designer</li>
+						<li><strong>Kinam Park</strong> &mdash; Test Lead</li>
+						<li><strong>Sangyoon Lee</strong> &mdash; QA</li>
+					</ul>
+				</section>
+
+				<hr>
+
+				<section id="contact" class="press-section">
+					<h2>Contact</h2>
+					<dl class="factsheet">
+						<dt>Business inquiries</dt>
+						<dd><a href="mailto:taek020422@gmail.com">taek020422@gmail.com</a></dd>
+					</dl>
+				</section>
+
+			</div><!-- /#content -->
+		</div><!-- /.uk-grid -->
+	</div><!-- /.uk-container -->
+
+	<!-- Masonry image grid (loaded from CDN) -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.imagesloaded/5.0.0/imagesloaded.pkgd.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/masonry/4.2.2/masonry.pkgd.min.js"></script>
+
+	<script>
+		// Initialize Masonry for image grids
+		$(document).ready(function () {
+			var container = $('.images');
+			container.imagesLoaded(function () {
+				container.masonry({ itemSelector: '.uk-width-medium-1-2' });
+			});
+		});
+
+		// Toggle entire navigation sidebar
+		document.getElementById('nav-toggle').addEventListener('click', function () {
+			var nav = document.getElementById('navigation');
+			var content = document.getElementById('content');
+			var hidden = nav.classList.toggle('hidden');
+			content.classList.toggle('uk-width-medium-3-4', !hidden);
+			content.classList.toggle('uk-width-medium-1-1', hidden);
+			this.textContent = hidden ? '»' : '☰';
+		});
+	</script>
+</body>
+</html>

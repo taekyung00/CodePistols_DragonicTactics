@@ -70,7 +70,6 @@ void Settings::Load()
     rows.push_back({ "SFX VOLUME", Option::SFXVolume });
     rows.push_back({ "BGM MUTE",   Option::BGMMute });
     rows.push_back({ "SFX MUTE",   Option::SFXMute });
-    rows.push_back({ "BACK",       Option::Back });
 
     flames.resize(80);
     for (auto& f : flames) InitFlame(f, true);
@@ -158,12 +157,6 @@ void Settings::Update(double dt)
                     s_is_sfx_muted = !s_is_sfx_muted;
                     ApplySettings();
                 }
-                else if (current_option == Option::Back)
-                {
-                    Engine::GetSoundManager().PlaySFX(SoundManager::SFX_BUTTON_CLICK);
-                    Engine::GetGameStateManager().PopState();
-                    return;
-                }
                 else if (current_option == Option::BGMVolume || current_option == Option::SFXVolume)
                 {
                     // 드래그 시작 슬라이더 캡처 (마우스를 누른 그 슬라이더로 고정)
@@ -187,12 +180,7 @@ void Settings::Update(double dt)
     // 확인 키
     if (input.KeyJustReleased(CS230::Input::Keys::Enter) || input.KeyJustReleased(CS230::Input::Keys::Z))
     {
-        if (current_option == Option::Back)
-        {
-            Engine::GetGameStateManager().PopState();
-            return;
-        }
-        else if (current_option == Option::BGMMute) { s_is_bgm_muted = !s_is_bgm_muted; ApplySettings(); }
+        if (current_option == Option::BGMMute) { s_is_bgm_muted = !s_is_bgm_muted; ApplySettings(); }
         else if (current_option == Option::SFXMute) { s_is_sfx_muted = !s_is_sfx_muted; ApplySettings(); }
     }
 
@@ -294,7 +282,6 @@ void Settings::Draw()
             {
                 case Option::BGMMute: val = s_is_bgm_muted ? "[MUTED]"  : "[ACTIVE]"; break;
                 case Option::SFXMute: val = s_is_sfx_muted ? "[MUTED]"  : "[ACTIVE]"; break;
-                case Option::Back:    val = "GO MENU"; break;
                 default: break;
             }
             // 값 텍스트 렌더링 (동적으로 변하는 color 적용)
