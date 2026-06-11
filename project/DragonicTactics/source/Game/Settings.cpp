@@ -70,6 +70,7 @@ void Settings::Load()
     rows.push_back({ "SFX VOLUME", Option::SFXVolume });
     rows.push_back({ "BGM MUTE",   Option::BGMMute });
     rows.push_back({ "SFX MUTE",   Option::SFXMute });
+    rows.push_back({ "BACK",       Option::Back });
 
     flames.resize(80);
     for (auto& f : flames) InitFlame(f, true);
@@ -132,6 +133,7 @@ void Settings::Update(double dt)
         m_dragging_slider = Option::COUNT;
 
     // 마우스 호버 + 클릭
+    bool hover_back = false;
     for (size_t i = 0; i < rows.size(); ++i)
     {
         Math::vec2 p = { menu_start_pos.x, menu_start_pos.y - static_cast<double>(i) * row_spacing };
@@ -141,6 +143,9 @@ void Settings::Update(double dt)
             // 드래그 중에는 호버로 현재 옵션이 바뀌지 않도록 고정
             if (m_dragging_slider == Option::COUNT)
                 current_option = rows[i].option;
+
+            if (rows[i].option == Option::Back)
+                hover_back = true;
 
             // 클릭: 토글/전환 처리
             if (input.MouseJustPressed(0))
@@ -166,6 +171,15 @@ void Settings::Update(double dt)
         }
     }
 
+    // BACK: 마우스를 '뗄 때' 처리한다. MainMenu도 release로 선택하므로, 같은 클릭이
+    // 두 상태에 걸쳐 소비되어 Settings <-> MainMenu를 왕복하는 버그를 방지한다.
+    if (hover_back && input.MouseJustReleased(0))
+    {
+        Engine::GetSoundManager().PlaySFX(SoundManager::SFX_BUTTON_CLICK);
+        Engine::GetGameStateManager().PopState();
+        return;
+    }
+
     // 볼륨 슬라이더 드래그 — 캡처된 슬라이더에만, 마우스 가로 위치로 적용.
     // 마우스가 다른 볼륨 바로 넘어가도 캡처된 슬라이더만 변경된다.
     if (input.MouseDown(0) &&
@@ -180,7 +194,12 @@ void Settings::Update(double dt)
     // 확인 키
     if (input.KeyJustReleased(CS230::Input::Keys::Enter) || input.KeyJustReleased(CS230::Input::Keys::Z))
     {
-        if (current_option == Option::BGMMute) { s_is_bgm_muted = !s_is_bgm_muted; ApplySettings(); }
+        if (current_option == Option::Back)
+        {
+            Engine::GetGameStateManager().PopState();
+            return;
+        }
+        else if (current_option == Option::BGMMute) { s_is_bgm_muted = !s_is_bgm_muted; ApplySettings(); }
         else if (current_option == Option::SFXMute) { s_is_sfx_muted = !s_is_sfx_muted; ApplySettings(); }
     }
 
@@ -282,6 +301,7 @@ void Settings::Draw()
             {
                 case Option::BGMMute: val = s_is_bgm_muted ? "[MUTED]"  : "[ACTIVE]"; break;
                 case Option::SFXMute: val = s_is_sfx_muted ? "[MUTED]"  : "[ACTIVE]"; break;
+                case Option::Back:    val = "GO MENU"; break;
                 default: break;
             }
             // 값 텍스트 렌더링 (동적으로 변하는 color 적용)
