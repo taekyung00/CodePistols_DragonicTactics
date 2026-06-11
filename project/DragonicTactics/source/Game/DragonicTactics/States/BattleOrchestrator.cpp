@@ -117,7 +117,13 @@ void BattleOrchestrator::HandleAITurn(Character* ai_character, TurnManager* turn
   else
   {
 	// 실행 후 다음 프레임에 다시 HandleAITurn 진입 → MakeDecision 반복
-	ai_system->ExecuteDecision(ai_character, decision);
+	if (!ai_system->ExecuteDecision(ai_character, decision))
+	{
+	  // 도달 불가 이동 / 시전 실패 등 실행 불가 → 무한 반복 방지 위해 턴 종료
+	  Engine::GetLogger().LogEvent(ai_character->TypeName() + " could not execute decision (" + decision.reasoning + "), ending turn.");
+	  turn_manager->EndCurrentTurn();
+	  return;
+	}
 
 	if (decision.type == AIDecisionType::UseAbility)
 	{

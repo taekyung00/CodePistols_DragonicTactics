@@ -62,7 +62,7 @@ AIDecision AISystem::MakeDecision(Character* actor)
   return { AIDecisionType::EndTurn, nullptr, {}, "", "No strategy found" };
 }
 
-void AISystem::ExecuteDecision(Character* actor, const AIDecision& decision)
+bool AISystem::ExecuteDecision(Character* actor, const AIDecision& decision)
 {
   Engine::GetLogger().LogEvent(actor->TypeName() + " AI Decision: " + decision.reasoning);
 
@@ -71,7 +71,7 @@ void AISystem::ExecuteDecision(Character* actor, const AIDecision& decision)
   CombatSystem* combat		 = gs.GetGSComponent<CombatSystem>();
   SpellSystem*	spell_system = gs.GetGSComponent<SpellSystem>();
 
-  [[maybe_unused]] bool actionExecuted = false;
+  bool actionExecuted = false;
 
   switch (decision.type)
   {
@@ -85,7 +85,8 @@ void AISystem::ExecuteDecision(Character* actor, const AIDecision& decision)
 	    {
 	      std::vector<Math::ivec2> path      = grid->FindPath(actor->GetGridPosition()->Get(), decision.destination, decision.lava_penalty);
 	      MovementComponent*       move_comp = actor->GetGOComponent<MovementComponent>();
-	      if (move_comp)
+	      // 빈 경로(도달 불가)는 실제 이동이 아니므로 no-op으로 간주
+	      if (move_comp && !path.empty())
 	      {
 	        move_comp->SetPath(std::move(path));
 	        actionExecuted = true;
@@ -109,8 +110,8 @@ void AISystem::ExecuteDecision(Character* actor, const AIDecision& decision)
 		Math::ivec2 target_tile = decision.target
 		    ? decision.target->GetGridPosition()->Get()
 		    : decision.destination;
-		spell_system->CastSpell(actor, decision.abilityName, target_tile, decision.upcast_level);
-		actionExecuted = true;
+		// CanCast 실패 시 false → no-op (AP/슬롯 미소모). 호출측이 턴을 종료해 무한 반복을 막는다.
+		actionExecuted = spell_system->CastSpell(actor, decision.abilityName, target_tile, decision.upcast_level);
 	  }
 	  break;
 
@@ -123,4 +124,6 @@ void AISystem::ExecuteDecision(Character* actor, const AIDecision& decision)
 	Math::ivec2 dest = (decision.type == AIDecisionType::Move) ? decision.destination : Math::ivec2{ -1, -1 };
 	eventbus->Publish(AIDecisionEvent{ actor, decision.type, decision.target, decision.reasoning, dest });
   }
+
+  return actionExecuted;
 }
