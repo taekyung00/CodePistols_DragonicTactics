@@ -765,13 +765,8 @@ void GamePlay::DisplayDamageAmount(const CharacterDamagedEvent& event, double de
   if (stats != nullptr && stats->GetMaxHP() > 0)
   {
     float ratio = static_cast<float>(event.damageAmount) / static_cast<float>(stats->GetMaxHP());
-    if      (ratio >= 0.5f)  size = { 2.5, 2.5 };
-    else if (ratio >= 0.33f) size = { 2.0, 2.0 };
-    else if (ratio >= 0.2f)  size = { 1.5, 1.5 };
-    else if (ratio >= 0.1f)  size = { 1.2, 1.2 };
-
-    if      (ratio >= 0.33f) color = CS200::RED;
-    else if (ratio >= 0.15f) color = CS200::YELLOW;
+    if      (ratio >= 0.2f) { size = { 1.6, 1.6 }; color = CS200::RED; }
+    else if (ratio >= 0.1f) { size = { 1.3, 1.3 }; color = CS200::YELLOW; }
   }
   Math::ivec2 grid_pos = event.target->GetGridPosition()->Get();
   Math::vec2 text_position = {
