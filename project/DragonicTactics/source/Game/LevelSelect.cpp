@@ -23,7 +23,8 @@ Project:    CS230 Engine
 #include "OpenGL/Environment.h"
 #include <cmath>
 
-int LevelSelect::s_max_unlocked_level = 1;
+// 시연 브랜치(demo) — release 빌드에서도 레벨 1·2·3 전체 해금 (기본 1 → 3)
+int LevelSelect::s_max_unlocked_level = 3;
 
 LevelSelect::LevelSelect() : current_option(Option::Level1)
 {
