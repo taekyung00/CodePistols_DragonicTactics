@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Dragonic Tactics — Press Kit</title>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/uikit/2.27.5/css/uikit.gradient.min.css" rel="stylesheet">
+	<link href="./files/style.css" rel="stylesheet">
+</head>
+<body>
+	<button id="nav-toggle" title="Toggle navigation">☰</button>
+
+	<div class="uk-container uk-container-center">
+		<div class="uk-grid">
+
+			<!-- ── Left sidebar navigation ── -->
+			<div id="navigation" class="uk-width-medium-1-4">
+				<h1 class="nav-header">Dragonic Tactics</h1>
+				<span class="nav-header">press kit</span>
+				<ul class="uk-nav uk-nav-side">
+					<li><a href="#factsheet">Factsheet</a></li>
+					<li><a href="#description">Description</a></li>
+					<li><a href="#gameplay">How to Play</a></li>
+					<li><a href="#features">Features</a></li>
+					<li><a href="#demo">Demo</a></li>
+					<li><a href="#videos">Videos</a></li>
+					<li><a href="#images">Images</a></li>
+					<li><a href="#logo">Logo &amp; Icon</a></li>
+					<li><a href="#quotes">Selected Articles</a></li>
+					<li><a href="#links">Links</a></li>
+					<li><a href="#credits">Team</a></li>
+					<li><a href="#contact">Contact</a></li>
+				</ul>
+			</div>
+
+			<!-- ── Right content area ── -->
+			<div id="content" class="uk-width-medium-3-4">
+
+				<!-- Header image — replace src when asset is ready -->
+				<img src="./files/header.png" class="header" alt="Dragonic Tactics header" onerror="this.style.display='none'">
+
+				<!-- Game Logo -->
+				<div class="todo">Game logo image (large, at the top of the page)
+Replace the header.png placeholder with the actual logo file in files/
+Optionally include a team/studio logo below the game logo</div>
+
+				<!-- Call to Action -->
+				<div class="cta">
+					<div class="todo">One-line elevator pitch text
+Primary action button (e.g. "Get the Demo" → links to #demo)</div>
+				</div>
+
+				<hr>
+
+				<section id="factsheet" class="press-section">
+					<h2>Factsheet</h2>
+					<div class="todo">Developer name &amp; location
+Elevator pitch (one sentence that captures the game)
+Release date &amp; platforms
+System requirements
+Official website URL</div>
+				</section>
+
+				<hr>
+
+				<section id="description" class="press-section">
+					<h2>Description</h2>
+					<div class="todo">Longer description of the game (3–5 paragraphs)</div>
+				</section>
+
+				<hr>
+
+				<section id="gameplay" class="press-section">
+					<h2>How to Play</h2>
+					<div class="todo">Gameplay description — controls, core loop, objectives, win/loss conditions</div>
+				</section>
+
+				<hr>
+
+				<section id="features" class="press-section">
+					<h2>Features</h2>
+					<div class="todo">Bulleted list of key features (e.g. number of levels, multiplayer, unique mechanics)</div>
+				</section>
+
+				<hr>
+
+				<section id="demo" class="press-section">
+					<h2>Demo</h2>
+					<div class="todo">Link to download the demo or request a key
+System requirements:
+  OS: Windows 10 / macOS 12+
+  CPU: —
+  RAM: —
+  GPU: —
+  Storage: —</div>
+				</section>
+
+				<hr>
+
+				<section id="videos" class="press-section">
+					<h2>Videos</h2>
+					<div class="todo">Embedded YouTube trailer(s) and gameplay video(s)
+Pattern per video:
+  Title + YouTube link
+  &lt;iframe&gt; embed (src="https://www.youtube.com/embed/VIDEO_ID")</div>
+				</section>
+
+				<hr>
+
+				<section id="images" class="press-section">
+					<h2>Images</h2>
+					<div class="todo">Masonry grid of screenshots and animated GIFs
+Place image files in files/ and reference as:
+  &lt;div class="uk-grid images"&gt;
+    &lt;div class="uk-width-medium-1-2"&gt;&lt;img src="./files/screenshot_01.png"&gt;&lt;/div&gt;
+  &lt;/div&gt;</div>
+				</section>
+
+				<hr>
+
+				<section id="logo" class="press-section">
+					<h2>Logo &amp; Icon</h2>
+					<div class="todo">Game logo, app icon, banner image, character renders
+Provide a .zip download link for all branding assets</div>
+				</section>
+
+				<hr>
+
+				<section id="quotes" class="press-section">
+					<h2>Selected Articles</h2>
+					<div class="todo">Awards and festival recognitions (e.g. "Best Indie Game — Some Festival 2025")
+Press quotes with source citations:
+  "Quote text." — Author, Outlet (linked)</div>
+				</section>
+
+				<hr>
+
+				<section id="links" class="press-section">
+					<h2>Links</h2>
+					<div class="todo">Official Website URL
+GitHub repository URL
+Twitter / X URL
+Instagram URL
+(any other relevant social or store pages)</div>
+				</section>
+
+				<hr>
+
+				<section id="credits" class="press-section">
+					<h2>Team</h2>
+					<div class="todo">Name — Role (short bio if applicable), one entry per person</div>
+				</section>
+
+				<hr>
+
+				<section id="contact" class="press-section">
+					<h2>Contact</h2>
+					<div class="todo">Business Inquiries: email address
+Press Requests: email address</div>
+				</section>
+
+			</div><!-- /#content -->
+		</div><!-- /.uk-grid -->
+	</div><!-- /.uk-container -->
+
+	<!-- Masonry image grid (loaded from CDN) -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.imagesloaded/5.0.0/imagesloaded.pkgd.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/masonry/4.2.2/masonry.pkgd.min.js"></script>
+
+	<script>
+		// Initialize Masonry for image grids
+		$(document).ready(function () {
+			var container = $('.images');
+			container.imagesLoaded(function () {
+				container.masonry({ itemSelector: '.uk-width-medium-1-2' });
+			});
+		});
+
+		// Toggle entire navigation sidebar
+		document.getElementById('nav-toggle').addEventListener('click', function () {
+			var nav = document.getElementById('navigation');
+			var content = document.getElementById('content');
+			var hidden = nav.classList.toggle('hidden');
+			content.classList.toggle('uk-width-medium-3-4', !hidden);
+			content.classList.toggle('uk-width-medium-1-1', hidden);
+			this.textContent = hidden ? '»' : '☰';
+		});
+	</script>
+</body>
+</html>
