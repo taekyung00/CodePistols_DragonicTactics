@@ -41,7 +41,7 @@ class MainMenu : public CS230::GameState
 #if defined(DEVELOPER_VERSION)
     DragonicTactics,
 #endif
-    LevelGame,
+    SelectLevel,
     Exit,
 #if defined(DEVELOPER_VERSION)
     ConsoleTest,
