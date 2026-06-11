@@ -567,10 +567,10 @@ void GamePlayUIManager::InitButtons(PlayerInputHandler* inputHandler)
 
     const Math::ivec2 win = { VW, VH };
     constexpr int    TILE = 64;
-    const double box_x    = 8.0 + TILE;                          // 상태이상 패널 좌측(8) + 한 타일(64) = 72
+    const double box_x    = 8.0;                                 // 상태이상 패널·Dragon HUD 좌측(8)과 정렬
     const double bar_bot  = TILE;
     const double bar_h    = TILE * 1.5;
-    const double bar_w    = static_cast<double>(win.x) - 2.0 * box_x; // 중앙정렬 대칭 (좌우 여백 72)
+    const double bar_w    = static_cast<double>(win.x) - 2.0 * box_x; // 중앙정렬 대칭 (좌우 여백 8)
     constexpr int N       = 10;
     const double end_btn_w = static_cast<double>(TILE);
     const double remaining = bar_w - N * TILE - end_btn_w;
@@ -991,7 +991,7 @@ void GamePlayUIManager::DrawSlotBar()
     constexpr Math::ivec2 win = { VW, VH };
     constexpr double TILE = 64.0;
 
-    double bar_w = static_cast<double>(win.x) - 2.0 * (8.0 + TILE); // 좌측 엣지 72 대칭 (InitButtons box_x와 일치)
+    double bar_w = static_cast<double>(win.x) - 2.0 * 8.0; // 좌측 엣지 8 대칭 (InitButtons box_x와 일치, 패널과 정렬)
     Math::TransformationMatrix bg =
         Math::TranslationMatrix(Math::vec2{ win.x * 0.5, slot_bar_center_y_ }) *
         Math::ScaleMatrix(Math::vec2{ bar_w, TILE * 1.5 });
@@ -1128,8 +1128,11 @@ void GamePlayUIManager::DrawTurnIndicator()
     renderer->DrawRectangle(bg, 0x1a1a2ecc, 0x5555aaff, 1.5, DrawDepth::UI + 0.001f);
 
     std::string main_text = current->TypeName() + "'s Turn";
+    Math::vec2  ts        = textMgr.CalculateTextSize(main_text, Fonts::Kings);
+    double      text_w    = ts.x * 0.45;
+    double      text_h    = ts.y * 0.45;
     textMgr.DrawText(main_text,
-        Math::vec2{ panel_cx - PANEL_W * 0.5 + 8.0, panel_cy - 8.0 },
+        Math::vec2{ panel_cx - text_w * 0.5, panel_cy - text_h * 0.5 },
         Fonts::Kings, { 0.45, 0.45 }, CS200::GOLD, DrawDepth::UI);
 }
 
@@ -1143,43 +1146,22 @@ void GamePlayUIManager::DrawHoverTooltip()
     Math::vec2 mouse = m_virtual_mouse_;
     constexpr Math::ivec2 win = { VW, VH };
 
-    constexpr double TT_W = 256.0;
-    constexpr double TT_H = 200.0;
-    constexpr double LH   = 26.0;
+    constexpr double PAD = 10.0;
+    constexpr double LH  = 26.0;
 
-    double tip_x = mouse.x + 72.0;
-    if (tip_x + TT_W > win.x) tip_x = mouse.x - TT_W - 8.0;
-    double tip_top = mouse.y + TT_H * 0.5;
-    double tip_cx  = tip_x + TT_W * 0.5;
-    double tip_cy  = tip_top - TT_H * 0.5;
-
-    Math::TransformationMatrix bg =
-        Math::TranslationMatrix(Math::vec2{ tip_cx, tip_cy }) *
-        Math::ScaleMatrix(Math::vec2{ TT_W, TT_H });
-    renderer->DrawRectangle(bg, 0x1a1a2edd, 0x8888aaff, 1.0, DrawDepth::TOOLTIP_BG);
-
-    double ty = tip_top - 8.0;
-
-    textMgr.DrawText(hovered_character_->TypeName(),
-        Math::vec2{ tip_x + 8.0, ty }, Fonts::Tooltips,
-        { 0.5, 0.5 }, CS200::GOLD, DrawDepth::TOOLTIP_TEXT);
-    ty -= LH;
-
-    std::string hp_str = "HP: " + std::to_string(hovered_character_->GetHP())
-                       + "/" + std::to_string(hovered_character_->GetMaxHP());
-    textMgr.DrawText(hp_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Tooltips,
-        { 0.4, 0.4 }, CS200::RED, DrawDepth::TOOLTIP_TEXT);
-    ty -= LH;
-
-    std::string ap_str = "AP: " + std::to_string(hovered_character_->GetActionPoints());
-    textMgr.DrawText(ap_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Tooltips,
-        { 0.4, 0.4 }, CS200::YELLOW, DrawDepth::TOOLTIP_TEXT);
-    ty -= LH;
-
-    std::string spd_str = "MOV: " + std::to_string(hovered_character_->GetMovementRange());
-    textMgr.DrawText(spd_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Tooltips,
-        { 0.4, 0.4 }, CS200::GREEN, DrawDepth::TOOLTIP_TEXT);
-    ty -= LH;
+    // ── 줄 구성 (텍스트/스케일/색) — 상자 크기를 내용에 맞추기 위해 먼저 모은다 ──
+    struct TipLine
+    {
+        std::string text;
+        double      scale;
+        uint32_t    color;
+    };
+    std::vector<TipLine> tip_lines;
+    tip_lines.push_back({ hovered_character_->TypeName(), 0.5, CS200::GOLD });
+    tip_lines.push_back({ "HP: " + std::to_string(hovered_character_->GetHP())
+                          + "/" + std::to_string(hovered_character_->GetMaxHP()), 0.4, CS200::RED });
+    tip_lines.push_back({ "AP: " + std::to_string(hovered_character_->GetActionPoints()), 0.4, CS200::YELLOW });
+    tip_lines.push_back({ "MOV: " + std::to_string(hovered_character_->GetMovementRange()), 0.4, CS200::GREEN });
 
     SpellSlots* slots = hovered_character_->GetSpellSlots();
     if (slots)
@@ -1193,9 +1175,7 @@ void GamePlayUIManager::DrawHoverTooltip()
             slot_str += " L" + std::to_string(lv) + ":"
                       + std::to_string(cur_c) + "/" + std::to_string(max_c);
         }
-        textMgr.DrawText(slot_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Tooltips,
-            { 0.4, 0.4 }, CS200::ORANGE, DrawDepth::TOOLTIP_TEXT);
-        ty -= LH;
+        tip_lines.push_back({ slot_str, 0.4, CS200::ORANGE });
     }
 
     const auto& effects = hovered_character_->GetActiveEffects();
@@ -1204,8 +1184,35 @@ void GamePlayUIManager::DrawHoverTooltip()
         std::string fx_str = "FX:";
         for (const auto& e : effects)
             fx_str += " " + e.name + "(" + std::to_string(e.duration) + ")";
-        textMgr.DrawText(fx_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Tooltips,
-            { 0.4, 0.4 }, CS200::YELLOW, DrawDepth::TOOLTIP_TEXT);
+        tip_lines.push_back({ fx_str, 0.4, CS200::YELLOW });
+    }
+
+    // ── 가장 넓은 줄에 맞춰 상자 폭/높이 산출 ──
+    double max_w = 0.0;
+    for (const auto& l : tip_lines)
+        max_w = std::max(max_w, textMgr.CalculateTextSize(l.text, Fonts::Tooltips).x * l.scale);
+    double TT_W = std::min(max_w + PAD * 2.0, static_cast<double>(VW) - 20.0);
+    double TT_H = PAD * 2.0 + static_cast<double>(tip_lines.size()) * LH;
+
+    double tip_x = mouse.x + 72.0;
+    if (tip_x + TT_W > win.x) tip_x = mouse.x - TT_W - 8.0;
+    if (tip_x < 4.0) tip_x = 4.0;
+    double tip_top = mouse.y + TT_H * 0.5;
+    double tip_cx  = tip_x + TT_W * 0.5;
+    double tip_cy  = tip_top - TT_H * 0.5;
+
+    Math::TransformationMatrix bg =
+        Math::TranslationMatrix(Math::vec2{ tip_cx, tip_cy }) *
+        Math::ScaleMatrix(Math::vec2{ TT_W, TT_H });
+    renderer->DrawRectangle(bg, 0x1a1a2edd, 0x8888aaff, 1.0, DrawDepth::TOOLTIP_BG);
+
+    // 첫 줄은 상단 패딩 + 한 줄 높이만큼 내려서 상자 안에 들어오게 한다 (DrawText는 좌하단 기준)
+    double ty = tip_top - PAD - 22.0;
+    for (const auto& l : tip_lines)
+    {
+        textMgr.DrawText(l.text, Math::vec2{ tip_x + PAD, ty }, Fonts::Tooltips,
+            { l.scale, l.scale }, l.color, DrawDepth::TOOLTIP_TEXT);
+        ty -= LH;
     }
 }
 
@@ -2136,14 +2143,16 @@ void GamePlayUIManager::DrawDragonHUD()
 
     // ── Right column: Name / HP bar / AP&MOV ───────────────────────
     constexpr double STAT_X    = PORT_X + PORT_D + 12.0;              // 94
-    constexpr double NAME_Y    = 866.0;                               // name baseline
     constexpr double HP_BAR_CY = 826.0;                               // bar center
     constexpr double HP_BAR_W  = 200.0;
     constexpr double HP_BAR_H  = 26.0;                                // bar
-    constexpr double APMOV_Y   = 786.0;                               // text baseline (text top ≈ 808)
+    constexpr double APMOV_Y   = 776.0;                               // 체력바 하단(813)과 구분선(770) 사이로 내려 겹침 방지
 
+    // 이름이 패널/창 상단을 넘지 않도록 측정 높이를 반영해 배치 (상단에서 14px 아래)
+    Math::vec2 name_sz = textMgr.CalculateTextSize(m_player_->TypeName(), Fonts::Kings);
+    double     name_y  = PAN_TOP - 14.0 - name_sz.y * 0.55;
     textMgr.DrawText(m_player_->TypeName(),
-        Math::vec2{ STAT_X, NAME_Y },
+        Math::vec2{ STAT_X, name_y },
         Fonts::Kings, { 0.55, 0.55 }, CS200::GOLD, DrawDepth::UI);
 
     const int hp     = m_player_->GetHP();
