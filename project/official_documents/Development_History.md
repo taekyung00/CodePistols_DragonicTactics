@@ -31,19 +31,18 @@ Early investment in **architecture and data-driven content** turned the later co
 
 ---
 
-## Part 2 — Mermaid Gantt (system-wide)
+## Part 2 — Mermaid Gantt (system-wide, split at winter)
 
-> Paste into GitHub / Notion / VS Code (Mermaid extension) / [mermaid.live](https://mermaid.live) to render.
+> Two charts (2025 and 2026) so the empty winter months (Jan–Feb 2026) never appear on a continuous axis. Paste into GitHub / Notion / VS Code (Mermaid extension) / [mermaid.live](https://mermaid.live) to render.
 
 ```mermaid
 gantt
-    title Dragonic Tactics Development History (System-Wide, Winter Omitted)
+    title Dragonic Tactics - 2025 (Foundation & Core Systems)
     dateFormat YYYY-MM-DD
     axisFormat %y-%m
 
     section Engine & Rendering
     Component architecture, Character       :done, e1, 2025-10-06, 2025-10-22
-    2-pass rendering, TacticalCamera, UI NDC :done, e2, 2026-05-01, 2026-05-31
 
     section Grid & Pathfinding
     GridSystem (tiles, occupancy)           :done, g1, 2025-10-08, 2025-11-01
@@ -56,6 +55,28 @@ gantt
 
     section Spell System
     SpellSystem mounted (CSV-driven)        :done, s1, 2025-11-11, 2025-12-01
+
+    section Characters & AI
+    Dragon (player) created                 :done, a_dr, 2025-10-15, 2025-10-22
+    Fighter created                         :done, a_fi1, 2025-10-12, 2025-10-16
+    fighter.mmd + FighterStrategy (begin)   :done, a_fi2, 2025-12-06, 2025-12-10
+
+    section Tooling & Build
+    CMake presets / dev-release split       :done, t1, 2025-10-22, 2025-11-15
+```
+
+*(Winter, January-February 2026, omitted - the timeline is split here.)*
+
+```mermaid
+gantt
+    title Dragonic Tactics - 2026 (Expansion, Content, Polish & Demo)
+    dateFormat YYYY-MM-DD
+    axisFormat %y-%m
+
+    section Engine & Rendering
+    2-pass rendering, TacticalCamera, UI NDC :done, e2, 2026-05-01, 2026-05-31
+
+    section Spell System
     Casting, upcasting, terrain spells      :done, s2, 2026-03-28, 2026-04-20
     Spells working (Dragon + per-class)     :milestone, sm, 2026-03-29, 0d
 
@@ -64,12 +85,13 @@ gantt
     9 effects + hooks                       :done, st2, 2026-03-29, 2026-05-20
 
     section Characters & AI
-    Dragon (player) + spells                :done, ai0, 2025-10-15, 2026-03-29
-    Fighter (flowchart -> strategy -> spells):done, ai1, 2025-12-06, 2026-04-08
-    Cleric (class + strategy)               :done, ai2, 2026-04-28, 2026-05-15
-    Rogue (strategy + class)                :done, ai3, 2026-05-15, 2026-05-18
-    Wizard (strategy + class)               :done, ai4, 2026-05-20, 2026-05-28
-    All AI characters complete              :milestone, aim, 2026-05-28, 0d
+    Dragon spells working                   :done, b_dr, 2026-03-21, 2026-03-29
+    Dragon logic complete                   :milestone, b_drm, 2026-03-29, 0d
+    Fighter strategy complete + spells      :done, b_fi, 2026-03-08, 2026-04-08
+    Cleric (class + strategy)               :done, b_cl, 2026-04-28, 2026-05-15
+    Rogue (strategy + class)                :done, b_ro, 2026-05-15, 2026-05-18
+    Wizard (strategy + class)               :done, b_wi, 2026-05-20, 2026-05-28
+    All AI characters complete              :milestone, b_aim, 2026-05-28, 0d
 
     section UI & HUD
     Virtual 1600x900 coords (click fix)     :done, u1, 2026-05-13, 2026-05-15
@@ -86,7 +108,6 @@ gantt
     Cutscenes                               :done, sh3, 2026-05-26, 2026-05-30
 
     section Tooling & Build
-    CMake presets / dev-release split       :done, t1, 2025-10-22, 2025-11-15
     Web build (Emscripten)                  :done, t2, 2026-05-29, 2026-05-31
     Crash dump + debug subsystem            :done, t3, 2026-05-22, 2026-06-01
     Release automation                      :done, t4, 2026-06-01, 2026-06-08
