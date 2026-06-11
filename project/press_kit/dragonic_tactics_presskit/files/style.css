@@ -30,6 +30,16 @@ img {
 
 /* ── Navigation ── */
 
+/* Keep the table of contents pinned while scrolling */
+#navigation {
+	position: -webkit-sticky;
+	position: sticky;
+	top: 15px;
+	align-self: flex-start;
+	max-height: calc(100vh - 30px);
+	overflow-y: auto;
+}
+
 #navigation.hidden {
 	display: none;
 }
