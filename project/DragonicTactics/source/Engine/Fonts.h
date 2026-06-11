@@ -13,5 +13,6 @@ enum Fonts
 {
   Simple,
   Outlined,
-  Kings
+  Kings,
+  Tooltips
 };

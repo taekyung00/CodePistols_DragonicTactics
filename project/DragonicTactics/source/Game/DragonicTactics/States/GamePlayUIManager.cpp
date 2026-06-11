@@ -905,10 +905,10 @@ void GamePlayUIManager::InitSpellTooltips()
         double max_text_w = 0.0;
         const auto& cached = spell_tooltip_cache_[id];
         if (!cached.empty())
-            max_text_w = textMgr2.CalculateTextSize(cached[0], Fonts::Kings).x * 0.5;
+            max_text_w = textMgr2.CalculateTextSize(cached[0], Fonts::Tooltips).x * 0.5;
         for (size_t li = 1; li < cached.size(); ++li)
             max_text_w = std::max(max_text_w,
-                textMgr2.CalculateTextSize(cached[li], Fonts::Kings).x * 0.4);
+                textMgr2.CalculateTextSize(cached[li], Fonts::Tooltips).x * 0.4);
         spell_tooltip_widths_[id] = std::min(max_text_w + PAD * 2.0,
                                              static_cast<double>(VW) - 20.0);
     }
@@ -1161,23 +1161,23 @@ void GamePlayUIManager::DrawHoverTooltip()
     double ty = tip_top - 8.0;
 
     textMgr.DrawText(hovered_character_->TypeName(),
-        Math::vec2{ tip_x + 8.0, ty }, Fonts::Kings,
+        Math::vec2{ tip_x + 8.0, ty }, Fonts::Tooltips,
         { 0.5, 0.5 }, CS200::GOLD, DrawDepth::TOOLTIP_TEXT);
     ty -= LH;
 
     std::string hp_str = "HP: " + std::to_string(hovered_character_->GetHP())
                        + "/" + std::to_string(hovered_character_->GetMaxHP());
-    textMgr.DrawText(hp_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Kings,
+    textMgr.DrawText(hp_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Tooltips,
         { 0.4, 0.4 }, CS200::RED, DrawDepth::TOOLTIP_TEXT);
     ty -= LH;
 
     std::string ap_str = "AP: " + std::to_string(hovered_character_->GetActionPoints());
-    textMgr.DrawText(ap_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Kings,
+    textMgr.DrawText(ap_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Tooltips,
         { 0.4, 0.4 }, CS200::YELLOW, DrawDepth::TOOLTIP_TEXT);
     ty -= LH;
 
     std::string spd_str = "MOV: " + std::to_string(hovered_character_->GetMovementRange());
-    textMgr.DrawText(spd_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Kings,
+    textMgr.DrawText(spd_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Tooltips,
         { 0.4, 0.4 }, CS200::GREEN, DrawDepth::TOOLTIP_TEXT);
     ty -= LH;
 
@@ -1193,7 +1193,7 @@ void GamePlayUIManager::DrawHoverTooltip()
             slot_str += " L" + std::to_string(lv) + ":"
                       + std::to_string(cur_c) + "/" + std::to_string(max_c);
         }
-        textMgr.DrawText(slot_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Kings,
+        textMgr.DrawText(slot_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Tooltips,
             { 0.4, 0.4 }, CS200::ORANGE, DrawDepth::TOOLTIP_TEXT);
         ty -= LH;
     }
@@ -1204,7 +1204,7 @@ void GamePlayUIManager::DrawHoverTooltip()
         std::string fx_str = "FX:";
         for (const auto& e : effects)
             fx_str += " " + e.name + "(" + std::to_string(e.duration) + ")";
-        textMgr.DrawText(fx_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Kings,
+        textMgr.DrawText(fx_str, Math::vec2{ tip_x + 8.0, ty }, Fonts::Tooltips,
             { 0.4, 0.4 }, CS200::YELLOW, DrawDepth::TOOLTIP_TEXT);
     }
 }
@@ -1315,14 +1315,14 @@ void GamePlayUIManager::DrawSpellTooltip()
 
     // 첫 줄: 스펠 이름 + 레벨 (금색)
     textMgr.DrawText(lines[0], Math::vec2{ tip_x + PAD, ty },
-        Fonts::Kings, { 0.5, 0.5 }, CS200::GOLD, DrawDepth::TOOLTIP_TEXT);
+        Fonts::Tooltips, { 0.5, 0.5 }, CS200::GOLD, DrawDepth::TOOLTIP_TEXT);
     ty -= LH;
 
     // 이후 줄: 효과 설명 (흰색)
     for (size_t i = 1; i < lines.size(); ++i)
     {
         textMgr.DrawText(lines[i], Math::vec2{ tip_x + PAD, ty },
-            Fonts::Kings, { 0.4, 0.4 }, CS200::WHITE, DrawDepth::TOOLTIP_TEXT);
+            Fonts::Tooltips, { 0.4, 0.4 }, CS200::WHITE, DrawDepth::TOOLTIP_TEXT);
         ty -= LH;
     }
 }
@@ -1346,9 +1346,9 @@ void GamePlayUIManager::DrawAttackTooltip()
     constexpr double PAD = 10.0;
     constexpr double LH  = 24.0;
 
-    double max_w = textMgr.CalculateTextSize(lines[0], Fonts::Kings).x * 0.5;
+    double max_w = textMgr.CalculateTextSize(lines[0], Fonts::Tooltips).x * 0.5;
     for (size_t i = 1; i < lines.size(); ++i)
-        max_w = std::max(max_w, textMgr.CalculateTextSize(lines[i], Fonts::Kings).x * 0.4);
+        max_w = std::max(max_w, textMgr.CalculateTextSize(lines[i], Fonts::Tooltips).x * 0.4);
     double TT_W = std::min(max_w + PAD * 2.0, static_cast<double>(VW) - 20.0);
     double TT_H = PAD * 2.0 + static_cast<double>(lines.size()) * LH;
 
@@ -1365,12 +1365,12 @@ void GamePlayUIManager::DrawAttackTooltip()
 
     double ty = tip_top - PAD - 22;
     textMgr.DrawText(lines[0], Math::vec2{ tip_x + PAD, ty },
-        Fonts::Kings, { 0.5, 0.5 }, CS200::GOLD, DrawDepth::TOOLTIP_TEXT);
+        Fonts::Tooltips, { 0.5, 0.5 }, CS200::GOLD, DrawDepth::TOOLTIP_TEXT);
     ty -= LH;
     for (size_t i = 1; i < lines.size(); ++i)
     {
         textMgr.DrawText(lines[i], Math::vec2{ tip_x + PAD, ty },
-            Fonts::Kings, { 0.4, 0.4 }, CS200::WHITE, DrawDepth::TOOLTIP_TEXT);
+            Fonts::Tooltips, { 0.4, 0.4 }, CS200::WHITE, DrawDepth::TOOLTIP_TEXT);
         ty -= LH;
     }
 }
@@ -1409,9 +1409,9 @@ void GamePlayUIManager::InitStatusEffectIcons()
         auto& tm = Engine::GetTextManager();
         for (const auto& [name, desc] : effect_descriptions_)
         {
-            double w0 = tm.CalculateTextSize(name,                   Fonts::Kings).x * 0.5;
-            double w1 = tm.CalculateTextSize("Duration: 99 turn(s)", Fonts::Kings).x * 0.4;
-            double w2 = tm.CalculateTextSize(desc,                   Fonts::Kings).x * 0.35;
+            double w0 = tm.CalculateTextSize(name,                   Fonts::Tooltips).x * 0.5;
+            double w1 = tm.CalculateTextSize("Duration: 99 turn(s)", Fonts::Tooltips).x * 0.4;
+            double w2 = tm.CalculateTextSize(desc,                   Fonts::Tooltips).x * 0.35;
             double max_w = std::max({ w0, w1, w2 });
             effect_tooltip_widths_[name] = std::min(max_w + PAD * 2.0,
                                                     static_cast<double>(VW) - 20.0);
@@ -1623,17 +1623,17 @@ void GamePlayUIManager::DrawStatusEffectTooltip()
 
     double ty = tip_top - PAD - 22;
     textMgr.DrawText(hovered_effect_name_,
-        Math::vec2{ tip_x + PAD, ty }, Fonts::Kings, {0.5, 0.5}, CS200::GOLD, DrawDepth::TOOLTIP_TEXT);
+        Math::vec2{ tip_x + PAD, ty }, Fonts::Tooltips, {0.5, 0.5}, CS200::GOLD, DrawDepth::TOOLTIP_TEXT);
     ty -= LH;
 
     textMgr.DrawText("Duration: " + std::to_string(hovered_effect_duration_) + " turn(s)",
-        Math::vec2{ tip_x + PAD, ty }, Fonts::Kings, {0.4, 0.4}, CS200::YELLOW, DrawDepth::TOOLTIP_TEXT);
+        Math::vec2{ tip_x + PAD, ty }, Fonts::Tooltips, {0.4, 0.4}, CS200::YELLOW, DrawDepth::TOOLTIP_TEXT);
     ty -= LH;
 
     auto dit = effect_descriptions_.find(hovered_effect_name_);
     if (dit != effect_descriptions_.end())
         textMgr.DrawText(dit->second, Math::vec2{ tip_x + PAD, ty },
-            Fonts::Kings, {0.35, 0.35}, CS200::WHITE, DrawDepth::TOOLTIP_TEXT);
+            Fonts::Tooltips, {0.35, 0.35}, CS200::WHITE, DrawDepth::TOOLTIP_TEXT);
 }
 
 void GamePlayUIManager::DrawActionLabel()
@@ -1874,7 +1874,7 @@ void GamePlayUIManager::DrawDisableReasonTooltip()
     double ty = (box_center_y - TT_H * 0.5) + PAD + 1.0;
 
     textMgr.DrawText(reason_text,
-        Math::vec2{ tip_x + PAD, ty }, Fonts::Kings, {0.4, 0.4}, CS200::RED, DrawDepth::TOOLTIP_TEXT);
+        Math::vec2{ tip_x + PAD, ty }, Fonts::Tooltips, {0.4, 0.4}, CS200::RED, DrawDepth::TOOLTIP_TEXT);
 }
 
 void GamePlayUIManager::DrawDragonWorldHoverTooltip()
@@ -1932,7 +1932,7 @@ void GamePlayUIManager::DrawDragonWorldHoverTooltip()
 
             double ty = tip_top - PAD - 22;
             textMgr.DrawText(reason_text,
-                Math::vec2{ tip_x + PAD, ty }, Fonts::Kings, {0.4, 0.4}, CS200::RED, DrawDepth::TOOLTIP_TEXT);
+                Math::vec2{ tip_x + PAD, ty }, Fonts::Tooltips, {0.4, 0.4}, CS200::RED, DrawDepth::TOOLTIP_TEXT);
         }
     }
 }
