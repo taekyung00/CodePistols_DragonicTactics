@@ -170,7 +170,6 @@ void DebugConsole::RegisterDefaultCommands()
 
 void DebugConsole::DrawImGui()
 {
-#if defined(DEVELOPER_VERSION)
   if (!open_)
   {
 	return;
@@ -285,7 +284,6 @@ void DebugConsole::DrawImGui()
   ImGui::SetItemDefaultFocus();
 
   ImGui::End();
-#endif
 }
 
 std::vector<std::string> DebugConsole::ParseCommandLine(const std::string& commandLine)

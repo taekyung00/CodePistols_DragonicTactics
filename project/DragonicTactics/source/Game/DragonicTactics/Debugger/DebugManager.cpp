@@ -204,10 +204,10 @@ void DebugManager::DrawDebugControlPanel()
 	ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.7f, 0.1f, 0.1f, 1.0f));
 	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.9f, 0.2f, 0.2f, 1.0f));
 	ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.5f, 0.05f, 0.05f, 1.0f));
-	if (ImGui::Button("Kill All Enemies", ImVec2(-1, 28)))
+	if (ImGui::Button("Retire All Enemies", ImVec2(-1, 28)))
 	{
 	  if (console_)
-		console_->ExecuteCommand("killall");
+		console_->ExecuteCommand("retireall");
 	}
 	ImGui::PopStyleColor(3);
 
@@ -444,7 +444,7 @@ void DebugManager::RegisterGameCommands()
 	  }
 	  catch (...) { Engine::GetLogger().LogError("set_hp: invalid args"); }
 	},
-	"set_hp <target> <value> — HP 직접 설정 (0 이하: 즉사 처리)");
+	"set_hp <target> <value> - Set HP directly (<=0: instant death)");
 
   // set_ap dragon 3
   console_->RegisterCommand(
@@ -458,7 +458,7 @@ void DebugManager::RegisterGameCommands()
 		  ch->SetActionPoints(std::stoi(args[1]));
 	  } catch (...) { Engine::GetLogger().LogError("set_ap: invalid value: " + args[1]); }
 	},
-	"set_ap <target> <value> — AP 설정");
+	"set_ap <target> <value> - Set AP");
 
   // end_turn
   console_->RegisterCommand(
@@ -469,11 +469,11 @@ void DebugManager::RegisterGameCommands()
 	  if (tm)
 		tm->EndCurrentTurn();
 	},
-	"end_turn — 현재 턴 강제 종료");
+	"end_turn - Force end the current turn");
 
-  // kill fighter
+  // retire fighter
   console_->RegisterCommand(
-	"kill",
+	"retire",
 	[](std::vector<std::string> args)
 	{
 	  if (args.empty())
@@ -484,11 +484,11 @@ void DebugManager::RegisterGameCommands()
 	  if (combat)
 		combat->ApplyDamage(nullptr, ch, ch->GetHP() + 1);
 	},
-	"kill <target> — 즉사 (CharacterDeathEvent 발행됨)");
+	"retire <target> - Instantly defeat (fires CharacterDeathEvent)");
 
-  // killall — 모든 AI 적 즉사
+  // retireall - instantly defeat all AI enemies
   console_->RegisterCommand(
-	"killall",
+	"retireall",
 	[]([[maybe_unused]] std::vector<std::string> args)
 	{
 	  auto* combat = Engine::GetGameStateManager().GetGSComponent<CombatSystem>();
@@ -512,7 +512,7 @@ void DebugManager::RegisterGameCommands()
 		combat->ApplyDamage(dragon, ch, ch->GetHP() + 1);
 	  }
 	},
-	"killall — 모든 AI 적 즉사 (전체 사망 체인 발동)");
+	"retireall - Instantly defeat all AI enemies (full death chain)");
 
   // add_effect dragon Fear 3
   console_->RegisterCommand(
@@ -526,7 +526,7 @@ void DebugManager::RegisterGameCommands()
 		  ch->AddEffect(args[1], std::stoi(args[2]));
 	  } catch (...) { Engine::GetLogger().LogError("add_effect: invalid duration: " + args[2]); }
 	},
-	"add_effect <target> <effect_name> <duration> — 상태이상 부여");
+	"add_effect <target> <effect_name> <duration> - Apply a status effect");
 
   // spell_restore dragon 1
   console_->RegisterCommand(
@@ -543,7 +543,7 @@ void DebugManager::RegisterGameCommands()
 		  slots->RestoreOne(std::stoi(args[1]));
 	  } catch (...) { Engine::GetLogger().LogError("spell_restore: invalid level: " + args[1]); }
 	},
-	"spell_restore <target> <level> — 해당 레벨 슬롯 1개 복구");
+	"spell_restore <target> <level> - Restore one slot of that level");
 
   // spell_restore_all dragon
   console_->RegisterCommand(
@@ -562,7 +562,7 @@ void DebugManager::RegisterGameCommands()
 		  slots->Recover(m.rbegin()->first);
 	  }
 	},
-	"spell_restore_all <target> — 모든 슬롯 최대치 복구");
+	"spell_restore_all <target> - Restore all slots to max");
 
   // spell_consume dragon 2
   console_->RegisterCommand(
@@ -579,7 +579,7 @@ void DebugManager::RegisterGameCommands()
 		  slots->Consume(std::stoi(args[1]));
 	  } catch (...) { Engine::GetLogger().LogError("spell_consume: invalid level: " + args[1]); }
 	},
-	"spell_consume <target> <level> — 해당 레벨 슬롯 1개 소모");
+	"spell_consume <target> <level> - Consume one slot of that level");
 
   // spell_slots dragon
   console_->RegisterCommand(
@@ -607,5 +607,5 @@ void DebugManager::RegisterGameCommands()
 		console_->Print("  Lv" + std::to_string(lv) + ": " + std::to_string(cur) + " / " + std::to_string(max_cnt));
 	  }
 	},
-	"spell_slots <target> — 슬롯 잔량 전체 출력");
+	"spell_slots <target> - Print all remaining slot counts");
 }

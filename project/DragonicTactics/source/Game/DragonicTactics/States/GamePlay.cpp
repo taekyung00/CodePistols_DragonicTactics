@@ -760,21 +760,20 @@ void GamePlay::DisplayDamageAmount(const CharacterDamagedEvent& event, double de
 {
   if (event.target == nullptr) return;
   Math::vec2 size = { 1.0, 1.0 };
+  CS200::RGBA color = CS200::WHITE;
   const StatsComponent* stats = event.target->GetStatsComponent();
   if (stats != nullptr && stats->GetMaxHP() > 0)
   {
     float ratio = static_cast<float>(event.damageAmount) / static_cast<float>(stats->GetMaxHP());
-    if      (ratio >= 0.5f)  size = { 2.5, 2.5 };
-    else if (ratio >= 0.33f) size = { 2.0, 2.0 };
-    else if (ratio >= 0.2f)  size = { 1.5, 1.5 };
-    else if (ratio >= 0.1f)  size = { 1.2, 1.2 };
+    if      (ratio >= 0.2f) { size = { 1.6, 1.6 }; color = CS200::RED; }
+    else if (ratio >= 0.1f) { size = { 1.3, 1.3 }; color = CS200::YELLOW; }
   }
   Math::ivec2 grid_pos = event.target->GetGridPosition()->Get();
   Math::vec2 text_position = {
       grid_pos.x * static_cast<double>(GridSystem::TILE_SIZE),
       grid_pos.y * static_cast<double>(GridSystem::TILE_SIZE) + GridSystem::TILE_SIZE
   };
-  m_ui_manager->ShowDamageText(event.damageAmount, text_position, event.target, size, delay);
+  m_ui_manager->ShowDamageText(event.damageAmount, text_position, event.target, size, color, delay);
 }
 
 void GamePlay::CheckGameEnd(const CharacterDeathEvent& event)
