@@ -15,7 +15,7 @@
 
 			<!-- ── Left sidebar navigation ── -->
 			<div id="navigation" class="uk-width-medium-1-4">
-				<h1 class="nav-header">Dragonic Tactics</h1>
+				<img src="./files/logo.png" alt="Dragonic Tactics" class="nav-logo">
 				<span class="nav-header">press kit</span>
 				<ul class="uk-nav uk-nav-side">
 					<li><a href="#factsheet">Factsheet</a></li>
@@ -38,10 +38,8 @@
 				<!-- Header image — replace src when asset is ready -->
 				<img src="./files/header.png" class="header" alt="Dragonic Tactics header" onerror="this.style.display='none'">
 
-				<!-- Game Logo -->
-				<div class="todo">Game logo image (large, at the top of the page)
-Replace the header.png placeholder with the actual logo file in files/
-Optionally include a team/studio logo below the game logo</div>
+				<!-- Game logo banner: files/header.png (displayed above) -->
+				<p style="text-align:center;margin:0 0 12px;"><a href="./files/header.png" download>Download header banner (header.png)</a></p>
 
 				<!-- Call to Action -->
 				<div class="cta">
@@ -73,7 +71,7 @@ Optionally include a team/studio logo below the game logo</div>
 						<dd>Windows 10 (64-bit) or a modern WebAssembly-capable browser; OpenGL-capable GPU; ~150 MB storage. Lightweight 2D engine &mdash; no high-end hardware required.</dd>
 
 						<dt>Website</dt>
-						<dd>[TODO: official website URL &mdash; if none, link the GitHub repository]</dd>
+						<dd><a href="https://taekyung00.github.io/dragonic_tactics_presskit/">taekyung00.github.io/dragonic_tactics_presskit</a></dd>
 					</dl>
 				</section>
 
@@ -134,16 +132,12 @@ Optionally include a team/studio logo below the game logo</div>
 				<section id="demo" class="press-section">
 					<h2>Demo</h2>
 					<p><strong>Play in your browser</strong> &mdash; the full game runs below via WebAssembly. Click inside the frame to give it keyboard focus. (First load is large, ~40&nbsp;MB, so allow a moment.)</p>
-					<div class="demo-embed" style="position:relative;width:100%;max-width:960px;aspect-ratio:16/9;margin:1em 0;background:#000;">
+					<div class="demo-embed" style="position:relative;width:100%;max-width:960px;aspect-ratio:16/9;margin:1em 0;background:#2E302F;">
 						<iframe src="./dragonic_tactics.html" title="Dragonic Tactics &mdash; Web Demo"
 								style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
 								allowfullscreen></iframe>
 					</div>
 					<p><a href="./dragonic_tactics.html" target="_blank" rel="noopener">Open the demo in a new tab &raquo;</a></p>
-					<p>Other ways to play:</p>
-					<ul>
-						<li><strong>Windows build</strong> &mdash; download the latest playtest release from GitHub Releases: <a href="https://github.com/taekyung00/CodePistols_DragonicTactics/releases">github.com/taekyung00/CodePistols_DragonicTactics/releases</a></li>
-					</ul>
 					<p><strong>System requirements</strong></p>
 					<ul class="sysreq">
 						<li><strong>OS:</strong> Windows 10 (64-bit), or any modern browser with WebAssembly support</li>
@@ -158,42 +152,77 @@ Optionally include a team/studio logo below the game logo</div>
 
 				<section id="videos" class="press-section">
 					<h2>Videos</h2>
-					<div class="iframe-container">
-						<iframe src="https://www.youtube.com/embed/SHi-bUXfeEI"
-								title="Dragonic Tactics &mdash; Gameplay Video"
-								frameborder="0"
-								allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-								allowfullscreen></iframe>
-					</div>
-					<p><a href="https://www.youtube.com/watch?v=SHi-bUXfeEI" target="_blank" rel="noopener">Watch on YouTube &raquo;</a></p>
+					<video controls preload="metadata" style="width:100%;max-width:960px;height:auto;display:block;background:#2E302F;">
+						<source src="./files/DT_play.mp4" type="video/mp4">
+						Your browser cannot play this video. <a href="./files/DT_play.mp4" download>Download it instead</a>.
+					</video>
+					<p><a href="./files/DT_play.mp4" download>Download the gameplay video (DT_play.mp4) &raquo;</a></p>
+					<p><a href="./files/dragonic_tactics_video.zip" download>Download the video as a .zip (large, ~400&nbsp;MB) &raquo;</a></p>
 				</section>
 
 				<hr>
 
 				<section id="images" class="press-section">
 					<h2>Images</h2>
-					<div class="todo">Masonry grid of screenshots and animated GIFs
-Place image files in files/ and reference as:
-  &lt;div class="uk-grid images"&gt;
-    &lt;div class="uk-width-medium-1-2"&gt;&lt;img src="./files/screenshot_01.png"&gt;&lt;/div&gt;
-  &lt;/div&gt;</div>
+					<div class="uk-grid images">
+						<div class="uk-width-medium-1-2"><img src="./files/playscene1.png" alt="Gameplay screenshot — the dragon faces the full adventuring party"></div>
+						<div class="uk-width-medium-1-2"><img src="./files/playscene2.png" alt="Gameplay screenshot — lava reshaping the battlefield"></div>
+						<div class="uk-width-medium-1-2"><img src="./files/playscene3.png" alt="Gameplay screenshot — a narrow duel encounter"></div>
+						<div class="uk-width-medium-1-2"><img src="./files/meteor.gif" alt="Meteor spell effect"></div>
+						<div class="uk-width-medium-1-2"><img src="./files/particle.gif" alt="Particle / hit effect"></div>
+					</div>
+					<p style="margin-top:1em;"><strong><a href="./files/dragonic_tactics_images.zip" download>Download all screenshots &amp; GIFs (.zip)</a></strong></p>
 				</section>
 
 				<hr>
 
 				<section id="logo" class="press-section">
 					<h2>Logo &amp; Icon</h2>
-					<div class="todo">Game logo, app icon, banner image, character renders
-Provide a .zip download link for all branding assets</div>
+
+					<p><strong>Game logo</strong> &mdash; <a href="./files/logo.png" download>logo.png</a></p>
+					<p><a href="./files/logo.png" download><img src="./files/logo.png" alt="Dragonic Tactics logo" style="width:auto;max-width:340px;height:auto;display:block;"></a></p>
+
+					<p><strong>Banner</strong> &mdash; <a href="./files/header.png" download>header.png</a></p>
+
+					<p><strong>Character renders</strong> (pixel art)</p>
+					<div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;">
+						<figure style="margin:0;text-align:center;">
+							<a href="./files/dragon.png" download><img src="./files/dragon.png" alt="Dragon" style="width:auto;max-width:120px;height:auto;image-rendering:pixelated;border:1px solid #BF3939;background:#2E302F;padding:5px;"></a>
+							<figcaption>Dragon (player)</figcaption>
+						</figure>
+						<figure style="margin:0;text-align:center;">
+							<a href="./files/fighter.png" download><img src="./files/fighter.png" alt="Fighter" style="width:auto;max-width:120px;height:auto;image-rendering:pixelated;border:1px solid #BF3939;background:#2E302F;padding:5px;"></a>
+							<figcaption>Fighter</figcaption>
+						</figure>
+						<figure style="margin:0;text-align:center;">
+							<a href="./files/cleric.png" download><img src="./files/cleric.png" alt="Cleric" style="width:auto;max-width:120px;height:auto;image-rendering:pixelated;border:1px solid #BF3939;background:#2E302F;padding:5px;"></a>
+							<figcaption>Cleric</figcaption>
+						</figure>
+						<figure style="margin:0;text-align:center;">
+							<a href="./files/rogue.png" download><img src="./files/rogue.png" alt="Rogue" style="width:auto;max-width:120px;height:auto;image-rendering:pixelated;border:1px solid #BF3939;background:#2E302F;padding:5px;"></a>
+							<figcaption>Rogue</figcaption>
+						</figure>
+						<figure style="margin:0;text-align:center;">
+							<a href="./files/wizard.png" download><img src="./files/wizard.png" alt="Wizard" style="width:auto;max-width:120px;height:auto;image-rendering:pixelated;border:1px solid #BF3939;background:#2E302F;padding:5px;"></a>
+							<figcaption>Wizard</figcaption>
+						</figure>
+					</div>
+
+					<p style="margin-top:1em;"><strong><a href="./files/dragonic_tactics_logo.zip" download>Download logo &amp; icon assets (.zip)</a></strong> &mdash; logo, banner, all five character renders, and the elevator-pitch graphic. Screenshots and GIFs are in the <a href="#images">Images</a> section; the gameplay video is in <a href="#videos">Videos</a>. Or right-click any image above to save it individually.</p>
 				</section>
 
 				<hr>
 
 				<section id="quotes" class="press-section">
 					<h2>Selected Articles</h2>
-					<p><em>No press coverage or awards to list yet.</em></p>
-					<div class="todo">When coverage exists, add awards/festival recognitions and press quotes here:
-"Quote text." — Author, Outlet (linked)</div>
+					<blockquote>
+						<p>"This is really great game, better than League of Legends."</p>
+						<footer>&mdash; Sungwoo Cho (Friend)</footer>
+					</blockquote>
+					<blockquote>
+						<p>"I really love Dragon, let's go Dragon!!!!!"</p>
+						<footer>&mdash; Seohyeon Min (Friend)</footer>
+					</blockquote>
 				</section>
 
 				<hr>
@@ -202,10 +231,10 @@ Provide a .zip download link for all branding assets</div>
 					<h2>Team</h2>
 					<p><strong>CodePistols</strong> &mdash; a 5-person student team at DigiPen Institute of Technology.</p>
 					<ul>
-						<li><strong>Taekyung Heo</strong> &mdash; Producer</li>
+						<li><strong>Taekyung Ho</strong> &mdash; Producer</li>
 						<li><strong>Junyoung Ki</strong> &mdash; Tech Lead</li>
 						<li><strong>Seungju Song</strong> &mdash; Designer</li>
-						<li><strong>Kinam Park</strong> &mdash; Test Lead</li>
+						<li><strong>Ginam Park</strong> &mdash; Test Lead</li>
 						<li><strong>Sangyoon Lee</strong> &mdash; QA</li>
 					</ul>
 				</section>

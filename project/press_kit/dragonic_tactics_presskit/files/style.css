@@ -1,8 +1,31 @@
+/* ── Dragonic Tactics brand palette ──
+   black  #2E302F
+   yellow #F9EE4D
+   red    #BF3939
+   Only these three colors are used across the page. */
+
 body {
 	padding: 15px 0;
 	font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
 	font-size: 0.9em;
 	line-height: 1.6em;
+	background: #2E302F;
+	color: #FFFFFF;
+}
+
+a {
+	color: #BF3939;
+	text-decoration: underline;
+}
+
+a:hover {
+	color: #F9EE4D;
+}
+
+hr {
+	border: 0;
+	border-top: 2px solid #BF3939;
+	margin: 24px 0;
 }
 
 img {
@@ -15,8 +38,8 @@ img {
 	top: 12px;
 	left: 12px;
 	z-index: 1000;
-	background: #c0392b;
-	color: #fff;
+	background: #BF3939;
+	color: #F9EE4D;
 	border: none;
 	border-radius: 4px;
 	padding: 4px 10px;
@@ -25,7 +48,8 @@ img {
 }
 
 #nav-toggle:hover {
-	background: #a93226;
+	background: #F9EE4D;
+	color: #2E302F;
 }
 
 /* ── Navigation ── */
@@ -36,8 +60,6 @@ img {
 	position: sticky;
 	top: 15px;
 	align-self: flex-start;
-	max-height: calc(100vh - 30px);
-	overflow-y: auto;
 }
 
 #navigation.hidden {
@@ -47,6 +69,18 @@ img {
 #navigation h1.nav-header {
 	padding: 0 15px;
 	margin-bottom: 0;
+	color: #F9EE4D;
+}
+
+/* Logo image used as the sidebar title */
+#navigation .nav-logo {
+	display: block;
+	box-sizing: border-box;
+	width: auto;
+	max-width: 50%;
+	height: auto;
+	padding: 0 15px;
+	margin: 0 auto 8px;
 }
 
 #navigation a.nav-header,
@@ -54,16 +88,36 @@ img {
 	display: block;
 	padding: 5px 15px;
 	font-weight: bold;
+	color: #BF3939;
 }
 
 #navigation ul.uk-nav {
 	padding: 15px 0;
 }
 
+#navigation ul.uk-nav a {
+	color: #FFFFFF;
+}
+
+#navigation ul.uk-nav a:hover {
+	background: transparent;
+	color: #F9EE4D;
+}
+
 /* ── Content ── */
+
+#content h1,
+#content h2 {
+	color: #FFFFFF;
+}
 
 #content h2 {
 	font-family: Georgia, "Times New Roman", Times, serif;
+}
+
+/* Emphasis (italic) accents in yellow */
+#content em {
+	color: #F9EE4D;
 }
 
 #content img.header {
@@ -91,11 +145,42 @@ img {
 	height: 100%;
 }
 
+/* Selected Articles quotes */
+#content blockquote {
+	margin: 0 0 18px;
+	padding: 10px 18px;
+	border-left: 3px solid #BF3939;
+	background: rgba(191, 57, 57, 0.08);
+}
+
+#content blockquote p {
+	margin: 0 0 6px;
+	font-style: italic;
+	font-size: 1.05em;
+	color: #FFFFFF;
+}
+
+#content blockquote footer {
+	color: #F9EE4D;
+	font-weight: bold;
+}
+
+/* Factsheet / Contact definition lists */
+dl.factsheet dt {
+	color: #BF3939;
+	font-weight: bold;
+}
+
+dl.factsheet dd {
+	color: #FFFFFF;
+	margin: 0 0 10px;
+}
+
 /* ── TODO placeholders ── */
 .todo {
-	border: 2px dashed #e67e22;
-	background: #fef9f0;
-	color: #7f4f00;
+	border: 2px dashed #BF3939;
+	background: #2E302F;
+	color: #F9EE4D;
 	padding: 10px 14px;
 	border-radius: 4px;
 	font-size: 0.9em;
@@ -105,12 +190,32 @@ img {
 .todo::before {
 	content: "✏ TODO  ";
 	font-weight: bold;
-	color: #e67e22;
+	color: #BF3939;
 }
 
 /* ── CTA block ── */
 .cta {
 	margin-bottom: 20px;
+}
+
+.cta .pitch {
+	color: #FFFFFF;
+	font-size: 1.15em;
+}
+
+.cta-button {
+	display: inline-block;
+	background: #BF3939;
+	color: #F9EE4D;
+	padding: 8px 18px;
+	border-radius: 4px;
+	font-weight: bold;
+	text-decoration: none;
+}
+
+.cta-button:hover {
+	background: #F9EE4D;
+	color: #2E302F;
 }
 
 @media (max-width: 767px) {
