@@ -1,0 +1,4 @@
+# Files too large for GitHub (100MB push limit) / GitHub Pages
+# Gameplay video is hosted on YouTube; keep the master copy locally but never commit it.
+files/DT_play.mp4
+files/dragonic_tactics_video.zip
