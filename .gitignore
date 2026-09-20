@@ -1,17 +1,12 @@
+# Release ZIP output (make_release.py)
+*.zip
+*playtest/
+.DS_Store
 
+# Visual Studio artifacts
 .vs/
 x64/
 *.log
-DragonicTactics/source/Engine/taekyung.ho_milestone2_loc.csv
-
 *.bat
 *.txt
-DragonicTactics/build/
 !dragonic_tactics.docx
-
-project/DragonicTactics/source/CS200/taekyung.ho_milestone4_loc.csv
-project/DragonicTactics/source/Engine/taekyung.ho_milestone4_loc.csv
-project/DragonicTactics/source/Game/DragonicTactics/Test/taekyung.ho_milestone4_loc.csv
-*.zip
-/project/DragonicTactics_v0.1.1-test_playtest
-project/press_kit/dragonic_tactics_presskit/files/DT_play.mp4
