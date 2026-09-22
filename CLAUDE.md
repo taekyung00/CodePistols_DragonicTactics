@@ -4,6 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 > **⚠️ CLAUDE CODE QUICK RULES — 반드시 먼저 읽을 것**
 > - 빌드·실행은 반드시 `DragonicTactics/` 디렉토리에서 실행 (`cd DragonicTactics`)
+> - macOS/Linux에서는 `windows-*` 프리셋이 존재하지 않음 → `linux-debug` 사용 (사전 `brew install cmake ninja sdl2 glew openal-soft`, 자세한 내용은 [빌드 §macOS / Linux](#macos--linux-빌드))
 > - 들여쓰기는 **탭** (스페이스 아님) — Allman 스타일 중괄호 (여는 `{`는 항상 새 줄)
 > - `UpdateGSComponents(dt)` 이후 개별 컴포넌트 `Update()` **명시 호출 금지** → 같은 프레임 이중 실행 버그 (`KeyJustPressed` 즉시 토글)
 > - `Math::vec2` 등 엔진 수학 타입에 `float` 리터럴(`0.0f`) 전달 금지 → 웹 빌드 `-Wdouble-promotion` 에러
@@ -48,7 +49,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 개요
 
-**Dragonic Tactics**: D&D 스타일 턴제 전술 RPG — 커스텀 C++20 OpenGL 엔진 (CMake), 5명 팀, 26주 개발.
+**Dragonic Tactics**: D&D 스타일 턴제 전술 RPG — 커스텀 C++20 OpenGL 엔진 (CMake), DigiPen 5명 팀(CodePistols), GAM200+GAM250 1년 개발. 플레이어는 드래곤(보스), 적은 AI 모험가 파티라는 역할 반전 구조.
+
+- **개발 종료 상태**: 2026-06-14 "The End" 커밋으로 본 개발이 마무리됐고, 이후 커밋은 프레스킷·문서 정리뿐이다. 웹(WASM) 빌드는 [taekyung00.github.io/dragonic_tactics_presskit](https://taekyung00.github.io/dragonic_tactics_presskit/)에 배포되어 있다. 새 작업은 기능 추가보다 유지보수·문서·이식(macOS 등) 성격이 많으므로, 기존 동작을 바꾸기 전에 이 문서의 "구현 완료" 항목과 `docs/Detailed Implementations/`를 먼저 확인할 것.
+- 루트 `README.md`는 이 파일(CLAUDE.md)을 "가장 상세한 기술 레퍼런스"로 외부에 링크하고 있다 — 사람도 읽는 문서이므로 항목을 삭제할 때는 대체 문서를 남길 것.
 
 - **폐기됨**: `Abilities/` 디렉토리 전체 (AbilityBase, MeleeAttack, ShieldBash) — `Objects/Actions/ActionAttack`만 사용
 - **구현 완료**: SpellSystem (CSV 파싱 + 시전 + UI), StatusEffectHandler (9가지 효과 + OnApplied/OnRemoved), TurnManager, GridSystem, SoundManager (BGM/SFX)
@@ -131,7 +135,7 @@ main.cpp → Splash → MainMenu ┬─ LevelGame → LevelSelect ┬─ Level 1
 }
 ```
 
-`LoadLevelMap(int level_id)` (`GamePlay.cpp:883`) — `maps.json` 대신 `Level_Map.json`을 읽어 맵을 구성하고 `enemies` 배열의 캐릭터 타입만 스폰한다.
+`GamePlay::LoadLevelMap(int level_id)` (`GamePlay.cpp`, `Load()`에서 `s_level_id > 0`일 때 호출) — `maps.json` 대신 `Level_Map.json`을 읽어 맵을 구성하고 `enemies` 배열의 캐릭터 타입만 스폰한다.
 
 ### 컷신 시스템
 
@@ -161,6 +165,22 @@ build/windows-debug/dragonic_tactics.exe  # 실행 (반드시 DragonicTactics/�
 ```
 
 프리셋: `windows-debug`, `windows-developer-release`, `windows-release`, `linux-debug`, `web-debug-on-windows` (그 외 `linux-developer-release`, `linux-release`, `web-debug`, `web-developer-release`, `web-release`)
+
+### macOS / Linux 빌드
+
+`windows-*` 프리셋은 `hostSystemName == Windows` 조건이 걸려 있어 macOS/Linux에서는 목록에 뜨지 않는다. **macOS에서는 `linux-*` 프리셋을 그대로 사용**한다 (`conf-unixlike-common`의 condition이 `Linux`·`Darwin` 둘 다 허용, Ninja 생성기, `gcc`/`g++` 지정 — macOS에서는 Apple clang 별칭으로 해석됨).
+
+```bash
+brew install cmake ninja sdl2 glew openal-soft   # 최초 1회 (docs/DevEnvironment.md §macOS Setup)
+cd DragonicTactics
+cmake --preset linux-debug
+cmake --build --preset linux-debug
+build/linux-debug/dragonic_tactics                # .exe 없음
+```
+
+- 비-Windows에서는 SDL2/GLEW/OpenAL을 FetchContent가 아닌 `find_package(... REQUIRED)`로 찾는다 (`cmake/dependencies/*.cmake`) — brew 패키지가 없으면 configure 단계에서 `GLEW_DIR-NOTFOUND` 등으로 실패.
+- ⚠️ **저장소 디렉토리를 옮긴 뒤에는 `build/<preset>/`을 반드시 삭제**하고 재구성할 것. `CMakeCache.txt`의 `CMAKE_HOME_DIRECTORY`가 옛 절대 경로를 기억해 configure가 조용히 어긋난다 (이 저장소의 `build/linux-debug/`가 `.../project/DragonicTactics` 경로를 가리킨 채 남아 있던 사례 있음).
+- `clang-format`은 macOS에 기본 설치되어 있지 않다 — `brew install clang-format` 후 사용. 일괄 포맷은 아래 PowerShell 대신 `find source -name '*.cpp' -o -name '*.h' | xargs clang-format -i`.
 
 ### 코드 포맷 (clang-format)
 
@@ -281,12 +301,13 @@ CombatSystem / DiceManager 관련 코드를 수정할 때 반드시 확인할 �
 
 | 위치 | 문제 | 심각도 | 상태 |
 |---|---|---|---|
-| `StateComponents/CombatSystem.cpp` `ExecuteAttack` 첫 null 체크 | 에러 메시지에서 `attacker->TypeName()` 역참조 — attacker=null이면 crash | 🔴 CRITICAL | 미수정 |
-| `StateComponents/StatusEffectHandler.cpp:144` | Frenzy 발동 시 `DiceManager` nullptr 체크 없음 | 🟠 HIGH | 미수정 |
-| `StateComponents/SpellSystem.cpp:314,350` | `upcast_dice` `std::stoi` 예외 미처리 | 🟠 HIGH | 미수정 |
-| `StateComponents/SpellSystem.cpp:326` | `flat_per_level` `std::stoi` 예외 미처리 | 🟠 HIGH | 미수정 |
-| `StateComponents/CombatSystem.cpp` `:29` `CalculateDamage` | null 역참조 | ~~🔴~~ | ✅ 수정 완료 |
-| `StateComponents/CombatSystem.cpp` `:184` `RollAttackDamage` | DiceManager nullptr | ~~🟠~~ | ✅ 수정 완료 |
+| `StateComponents/CombatSystem.cpp` `ExecuteAttack` 첫 null 체크 | `if (attacker == nullptr \|\| defender == nullptr)` 블록 **안에서** `attacker->TypeName()` / `defender->TypeName()`을 역참조해 에러 메시지를 만든다 — null이면 로그 대신 crash | 🔴 CRITICAL | **미수정** (유일하게 남은 항목) |
+| `StateComponents/StatusEffectHandler.cpp` `OnAfterAttack` Frenzy 분기 | `DiceManager` nullptr 체크 | ~~🟠~~ | ✅ 수정 완료 (`if (!frenzy_dice) return;`) |
+| `StateComponents/SpellSystem.cpp` `CalculateSpellDamage` | `upcast_dice` / `flat_per_level` `std::stoi` 예외 | ~~🟠~~ | ✅ 수정 완료 (세 곳 모두 `try/catch`) |
+| `StateComponents/CombatSystem.cpp` `CalculateDamage` | null 역참조 | ~~🔴~~ | ✅ 수정 완료 |
+| `StateComponents/CombatSystem.cpp` `RollAttackDamage` | DiceManager nullptr | ~~🟠~~ | ✅ 수정 완료 |
+
+⚠️ 위 표의 "수정 완료" 여부는 코드로 확인한 것 — 라인 번호는 자주 어긋나므로 적지 않고 함수명으로 찾을 것. 그 밖에 `SpellSystem::ParseCSVRow`의 `std::stoi(col[4])` / `ParseTargeting`의 `std::stoi(parts[2])`는 여전히 예외 미처리지만, 입력이 우리 소유의 `spell_table.csv`이므로 런타임 위험으로 취급하지 않는다.
 
 **GameObject 컴포넌트**: `GridPosition`, `ActionPoints`, `StatsComponent`, `SpellSlots`, `MovementComponent`, `StatusEffectComponent`, `ShakeComponent`
 
